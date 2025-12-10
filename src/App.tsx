@@ -108,15 +108,15 @@ export default function App() {
       const data = await fetchAllUserData(user.id);
       
       if (data.flights.length === 0 && data.milesData.length === 0 && data.redemptions.length === 0) {
-        // New user - show welcome
-        setShowWelcome(true);
-      } else {
-        setFlights(data.flights);
-        setBaseMilesData(data.milesData);
-        setRedemptions(data.redemptions);
-        if (data.profile) {
-          setTargetCPM(data.profile.targetCPM);
-        }
+        // New user - just start with empty data (no welcome modal for logged-in users)
+        // They can always load demo via Settings if they want
+      }
+      // Always load whatever data we have (even if empty)
+      setFlights(data.flights);
+      setBaseMilesData(data.milesData);
+      setRedemptions(data.redemptions);
+      if (data.profile) {
+        setTargetCPM(data.profile.targetCPM);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -226,9 +226,11 @@ export default function App() {
     if (user) {
       // Clear data in database
       markDataChanged();
+      // Don't show welcome modal for logged-in users - they just get empty data
+    } else {
+      // Only show welcome for non-logged-in users
+      setShowWelcome(true);
     }
-    
-    setShowWelcome(true);
   };
 
   const handleEnterDemoMode = () => {
