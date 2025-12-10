@@ -700,8 +700,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        {/* Current Ledger with Tooltip */}
-        <div className="flex flex-col items-end">
+        {/* Current Ledger with Tooltip - hidden on mobile */}
+        <div className="hidden md:flex flex-col items-end">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1.5">
             <Calendar size={12} />
             Current ledger
