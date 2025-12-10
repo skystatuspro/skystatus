@@ -275,7 +275,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       {/* Top Bar */}
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-100 pb-5">
-        <div className="text-center md:text-left">
+        <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Miles Engine</h2>
           <p className="text-slate-500 mt-0.5 text-sm font-medium">Financial backbone of your loyalty portfolio</p>
         </div>

@@ -458,7 +458,7 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-100 pb-6">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">
             XP Engine
@@ -468,7 +468,8 @@ export const XPEngine: React.FC<XPEngineProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
+        {/* Cycle selector - hidden on mobile */}
+        <div className="hidden md:flex items-center space-x-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
           <button
             onClick={() => handleCycleChange(-1)}
             disabled={selectedIndex === 0}
