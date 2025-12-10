@@ -10,16 +10,19 @@ import {
   X,
   Coins,
   Route,
-  Settings 
+  Settings,
+  User,
+  LogOut
 } from 'lucide-react';
 import { ViewState } from '../types';
+import { useAuth } from '../lib/AuthContext';
 
 interface LayoutProps {
   currentView: ViewState;
   onNavigate: (view: ViewState) => void;
   children: React.ReactNode;
   onOpenSettings: () => void;
-  isDemoMode: boolean; // <--- NIEUW: We ontvangen de status van App.tsx
+  isDemoMode: boolean;
 }
 
 const MenuItem = ({
@@ -58,9 +61,10 @@ export const Layout: React.FC<LayoutProps> = ({
   onNavigate,
   children,
   onOpenSettings,
-  isDemoMode, // <--- NIEUW
+  isDemoMode,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const { user, signOut } = useAuth();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -127,7 +131,29 @@ export const Layout: React.FC<LayoutProps> = ({
         </nav>
 
         {/* Footer Info */}
-        <div className="mt-auto pt-6 flex-shrink-0">
+        <div className="mt-auto pt-6 flex-shrink-0 space-y-3">
+          {/* User Account Section */}
+          {user && !isDemoMode && (
+            <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-700 rounded-lg">
+                  <User size={16} className="text-slate-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Signed in as</p>
+                  <p className="text-xs text-slate-300 font-medium truncate">{user.email}</p>
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-all"
+                  title="Sign out"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm space-y-2">
             <div>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Current Model</p>
