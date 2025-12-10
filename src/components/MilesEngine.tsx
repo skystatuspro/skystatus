@@ -274,12 +274,13 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       {/* Top Bar */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-5">
-        <div>
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-100 pb-5">
+        <div className="text-center md:text-left">
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Miles Engine</h2>
           <p className="text-slate-500 mt-0.5 text-sm font-medium">Financial backbone of your loyalty portfolio</p>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Controls - hidden on mobile */}
+        <div className="hidden md:flex items-center gap-2">
           <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 flex flex-col shadow-sm">
             <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Current Ledger</label>
             <input type="month" value={currentMonth} onChange={(e) => onUpdateCurrentMonth(e.target.value)} className="text-sm font-bold text-slate-800 outline-none bg-transparent cursor-pointer" />
