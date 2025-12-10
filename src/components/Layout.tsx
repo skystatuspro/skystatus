@@ -9,7 +9,7 @@ import {
   Menu, 
   X,
   Coins,
-  Navigation,
+  Route,
   Settings 
 } from 'lucide-react';
 import { ViewState } from '../types';
@@ -19,7 +19,7 @@ interface LayoutProps {
   onNavigate: (view: ViewState) => void;
   children: React.ReactNode;
   onOpenSettings: () => void;
-  isDemoMode: boolean;
+  isDemoMode: boolean; // <--- NIEUW: We ontvangen de status van App.tsx
 }
 
 const MenuItem = ({
@@ -58,7 +58,7 @@ export const Layout: React.FC<LayoutProps> = ({
   onNavigate,
   children,
   onOpenSettings,
-  isDemoMode,
+  isDemoMode, // <--- NIEUW
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -70,17 +70,19 @@ export const Layout: React.FC<LayoutProps> = ({
     { id: 'xp', label: 'XP Qualification', icon: Award },
     { id: 'redemption', label: 'Redemptions', icon: Flame },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'mileageRun', label: 'XP Run Simulator', icon: Navigation },
+    { id: 'mileageRun', label: 'XP Run Simulator', icon: Route },
   ];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans flex">
       
+      {/* --- Sidebar (Desktop) --- */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-slate-900 text-white p-6 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } flex flex-col`}
       >
+        {/* Logo Area */}
         <div className="flex items-center gap-3 px-2 mb-10 mt-2 flex-shrink-0">
           <div className="bg-white p-2 rounded-xl shadow-lg shadow-white/10">
               <Plane className="text-slate-900 transform -rotate-45" size={24} fill="currentColor" />
@@ -95,6 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </div>
 
+        {/* Navigation Links */}
         <nav className="space-y-2 flex-1 overflow-y-auto">
           {menuItems.map((item) => (
             <MenuItem
@@ -123,6 +126,7 @@ export const Layout: React.FC<LayoutProps> = ({
           />
         </nav>
 
+        {/* Footer Info */}
         <div className="mt-auto pt-6 flex-shrink-0">
           <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm space-y-2">
             <div>
@@ -136,6 +140,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 </p>
             </div>
 
+            {/* DEMO INDICATOR IN SIDEBAR */}
             {isDemoMode && (
                 <div className="mt-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 px-3 py-2">
                     <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mb-1">Workspace</p>
@@ -146,6 +151,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </aside>
 
+      {/* --- Mobile Overlay --- */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
@@ -153,8 +159,10 @@ export const Layout: React.FC<LayoutProps> = ({
         />
       )}
 
+      {/* --- Main Content Area --- */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
+        {/* Mobile Header */}
         <header className="lg:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-3">
               <div className="bg-slate-900 p-1.5 rounded-lg">
@@ -170,9 +178,11 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </header>
 
+        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-10 scroll-smooth">
           <div className="max-w-7xl mx-auto pb-12">
             
+            {/* DEMO BANNER BOVENAAN CONTENT */}
             {isDemoMode && (
                 <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-start gap-3">

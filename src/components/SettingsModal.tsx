@@ -6,7 +6,10 @@ import {
   Upload,
   RotateCcw,
   Trash2,
+  LogOut,
+  User,
 } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
 
 import {
   MilesRecord,
@@ -38,7 +41,10 @@ interface SettingsModalProps {
   };
   onReset: () => void;      
   onLoadDemo: () => void;
-  // onStartOver prop is niet meer nodig, we doen het direct hier
+  onStartOver?: () => void;
+  isDemoMode?: boolean;
+  onExitDemo?: () => void;
+  isLoggedIn?: boolean;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -48,8 +54,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setters,
   onReset,
   onLoadDemo,
+  onStartOver,
+  isDemoMode = false,
+  onExitDemo,
+  isLoggedIn = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { signOut, user } = useAuth();
 
   if (!isOpen) return null;
 
@@ -114,15 +125,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose();
   };
 
-  // DE PRODUCTIE-READY HARDE RESET
   const handleStartOver = () => {
-    if (!window.confirm("Are you sure you want to start over? This wipes all data.")) return;
+    if (onStartOver) {
+      onStartOver();
+    } else {
+      if (!window.confirm("Are you sure you want to start over? This wipes all data.")) return;
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
 
-    // 1. Alles wissen
-    localStorage.clear();
+  const handleSignOut = async () => {
+    await signOut();
+    onClose();
+  };
 
-    // 2. Harde reload (Werkt in productie, faalt soms in AI preview)
-    window.location.reload();
+  const handleExitDemo = () => {
+    if (onExitDemo) {
+      onExitDemo();
+      onClose();
+    }
   };
 
   return (
@@ -139,7 +161,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 Data Settings
               </h2>
               <p className="text-[11px] text-slate-500">
-                Manage your local portfolio on this device.
+                {isDemoMode ? 'Demo mode — data is temporary' : 'Manage your portfolio'}
               </p>
             </div>
           </div>
@@ -153,6 +175,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content */}
         <div className="px-6 py-5 space-y-6">
+          
+          {/* Account Section (if logged in) */}
+          {isLoggedIn && user && (
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+                Account
+              </p>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100">
+                    <User className="text-blue-600" size={16} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">
+                      {user.email}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Signed in • Auto-save enabled
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="p-2 rounded-xl hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Demo Mode Banner */}
+          {isDemoMode && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-amber-800">
+                    Demo Mode Active
+                  </p>
+                  <p className="text-[11px] text-amber-600">
+                    Changes won't be saved. {isLoggedIn ? 'Exit to use your account.' : 'Sign in to save your data.'}
+                  </p>
+                </div>
+                {onExitDemo && (
+                  <button
+                    onClick={handleExitDemo}
+                    className="px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-800 text-xs font-semibold transition-colors"
+                  >
+                    Exit Demo
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Backup & Restore */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAuth } from './lib/AuthContext';
+import { fetchAllUserData, saveFlights, saveMilesRecords, saveRedemptions, updateProfile } from './lib/dataService';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { MilesEngine } from './components/MilesEngine';
@@ -11,6 +13,8 @@ import { MilesIntake } from './components/MilesIntake';
 import { MileageRun } from './components/MileageRun';
 import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
+import { LoginPage } from './components/LoginPage';
+import { Loader2 } from 'lucide-react';
 
 import {
   ViewState,
@@ -37,112 +41,129 @@ import {
 
 import { calculateMultiYearStats } from './utils/xp-logic';
 
-// Sticky state helper
-const useStickyState = <T,>(
-  key: string,
-  defaultValue: T
-): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const stickyValue = window.localStorage.getItem(key);
-      return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
-    } catch {
-      return defaultValue;
-    }
-  });
+// Debounce helper for auto-save
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // ignore storage errors
-    }
-  }, [key, value]);
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-  return [value, setValue];
-};
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function App() {
+  const { user, loading: authLoading } = useAuth();
+  
+  // UI State
   const [view, setView] = useState<ViewState>('dashboard');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
-    try {
-      return window.localStorage.getItem('skystatus_mode') === 'demo';
-    } catch {
-      return false;
-    }
-  });
+  // Data State
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+  const [baseMilesData, setBaseMilesData] = useState<MilesRecord[]>([]);
+  const [baseXpData, setBaseXpData] = useState<XPRecord[]>([]);
+  const [manualLedger, setManualLedger] = useState<ManualLedger>({});
+  const [redemptions, setRedemptions] = useState<RedemptionRecord[]>([]);
+  const [flights, setFlights] = useState<FlightRecord[]>([]);
+  const [xpRollover, setXpRollover] = useState<number>(0);
+  const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
+  const [targetCPM, setTargetCPM] = useState<number>(0.012);
+
+  // Track if data has been modified (for auto-save)
+  const [dataVersion, setDataVersion] = useState(0);
+  const debouncedDataVersion = useDebounce(dataVersion, 2000); // Auto-save after 2 seconds of inactivity
+
+  // Load user data when authenticated
   useEffect(() => {
-    try {
-      const visited = localStorage.getItem('skystatus_visited');
-      if (!visited) {
-        setShowWelcome(true);
-      }
-    } catch {
-      // ignore
+    if (user && !isDemoMode) {
+      loadUserData();
     }
+  }, [user]);
+
+  // Auto-save when data changes (debounced)
+  useEffect(() => {
+    if (user && !isDemoMode && debouncedDataVersion > 0) {
+      saveUserData();
+    }
+  }, [debouncedDataVersion]);
+
+  const loadUserData = async () => {
+    if (!user) return;
+    
+    setDataLoading(true);
+    try {
+      const data = await fetchAllUserData(user.id);
+      
+      if (data.flights.length === 0 && data.milesData.length === 0 && data.redemptions.length === 0) {
+        // New user - show welcome
+        setShowWelcome(true);
+      } else {
+        setFlights(data.flights);
+        setBaseMilesData(data.milesData);
+        setRedemptions(data.redemptions);
+        if (data.profile) {
+          setTargetCPM(data.profile.targetCPM);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  const saveUserData = async () => {
+    if (!user || isDemoMode) return;
+    
+    setIsSaving(true);
+    try {
+      await Promise.all([
+        saveFlights(user.id, flights),
+        saveMilesRecords(user.id, baseMilesData),
+        saveRedemptions(user.id, redemptions),
+        updateProfile(user.id, { target_cpm: targetCPM }),
+      ]);
+    } catch (error) {
+      console.error('Error saving user data:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Mark data as changed
+  const markDataChanged = useCallback(() => {
+    setDataVersion(v => v + 1);
   }, []);
 
-  const now = new Date();
-  const defaultMonth = `${now.getFullYear()}-${String(
-    now.getMonth() + 1
-  ).padStart(2, '0')}`;
-
-  const [baseMilesData, setBaseMilesData] = useStickyState<MilesRecord[]>(
-    'baseMilesData',
-    []
-  );
-
-  const [baseXpData, setBaseXpData] = useStickyState<XPRecord[]>(
-    'baseXpData',
-    []
-  );
-
-  const [manualLedger, setManualLedger] = useStickyState<ManualLedger>(
-    'manualLedger',
-    {}
-  );
-
-  const [redemptions, setRedemptions] = useStickyState<RedemptionRecord[]>(
-    'redemptions',
-    []
-  );
-
-  const [flights, setFlights] = useStickyState<FlightRecord[]>(
-    'flights',
-    []
-  );
-
-  const [xpRollover, setXpRollover] = useStickyState<number>(
-    'xpRollover',
-    0
-  );
-
-  const [currentMonth, setCurrentMonth] = useStickyState<string>(
-    'currentMonth_V2',
-    defaultMonth
-  );
-
-  const [targetCPM, setTargetCPM] = useStickyState<number>(
-    'targetCPM',
-    0.012
-  );
-
+  // Computed data
   const { miles: milesData, xp: xpData } = useMemo(
     () => rebuildLedgersFromFlights(baseMilesData, baseXpData, flights),
     [baseMilesData, baseXpData, flights]
   );
 
+  // Event handlers with auto-save trigger
   const handleFlightsUpdate = (nextFlights: FlightRecord[]) => {
     setFlights(nextFlights);
+    markDataChanged();
   };
 
   const handleFlightIntakeApply = (payloads: FlightIntakePayload[]) => {
     const newRecords = payloads.map(createFlightRecord);
     setFlights(prevFlights => [...prevFlights, ...newRecords]);
+    markDataChanged();
   };
 
   const handleManualLedgerUpdate = (newData: MilesRecord[]) => {
@@ -152,19 +173,20 @@ export default function App() {
       cost_flight: 0,
     }));
     setBaseMilesData(sanitizedData);
+    markDataChanged();
   };
 
-  const markAsVisited = (mode: 'demo' | 'empty') => {
-    try {
-      localStorage.setItem('skystatus_visited', 'true');
-      localStorage.setItem('skystatus_mode', mode);
-      setIsDemoMode(mode === 'demo');
-    } catch {
-      // ignore
-    }
-    setShowWelcome(false);
+  const handleRedemptionsUpdate = (newRedemptions: RedemptionRecord[]) => {
+    setRedemptions(newRedemptions);
+    markDataChanged();
   };
 
+  const handleTargetCPMUpdate = (newTargetCPM: number) => {
+    setTargetCPM(newTargetCPM);
+    markDataChanged();
+  };
+
+  // Demo mode handlers
   const handleLoadDemo = () => {
     setBaseMilesData(INITIAL_MILES_DATA);
     setBaseXpData(INITIAL_XP_DATA);
@@ -172,7 +194,8 @@ export default function App() {
     setFlights(INITIAL_FLIGHTS);
     setXpRollover(103);
     setManualLedger(INITIAL_MANUAL_LEDGER);
-    markAsVisited('demo');
+    setIsDemoMode(true);
+    setShowWelcome(false);
   };
 
   const handleStartEmpty = () => {
@@ -182,22 +205,13 @@ export default function App() {
     setFlights([]);
     setXpRollover(0);
     setManualLedger({});
-    markAsVisited('empty');
+    setShowWelcome(false);
+    markDataChanged();
   };
 
   const handleStartOver = () => {
-    if (
-      !window.confirm(
-        'Are you sure you want to start over? This wipes all data.'
-      )
-    ) {
+    if (!window.confirm('Are you sure you want to start over? This wipes all data.')) {
       return;
-    }
-
-    try {
-      localStorage.clear();
-    } catch (e) {
-      console.error(e);
     }
 
     setBaseMilesData([]);
@@ -208,49 +222,84 @@ export default function App() {
     setManualLedger({});
     setIsDemoMode(false);
     setIsSettingsOpen(false);
+    
+    if (user) {
+      // Clear data in database
+      markDataChanged();
+    }
+    
     setShowWelcome(true);
   };
 
+  const handleEnterDemoMode = () => {
+    setIsDemoMode(true);
+    handleLoadDemo();
+  };
+
+  const handleExitDemoMode = () => {
+    setIsDemoMode(false);
+    if (user) {
+      loadUserData();
+    } else {
+      setBaseMilesData([]);
+      setBaseXpData([]);
+      setRedemptions([]);
+      setFlights([]);
+      setXpRollover(0);
+      setManualLedger({});
+    }
+  };
+
+  // Calculate current status
   const calculateGlobalCPM = () => {
     const earned = milesData.reduce(
-      (acc, r) =>
-        acc +
-        r.miles_subscription +
-        r.miles_amex +
-        r.miles_flight +
-        r.miles_other,
+      (acc, r) => acc + r.miles_subscription + r.miles_amex + r.miles_flight + r.miles_other,
       0
     );
     const cost = milesData.reduce(
-      (acc, r) =>
-        acc +
-        r.cost_subscription +
-        r.cost_amex +
-        r.cost_flight +
-        r.cost_other,
+      (acc, r) => acc + r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other,
       0
     );
     return earned > 0 ? (cost / earned) * 100 : 0;
   };
 
   const currentStatus = useMemo(() => {
-    const stats = calculateMultiYearStats(
-      xpData,
-      xpRollover,
-      flights,
-      manualLedger
-    );
-
+    const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
     const now = new Date();
-    const currentQYear =
-      now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-    
-    // Use actualStatus (current proven status) not statusEnd (end-of-cycle projection)
-    // This affects revenue-based miles calculations which depend on current status
+    const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
     const cycle = stats[currentQYear];
     const status = cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer';
     return status as 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
   }, [xpData, xpRollover, flights, manualLedger]);
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated and not in demo mode - show login
+  if (!user && !isDemoMode) {
+    return <LoginPage onDemoMode={handleEnterDemoMode} />;
+  }
+
+  // Loading user data
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-slate-500">Loading your portfolio...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (view) {
@@ -302,7 +351,7 @@ export default function App() {
             currentMonth={currentMonth}
             onUpdateCurrentMonth={setCurrentMonth}
             targetCPM={targetCPM}
-            onUpdateTargetCPM={setTargetCPM}
+            onUpdateTargetCPM={handleTargetCPMUpdate}
             redemptions={redemptions}
           />
         );
@@ -324,7 +373,7 @@ export default function App() {
         return (
           <RedemptionCalc
             redemptions={redemptions}
-            onUpdate={setRedemptions}
+            onUpdate={handleRedemptionsUpdate}
             baselineCpm={calculateGlobalCPM()}
             targetCpm={targetCPM}
           />
@@ -370,6 +419,14 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         isDemoMode={isDemoMode}
       >
+        {/* Saving indicator */}
+        {isSaving && (
+          <div className="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50">
+            <Loader2 size={16} className="animate-spin" />
+            <span className="text-sm">Saving...</span>
+          </div>
+        )}
+        
         {renderContent()}
       </Layout>
 
@@ -403,6 +460,9 @@ export default function App() {
         onReset={handleStartEmpty}
         onLoadDemo={handleLoadDemo}
         onStartOver={handleStartOver}
+        isDemoMode={isDemoMode}
+        onExitDemo={handleExitDemoMode}
+        isLoggedIn={!!user}
       />
     </>
   );
