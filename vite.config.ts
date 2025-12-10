@@ -12,15 +12,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          charts: ['recharts'],
-        },
-      },
-    },
   },
   server: {
     port: 3000,
