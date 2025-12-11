@@ -561,6 +561,7 @@ export default function App() {
         isLocalMode={isLocalMode}
         onExitDemo={handleExitDemoMode}
         isLoggedIn={!!user}
+        markDataChanged={markDataChanged}
       />
     </>
   );
