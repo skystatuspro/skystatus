@@ -94,11 +94,38 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += pageText + '\n';
+      
+      // Sort items by Y position (top to bottom), then X position (left to right)
+      const items = textContent.items as any[];
+      
+      // Group items by approximate Y position (same line)
+      let lastY: number | null = null;
+      let currentLine = '';
+      
+      for (const item of items) {
+        const y = item.transform ? item.transform[5] : 0;
+        
+        // If Y position changed significantly, it's a new line
+        if (lastY !== null && Math.abs(y - lastY) > 5) {
+          if (currentLine.trim()) {
+            fullText += currentLine.trim() + '\n';
+          }
+          currentLine = '';
+        }
+        
+        currentLine += item.str + ' ';
+        lastY = y;
+      }
+      
+      // Don't forget the last line of the page
+      if (currentLine.trim()) {
+        fullText += currentLine.trim() + '\n';
+      }
+      fullText += '\n'; // Page break
     }
+    
+    // Debug: log first 2000 chars to console
+    console.log('PDF extracted text (first 2000 chars):', fullText.substring(0, 2000));
     
     return fullText;
   };
