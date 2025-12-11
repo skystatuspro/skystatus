@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './lib/AuthContext';
-import { fetchAllUserData, saveFlights, saveMilesRecords, saveRedemptions, updateProfile } from './lib/dataService';
+import { fetchAllUserData, saveFlights, saveMilesRecords, saveRedemptions, updateProfile, saveXPLedger } from './lib/dataService';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { MilesEngine } from './components/MilesEngine';
@@ -116,8 +116,27 @@ export default function App() {
       setFlights(data.flights);
       setBaseMilesData(data.milesData);
       setRedemptions(data.redemptions);
+      
+      // Load XP ledger data
+      if (data.xpLedger && Object.keys(data.xpLedger).length > 0) {
+        // Convert XPLedgerEntry format to ManualLedger format
+        const loadedLedger: ManualLedger = {};
+        Object.entries(data.xpLedger).forEach(([month, entry]) => {
+          loadedLedger[month] = {
+            amexXp: entry.amexXp,
+            bonusSafXp: entry.bonusSafXp,
+            miscXp: entry.miscXp,
+            correctionXp: entry.correctionXp,
+          };
+        });
+        setManualLedger(loadedLedger);
+      }
+      
       if (data.profile) {
         setTargetCPM(data.profile.targetCPM);
+        if (data.profile.xpRollover !== undefined) {
+          setXpRollover(data.profile.xpRollover);
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -131,11 +150,24 @@ export default function App() {
     
     setIsSaving(true);
     try {
+      // Convert ManualLedger to XPLedgerEntry format for saving
+      const xpLedgerToSave: Record<string, { month: string; amexXp: number; bonusSafXp: number; miscXp: number; correctionXp: number }> = {};
+      Object.entries(manualLedger).forEach(([month, entry]) => {
+        xpLedgerToSave[month] = {
+          month,
+          amexXp: entry.amexXp,
+          bonusSafXp: entry.bonusSafXp,
+          miscXp: entry.miscXp,
+          correctionXp: entry.correctionXp,
+        };
+      });
+
       await Promise.all([
         saveFlights(user.id, flights),
         saveMilesRecords(user.id, baseMilesData),
         saveRedemptions(user.id, redemptions),
-        updateProfile(user.id, { target_cpm: targetCPM }),
+        saveXPLedger(user.id, xpLedgerToSave),
+        updateProfile(user.id, { target_cpm: targetCPM, xp_rollover: xpRollover }),
       ]);
     } catch (error) {
       console.error('Error saving user data:', error);
@@ -184,6 +216,16 @@ export default function App() {
 
   const handleTargetCPMUpdate = (newTargetCPM: number) => {
     setTargetCPM(newTargetCPM);
+    markDataChanged();
+  };
+
+  const handleManualXPLedgerUpdate: React.Dispatch<React.SetStateAction<ManualLedger>> = (action) => {
+    setManualLedger(action);
+    markDataChanged();
+  };
+
+  const handleXPRolloverUpdate = (newRollover: number) => {
+    setXpRollover(newRollover);
     markDataChanged();
   };
 
@@ -378,11 +420,11 @@ export default function App() {
             baseData={baseXpData}
             onUpdate={setBaseXpData}
             rollover={xpRollover}
-            onUpdateRollover={setXpRollover}
+            onUpdateRollover={handleXPRolloverUpdate}
             flights={flights}
             onUpdateFlights={handleFlightsUpdate}
             manualLedger={manualLedger}
-            onUpdateManualLedger={setManualLedger}
+            onUpdateManualLedger={handleManualXPLedgerUpdate}
           />
         );
       case 'redemption':
