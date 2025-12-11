@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from './lib/AuthContext';
-import { fetchAllUserData, saveFlights, saveMilesRecords, saveRedemptions, updateProfile } from './lib/dataService';
+import { 
+  fetchAllUserData, 
+  saveFlights, 
+  saveMilesRecords, 
+  saveRedemptions, 
+  saveXPLedger,
+  updateProfile,
+  XPLedgerEntry 
+} from './lib/dataService';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { MilesEngine } from './components/MilesEngine';
@@ -126,8 +134,22 @@ export default function App() {
         setFlights(data.flights);
         setBaseMilesData(data.milesData);
         setRedemptions(data.redemptions);
+        
+        // Load XP Ledger - convert from DB format to app format
+        const loadedLedger: ManualLedger = {};
+        Object.entries(data.xpLedger).forEach(([month, entry]) => {
+          loadedLedger[month] = {
+            amexXp: entry.amexXp,
+            bonusSafXp: entry.bonusSafXp,
+            miscXp: entry.miscXp,
+            correctionXp: entry.correctionXp,
+          };
+        });
+        setManualLedger(loadedLedger);
+        
         if (data.profile) {
           setTargetCPM(data.profile.targetCPM);
+          setXpRollover(data.profile.xpRollover || 0);
         }
       }
       
@@ -146,11 +168,27 @@ export default function App() {
     
     setIsSaving(true);
     try {
+      // Convert manualLedger to XPLedgerEntry format for database
+      const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
+      Object.entries(manualLedger).forEach(([month, entry]) => {
+        xpLedgerToSave[month] = {
+          month,
+          amexXp: entry.amexXp || 0,
+          bonusSafXp: entry.bonusSafXp || 0,
+          miscXp: entry.miscXp || 0,
+          correctionXp: entry.correctionXp || 0,
+        };
+      });
+
       await Promise.all([
         saveFlights(user.id, flights),
         saveMilesRecords(user.id, baseMilesData),
         saveRedemptions(user.id, redemptions),
-        updateProfile(user.id, { target_cpm: targetCPM }),
+        saveXPLedger(user.id, xpLedgerToSave),
+        updateProfile(user.id, { 
+          target_cpm: targetCPM,
+          xp_rollover: xpRollover,
+        }),
       ]);
     } catch (error) {
       console.error('Error saving user data:', error);
@@ -199,6 +237,24 @@ export default function App() {
 
   const handleTargetCPMUpdate = (newTargetCPM: number) => {
     setTargetCPM(newTargetCPM);
+    markDataChanged();
+  };
+
+  // XP Ledger handlers with auto-save
+  const handleManualXPLedgerUpdate = (newLedger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => {
+    if (typeof newLedger === 'function') {
+      setManualLedger(prev => {
+        const updated = newLedger(prev);
+        return updated;
+      });
+    } else {
+      setManualLedger(newLedger);
+    }
+    markDataChanged();
+  };
+
+  const handleXPRolloverUpdate = (newRollover: number) => {
+    setXpRollover(newRollover);
     markDataChanged();
   };
 
@@ -386,11 +442,11 @@ export default function App() {
             baseData={baseXpData}
             onUpdate={setBaseXpData}
             rollover={xpRollover}
-            onUpdateRollover={setXpRollover}
+            onUpdateRollover={handleXPRolloverUpdate}
             flights={flights}
             onUpdateFlights={handleFlightsUpdate}
             manualLedger={manualLedger}
-            onUpdateManualLedger={setManualLedger}
+            onUpdateManualLedger={handleManualXPLedgerUpdate}
           />
         );
       case 'redemption':
