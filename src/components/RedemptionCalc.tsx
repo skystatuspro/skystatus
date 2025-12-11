@@ -18,6 +18,9 @@ import {
   ChevronDown,
   Wallet,
   Zap,
+  Pencil,
+  Save,
+  X,
 } from 'lucide-react';
 import { RedemptionRecord } from '../types';
 import { calculateBurnStats } from '../utils/loyalty-logic';
@@ -113,6 +116,10 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [verdictFilter, setVerdictFilter] = useState<VerdictFilter>('all');
+
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<RedemptionRecord>>({});
 
   // Calculate stats using the logic engine
   const stats = useMemo(() => 
@@ -240,6 +247,42 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
       setSortField(field);
       setSortDirection('desc');
     }
+  };
+
+  // Edit handlers
+  const startEdit = (record: RedemptionRecord) => {
+    setEditingId(record.id);
+    setEditForm({
+      date: record.date,
+      description: record.description,
+      award_miles: record.award_miles,
+      cash_price_estimate: record.cash_price_estimate,
+      surcharges: record.surcharges,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    
+    onUpdate(redemptions.map(r => 
+      r.id === editingId 
+        ? { 
+            ...r, 
+            date: editForm.date || r.date,
+            description: editForm.description || r.description,
+            award_miles: Number(editForm.award_miles) || r.award_miles,
+            cash_price_estimate: Number(editForm.cash_price_estimate) || 0,
+            surcharges: Number(editForm.surcharges) || 0,
+          } 
+        : r
+    ));
+    setEditingId(null);
+    setEditForm({});
   };
 
   // Preview Logic for Form
@@ -771,6 +814,76 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                     const delta = euroCpm - baselineEuro;
                     const valuation = getValuationStatus(euroCpm, targetCpm, baselineEuro);
                     const deltaPercent = baselineEuro > 0 ? (delta / baselineEuro) * 100 : 0;
+                    const isEditing = editingId === r.id;
+                    
+                    // Find original record for editing
+                    const originalRecord = redemptions.find(x => x.id === r.id);
+
+                    if (isEditing && originalRecord) {
+                      return (
+                        <tr key={r.id} className="bg-blue-50/50">
+                          <td className="px-5 py-3">
+                            <input
+                              type="text"
+                              value={editForm.description || ''}
+                              onChange={e => setEditForm({...editForm, description: e.target.value})}
+                              className={`w-full p-1.5 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`}
+                              placeholder="Description"
+                            />
+                            <input
+                              type="date"
+                              value={editForm.date || ''}
+                              onChange={e => setEditForm({...editForm, date: e.target.value})}
+                              className={`w-full mt-1 p-1 border border-slate-200 rounded text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`}
+                            />
+                          </td>
+                          <td className="px-3 py-3">
+                            <input
+                              type="number"
+                              value={editForm.award_miles || ''}
+                              onChange={e => setEditForm({...editForm, award_miles: Number(e.target.value)})}
+                              className={`w-full p-1.5 border border-slate-200 rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`}
+                            />
+                          </td>
+                          <td className="px-3 py-3">
+                            <input
+                              type="number"
+                              value={editForm.cash_price_estimate || ''}
+                              onChange={e => setEditForm({...editForm, cash_price_estimate: Number(e.target.value)})}
+                              className={`w-full p-1.5 border border-slate-200 rounded-lg text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`}
+                              placeholder="Cash value"
+                              step="0.01"
+                            />
+                            <input
+                              type="number"
+                              value={editForm.surcharges || ''}
+                              onChange={e => setEditForm({...editForm, surcharges: Number(e.target.value)})}
+                              className={`w-full mt-1 p-1 border border-slate-200 rounded text-[10px] text-right focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`}
+                              placeholder="Surcharges"
+                              step="0.01"
+                            />
+                          </td>
+                          <td className="px-5 py-3 text-center text-slate-400 text-xs">—</td>
+                          <td className="px-5 py-3 text-center text-slate-400 text-xs">—</td>
+                          <td className="px-3 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button 
+                                onClick={saveEdit}
+                                className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+                              >
+                                <Save size={12} />
+                              </button>
+                              <button 
+                                onClick={cancelEdit}
+                                className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
 
                     return (
                       <tr key={r.id} className="hover:bg-slate-50/50 transition-colors group">
@@ -796,12 +909,22 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                           </span>
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <button 
-                            onClick={() => onUpdate(redemptions.filter((x) => x.id !== r.id))} 
-                            className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => originalRecord && startEdit(originalRecord)}
+                              className="p-1 rounded-lg text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="Edit redemption"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button 
+                              onClick={() => onUpdate(redemptions.filter((x) => x.id !== r.id))} 
+                              className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="Delete redemption"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
