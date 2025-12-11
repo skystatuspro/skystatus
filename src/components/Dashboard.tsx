@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { AppState } from '../types';
+import React, { useMemo, useState } from 'react';
+import { AppState, FlightRecord, MilesRecord } from '../types';
 import { formatCurrency, formatNumber } from '../utils/format';
 import { calculateMilesStats } from '../utils/loyalty-logic';
 import { calculateQualificationCycles, QualificationCycleStats } from '../utils/xp-logic';
@@ -18,14 +18,19 @@ import {
   ChevronRight,
   Clock,
   TrendingDown,
+  Upload,
+  FileText,
+  PlusCircle,
 } from 'lucide-react';
 import { PLATINUM_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
+import PdfImportModal from './PdfImportModal';
 
 interface DashboardProps {
   state: AppState;
   navigateTo: (view: any) => void;
   onUpdateCurrentMonth: (month: string) => void;
+  onPdfImport?: (flights: FlightRecord[], miles: MilesRecord[]) => void;
 }
 
 type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
@@ -613,7 +618,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   state,
   navigateTo,
   onUpdateCurrentMonth,
+  onPdfImport,
 }) => {
+  const [showPdfImport, setShowPdfImport] = useState(false);
+  
   const milesStats = useMemo(
     () =>
       calculateMilesStats(
@@ -685,6 +693,112 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Progress percentages
   const actualProgress = Math.min(100, (actualXP / targetXP) * 100);
   const projectedProgress = Math.min(100, (projectedTotalXP / targetXP) * 100);
+
+  // Check if user has no flight data - show onboarding
+  const hasNoFlights = state.flights.length === 0;
+
+  // Empty state for new users
+  if (hasNoFlights && onPdfImport) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+              Welcome to SkyStatus
+            </h2>
+            <p className="text-slate-500 mt-[2px] font-medium">
+              Track your Flying Blue status and optimize your loyalty strategy
+            </p>
+          </div>
+        </div>
+
+        {/* Welcome Card */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 to-blue-600 p-8 md:p-12 shadow-2xl">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Plane size={200} className="text-white rotate-45" />
+          </div>
+          
+          <div className="relative z-10 max-w-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                <Sparkles className="text-white" size={28} />
+              </div>
+              <span className="text-white/80 font-semibold text-sm uppercase tracking-wider">
+                Get Started
+              </span>
+            </div>
+            
+            <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
+              Import your Flying Blue history
+            </h3>
+            
+            <p className="text-white/80 text-lg mb-8 leading-relaxed">
+              Download your transaction history PDF from Flying Blue and import it here. 
+              We'll automatically extract all your flights, miles, and XP data.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => setShowPdfImport(true)}
+                className="flex items-center justify-center gap-3 bg-white text-brand-600 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Upload size={22} />
+                Import PDF
+              </button>
+              
+              <button
+                onClick={() => navigateTo('addFlight')}
+                className="flex items-center justify-center gap-3 bg-white/20 text-white px-8 py-4 rounded-2xl font-bold text-lg backdrop-blur-sm border border-white/30 hover:bg-white/30 transition-all"
+              >
+                <PlusCircle size={22} />
+                Add manually
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* How to get PDF instructions */}
+        <div className="bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-200">
+          <h4 className="font-bold text-slate-900 text-lg mb-4 flex items-center gap-2">
+            <FileText size={20} className="text-brand-500" />
+            How to download your Flying Blue PDF
+          </h4>
+          <ol className="space-y-3 text-slate-600">
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+              <span>Log in to <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 font-semibold hover:underline">flyingblue.com</a></span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+              <span>Go to <strong>My Account</strong> → <strong>Activity</strong></span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+              <span>Click <strong>"Download transaction history"</strong></span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">4</span>
+              <span>Select <strong>"All time"</strong> and download as PDF</span>
+            </li>
+          </ol>
+        </div>
+
+        {/* PDF Import Modal */}
+        <PdfImportModal
+          isOpen={showPdfImport}
+          onClose={() => setShowPdfImport(false)}
+          onImport={(flights, miles) => {
+            onPdfImport(flights, miles);
+            setShowPdfImport(false);
+          }}
+          existingFlights={state.flights}
+          existingMiles={state.milesData}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
