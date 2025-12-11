@@ -512,6 +512,7 @@ export default function App() {
         onNavigate={setView}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isDemoMode={isDemoMode || isLocalMode}
+        isLocalMode={isLocalMode}
       >
         {/* Saving indicator */}
         {isSaving && (
@@ -555,6 +556,7 @@ export default function App() {
         onLoadDemo={handleLoadDemo}
         onStartOver={handleStartOver}
         isDemoMode={isDemoMode || isLocalMode}
+        isLocalMode={isLocalMode}
         onExitDemo={handleExitDemoMode}
         isLoggedIn={!!user}
       />
