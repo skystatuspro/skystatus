@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { Plane, Mail, Lock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Plane, Mail, Lock, AlertCircle, CheckCircle, Loader2, Info } from 'lucide-react';
 
 interface LoginPageProps {
   onDemoMode: () => void;
+  onLocalMode: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode }) => {
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
   const [email, setEmail] = useState('');
@@ -205,6 +206,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
           </button>
         </form>
 
+        {/* Flying Blue disclaimer */}
+        {mode !== 'reset' && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2.5">
+            <Info size={16} className="text-blue-500 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-blue-700">
+              <span className="font-semibold">Not a Flying Blue login.</span> This account only saves your manually entered data. We never ask for or connect to your Flying Blue credentials.
+            </p>
+          </div>
+        )}
+
         {/* Toggle modes */}
         <div className="mt-6 text-center text-sm">
           {mode === 'login' && (
@@ -265,7 +276,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode }) => {
           Explore Demo
         </button>
         <p className="text-center text-xs text-slate-400 mt-2">
-          Try SkyStatus with sample data — no account needed
+          Try with sample data to see how it works
+        </p>
+
+        {/* Local Mode */}
+        <button
+          onClick={onLocalMode}
+          className="w-full py-3 mt-3 bg-transparent text-slate-500 font-medium rounded-xl hover:bg-slate-50 transition-all border border-slate-200 border-dashed"
+        >
+          Use Locally
+        </button>
+        <p className="text-center text-xs text-slate-400 mt-2">
+          Start empty, no account — use Export/Import in Data Settings to save your data
         </p>
       </div>
 
