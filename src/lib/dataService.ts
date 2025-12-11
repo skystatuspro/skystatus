@@ -426,6 +426,7 @@ export async function updateProfile(userId: string, updates: {
   qualification_start_month?: string;
   home_airport?: string;
   display_name?: string;
+  xp_rollover?: number;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -443,6 +444,86 @@ export async function updateProfile(userId: string, updates: {
 }
 
 // ============================================
+// XP LEDGER (Manual XP entries)
+// ============================================
+
+export interface XPLedgerEntry {
+  month: string;
+  amexXp: number;
+  bonusSafXp: number;
+  miscXp: number;
+  correctionXp: number;
+}
+
+export async function fetchXPLedger(userId: string): Promise<Record<string, XPLedgerEntry>> {
+  const { data, error } = await supabase
+    .from('xp_ledger')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching XP ledger:', error);
+    return {};
+  }
+
+  // Convert array to Record<month, entry>
+  const ledger: Record<string, XPLedgerEntry> = {};
+  (data || []).forEach(entry => {
+    ledger[entry.month] = {
+      month: entry.month,
+      amexXp: entry.amex_xp || 0,
+      bonusSafXp: entry.bonus_saf_xp || 0,
+      miscXp: entry.misc_xp || 0,
+      correctionXp: entry.correction_xp || 0,
+    };
+  });
+
+  return ledger;
+}
+
+export async function saveXPLedger(userId: string, ledger: Record<string, XPLedgerEntry>): Promise<boolean> {
+  // Delete all existing entries for this user
+  const { error: deleteError } = await supabase
+    .from('xp_ledger')
+    .delete()
+    .eq('user_id', userId);
+
+  if (deleteError) {
+    console.error('Error deleting XP ledger:', deleteError);
+    return false;
+  }
+
+  // Filter out empty entries and convert to DB format
+  const entries = Object.entries(ledger)
+    .filter(([_, entry]) => 
+      entry.amexXp !== 0 || 
+      entry.bonusSafXp !== 0 || 
+      entry.miscXp !== 0 || 
+      entry.correctionXp !== 0
+    )
+    .map(([month, entry]) => ({
+      user_id: userId,
+      month,
+      amex_xp: entry.amexXp,
+      bonus_saf_xp: entry.bonusSafXp,
+      misc_xp: entry.miscXp,
+      correction_xp: entry.correctionXp,
+    }));
+
+  if (entries.length === 0) return true;
+
+  const { error: insertError } = await supabase
+    .from('xp_ledger')
+    .insert(entries);
+
+  if (insertError) {
+    console.error('Error saving XP ledger:', insertError);
+    return false;
+  }
+  return true;
+}
+
+// ============================================
 // FULL DATA SYNC
 // ============================================
 
@@ -450,18 +531,21 @@ export interface UserData {
   flights: FlightRecord[];
   milesData: MilesRecord[];
   redemptions: RedemptionRecord[];
+  xpLedger: Record<string, XPLedgerEntry>;
   profile: {
     targetCPM: number;
     qualificationStartMonth: string;
     homeAirport: string;
+    xpRollover: number;
   } | null;
 }
 
 export async function fetchAllUserData(userId: string): Promise<UserData> {
-  const [flights, milesData, redemptions, profile] = await Promise.all([
+  const [flights, milesData, redemptions, xpLedger, profile] = await Promise.all([
     fetchFlights(userId),
     fetchMilesTransactions(userId),
     fetchRedemptions(userId),
+    fetchXPLedger(userId),
     fetchProfile(userId),
   ]);
 
@@ -469,10 +553,12 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
     flights,
     milesData,
     redemptions,
+    xpLedger,
     profile: profile ? {
       targetCPM: profile.target_cpm,
       qualificationStartMonth: profile.qualification_start_month,
       homeAirport: profile.home_airport,
+      xpRollover: profile.xp_rollover || 0,
     } : null,
   };
 }
@@ -483,7 +569,9 @@ export async function saveAllUserData(
     flights?: FlightRecord[];
     milesData?: MilesRecord[];
     redemptions?: RedemptionRecord[];
+    xpLedger?: Record<string, XPLedgerEntry>;
     targetCPM?: number;
+    xpRollover?: number;
   }
 ): Promise<boolean> {
   const promises: Promise<boolean>[] = [];
@@ -497,8 +585,20 @@ export async function saveAllUserData(
   if (data.redemptions) {
     promises.push(saveRedemptions(userId, data.redemptions));
   }
+  if (data.xpLedger) {
+    promises.push(saveXPLedger(userId, data.xpLedger));
+  }
+  
+  // Profile updates
+  const profileUpdates: { target_cpm?: number; xp_rollover?: number } = {};
   if (data.targetCPM !== undefined) {
-    promises.push(updateProfile(userId, { target_cpm: data.targetCPM }));
+    profileUpdates.target_cpm = data.targetCPM;
+  }
+  if (data.xpRollover !== undefined) {
+    profileUpdates.xp_rollover = data.xpRollover;
+  }
+  if (Object.keys(profileUpdates).length > 0) {
+    promises.push(updateProfile(userId, profileUpdates));
   }
 
   const results = await Promise.all(promises);
