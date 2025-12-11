@@ -203,6 +203,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
   let i = 0;
   let tripsFound = 0;
   let segmentsFound = 0;
+  let dateMatchCount = 0;
   
   while (i < lines.length) {
     const line = lines[i];
@@ -211,9 +212,15 @@ export function parseFlyingBlueText(text: string): ParseResult {
     const dateMatch = line.match(/^(\d{1,2}\s+\w{3,4}\s+\d{4})\s+(.+)$/);
     
     if (dateMatch) {
+      dateMatchCount++;
       const transDate = parseDate(dateMatch[1]);
       const content = dateMatch[2];
       const month = transDate?.substring(0, 7);
+      
+      // Debug: log first 10 date matches
+      if (dateMatchCount <= 10) {
+        console.log(`Parser: Date match #${dateMatchCount}: "${dateMatch[1]}" -> content: "${content.substring(0, 40)}..."`);
+      }
       
       if (!transDate || !month) {
         i++;
@@ -245,7 +252,29 @@ export function parseFlyingBlueText(text: string): ParseResult {
             segmentsFound++;
             const [, origin, dest, flightNum, rest] = segMatch;
             console.log(`Parser: Found segment #${segmentsFound}: ${origin}-${dest} ${flightNum}`);
-            const { miles, xp, uxp } = extractNumbers(rest);
+            
+            // Try to extract numbers from this line first
+            let { miles, xp, uxp } = extractNumbers(rest);
+            
+            // If no miles found, look ahead in next few lines for "XXX Miles X XP" pattern
+            if (miles === 0) {
+              for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
+                const lookAhead = lines[k];
+                // Stop if we hit a new segment or date
+                if (/^[A-Z]{3}\s*-\s*[A-Z]{3}/.test(lookAhead) || /^\d{1,2}\s+\w{3,4}\s+\d{4}/.test(lookAhead)) {
+                  break;
+                }
+                // Look for miles/XP pattern
+                const extracted = extractNumbers(lookAhead);
+                if (extracted.miles > 0 || extracted.xp > 0) {
+                  miles = extracted.miles;
+                  xp = extracted.xp;
+                  uxp = extracted.uxp;
+                  console.log(`Parser: Found miles/XP on line ${k}: ${miles} miles, ${xp} XP`);
+                  break;
+                }
+              }
+            }
             
             const airlineCode = flightNum.substring(0, 2);
             const airline = AIRLINE_MAP[airlineCode] || airlineCode;
@@ -254,7 +283,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for actual flight date in next lines
             let flightDate = transDate;
-            for (let k = j + 1; k < Math.min(j + 3, lines.length); k++) {
+            for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
               const opMatch = lines[k].match(/op\s+(\d{1,2}\s+\w{3,4}\s+\d{4})/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
@@ -365,8 +394,14 @@ export function parseFlyingBlueText(text: string): ParseResult {
   // Convert miles map to array
   const milesArray = Array.from(milesData.values()).sort((a, b) => a.month.localeCompare(b.month));
   
+  // Debug: Check for lines containing "reis" that weren't matched
+  const reisLines = lines.filter(l => l.toLowerCase().includes('reis'));
+  console.log(`Parser: Found ${reisLines.length} lines containing "reis":`);
+  reisLines.slice(0, 5).forEach((l, i) => console.log(`  reis line ${i + 1}: "${l.substring(0, 80)}..."`));
+  
   // Debug summary
   console.log(`Parser summary: ${tripsFound} trips, ${flights.length} flight segments, ${milesArray.length} months of miles`);
+  console.log(`Parser: ${dateMatchCount} date matches total`);
   
   return {
     flights,
