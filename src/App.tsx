@@ -23,6 +23,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
+import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 
 import {
@@ -69,6 +70,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
+  const { showToast, ToastContainer } = useToast();
   
   // UI State
   const [view, setView] = useState<ViewState>('dashboard');
@@ -292,7 +294,7 @@ export default function App() {
     // Show success message
     const flightCount = newFlights.length;
     const milesCount = importedMiles.length;
-    alert(`Successfully imported ${flightCount} flights and ${milesCount} months of miles data!`);
+    showToast(`Imported ${flightCount} flights and ${milesCount} months of miles data`, 'success');
   };
 
   // Demo mode handlers
@@ -667,6 +669,8 @@ export default function App() {
         isLoggedIn={!!user}
         markDataChanged={markDataChanged}
       />
+
+      <ToastContainer />
     </>
   );
 }
