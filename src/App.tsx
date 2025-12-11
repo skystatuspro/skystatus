@@ -67,6 +67,7 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Data State
@@ -221,6 +222,7 @@ export default function App() {
     setXpRollover(0);
     setManualLedger({});
     setIsDemoMode(false);
+    setIsLocalMode(false);
     setIsSettingsOpen(false);
     
     if (user) {
@@ -240,6 +242,7 @@ export default function App() {
 
   const handleEnterLocalMode = () => {
     setIsDemoMode(true); // Reuse demo mode flag to bypass login
+    setIsLocalMode(true);
     setBaseMilesData([]);
     setBaseXpData([]);
     setRedemptions([]);
@@ -250,6 +253,7 @@ export default function App() {
 
   const handleExitDemoMode = () => {
     setIsDemoMode(false);
+    setIsLocalMode(false);
     if (user) {
       loadUserData();
     } else {
@@ -430,6 +434,7 @@ export default function App() {
         onNavigate={setView}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isDemoMode={isDemoMode}
+        isLocalMode={isLocalMode}
       >
         {/* Saving indicator */}
         {isSaving && (
@@ -473,6 +478,7 @@ export default function App() {
         onLoadDemo={handleLoadDemo}
         onStartOver={handleStartOver}
         isDemoMode={isDemoMode}
+        isLocalMode={isLocalMode}
         onExitDemo={handleExitDemoMode}
         isLoggedIn={!!user}
       />
