@@ -17,6 +17,7 @@ import {
   XPRecord,
   RedemptionRecord,
   FlightRecord,
+  ManualLedger,
 } from '../types';
 
 interface SettingsModalProps {
@@ -30,6 +31,7 @@ interface SettingsModalProps {
     xpRollover: number;
     currentMonth: string;
     targetCPM: number;
+    manualLedger: ManualLedger;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;
@@ -39,6 +41,7 @@ interface SettingsModalProps {
     setXpRollover: React.Dispatch<React.SetStateAction<number>>;
     setCurrentMonth: React.Dispatch<React.SetStateAction<string>>;
     setTargetCPM: React.Dispatch<React.SetStateAction<number>>;
+    setManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
   };
   onReset: () => void;      
   onLoadDemo: () => void;
@@ -111,6 +114,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         setters.setCurrentMonth(parsed.currentMonth);
       if (typeof parsed.targetCPM === 'number')
         setters.setTargetCPM(parsed.targetCPM);
+      if (parsed.manualLedger)
+        setters.setManualLedger(parsed.manualLedger);
 
       alert('Import completed successfully.');
     } catch (e) {
