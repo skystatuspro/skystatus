@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Database,
   X,
@@ -9,8 +9,10 @@ import {
   LogOut,
   User,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
+import PdfImportModal from './PdfImportModal';
 
 import {
   MilesRecord,
@@ -69,6 +71,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { signOut, user } = useAuth();
+  const [showPdfImport, setShowPdfImport] = useState(false);
 
   if (!isOpen) return null;
 
@@ -245,6 +248,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  // Handler for PDF import
+  const handlePdfImport = (flights: FlightRecord[], miles: MilesRecord[]) => {
+    // Merge flights (by date + route)
+    const existingFlightKeys = new Set(data.flights.map(f => `${f.date}-${f.route}`));
+    const newFlights = flights.filter(f => !existingFlightKeys.has(`${f.date}-${f.route}`));
+    
+    if (newFlights.length > 0) {
+      setters.setFlights(prev => [...prev, ...newFlights]);
+    }
+
+    // Merge miles (by month - updates existing, adds new)
+    if (miles.length > 0) {
+      const existingMonthIndex = new Map(data.baseMilesData.map((r, i) => [r.month, i]));
+      const mergedMiles = [...data.baseMilesData];
+      
+      for (const incomingRecord of miles) {
+        const existingIndex = existingMonthIndex.get(incomingRecord.month);
+        if (existingIndex !== undefined) {
+          // Update existing month
+          mergedMiles[existingIndex] = { 
+            ...mergedMiles[existingIndex], 
+            ...incomingRecord, 
+            id: mergedMiles[existingIndex].id 
+          };
+        } else {
+          // Add new month
+          mergedMiles.push(incomingRecord);
+        }
+      }
+      
+      setters.setBaseMilesData(mergedMiles);
+    }
+
+    // Trigger auto-save
+    if (markDataChanged) markDataChanged();
+
+    // Show success message
+    const newMilesCount = miles.filter(m => !data.baseMilesData.some(e => e.month === m.month)).length;
+    const updatedMilesCount = miles.length - newMilesCount;
+    
+    let message = 'Flying Blue import completed!\n\n';
+    if (newFlights.length > 0) message += `✈️ Added ${newFlights.length} flights\n`;
+    if (newMilesCount > 0) message += `💰 Added ${newMilesCount} months of miles\n`;
+    if (updatedMilesCount > 0) message += `🔄 Updated ${updatedMilesCount} months of miles\n`;
+    
+    alert(message);
+  };
+
   const handleReloadDemo = () => {
     onLoadDemo();
     onClose();
@@ -401,6 +452,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
 
           {/* Backup & Restore */}
+          {/* Flying Blue PDF Import - Primary Import Method */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Import from Flying Blue
+            </p>
+            <button
+              onClick={() => setShowPdfImport(true)}
+              className="w-full rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all px-4 py-5 flex items-center gap-4"
+            >
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500 shadow-lg shadow-blue-200">
+                <FileText className="text-white" size={24} />
+              </span>
+              <div className="text-left">
+                <p className="text-sm font-bold text-slate-800">Import Flying Blue PDF</p>
+                <p className="text-xs text-slate-500">Upload your transaction history from flyingblue.com</p>
+              </div>
+            </button>
+          </div>
+
+          {/* Backup & Restore */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
               Backup &amp; Restore
@@ -494,6 +565,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* PDF Import Modal */}
+      <PdfImportModal
+        isOpen={showPdfImport}
+        onClose={() => setShowPdfImport(false)}
+        onImport={handlePdfImport}
+        existingFlights={data.flights}
+        existingMiles={data.baseMilesData}
+      />
     </div>
   );
 };
