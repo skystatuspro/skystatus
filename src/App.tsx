@@ -22,7 +22,8 @@ import { MileageRun } from './components/MileageRun';
 import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
-import { Loader2 } from 'lucide-react';
+import PdfImportModal from './components/PdfImportModal';
+import { Loader2, FileText, Upload } from 'lucide-react';
 
 import {
   ViewState,
@@ -73,6 +74,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>('dashboard');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
@@ -451,6 +453,27 @@ export default function App() {
       case 'addFlight':
         return (
           <div className="space-y-6">
+            {/* PDF Import suggestion banner */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-brand-50 to-blue-50 border border-brand-200 rounded-2xl p-4 md:p-5">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-brand-100 rounded-xl">
+                  <FileText className="text-brand-600" size={22} />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">Have your Flying Blue PDF?</p>
+                  <p className="text-sm text-slate-500">Import all your flights at once instead of adding them manually</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPdfImportModal(true)}
+                className="flex-shrink-0 flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+              >
+                <Upload size={16} />
+                <span className="hidden sm:inline">Import PDF</span>
+                <span className="sm:hidden">Import</span>
+              </button>
+            </div>
+            
             <FlightIntake
               onApply={handleFlightIntakeApply}
               currentStatus={currentStatus}
@@ -564,6 +587,17 @@ export default function App() {
         isOpen={showWelcome}
         onLoadDemo={handleLoadDemo}
         onStartEmpty={handleStartEmpty}
+      />
+
+      <PdfImportModal
+        isOpen={showPdfImportModal}
+        onClose={() => setShowPdfImportModal(false)}
+        onImport={(importedFlights, importedMiles) => {
+          handlePdfImport(importedFlights, importedMiles);
+          setShowPdfImportModal(false);
+        }}
+        existingFlights={flights}
+        existingMiles={baseMilesData}
       />
 
       <SettingsModal
