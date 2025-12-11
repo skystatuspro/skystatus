@@ -238,6 +238,16 @@ export default function App() {
     handleLoadDemo();
   };
 
+  const handleEnterLocalMode = () => {
+    setIsDemoMode(true); // Reuse demo mode flag to bypass login
+    setBaseMilesData([]);
+    setBaseXpData([]);
+    setRedemptions([]);
+    setFlights([]);
+    setXpRollover(0);
+    setManualLedger({});
+  };
+
   const handleExitDemoMode = () => {
     setIsDemoMode(false);
     if (user) {
@@ -288,7 +298,7 @@ export default function App() {
 
   // Not authenticated and not in demo mode - show login
   if (!user && !isDemoMode) {
-    return <LoginPage onDemoMode={handleEnterDemoMode} />;
+    return <LoginPage onDemoMode={handleEnterDemoMode} onLocalMode={handleEnterLocalMode} />;
   }
 
   // Loading user data
