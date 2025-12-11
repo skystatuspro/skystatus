@@ -242,28 +242,19 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     cycles.length > 0 ? findActiveCycleIndex(cycles) : 0
   );
 
-  // Update selectie wanneer cycles veranderen (bijv. na een actual level-up)
+  // Update selectie alleen bij ongeldige index, NIET bij data-wijzigingen
+  // Dit voorkomt dat het scherm springt tijdens het typen
   useEffect(() => {
     if (cycles.length === 0) {
       setSelectedIndex(0);
       return;
     }
     
-    // Vind de actieve cyclus
-    const activeCycleIndex = findActiveCycleIndex(cycles);
-    
-    // Als de huidige selectie een afgesloten cyclus is (actual level-up),
-    // spring naar de actieve cyclus
-    const currentCycle = cycles[selectedIndex];
-    if (currentCycle && currentCycle.endedByLevelUp && currentCycle.levelUpIsActual) {
-      // Deze cyclus is afgesloten door een actual level-up
-      // Spring naar de volgende (actieve) cyclus
-      setSelectedIndex(activeCycleIndex);
-    } else if (selectedIndex >= cycles.length) {
-      // Ongeldige index, reset naar actieve cyclus
-      setSelectedIndex(activeCycleIndex);
+    // Alleen corrigeren als de huidige index ongeldig is
+    if (selectedIndex >= cycles.length) {
+      setSelectedIndex(findActiveCycleIndex(cycles));
     }
-  }, [cycles]);
+  }, [cycles.length]);
 
   if (cycles.length === 0) {
     return null;
