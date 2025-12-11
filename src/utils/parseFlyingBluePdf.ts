@@ -140,6 +140,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
   const errors: string[] = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l);
   
+  // Debug: log line count
+  console.log(`Parser: ${lines.length} lines to process`);
+  
   // Extract header info
   let memberName: string | null = null;
   let memberNumber: string | null = null;
@@ -198,6 +201,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
   };
   
   let i = 0;
+  let tripsFound = 0;
+  let segmentsFound = 0;
+  
   while (i < lines.length) {
     const line = lines[i];
     
@@ -216,6 +222,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
       
       // === FLIGHT TRIP ===
       if (content.includes('Mijn reis naar') || content.includes('My trip to') || content.includes('Mon voyage')) {
+        tripsFound++;
+        console.log(`Parser: Found trip #${tripsFound}: "${content.substring(0, 50)}..."`);
+        
         const tripSegments: ParsedFlight[] = [];
         let tripSafXp = 0;
         let tripSafMiles = 0;
@@ -233,7 +242,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
           // Flight segment: "AMS - BER KL1775 gespaarde Miles..."
           const segMatch = subline.match(/^([A-Z]{3})\s*-\s*([A-Z]{3})\s+([A-Z]{2}\d{2,5})\s+(.+)$/);
           if (segMatch) {
+            segmentsFound++;
             const [, origin, dest, flightNum, rest] = segMatch;
+            console.log(`Parser: Found segment #${segmentsFound}: ${origin}-${dest} ${flightNum}`);
             const { miles, xp, uxp } = extractNumbers(rest);
             
             const airlineCode = flightNum.substring(0, 2);
@@ -353,6 +364,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
   
   // Convert miles map to array
   const milesArray = Array.from(milesData.values()).sort((a, b) => a.month.localeCompare(b.month));
+  
+  // Debug summary
+  console.log(`Parser summary: ${tripsFound} trips, ${flights.length} flight segments, ${milesArray.length} months of miles`);
   
   return {
     flights,
