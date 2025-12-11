@@ -61,6 +61,8 @@ export interface FlightRecord {
   earnedMiles: number;
   earnedXP: number;    // base flight XP (segment / fare)
   safXp: number;       // XP from SAF purchases linked to this flight
+  flightNumber?: string; // KL1775, AF0224, etc.
+  uxp?: number;          // Ultimate XP (only earned on KLM/AF metal)
 }
 
 // Shared status type (XP side + eventueel miles multipliers)
@@ -73,6 +75,7 @@ export interface ManualMonthXP {
   bonusSafXp: number;    // Losse SAF-aankopen, niet aan een specifieke vlucht gekoppeld
   miscXp: number;        // Status matches, challenges, compensatie, etc.
   correctionXp: number;  // + of - correcties op de maand (fallback)
+  uxp?: number;          // Ultimate XP tracking (KLM/AF metal flights only)
 }
 
 // Helper type voor de input keys in de XP Engine
