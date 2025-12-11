@@ -11,18 +11,17 @@ export interface FlightIntakePayload {
   earnedMiles: number;
   earnedXP: number;
   safXp?: number;
+  flightNumber?: string;
+  uxp?: number;
 }
 
 export const createFlightRecord = (payload: FlightIntakePayload): FlightRecord => {
-  const month = payload.date.slice(0, 7); 
-
   // FIX: Gebruik Math.random om te voorkomen dat 4 vluchten in 1 milliseconde dezelfde ID krijgen
   const uniqueId = payload.id ?? `flight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   return {
     id: uniqueId,
     date: payload.date,
-    month,
     route: payload.route,
     airline: payload.airline,
     cabin: payload.cabin,
@@ -30,6 +29,8 @@ export const createFlightRecord = (payload: FlightIntakePayload): FlightRecord =
     earnedMiles: payload.earnedMiles,
     earnedXP: payload.earnedXP,
     safXp: payload.safXp ?? 0,
+    flightNumber: payload.flightNumber,
+    uxp: payload.uxp,
   };
 };
 
