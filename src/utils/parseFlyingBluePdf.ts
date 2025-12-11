@@ -228,7 +228,19 @@ export function parseFlyingBlueText(text: string): ParseResult {
       }
       
       // === FLIGHT TRIP ===
-      if (content.includes('Mijn reis naar') || content.includes('My trip to') || content.includes('Mon voyage')) {
+      // Use regex for more flexible matching (handles non-breaking spaces, etc.)
+      const isTripLine = /Mijn\s+reis\s+naar|My\s+trip\s+to|Mon\s+voyage/i.test(content);
+      
+      // Debug: check why trips might not match
+      if (dateMatchCount <= 5) {
+        console.log(`Parser: Testing trip pattern on: "${content.substring(0, 40)}"`, {
+          hasReis: content.toLowerCase().includes('reis'),
+          matchResult: isTripLine,
+          charCodes: content.substring(0, 20).split('').map(c => c.charCodeAt(0))
+        });
+      }
+      
+      if (isTripLine) {
         tripsFound++;
         console.log(`Parser: Found trip #${tripsFound}: "${content.substring(0, 50)}..."`);
         
@@ -372,6 +384,16 @@ export function parseFlyingBlueText(text: string): ParseResult {
         if (miles < 0) {
           getOrCreateMonth(month).debit += Math.abs(miles);
         }
+      }
+      
+      // === SKIP: Flight-related lines (tracked separately in flights) ===
+      else if (/Sustainable Aviation Fuel|gespaarde Miles|reisafstand|boekingsklasse/i.test(content)) {
+        // Skip - these are part of flight transactions, not separate miles earnings
+      }
+      
+      // === SKIP: Flight segment lines that somehow got a date prefix ===
+      else if (/^[A-Z]{3}\s*-\s*[A-Z]{3}/.test(content)) {
+        // Skip - flight segment
       }
       
       // === OTHER ===
