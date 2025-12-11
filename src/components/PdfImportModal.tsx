@@ -90,44 +90,45 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     
-    let fullText = '';
+    let rawText = '';
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       
-      // Sort items by Y position (top to bottom), then X position (left to right)
+      // Just collect all text items
       const items = textContent.items as any[];
-      
-      // Group items by approximate Y position (same line)
-      let lastY: number | null = null;
-      let currentLine = '';
-      
       for (const item of items) {
-        const y = item.transform ? item.transform[5] : 0;
-        
-        // If Y position changed significantly, it's a new line
-        if (lastY !== null && Math.abs(y - lastY) > 5) {
-          if (currentLine.trim()) {
-            fullText += currentLine.trim() + '\n';
-          }
-          currentLine = '';
-        }
-        
-        currentLine += item.str + ' ';
-        lastY = y;
+        rawText += item.str + ' ';
       }
-      
-      // Don't forget the last line of the page
-      if (currentLine.trim()) {
-        fullText += currentLine.trim() + '\n';
-      }
-      fullText += '\n'; // Page break
+      rawText += '\n';
     }
     
-    // Debug: log first 2000 chars to console
-    console.log('PDF extracted text (first 2000 chars):', fullText.substring(0, 2000));
+    // Now split into logical lines using date pattern as delimiter
+    // Flying Blue dates look like: "10 dec 2025", "30 nov 2025", etc.
+    // Insert newlines before each date pattern
+    const datePattern = /(\d{1,2}\s+(?:jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)[a-z]*\s+\d{4})/gi;
     
-    return fullText;
+    let processed = rawText.replace(datePattern, '\n$1');
+    
+    // Also split on flight segment patterns: "AMS - BER KL1234"
+    const flightPattern = /([A-Z]{3}\s*-\s*[A-Z]{3}\s+[A-Z]{2}\d{2,5})/g;
+    processed = processed.replace(flightPattern, '\n$1');
+    
+    // Split on "Sustainable Aviation Fuel"
+    processed = processed.replace(/(Sustainable Aviation Fuel)/gi, '\n$1');
+    
+    // Split on common transaction types
+    processed = processed.replace(/(AMERICAN EXPRESS)/gi, '\n$1');
+    processed = processed.replace(/(Subscribe to Miles)/gi, '\n$1');
+    processed = processed.replace(/(Hotel\s*-)/gi, '\n$1');
+    processed = processed.replace(/(Winkelen\s*-)/gi, '\n$1');
+    processed = processed.replace(/(RevPoints)/gi, '\n$1');
+    processed = processed.replace(/(op\s+\d{1,2}\s+\w{3,4}\s+\d{4})/gi, '\n$1');
+    
+    // Debug: log first 3000 chars to console
+    console.log('PDF extracted text (first 3000 chars):', processed.substring(0, 3000));
+    
+    return processed;
   };
 
   const handleFile = async (file: File) => {
