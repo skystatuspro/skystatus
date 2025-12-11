@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from './lib/AuthContext';
-import { fetchAllUserData, saveFlights, saveMilesRecords, saveRedemptions, updateProfile, saveXPLedger } from './lib/dataService';
+import { fetchAllUserData, saveFlights, saveMilesRecords, saveRedemptions, updateProfile } from './lib/dataService';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { MilesEngine } from './components/MilesEngine';
@@ -67,8 +67,12 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [isLocalMode, setIsLocalMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Track if initial data load has completed (prevents reload on window focus)
+  const hasInitiallyLoaded = useRef(false);
+  // Track the user ID we loaded data for (to reload if user changes)
+  const loadedForUserId = useRef<string | null>(null);
 
   // Data State
   const now = new Date();
@@ -87,12 +91,19 @@ export default function App() {
   const [dataVersion, setDataVersion] = useState(0);
   const debouncedDataVersion = useDebounce(dataVersion, 2000); // Auto-save after 2 seconds of inactivity
 
-  // Load user data when authenticated
+  // Load user data when authenticated (only once per user session)
   useEffect(() => {
-    if (user && !isDemoMode) {
+    // Only load if:
+    // 1. We have a user
+    // 2. Not in demo mode
+    // 3. Either haven't loaded yet, or user changed
+    const shouldLoad = user && !isDemoMode && 
+      (!hasInitiallyLoaded.current || loadedForUserId.current !== user.id);
+    
+    if (shouldLoad) {
       loadUserData();
     }
-  }, [user]);
+  }, [user, isDemoMode]);
 
   // Auto-save when data changes (debounced)
   useEffect(() => {
@@ -109,35 +120,20 @@ export default function App() {
       const data = await fetchAllUserData(user.id);
       
       if (data.flights.length === 0 && data.milesData.length === 0 && data.redemptions.length === 0) {
-        // New user - just start with empty data (no welcome modal for logged-in users)
-        // They can always load demo via Settings if they want
-      }
-      // Always load whatever data we have (even if empty)
-      setFlights(data.flights);
-      setBaseMilesData(data.milesData);
-      setRedemptions(data.redemptions);
-      
-      // Load XP ledger data
-      if (data.xpLedger && Object.keys(data.xpLedger).length > 0) {
-        // Convert XPLedgerEntry format to ManualLedger format
-        const loadedLedger: ManualLedger = {};
-        Object.entries(data.xpLedger).forEach(([month, entry]) => {
-          loadedLedger[month] = {
-            amexXp: entry.amexXp,
-            bonusSafXp: entry.bonusSafXp,
-            miscXp: entry.miscXp,
-            correctionXp: entry.correctionXp,
-          };
-        });
-        setManualLedger(loadedLedger);
-      }
-      
-      if (data.profile) {
-        setTargetCPM(data.profile.targetCPM);
-        if (data.profile.xpRollover !== undefined) {
-          setXpRollover(data.profile.xpRollover);
+        // New user - show welcome
+        setShowWelcome(true);
+      } else {
+        setFlights(data.flights);
+        setBaseMilesData(data.milesData);
+        setRedemptions(data.redemptions);
+        if (data.profile) {
+          setTargetCPM(data.profile.targetCPM);
         }
       }
+      
+      // Mark as loaded to prevent reload on window focus
+      hasInitiallyLoaded.current = true;
+      loadedForUserId.current = user.id;
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
@@ -150,24 +146,11 @@ export default function App() {
     
     setIsSaving(true);
     try {
-      // Convert ManualLedger to XPLedgerEntry format for saving
-      const xpLedgerToSave: Record<string, { month: string; amexXp: number; bonusSafXp: number; miscXp: number; correctionXp: number }> = {};
-      Object.entries(manualLedger).forEach(([month, entry]) => {
-        xpLedgerToSave[month] = {
-          month,
-          amexXp: entry.amexXp,
-          bonusSafXp: entry.bonusSafXp,
-          miscXp: entry.miscXp,
-          correctionXp: entry.correctionXp,
-        };
-      });
-
       await Promise.all([
         saveFlights(user.id, flights),
         saveMilesRecords(user.id, baseMilesData),
         saveRedemptions(user.id, redemptions),
-        saveXPLedger(user.id, xpLedgerToSave),
-        updateProfile(user.id, { target_cpm: targetCPM, xp_rollover: xpRollover }),
+        updateProfile(user.id, { target_cpm: targetCPM }),
       ]);
     } catch (error) {
       console.error('Error saving user data:', error);
@@ -219,16 +202,6 @@ export default function App() {
     markDataChanged();
   };
 
-  const handleManualXPLedgerUpdate: React.Dispatch<React.SetStateAction<ManualLedger>> = (action) => {
-    setManualLedger(action);
-    markDataChanged();
-  };
-
-  const handleXPRolloverUpdate = (newRollover: number) => {
-    setXpRollover(newRollover);
-    markDataChanged();
-  };
-
   // Demo mode handlers
   const handleLoadDemo = () => {
     setBaseMilesData(INITIAL_MILES_DATA);
@@ -264,17 +237,18 @@ export default function App() {
     setXpRollover(0);
     setManualLedger({});
     setIsDemoMode(false);
-    setIsLocalMode(false);
     setIsSettingsOpen(false);
+    
+    // Reset load tracking so data can be reloaded if needed
+    hasInitiallyLoaded.current = false;
+    loadedForUserId.current = null;
     
     if (user) {
       // Clear data in database
       markDataChanged();
-      // Don't show welcome modal for logged-in users - they just get empty data
-    } else {
-      // Only show welcome for non-logged-in users
-      setShowWelcome(true);
     }
+    
+    setShowWelcome(true);
   };
 
   const handleEnterDemoMode = () => {
@@ -282,20 +256,12 @@ export default function App() {
     handleLoadDemo();
   };
 
-  const handleEnterLocalMode = () => {
-    setIsDemoMode(true); // Reuse demo mode flag to bypass login
-    setIsLocalMode(true);
-    setBaseMilesData([]);
-    setBaseXpData([]);
-    setRedemptions([]);
-    setFlights([]);
-    setXpRollover(0);
-    setManualLedger({});
-  };
-
   const handleExitDemoMode = () => {
     setIsDemoMode(false);
-    setIsLocalMode(false);
+    // Reset load tracking to allow fresh load
+    hasInitiallyLoaded.current = false;
+    loadedForUserId.current = null;
+    
     if (user) {
       loadUserData();
     } else {
@@ -344,7 +310,7 @@ export default function App() {
 
   // Not authenticated and not in demo mode - show login
   if (!user && !isDemoMode) {
-    return <LoginPage onDemoMode={handleEnterDemoMode} onLocalMode={handleEnterLocalMode} />;
+    return <LoginPage onDemoMode={handleEnterDemoMode} />;
   }
 
   // Loading user data
@@ -420,11 +386,11 @@ export default function App() {
             baseData={baseXpData}
             onUpdate={setBaseXpData}
             rollover={xpRollover}
-            onUpdateRollover={handleXPRolloverUpdate}
+            onUpdateRollover={setXpRollover}
             flights={flights}
             onUpdateFlights={handleFlightsUpdate}
             manualLedger={manualLedger}
-            onUpdateManualLedger={handleManualXPLedgerUpdate}
+            onUpdateManualLedger={setManualLedger}
           />
         );
       case 'redemption':
@@ -476,7 +442,6 @@ export default function App() {
         onNavigate={setView}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isDemoMode={isDemoMode}
-        isLocalMode={isLocalMode}
       >
         {/* Saving indicator */}
         {isSaving && (
@@ -520,7 +485,6 @@ export default function App() {
         onLoadDemo={handleLoadDemo}
         onStartOver={handleStartOver}
         isDemoMode={isDemoMode}
-        isLocalMode={isLocalMode}
         onExitDemo={handleExitDemoMode}
         isLoggedIn={!!user}
       />
