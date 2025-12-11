@@ -26,8 +26,8 @@ import {
 } from '../utils/parseFlyingBluePdf';
 import { FlightRecord, MilesRecord } from '../types';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up PDF.js worker - use unpkg which has all npm versions
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface PdfImportModalProps {
   isOpen: boolean;
