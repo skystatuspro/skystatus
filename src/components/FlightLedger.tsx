@@ -138,6 +138,7 @@ const EditFlightModal: React.FC<EditFlightModalProps> = ({ flight, onSave, onClo
     earnedMiles: flight.earnedMiles,
     earnedXP: flight.earnedXP,
     safXp: flight.safXp,
+    flightNumber: flight.flightNumber || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -152,6 +153,7 @@ const EditFlightModal: React.FC<EditFlightModalProps> = ({ flight, onSave, onClo
       earnedMiles: formData.earnedMiles,
       earnedXP: formData.earnedXP,
       safXp: formData.safXp,
+      flightNumber: formData.flightNumber || undefined,
     });
   };
 
@@ -222,8 +224,8 @@ const EditFlightModal: React.FC<EditFlightModalProps> = ({ flight, onSave, onClo
             </div>
           </div>
 
-          {/* Airline & Cabin */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Airline, Flight# & Cabin */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className={labelClass}>Airline</label>
               <input
@@ -233,6 +235,17 @@ const EditFlightModal: React.FC<EditFlightModalProps> = ({ flight, onSave, onClo
                 className={`${inputClass} uppercase`}
                 placeholder="KLM"
                 required
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Flight #</label>
+              <input
+                type="text"
+                value={formData.flightNumber}
+                onChange={(e) => setFormData({ ...formData, flightNumber: e.target.value.toUpperCase() })}
+                className={`${inputClass} uppercase font-mono`}
+                placeholder="KL1775"
+                maxLength={10}
               />
             </div>
             <div>
@@ -587,7 +600,14 @@ export const FlightLedger: React.FC<FlightLedgerProps> = ({
                               {f.date}
                             </td>
                             <td className={`px-4 py-2.5 font-bold text-xs ${isScheduled ? 'text-slate-500' : 'text-slate-800'}`}>
-                              {f.route}
+                              <div className="flex items-center gap-2">
+                                <span>{f.route}</span>
+                                {f.flightNumber && (
+                                  <span className="font-mono text-[10px] text-slate-400 font-normal">
+                                    {f.flightNumber}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             
                             {/* Airline Logo */}

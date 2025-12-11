@@ -130,6 +130,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     ticketPrice: 0,
     earnedMiles: 0,
     safXp: 0,
+    flightNumber: '',
   });
 
   const [isReturn, setIsReturn] = useState(false);
@@ -319,7 +320,9 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         ticketPrice: seg.allocatedPrice,
         earnedMiles: form.earnedMiles > 0 ? seg.allocatedMiles : 0, 
         earnedXP: seg.xp,
-        safXp: index === 0 ? form.safXp : 0, 
+        safXp: index === 0 ? form.safXp : 0,
+        // flightNumber only for single-segment flights (multi-segment has multiple flight numbers)
+        flightNumber: segments.length === 1 ? form.flightNumber : undefined,
     }));
 
     onApply(payloads);
@@ -329,7 +332,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 2500);
 
-    setForm(prev => ({ ...prev, route: '', ticketPrice: 0, earnedMiles: 0, safXp: 0 }));
+    setForm(prev => ({ ...prev, route: '', ticketPrice: 0, earnedMiles: 0, safXp: 0, flightNumber: '' }));
     // Keep airline for quick successive entries
     setSegments([]);
     setSubmitting(false);
@@ -407,7 +410,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
           
           {/* Row 1: Date & Route */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <InputGroup label="Date" icon={Calendar} tooltip="Date of the first flight segment.">
                 <input
                   type="date"
@@ -418,7 +421,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
               </InputGroup>
             </div>
 
-            <div className="md:col-span-5">
+            <div className="md:col-span-4">
               <div className="flex justify-between items-center mb-1.5">
                   <div className="flex items-center gap-1.5">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
@@ -597,6 +600,20 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Flight Number */}
+            <div className="md:col-span-2">
+              <InputGroup label="Flight #" icon={Plane} tooltip="Flight number (e.g. KL1775). Optional but useful for tracking.">
+                <input
+                  type="text"
+                  placeholder="KL1775"
+                  value={form.flightNumber}
+                  onChange={e => handleChange('flightNumber', e.target.value.toUpperCase())}
+                  className={`${inputBase} uppercase tracking-wider font-mono text-slate-600`}
+                  maxLength={10}
+                />
+              </InputGroup>
             </div>
           </div>
 
