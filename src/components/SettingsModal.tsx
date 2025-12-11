@@ -117,6 +117,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         return [...existing, ...newItems];
       };
 
+      // Helper: merge miles records by month (replaces existing months with incoming data)
+      const mergeMilesRecords = (existing: MilesRecord[], incoming: MilesRecord[]): MilesRecord[] => {
+        const result = [...existing];
+        const existingMonthIndex = new Map(existing.map((r, i) => [r.month, i]));
+        
+        for (const incomingRecord of incoming) {
+          const existingIndex = existingMonthIndex.get(incomingRecord.month);
+          if (existingIndex !== undefined) {
+            // Replace existing month with incoming data
+            result[existingIndex] = { ...result[existingIndex], ...incomingRecord, id: result[existingIndex].id };
+          } else {
+            // New month - add it
+            result.push(incomingRecord);
+          }
+        }
+        return result;
+      };
+
       // Helper: merge arrays by unique key (for flights: date + route)
       const mergeFlights = (existing: FlightRecord[], incoming: FlightRecord[]): FlightRecord[] => {
         const existingKeys = new Set(existing.map(f => `${f.date}-${f.route}`));
@@ -147,11 +165,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         manualLedger: 0,
       };
 
-      // Merge baseMilesData
+      // Merge baseMilesData (by month - replaces existing months)
       if (parsed.baseMilesData?.length) {
-        const merged = mergeById(data.baseMilesData, parsed.baseMilesData);
-        addedCount.miles = merged.length - data.baseMilesData.length;
-        if (addedCount.miles > 0) setters.setBaseMilesData(merged);
+        const merged = mergeMilesRecords(data.baseMilesData, parsed.baseMilesData);
+        const newCount = merged.length - data.baseMilesData.length;
+        const updatedCount = parsed.baseMilesData.filter((r: MilesRecord) => 
+          data.baseMilesData.some(e => e.month === r.month)
+        ).length;
+        addedCount.miles = newCount;
+        if (newCount > 0 || updatedCount > 0) {
+          setters.setBaseMilesData(merged);
+          if (updatedCount > 0 && newCount === 0) {
+            addedCount.miles = -updatedCount; // Signal that we updated, not added
+          }
+        }
       }
 
       // Merge baseXpData
@@ -185,16 +212,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       // Build summary message
       const additions = [];
+      const updates = [];
+      
       if (addedCount.miles > 0) additions.push(`${addedCount.miles} miles entries`);
+      if (addedCount.miles < 0) updates.push(`${Math.abs(addedCount.miles)} miles entries`);
       if (addedCount.xp > 0) additions.push(`${addedCount.xp} XP entries`);
       if (addedCount.redemptions > 0) additions.push(`${addedCount.redemptions} redemptions`);
       if (addedCount.flights > 0) additions.push(`${addedCount.flights} flights`);
       if (addedCount.manualLedger > 0) additions.push(`${addedCount.manualLedger} manual ledger months`);
 
-      if (additions.length > 0) {
+      const hasChanges = additions.length > 0 || updates.length > 0;
+      
+      if (hasChanges) {
         // Trigger auto-save
         if (markDataChanged) markDataChanged();
-        alert(`Import completed!\n\nAdded: ${additions.join(', ')}\n\nExisting data was preserved.`);
+        
+        let message = 'Import completed!\n\n';
+        if (additions.length > 0) message += `Added: ${additions.join(', ')}\n`;
+        if (updates.length > 0) message += `Updated: ${updates.join(', ')}\n`;
+        message += '\nExisting data was preserved.';
+        alert(message);
       } else {
         alert('Import completed. No new data to add — all entries already exist.');
       }
