@@ -104,20 +104,96 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const text = await file.text();
       const parsed = JSON.parse(text);
 
-      if (parsed.baseMilesData) setters.setBaseMilesData(parsed.baseMilesData);
-      if (parsed.baseXpData) setters.setBaseXpData(parsed.baseXpData);
-      if (parsed.redemptions) setters.setRedemptions(parsed.redemptions);
-      if (parsed.flights) setters.setFlights(parsed.flights);
-      if (typeof parsed.xpRollover === 'number')
-        setters.setXpRollover(parsed.xpRollover);
-      if (typeof parsed.currentMonth === 'string')
-        setters.setCurrentMonth(parsed.currentMonth);
-      if (typeof parsed.targetCPM === 'number')
-        setters.setTargetCPM(parsed.targetCPM);
-      if (parsed.manualLedger)
-        setters.setManualLedger(parsed.manualLedger);
+      // Helper: merge arrays by ID (existing data is kept, only new entries added)
+      const mergeById = <T extends { id?: string }>(
+        existing: T[],
+        incoming: T[],
+        idField: keyof T = 'id' as keyof T
+      ): T[] => {
+        const existingIds = new Set(existing.map(item => item[idField]));
+        const newItems = incoming.filter(item => !existingIds.has(item[idField]));
+        return [...existing, ...newItems];
+      };
 
-      alert('Import completed successfully.');
+      // Helper: merge arrays by unique key (for flights: date + route)
+      const mergeFlights = (existing: FlightRecord[], incoming: FlightRecord[]): FlightRecord[] => {
+        const existingKeys = new Set(existing.map(f => `${f.date}-${f.route}`));
+        const newFlights = incoming.filter(f => !existingKeys.has(`${f.date}-${f.route}`));
+        return [...existing, ...newFlights];
+      };
+
+      // Helper: merge manualLedger (existing months are kept, only new months added)
+      const mergeManualLedger = (
+        existing: ManualLedger,
+        incoming: ManualLedger
+      ): ManualLedger => {
+        const merged = { ...existing };
+        for (const month of Object.keys(incoming)) {
+          if (!merged[month]) {
+            merged[month] = incoming[month];
+          }
+        }
+        return merged;
+      };
+
+      // Track what was added
+      let addedCount = {
+        miles: 0,
+        xp: 0,
+        redemptions: 0,
+        flights: 0,
+        manualLedger: 0,
+      };
+
+      // Merge baseMilesData
+      if (parsed.baseMilesData?.length) {
+        const merged = mergeById(data.baseMilesData, parsed.baseMilesData);
+        addedCount.miles = merged.length - data.baseMilesData.length;
+        if (addedCount.miles > 0) setters.setBaseMilesData(merged);
+      }
+
+      // Merge baseXpData
+      if (parsed.baseXpData?.length) {
+        const merged = mergeById(data.baseXpData, parsed.baseXpData);
+        addedCount.xp = merged.length - data.baseXpData.length;
+        if (addedCount.xp > 0) setters.setBaseXpData(merged);
+      }
+
+      // Merge redemptions
+      if (parsed.redemptions?.length) {
+        const merged = mergeById(data.redemptions, parsed.redemptions);
+        addedCount.redemptions = merged.length - data.redemptions.length;
+        if (addedCount.redemptions > 0) setters.setRedemptions(merged);
+      }
+
+      // Merge flights (by date + route combination)
+      if (parsed.flights?.length) {
+        const merged = mergeFlights(data.flights, parsed.flights);
+        addedCount.flights = merged.length - data.flights.length;
+        if (addedCount.flights > 0) setters.setFlights(merged);
+      }
+
+      // Merge manualLedger
+      if (parsed.manualLedger) {
+        const existingMonths = Object.keys(data.manualLedger || {}).length;
+        const merged = mergeManualLedger(data.manualLedger || {}, parsed.manualLedger);
+        addedCount.manualLedger = Object.keys(merged).length - existingMonths;
+        if (addedCount.manualLedger > 0) setters.setManualLedger(merged);
+      }
+
+      // Build summary message
+      const additions = [];
+      if (addedCount.miles > 0) additions.push(`${addedCount.miles} miles entries`);
+      if (addedCount.xp > 0) additions.push(`${addedCount.xp} XP entries`);
+      if (addedCount.redemptions > 0) additions.push(`${addedCount.redemptions} redemptions`);
+      if (addedCount.flights > 0) additions.push(`${addedCount.flights} flights`);
+      if (addedCount.manualLedger > 0) additions.push(`${addedCount.manualLedger} manual ledger months`);
+
+      if (additions.length > 0) {
+        alert(`Import completed!\n\nAdded: ${additions.join(', ')}\n\nExisting data was preserved.`);
+      } else {
+        alert('Import completed. No new data to add — all entries already exist.');
+      }
     } catch (e) {
       console.error('Import failed', e);
       alert('Import failed. Make sure you selected a valid SkyStatus JSON file.');
