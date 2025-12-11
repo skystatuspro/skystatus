@@ -125,9 +125,6 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     processed = processed.replace(/(RevPoints)/gi, '\n$1');
     processed = processed.replace(/(op\s+\d{1,2}\s+\w{3,4}\s+\d{4})/gi, '\n$1');
     
-    // Debug: log first 3000 chars to console
-    console.log('PDF extracted text (first 3000 chars):', processed.substring(0, 3000));
-    
     return processed;
   };
 
