@@ -621,6 +621,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onPdfImport,
 }) => {
   const [showPdfImport, setShowPdfImport] = useState(false);
+  const [skipWelcome, setSkipWelcome] = useState(false);
   
   const milesStats = useMemo(
     () =>
@@ -697,8 +698,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Check if user has no flight data - show onboarding
   const hasNoFlights = state.flights.length === 0;
 
-  // Empty state for new users
-  if (hasNoFlights && onPdfImport) {
+  // Empty state for new users (can be skipped)
+  if (hasNoFlights && onPdfImport && !skipWelcome) {
     return (
       <div className="space-y-8 animate-in fade-in duration-500 pb-12">
         {/* Header */}
@@ -783,6 +784,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span>Select <strong>"All time"</strong> and download as PDF</span>
             </li>
           </ol>
+        </div>
+
+        {/* Skip option */}
+        <div className="text-center">
+          <button
+            onClick={() => setSkipWelcome(true)}
+            className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            Skip for now — view empty dashboard →
+          </button>
         </div>
 
         {/* PDF Import Modal */}
