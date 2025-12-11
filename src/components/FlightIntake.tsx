@@ -257,10 +257,12 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
 
     const calculatedSegments: DetectedSegment[] = rawSegments.map(seg => {
         const weight = totalDist > 0 ? seg.distance / totalDist : 0;
+        // Use calculatedMiles directly (not form.earnedMiles which may be stale due to async setState)
+        const milesForCalc = calculatedMiles > 0 ? calculatedMiles : form.earnedMiles;
         return {
             ...seg,
             allocatedPrice: form.ticketPrice * weight,
-            allocatedMiles: form.earnedMiles > 0 ? Math.round(form.earnedMiles * weight) : Math.round(seg.distance) 
+            allocatedMiles: milesForCalc > 0 ? Math.round(milesForCalc * weight) : Math.round(seg.distance) 
         };
     });
 
