@@ -3,13 +3,15 @@ import { MilesRecord } from '../types';
 import { formatCurrency, formatNumber } from '../utils/format';
 import { 
   Trash2, 
-  Filter, 
+  Pencil, 
   Save, 
   X, 
   ChevronDown, 
   ChevronRight,
   TrendingUp,
-  Plus
+  Plus,
+  Calendar,
+  Wallet
 } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
@@ -188,7 +190,7 @@ const LedgerRow = ({
       )}
       <td className={`px-3 ${rowPadding} text-center`}>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-1">
-          <button onClick={onStartEdit} className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-blue-600 transition-colors"><Filter size={12} /></button>
+          <button onClick={onStartEdit} className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-blue-600 transition-colors"><Pencil size={12} /></button>
           <button onClick={onDelete} className="p-1 hover:bg-white rounded-md text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
         </div>
       </td>
@@ -212,6 +214,11 @@ export const SharedLedger: React.FC<SharedLedgerProps> = ({
   const [editForm, setEditForm] = useState<Partial<MilesRecord>>({});
   const [showEarlierMonths, setShowEarlierMonths] = useState(false);
   const [showProjectedMonths, setShowProjectedMonths] = useState(false);
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(() => {
+    // Default: expand all years
+    const years = new Set(data.map(r => r.month.slice(0, 4)));
+    return years;
+  });
 
   const isCompact = variant === 'compact';
   const showBalance = variant === 'full';
@@ -331,112 +338,237 @@ export const SharedLedger: React.FC<SharedLedgerProps> = ({
     setEditingId(null); 
   };
 
-  // For compact variant, show simple list (no collapsing)
+  // For compact variant, show simple list with year grouping
   if (isCompact) {
     const sortedData = [...ledgerData.allRows].sort((a, b) => b.month.localeCompare(a.month));
     
+    // Group by year
+    const groupedByYear = sortedData.reduce((acc, row) => {
+      const year = row.month.slice(0, 4);
+      if (!acc[year]) acc[year] = [];
+      acc[year].push(row);
+      return acc;
+    }, {} as Record<string, typeof sortedData>);
+
+    const years = Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a));
+    
+    // Calculate totals per year
+    const yearTotals = years.reduce((acc, year) => {
+      const rows = groupedByYear[year];
+      acc[year] = {
+        earned: rows.reduce((sum, r) => sum + r.miles_subscription + r.miles_amex + r.miles_flight + r.miles_other, 0),
+        debit: rows.reduce((sum, r) => sum + r.miles_debit, 0),
+        cost: rows.reduce((sum, r) => sum + r.totalCost, 0),
+      };
+      return acc;
+    }, {} as Record<string, { earned: number; debit: number; cost: number }>);
+
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50/30">
-          <div className="bg-indigo-50 p-2 rounded-xl text-indigo-600">
-            <Filter size={18} />
+      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Wallet size={18} className="text-slate-400" />
+              <h3 className="font-bold text-slate-800">{title}</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">
+                {sortedData.length} months
+              </span>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
-            <p className="text-[11px] text-slate-500">{subtitle}</p>
-          </div>
+          
+          {/* Expand/Collapse buttons */}
+          {years.length > 1 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setExpandedYears(new Set(years))}
+                className="text-[10px] font-semibold px-2 py-1 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Expand all
+              </button>
+              <span className="text-slate-300">|</span>
+              <button
+                onClick={() => setExpandedYears(new Set())}
+                className="text-[10px] font-semibold px-2 py-1 rounded text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                Collapse all
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-slate-50 text-slate-400 font-bold text-[9px] uppercase tracking-wider border-b border-slate-100 sticky top-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-slate-400 font-bold text-[9px] uppercase tracking-wider border-b border-slate-100">
               <tr>
-                <th className="px-3 py-2.5 w-28">Month</th>
-                <th className="px-3 py-2.5 text-right text-indigo-600/80">Sub</th>
-                <th className="px-3 py-2.5 text-right text-blue-600/80">Amex</th>
-                <th className="px-3 py-2.5 text-right">Flights</th>
-                <th className="px-3 py-2.5 text-right">Other</th>
-                <th className="px-3 py-2.5 text-right text-red-400">Debit</th>
-                <th className="px-3 py-2.5 text-right">Cost</th>
-                <th className="px-3 py-2.5 w-16 text-center">Action</th>
+                <th className="px-4 py-3 w-28">Month</th>
+                <th className="px-4 py-3 text-right">Sub</th>
+                <th className="px-4 py-3 text-right">Amex</th>
+                <th className="px-4 py-3 text-right">Flights</th>
+                <th className="px-4 py-3 text-right">Other</th>
+                <th className="px-4 py-3 text-right text-red-400">Debit</th>
+                <th className="px-4 py-3 text-right">Cost</th>
+                <th className="px-4 py-3 w-20"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {sortedData.map((row) => {
-                const isEditing = editingId === row.id;
-                const isCurrent = row.month === effectiveCurrentMonth;
-                const isProjected = row.month > effectiveCurrentMonth;
-
-                if (isEditing) {
-                  return (
-                    <tr key={row.id} className="bg-blue-50/50">
-                      <td className="px-3 py-2">
-                        <span className="font-mono text-[11px] font-bold text-slate-700">{row.month}</span>
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input type="number" className={`w-full p-1 border rounded text-[11px] text-right ${noSpinnerClass}`} value={editForm.miles_subscription} onChange={e => setEditForm({...editForm, miles_subscription: Number(e.target.value)})} />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input type="number" className={`w-full p-1 border rounded text-[11px] text-right ${noSpinnerClass}`} value={editForm.miles_amex} onChange={e => setEditForm({...editForm, miles_amex: Number(e.target.value)})} />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input type="number" className={`w-full p-1 border rounded text-[11px] text-right bg-slate-50 text-slate-400 ${noSpinnerClass}`} value={editForm.miles_flight} disabled />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input type="number" className={`w-full p-1 border rounded text-[11px] text-right ${noSpinnerClass}`} value={editForm.miles_other} onChange={e => setEditForm({...editForm, miles_other: Number(e.target.value)})} />
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <input type="number" className={`w-full p-1 border border-red-200 rounded text-[11px] text-right text-red-600 ${noSpinnerClass}`} value={editForm.miles_debit} onChange={e => setEditForm({...editForm, miles_debit: Number(e.target.value)})} />
-                      </td>
-                      <td className="px-3 py-2 text-[10px] text-slate-400 text-right">Auto</td>
-                      <td className="px-2 py-1.5 text-center">
-                        <div className="flex justify-center gap-1">
-                          <button onClick={saveEdit} className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"><Save size={12} /></button>
-                          <button onClick={cancelEdit} className="p-1 text-slate-400 hover:bg-slate-100 rounded"><X size={12} /></button>
+              {years.map((year) => {
+                const yearRows = groupedByYear[year];
+                const isExpanded = expandedYears.has(year);
+                const totals = yearTotals[year];
+                
+                return (
+                  <React.Fragment key={year}>
+                    {/* Year Header */}
+                    <tr 
+                      className="bg-slate-100/80 cursor-pointer hover:bg-slate-100 transition-colors border-y border-slate-200"
+                      onClick={() => {
+                        setExpandedYears(prev => {
+                          const next = new Set(prev);
+                          if (next.has(year)) next.delete(year);
+                          else next.add(year);
+                          return next;
+                        });
+                      }}
+                    >
+                      <td colSpan={8} className="px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown size={16} className="text-slate-400" />
+                              ) : (
+                                <ChevronRight size={16} className="text-slate-400" />
+                              )}
+                              <Calendar size={14} className="text-slate-400" />
+                              <span className="font-bold text-slate-700">{year}</span>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
+                              {yearRows.length} months
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-xs">
+                            <div className="text-right">
+                              <span className="text-slate-400 mr-1">Earned:</span>
+                              <span className="font-bold text-emerald-600">+{formatNumber(totals.earned)}</span>
+                            </div>
+                            {totals.debit > 0 && (
+                              <div className="text-right">
+                                <span className="text-slate-400 mr-1">Spent:</span>
+                                <span className="font-bold text-red-500">-{formatNumber(totals.debit)}</span>
+                              </div>
+                            )}
+                            <div className="text-right">
+                              <span className="text-slate-400 mr-1">Cost:</span>
+                              <span className="font-bold text-slate-600">{formatCurrency(totals.cost)}</span>
+                            </div>
+                          </div>
                         </div>
                       </td>
                     </tr>
-                  );
-                }
+                    
+                    {/* Month rows */}
+                    {isExpanded && yearRows.map((row) => {
+                      const isEditing = editingId === row.id;
+                      const isCurrent = row.month === effectiveCurrentMonth;
+                      const isProjected = row.month > effectiveCurrentMonth;
+                      const monthName = new Date(row.month + '-01').toLocaleDateString('en-US', { month: 'short' });
 
-                return (
-                  <tr key={row.id} className={`group hover:bg-slate-50 transition-colors ${isCurrent ? 'bg-blue-50/30' : ''}`}>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`font-mono text-[11px] ${isProjected ? 'text-slate-400' : 'font-medium text-slate-700'}`}>{row.month}</span>
-                        {isCurrent && <span className="px-1 py-0.5 bg-blue-500 text-white text-[7px] font-bold uppercase rounded">Now</span>}
-                        {isProjected && <span className="px-1 py-0.5 bg-slate-200 text-slate-500 text-[7px] font-bold uppercase rounded">Proj</span>}
-                      </div>
-                    </td>
-                    <td className={`px-3 py-2 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400 italic' : 'text-indigo-600/80'}`}>
-                      {row.miles_subscription > 0 ? formatNumber(row.miles_subscription) : <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className={`px-3 py-2 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400 italic' : 'text-blue-600/80'}`}>
-                      {row.miles_amex > 0 ? formatNumber(row.miles_amex) : <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className={`px-3 py-2 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400 italic' : 'text-slate-600'}`}>
-                      {row.miles_flight > 0 ? formatNumber(row.miles_flight) : <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className={`px-3 py-2 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400 italic' : 'text-slate-600'}`}>
-                      {row.miles_other > 0 ? formatNumber(row.miles_other) : <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-[11px]">
-                      {row.miles_debit > 0 ? (
-                        <span className="text-red-500 font-medium">-{formatNumber(row.miles_debit)}</span>
-                      ) : (
-                        <span className="text-slate-300">-</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-[10px] text-slate-500">
-                      {formatCurrency(row.totalCost)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex justify-center gap-1">
-                        <button onClick={() => startEdit(row)} className="p-1 hover:bg-white rounded text-slate-400 hover:text-blue-600"><Filter size={11} /></button>
-                        <button onClick={() => handleDelete(row.id)} className="p-1 hover:bg-white rounded text-slate-400 hover:text-red-600"><Trash2 size={11} /></button>
-                      </div>
-                    </td>
-                  </tr>
+                      if (isEditing) {
+                        return (
+                          <tr key={row.id} className="bg-blue-50/50">
+                            <td className="px-4 py-2.5">
+                              <span className="font-mono text-[11px] font-bold text-slate-700">{monthName}</span>
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <input type="number" className={`w-full p-1.5 border border-slate-200 rounded-lg text-[11px] text-right focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`} value={editForm.miles_subscription} onChange={e => setEditForm({...editForm, miles_subscription: Number(e.target.value)})} />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <input type="number" className={`w-full p-1.5 border border-slate-200 rounded-lg text-[11px] text-right focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`} value={editForm.miles_amex} onChange={e => setEditForm({...editForm, miles_amex: Number(e.target.value)})} />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <input type="number" className={`w-full p-1.5 border border-slate-200 rounded-lg text-[11px] text-right bg-slate-50 text-slate-400 ${noSpinnerClass}`} value={editForm.miles_flight} disabled title="Managed via flights" />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <input type="number" className={`w-full p-1.5 border border-slate-200 rounded-lg text-[11px] text-right focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 ${noSpinnerClass}`} value={editForm.miles_other} onChange={e => setEditForm({...editForm, miles_other: Number(e.target.value)})} />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <input type="number" className={`w-full p-1.5 border border-red-200 rounded-lg text-[11px] text-right text-red-600 focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 ${noSpinnerClass}`} value={editForm.miles_debit} onChange={e => setEditForm({...editForm, miles_debit: Number(e.target.value)})} />
+                            </td>
+                            <td className="px-4 py-2.5 text-[10px] text-slate-400 text-right">Auto</td>
+                            <td className="px-4 py-2.5 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={saveEdit} className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"><Save size={12} /></button>
+                                <button onClick={cancelEdit} className="p-1.5 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"><X size={12} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr key={row.id} className={`transition-colors group ${isProjected ? 'bg-blue-50/20' : 'hover:bg-slate-50/50'} ${isCurrent ? 'bg-gradient-to-r from-blue-50/80 to-transparent' : ''}`}>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-medium text-xs ${isProjected ? 'text-slate-400' : 'text-slate-700'}`}>{monthName}</span>
+                              {isCurrent && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-500 text-white text-[8px] font-bold uppercase">
+                                  Now
+                                </span>
+                              )}
+                              {isProjected && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-200 text-slate-500 text-[8px] font-bold uppercase">
+                                  Proj
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className={`px-4 py-2.5 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400' : 'text-indigo-600'}`}>
+                            {row.miles_subscription > 0 ? formatNumber(row.miles_subscription) : <span className="text-slate-300">-</span>}
+                          </td>
+                          <td className={`px-4 py-2.5 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400' : 'text-blue-600'}`}>
+                            {row.miles_amex > 0 ? formatNumber(row.miles_amex) : <span className="text-slate-300">-</span>}
+                          </td>
+                          <td className={`px-4 py-2.5 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400' : 'text-slate-600'}`}>
+                            {row.miles_flight > 0 ? formatNumber(row.miles_flight) : <span className="text-slate-300">-</span>}
+                          </td>
+                          <td className={`px-4 py-2.5 text-right font-mono text-[11px] ${isProjected ? 'text-slate-400' : 'text-slate-600'}`}>
+                            {row.miles_other > 0 ? formatNumber(row.miles_other) : <span className="text-slate-300">-</span>}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-mono text-[11px]">
+                            {row.miles_debit > 0 ? (
+                              <span className="text-red-500 font-medium">-{formatNumber(row.miles_debit)}</span>
+                            ) : (
+                              <span className="text-slate-300">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-mono text-[10px] text-slate-500">
+                            {row.totalCost > 0 ? formatCurrency(row.totalCost) : <span className="text-slate-300">€NaN</span>}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => startEdit(row)}
+                                className="p-1 rounded-lg text-slate-300 hover:text-blue-600 hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Edit entry"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(row.id)}
+                                className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Delete entry"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
                 );
               })}
             </tbody>
