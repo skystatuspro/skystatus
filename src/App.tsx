@@ -259,6 +259,39 @@ export default function App() {
     markDataChanged();
   };
 
+  // PDF import handler for Dashboard empty state
+  const handlePdfImport = (importedFlights: FlightRecord[], importedMiles: MilesRecord[]) => {
+    // Merge flights (skip duplicates by date + route)
+    const existingFlightKeys = new Set(flights.map(f => `${f.date}-${f.route}`));
+    const newFlights = importedFlights.filter(f => !existingFlightKeys.has(`${f.date}-${f.route}`));
+    if (newFlights.length > 0) {
+      setFlights(prev => [...prev, ...newFlights]);
+    }
+
+    // Merge miles (update existing months, add new)
+    const existingMonths = new Set(baseMilesData.map(m => m.month));
+    const updatedMiles = [...baseMilesData];
+    
+    for (const incoming of importedMiles) {
+      const existingIndex = updatedMiles.findIndex(m => m.month === incoming.month);
+      if (existingIndex >= 0) {
+        // Update existing month
+        updatedMiles[existingIndex] = incoming;
+      } else {
+        // Add new month
+        updatedMiles.push(incoming);
+      }
+    }
+    
+    setBaseMilesData(updatedMiles);
+    markDataChanged();
+
+    // Show success message
+    const flightCount = newFlights.length;
+    const milesCount = importedMiles.length;
+    alert(`Successfully imported ${flightCount} flights and ${milesCount} months of miles data!`);
+  };
+
   // Demo mode handlers
   const handleLoadDemo = () => {
     setBaseMilesData(INITIAL_MILES_DATA);
@@ -412,6 +445,7 @@ export default function App() {
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={setCurrentMonth}
+            onPdfImport={handlePdfImport}
           />
         );
       case 'addFlight':
@@ -500,6 +534,7 @@ export default function App() {
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={setCurrentMonth}
+            onPdfImport={handlePdfImport}
           />
         );
     }
