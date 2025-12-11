@@ -140,9 +140,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
   const errors: string[] = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l);
   
-  // Debug: log line count
-  console.log(`Parser: ${lines.length} lines to process`);
-  
   // Extract header info
   let memberName: string | null = null;
   let memberNumber: string | null = null;
@@ -201,9 +198,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
   };
   
   let i = 0;
-  let tripsFound = 0;
-  let segmentsFound = 0;
-  let dateMatchCount = 0;
   
   while (i < lines.length) {
     const line = lines[i];
@@ -212,15 +206,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
     const dateMatch = line.match(/^(\d{1,2}\s+\w{3,4}\s+\d{4})\s+(.+)$/);
     
     if (dateMatch) {
-      dateMatchCount++;
       const transDate = parseDate(dateMatch[1]);
       const content = dateMatch[2];
       const month = transDate?.substring(0, 7);
-      
-      // Debug: log first 10 date matches
-      if (dateMatchCount <= 10) {
-        console.log(`Parser: Date match #${dateMatchCount}: "${dateMatch[1]}" -> content: "${content.substring(0, 40)}..."`);
-      }
       
       if (!transDate || !month) {
         i++;
@@ -231,18 +219,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
       // Use regex for more flexible matching (handles non-breaking spaces, etc.)
       const isTripLine = /Mijn\s+reis\s+naar|My\s+trip\s+to|Mon\s+voyage/i.test(content);
       
-      // Debug: check why trips might not match
-      if (dateMatchCount <= 5) {
-        console.log(`Parser: Testing trip pattern on: "${content.substring(0, 40)}"`, {
-          hasReis: content.toLowerCase().includes('reis'),
-          matchResult: isTripLine,
-          charCodes: content.substring(0, 20).split('').map(c => c.charCodeAt(0))
-        });
-      }
-      
       if (isTripLine) {
-        tripsFound++;
-        console.log(`Parser: Found trip #${tripsFound}: "${content.substring(0, 50)}..."`);
         
         const tripSegments: ParsedFlight[] = [];
         let tripSafXp = 0;
@@ -258,7 +235,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
             const { miles, xp } = extractNumbers(subline);
             tripSafXp += xp;
             tripSafMiles += miles;
-            console.log(`Parser: Found SAF in trip: ${miles} miles, ${xp} XP`);
             j++;
             continue;
           }
@@ -276,9 +252,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
           // Handle both regular hyphen (-) and en-dash (–)
           const segMatch = subline.match(/^([A-Z]{3})\s*[-–]\s*([A-Z]{3})\s+([A-Z]{2}\d{2,5})\s+(.+)$/);
           if (segMatch) {
-            segmentsFound++;
             const [, origin, dest, flightNum, rest] = segMatch;
-            console.log(`Parser: Found segment #${segmentsFound}: ${origin}-${dest} ${flightNum}`);
             
             // Try to extract numbers from this line first
             let { miles, xp, uxp } = extractNumbers(rest);
@@ -298,7 +272,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
                   miles = extracted.miles;
                   xp = extracted.xp;
                   uxp = extracted.uxp;
-                  console.log(`Parser: Found miles/XP on line ${k}: ${miles} miles, ${xp} XP`);
                   break;
                 }
               }
@@ -339,7 +312,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
           // Flight segment pattern 2: "KEF – AMS TRANSAVIA HOLLAND" (partner without flight number)
           const partnerMatch = subline.match(/^([A-Z]{3})\s*[-–]\s*([A-Z]{3})\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–])?\s*gespaarde/i);
           if (partnerMatch) {
-            segmentsFound++;
             const [, origin, dest, airlineName] = partnerMatch;
             
             // Generate a pseudo flight number from airline name
@@ -348,8 +320,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
                          airlineClean.includes('DELTA') ? 'DL' : 
                          airlineClean.includes('SAS') ? 'SK' : airlineClean.substring(0, 2);
             const pseudoFlightNum = `${airline}0000`;
-            
-            console.log(`Parser: Found partner segment #${segmentsFound}: ${origin}-${dest} (${airlineClean})`);
             
             // Extract miles from this line or look ahead
             let { miles, xp, uxp } = extractNumbers(subline);
@@ -401,7 +371,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
         if (tripSegments.length > 0 && (tripSafXp > 0 || tripSafMiles > 0)) {
           tripSegments[0].safXp = tripSafXp;
           tripSegments[0].safMiles = tripSafMiles;
-          console.log(`Parser: Assigned ${tripSafXp} SAF XP to first segment`);
         }
         
         flights.push(...tripSegments);
@@ -485,15 +454,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
   
   // Convert miles map to array
   const milesArray = Array.from(milesData.values()).sort((a, b) => a.month.localeCompare(b.month));
-  
-  // Debug: Check for lines containing "reis" that weren't matched
-  const reisLines = lines.filter(l => l.toLowerCase().includes('reis'));
-  console.log(`Parser: Found ${reisLines.length} lines containing "reis":`);
-  reisLines.slice(0, 5).forEach((l, i) => console.log(`  reis line ${i + 1}: "${l.substring(0, 80)}..."`));
-  
-  // Debug summary
-  console.log(`Parser summary: ${tripsFound} trips, ${flights.length} flight segments, ${milesArray.length} months of miles`);
-  console.log(`Parser: ${dateMatchCount} date matches total`);
   
   return {
     flights,
