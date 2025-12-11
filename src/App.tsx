@@ -75,6 +75,7 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Track if initial data load has completed (prevents reload on window focus)
@@ -293,6 +294,7 @@ export default function App() {
     setXpRollover(0);
     setManualLedger({});
     setIsDemoMode(false);
+    setIsLocalMode(false);
     setIsSettingsOpen(false);
     
     // Reset load tracking so data can be reloaded if needed
@@ -312,8 +314,20 @@ export default function App() {
     handleLoadDemo();
   };
 
+  const handleEnterLocalMode = () => {
+    setIsLocalMode(true);
+    // Start with empty data, no account
+    setBaseMilesData([]);
+    setBaseXpData([]);
+    setRedemptions([]);
+    setFlights([]);
+    setXpRollover(0);
+    setManualLedger({});
+  };
+
   const handleExitDemoMode = () => {
     setIsDemoMode(false);
+    setIsLocalMode(false);
     // Reset load tracking to allow fresh load
     hasInitiallyLoaded.current = false;
     loadedForUserId.current = null;
@@ -364,9 +378,9 @@ export default function App() {
     );
   }
 
-  // Not authenticated and not in demo mode - show login
-  if (!user && !isDemoMode) {
-    return <LoginPage onDemoMode={handleEnterDemoMode} />;
+  // Not authenticated and not in demo/local mode - show login
+  if (!user && !isDemoMode && !isLocalMode) {
+    return <LoginPage onDemoMode={handleEnterDemoMode} onLocalMode={handleEnterLocalMode} />;
   }
 
   // Loading user data
@@ -497,7 +511,7 @@ export default function App() {
         currentView={view}
         onNavigate={setView}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        isDemoMode={isDemoMode}
+        isDemoMode={isDemoMode || isLocalMode}
       >
         {/* Saving indicator */}
         {isSaving && (
@@ -540,7 +554,7 @@ export default function App() {
         onReset={handleStartEmpty}
         onLoadDemo={handleLoadDemo}
         onStartOver={handleStartOver}
-        isDemoMode={isDemoMode}
+        isDemoMode={isDemoMode || isLocalMode}
         onExitDemo={handleExitDemoMode}
         isLoggedIn={!!user}
       />
