@@ -50,6 +50,7 @@ interface SettingsModalProps {
   isLocalMode?: boolean;
   onExitDemo?: () => void;
   isLoggedIn?: boolean;
+  markDataChanged?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -64,6 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isLocalMode = false,
   onExitDemo,
   isLoggedIn = false,
+  markDataChanged,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { signOut, user } = useAuth();
@@ -190,6 +192,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (addedCount.manualLedger > 0) additions.push(`${addedCount.manualLedger} manual ledger months`);
 
       if (additions.length > 0) {
+        // Trigger auto-save
+        if (markDataChanged) markDataChanged();
         alert(`Import completed!\n\nAdded: ${additions.join(', ')}\n\nExisting data was preserved.`);
       } else {
         alert('Import completed. No new data to add — all entries already exist.');
