@@ -542,6 +542,7 @@ export default function App() {
           xpRollover,
           currentMonth,
           targetCPM,
+          manualLedger,
         }}
         setters={{
           setBaseMilesData,
@@ -551,6 +552,7 @@ export default function App() {
           setXpRollover,
           setCurrentMonth,
           setTargetCPM,
+          setManualLedger,
         }}
         onReset={handleStartEmpty}
         onLoadDemo={handleLoadDemo}
