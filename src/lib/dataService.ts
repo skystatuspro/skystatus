@@ -58,6 +58,22 @@ export async function saveFlight(userId: string, flight: FlightRecord): Promise<
 }
 
 export async function saveFlights(userId: string, flights: FlightRecord[]): Promise<boolean> {
+  // FIXED: First delete all existing flights for this user
+  // This ensures deleted flights are actually removed from the database
+  const { error: deleteError } = await supabase
+    .from('flights')
+    .delete()
+    .eq('user_id', userId);
+
+  if (deleteError) {
+    console.error('Error deleting flights:', deleteError);
+    return false;
+  }
+
+  // If no flights to save, we're done
+  if (flights.length === 0) return true;
+
+  // Then insert all current flights
   const records = flights.map(flight => {
     const [origin, destination] = flight.route.split('-');
     return {
@@ -75,12 +91,12 @@ export async function saveFlights(userId: string, flights: FlightRecord[]): Prom
     };
   });
 
-  const { error } = await supabase
+  const { error: insertError } = await supabase
     .from('flights')
-    .upsert(records);
+    .insert(records);
 
-  if (error) {
-    console.error('Error saving flights:', error);
+  if (insertError) {
+    console.error('Error saving flights:', insertError);
     return false;
   }
   return true;
