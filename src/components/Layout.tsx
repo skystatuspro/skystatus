@@ -23,6 +23,7 @@ interface LayoutProps {
   children: React.ReactNode;
   onOpenSettings: () => void;
   isDemoMode: boolean;
+  isLocalMode?: boolean;
 }
 
 const MenuItem = ({
@@ -62,6 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({
   children,
   onOpenSettings,
   isDemoMode,
+  isLocalMode = false,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { user, signOut } = useAuth();
@@ -166,11 +168,19 @@ export const Layout: React.FC<LayoutProps> = ({
                 </p>
             </div>
 
-            {/* DEMO INDICATOR IN SIDEBAR */}
+            {/* DEMO/LOCAL INDICATOR IN SIDEBAR */}
             {isDemoMode && (
-                <div className="mt-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 px-3 py-2">
-                    <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mb-1">Workspace</p>
-                    <p className="text-[11px] text-indigo-200 font-medium">Demo Mode Active</p>
+                <div className={`mt-2 rounded-xl px-3 py-2 ${
+                  isLocalMode 
+                    ? 'bg-amber-500/10 border border-amber-500/20' 
+                    : 'bg-indigo-500/10 border border-indigo-500/20'
+                }`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${
+                      isLocalMode ? 'text-amber-400' : 'text-indigo-400'
+                    }`}>Workspace</p>
+                    <p className={`text-[11px] font-medium ${
+                      isLocalMode ? 'text-amber-200' : 'text-indigo-200'
+                    }`}>{isLocalMode ? 'Local Mode Active' : 'Demo Mode Active'}</p>
                 </div>
             )}
           </div>
@@ -208,25 +218,41 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-10 scroll-smooth">
           <div className="max-w-7xl mx-auto pb-12">
             
-            {/* DEMO BANNER BOVENAAN CONTENT */}
+            {/* DEMO/LOCAL BANNER BOVENAAN CONTENT */}
             {isDemoMode && (
-                <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+                <div className={`mb-6 rounded-2xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 ${
+                  isLocalMode 
+                    ? 'border-amber-200 bg-amber-50' 
+                    : 'border-indigo-100 bg-indigo-50'
+                }`}>
                     <div className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px] font-bold shadow-sm ring-2 ring-indigo-200">D</span>
+                        <span className={`mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-white text-[10px] font-bold shadow-sm ring-2 ${
+                          isLocalMode 
+                            ? 'bg-amber-500 ring-amber-200' 
+                            : 'bg-indigo-600 ring-indigo-200'
+                        }`}>{isLocalMode ? 'L' : 'D'}</span>
                         <div>
-                            <p className="text-xs font-bold text-indigo-900">Demo Workspace Active</p>
-                            <p className="text-[11px] text-indigo-700/80 leading-relaxed max-w-lg">
-                                You are exploring SkyStatus with sample data. Your changes here are temporary. 
-                                Use <span className="font-bold">Data Settings</span> to clear this and start your own portfolio.
+                            <p className={`text-xs font-bold ${isLocalMode ? 'text-amber-900' : 'text-indigo-900'}`}>
+                              {isLocalMode ? 'Local Mode Active' : 'Demo Workspace Active'}
+                            </p>
+                            <p className={`text-[11px] leading-relaxed max-w-lg ${isLocalMode ? 'text-amber-700/80' : 'text-indigo-700/80'}`}>
+                              {isLocalMode 
+                                ? <>Your data is <span className="font-bold">not saved automatically</span>. Use <span className="font-bold">Data Settings → Export JSON</span> to save your work, or sign in for cloud sync.</>
+                                : <>You are exploring SkyStatus with sample data. Your changes here are temporary. Use <span className="font-bold">Data Settings</span> to clear this and start your own portfolio.</>
+                              }
                             </p>
                         </div>
                     </div>
                     <button 
                         type="button"
                         onClick={onOpenSettings}
-                        className="whitespace-nowrap inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 py-2 text-[11px] font-bold text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm"
+                        className={`whitespace-nowrap inline-flex items-center justify-center rounded-xl border bg-white px-4 py-2 text-[11px] font-bold transition-all shadow-sm ${
+                          isLocalMode 
+                            ? 'border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300' 
+                            : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300'
+                        }`}
                     >
-                        Open Settings
+                        {isLocalMode ? 'Export Data' : 'Open Settings'}
                     </button>
                 </div>
             )}
