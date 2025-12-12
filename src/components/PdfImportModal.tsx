@@ -71,16 +71,6 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [importSummaryForFeedback, setImportSummaryForFeedback] = useState<{flights: number, miles: number} | null>(null);
 
-  // Debug: log step changes
-  React.useEffect(() => {
-    console.log('[DEBUG] Step changed to:', step);
-  }, [step]);
-
-  // Debug: log when component unmounts
-  React.useEffect(() => {
-    return () => console.log('[DEBUG] PdfImportModal unmounting');
-  }, []);
-
   // Calculate what will be imported (excluding duplicates)
   const getImportSummary = useCallback(() => {
     if (!parseResult) return null;
@@ -211,9 +201,6 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     const summary = getImportSummary();
     if (!summary) return;
 
-    console.log('[DEBUG] handleConfirmImport called');
-    console.log('[DEBUG] hasGivenPostImportFeedback:', hasGivenPostImportFeedback());
-
     // Import new flights and all miles (miles will be merged)
     onImport(summary.newFlights, summary.miles);
     
@@ -221,17 +208,13 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     recordFirstImport();
     
     // Check if we should show feedback
-    const shouldShowFeedback = !hasGivenPostImportFeedback();
-    console.log('[DEBUG] shouldShowFeedback:', shouldShowFeedback);
-    
-    if (shouldShowFeedback) {
+    if (!hasGivenPostImportFeedback()) {
       // Store summary for feedback display
       const totalMiles = summary.miles.reduce((sum, m) => sum + m.miles, 0);
       setImportSummaryForFeedback({
         flights: summary.newFlights.length,
         miles: totalMiles
       });
-      console.log('[DEBUG] Setting step to feedback');
       setStep('feedback');
     } else {
       handleClose();
