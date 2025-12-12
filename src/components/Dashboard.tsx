@@ -21,10 +21,12 @@ import {
   Upload,
   FileText,
   PlusCircle,
+  HelpCircle,
 } from 'lucide-react';
 import { PLATINUM_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
 import PdfImportModal from './PdfImportModal';
+import { FAQModal } from './FAQModal';
 
 interface DashboardProps {
   state: AppState;
@@ -622,6 +624,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [skipWelcome, setSkipWelcome] = useState(false);
+  const [showFaqModal, setShowFaqModal] = useState(false);
   
   const milesStats = useMemo(
     () =>
@@ -757,6 +760,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Add manually
               </button>
             </div>
+
+            {/* Help link */}
+            <button
+              onClick={() => setShowFaqModal(true)}
+              className="mt-6 flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm font-medium"
+            >
+              <HelpCircle size={16} />
+              Need help? Read the FAQ
+            </button>
           </div>
         </div>
 
@@ -806,6 +818,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}
           existingFlights={state.flights}
           existingMiles={state.milesData}
+        />
+
+        {/* FAQ Modal */}
+        <FAQModal
+          isOpen={showFaqModal}
+          onClose={() => setShowFaqModal(false)}
         />
       </div>
     );
