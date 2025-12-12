@@ -128,6 +128,13 @@ export default function App() {
   const [xpRollover, setXpRollover] = useState<number>(0);
   const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
   const [targetCPM, setTargetCPM] = useState<number>(0.012);
+  
+  // Qualification cycle configuration
+  const [qualificationSettings, setQualificationSettings] = useState<{
+    cycleStartMonth: string;
+    startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+    startingXP: number;
+  } | null>(null);
 
   // Track if data has been modified (for auto-save)
   const [dataVersion, setDataVersion] = useState(0);
@@ -184,6 +191,15 @@ export default function App() {
         if (data.profile) {
           setTargetCPM(data.profile.targetCPM);
           setXpRollover(data.profile.xpRollover || 0);
+          
+          // Load qualification settings if available
+          if (data.profile.qualificationStartMonth) {
+            setQualificationSettings({
+              cycleStartMonth: data.profile.qualificationStartMonth,
+              startingStatus: (data.profile.startingStatus || 'Explorer') as 'Explorer' | 'Silver' | 'Gold' | 'Platinum',
+              startingXP: data.profile.xpRollover || 0,
+            });
+          }
         }
       }
       
@@ -222,6 +238,8 @@ export default function App() {
         updateProfile(user.id, { 
           target_cpm: targetCPM,
           xp_rollover: xpRollover,
+          qualification_start_month: qualificationSettings?.cycleStartMonth,
+          starting_status: qualificationSettings?.startingStatus,
         }),
       ]);
     } catch (error) {
@@ -631,6 +649,15 @@ export default function App() {
             onUpdateFlights={handleFlightsUpdate}
             manualLedger={manualLedger}
             onUpdateManualLedger={handleManualXPLedgerUpdate}
+            qualificationSettings={qualificationSettings}
+            onUpdateQualificationSettings={(settings) => {
+              setQualificationSettings(settings);
+              // Sync the rollover value
+              if (settings) {
+                setXpRollover(settings.startingXP);
+              }
+              setDataVersion(v => v + 1);
+            }}
           />
         );
       case 'redemption':
