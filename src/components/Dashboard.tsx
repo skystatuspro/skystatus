@@ -233,7 +233,11 @@ const RiskMonitor: React.FC<RiskMonitorProps> = ({
   const actualRollover = actualStatus === 'Platinum' 
     ? Math.min(ROLLOVER_CAP, Math.max(0, actualXP - PLATINUM_XP))
     : 0;
-  const projectedRollover = Math.min(ROLLOVER_CAP, rolloverOut);
+  
+  // Projected rollover based on projected XP (for current Platinum members)
+  const projectedRollover = projectedStatus === 'Platinum'
+    ? Math.min(ROLLOVER_CAP, Math.max(0, projectedTotalXP - PLATINUM_XP))
+    : 0;
   
   // For non-Platinum: show what rollover WOULD be if they reach Platinum
   const potentialRollover = projectedStatus === 'Platinum' && actualStatus !== 'Platinum'
