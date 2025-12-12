@@ -31,6 +31,7 @@ import {
   HelpCircle,
   Lightbulb,
   ExternalLink,
+  Settings2,
 } from 'lucide-react';
 import {
   BarChart,
@@ -47,6 +48,12 @@ import { PLATINUM_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
 import { FAQModal } from './FAQModal';
 
+interface QualificationSettingsType {
+  cycleStartMonth: string;
+  startingStatus: StatusLevel;
+  startingXP: number;
+}
+
 interface XPEngineProps {
   data: XPRecord[];
   baseData: XPRecord[];
@@ -57,6 +64,8 @@ interface XPEngineProps {
   onUpdateFlights: (flights: FlightRecord[]) => void;
   manualLedger: ManualLedger;
   onUpdateManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
+  qualificationSettings: QualificationSettingsType | null;
+  onUpdateQualificationSettings: (settings: QualificationSettingsType | null) => void;
 }
 
 const noSpinnerClass =
@@ -194,6 +203,120 @@ const getNextStatusFromCurrent = (status: StatusLevel): StatusLevel | null => {
   return null;
 };
 
+// Cycle Setup Form Component
+interface CycleSetupFormProps {
+  onSave: (settings: { cycleStartMonth: string; startingStatus: StatusLevel; startingXP: number }) => void;
+  onShowFaq: () => void;
+}
+
+const CycleSetupForm: React.FC<CycleSetupFormProps> = ({ onSave, onShowFaq }) => {
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  
+  const [cycleStartMonth, setCycleStartMonth] = useState(defaultMonth);
+  const [startingStatus, setStartingStatus] = useState<StatusLevel>('Explorer');
+  const [startingXP, setStartingXP] = useState(0);
+
+  const handleSave = () => {
+    onSave({
+      cycleStartMonth,
+      startingStatus,
+      startingXP: Math.max(0, Math.min(300, startingXP)),
+    });
+  };
+
+  return (
+    <>
+      {/* Setup Form */}
+      <div className="grid gap-4 md:grid-cols-3 mb-5">
+        {/* Cycle Start Month */}
+        <div className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            Cycle Start Month
+          </label>
+          <input
+            type="month"
+            value={cycleStartMonth}
+            onChange={(e) => setCycleStartMonth(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+          />
+          <p className="text-[10px] text-slate-400 mt-1.5">
+            When did your current status period begin?
+          </p>
+        </div>
+
+        {/* Starting Status */}
+        <div className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            Status at Start
+          </label>
+          <select
+            value={startingStatus}
+            onChange={(e) => setStartingStatus(e.target.value as StatusLevel)}
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+          >
+            <option value="Explorer">Explorer</option>
+            <option value="Silver">Silver (100 XP)</option>
+            <option value="Gold">Gold (180 XP)</option>
+            <option value="Platinum">Platinum (300 XP)</option>
+          </select>
+          <p className="text-[10px] text-slate-400 mt-1.5">
+            What status did you have when this cycle started?
+          </p>
+        </div>
+
+        {/* Starting XP (Rollover) */}
+        <div className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            Starting XP (Rollover)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              max="300"
+              value={startingXP}
+              onChange={(e) => setStartingXP(Number(e.target.value))}
+              className={`flex-1 px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${noSpinnerClass}`}
+            />
+            <span className="text-slate-500 font-medium">XP</span>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1.5">
+            Your XP balance at cycle start (max 300)
+          </p>
+        </div>
+      </div>
+
+      {/* Save button and help */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-amber-200/50">
+        <div className="flex items-start gap-2 text-xs text-slate-600">
+          <HelpCircle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+          <span>
+            <strong>Tip:</strong> Your cycle start date is when your current status began. 
+            Check your status expiry date on Flying Blue and count back 12 months.
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onShowFaq}
+            className="inline-flex items-center gap-2 px-4 py-2 text-amber-600 hover:text-amber-700 font-medium text-sm transition-colors whitespace-nowrap"
+          >
+            <HelpCircle size={16} />
+            Need help?
+          </button>
+          <button
+            onClick={handleSave}
+            className="inline-flex items-center gap-2 px-5 py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors whitespace-nowrap shadow-sm"
+          >
+            <CheckCircle2 size={16} />
+            Save & Continue
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
 export const XPEngine: React.FC<XPEngineProps> = ({
   data: _legacyData,
   baseData: _baseData,
@@ -204,6 +327,8 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   onUpdateFlights: _onUpdateFlights,
   manualLedger,
   onUpdateManualLedger,
+  qualificationSettings,
+  onUpdateQualificationSettings,
 }) => {
   const { cycles } = useMemo(
     () =>
@@ -211,9 +336,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         _legacyData,
         rollover,
         flights,
-        manualLedger
+        manualLedger,
+        qualificationSettings
       ),
-    [_legacyData, rollover, flights, manualLedger]
+    [_legacyData, rollover, flights, manualLedger, qualificationSettings]
   );
 
   // Vind de "actieve" cyclus - de cyclus waar vandaag in valt
@@ -246,9 +372,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     cycles.length > 0 ? findActiveCycleIndex(cycles) : 0
   );
   const [showFaqModal, setShowFaqModal] = useState(false);
+  const [showCycleSetup, setShowCycleSetup] = useState(false);
 
-  // Check if this is a new user who needs onboarding help
-  const isNewUser = rollover === 0 && flights.length === 0;
+  // Check if user needs to configure their cycle
+  const needsCycleSetup = !qualificationSettings && flights.length === 0;
 
   // Update selectie alleen bij ongeldige index, NIET bij data-wijzigingen
   // Dit voorkomt dat het scherm springt tijdens het typen
@@ -467,8 +594,20 @@ export const XPEngine: React.FC<XPEngineProps> = ({
           </p>
         </div>
 
-        {/* Cycle selector - hidden on mobile */}
-        <div className="hidden md:flex items-center space-x-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
+        <div className="flex items-center gap-3">
+          {/* Edit cycle settings button - only show when configured */}
+          {qualificationSettings && (
+            <button
+              onClick={() => onUpdateQualificationSettings(null)}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+              title="Edit cycle settings"
+            >
+              <Settings2 size={20} />
+            </button>
+          )}
+
+          {/* Cycle selector - hidden on mobile */}
+          <div className="hidden md:flex items-center space-x-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
           <button
             onClick={() => handleCycleChange(-1)}
             disabled={selectedIndex === 0}
@@ -495,10 +634,11 @@ export const XPEngine: React.FC<XPEngineProps> = ({
             <ChevronRight size={20} />
           </button>
         </div>
+        </div>
       </div>
 
-      {/* New User Onboarding Help */}
-      {isNewUser && (
+      {/* Cycle Setup - For new users or when not configured */}
+      {needsCycleSetup && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-amber-100 rounded-xl text-amber-600 flex-shrink-0">
@@ -506,55 +646,26 @@ export const XPEngine: React.FC<XPEngineProps> = ({
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-slate-900 text-lg mb-2">
-                Match your Flying Blue cycle with SkyStatus
+                Set up your Flying Blue cycle
               </h3>
-              <p className="text-slate-600 text-sm mb-4">
-                To accurately track your XP progress, you need to set your current cycle start date 
-                and enter your existing XP balance as rollover. Here's how:
+              <p className="text-slate-600 text-sm mb-5">
+                To accurately track your XP, tell us when your qualification year started, 
+                what status you had, and your current XP balance. Find this info at{' '}
+                <a 
+                  href="https://www.flyingblue.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-amber-600 hover:underline font-medium"
+                >
+                  flyingblue.com
+                </a>.
               </p>
               
-              <div className="grid gap-3 md:grid-cols-2 mb-4">
-                <div className="bg-white/70 rounded-xl p-4 border border-amber-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                    <span className="font-semibold text-slate-800 text-sm">Set your cycle start</span>
-                  </div>
-                  <p className="text-xs text-slate-600">
-                    Use the cycle selector above to navigate to the month when your current Flying Blue 
-                    status began. Check flyingblue.com for your status expiry date and count back 12 months.
-                  </p>
-                </div>
-                
-                <div className="bg-white/70 rounded-xl p-4 border border-amber-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                    <span className="font-semibold text-slate-800 text-sm">Enter your current XP</span>
-                  </div>
-                  <p className="text-xs text-slate-600">
-                    In the "Rollover (Start)" card below, enter your current XP balance from flyingblue.com. 
-                    This sets your starting point for accurate tracking.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => setShowFaqModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors"
-                >
-                  <HelpCircle size={16} />
-                  Read full FAQ
-                </button>
-                <a
-                  href="https://www.flyingblue.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 rounded-lg font-medium text-sm border border-slate-200 hover:bg-slate-50 transition-colors"
-                >
-                  Go to Flying Blue
-                  <ExternalLink size={14} />
-                </a>
-              </div>
+              {/* Setup Form */}
+              <CycleSetupForm 
+                onSave={(settings) => onUpdateQualificationSettings(settings)}
+                onShowFaq={() => setShowFaqModal(true)}
+              />
             </div>
           </div>
         </div>
