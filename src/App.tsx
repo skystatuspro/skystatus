@@ -608,7 +608,7 @@ export default function App() {
               
               {/* Expandable instructions */}
               {showPdfInstructions && (
-                <div className="mt-4 pt-4 border-t border-brand-200">
+                <div className="mt-4 pt-4 border-t border-brand-200 space-y-3">
                   <ol className="space-y-2 text-sm text-slate-600">
                     <li className="flex gap-2">
                       <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">1</span>
@@ -616,17 +616,20 @@ export default function App() {
                     </li>
                     <li className="flex gap-2">
                       <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                      <span>Go to <strong>My Account</strong> → <strong>Activity</strong></span>
+                      <span>Go to <strong>My Account</strong> → <strong>Activity overview</strong></span>
                     </li>
                     <li className="flex gap-2">
-                      <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                      <span>Click <strong>"Download transaction history"</strong></span>
+                      <span className="flex-shrink-0 w-5 h-5 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                      <span className="text-amber-700"><strong>Click "More"</strong> repeatedly until <em>all</em> your activities are visible</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                      <span>Select <strong>"All time"</strong> and download as PDF</span>
+                      <span>Scroll back up and click <strong>"Download"</strong></span>
                     </li>
                   </ol>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                    <strong>⚠️ Important:</strong> Flying Blue only exports what's visible on screen. If you skip the "More" step, your PDF will be incomplete!
+                  </div>
                 </div>
               )}
             </div>
@@ -645,11 +648,71 @@ export default function App() {
         );
       case 'addMiles':
         return (
-          <MilesIntake
-            milesData={milesData}
-            onUpdate={handleManualLedgerUpdate}
-            currentMonth={currentMonth}
-          />
+          <div className="space-y-6">
+            {/* PDF Import suggestion banner */}
+            <div className="bg-gradient-to-r from-brand-50 to-blue-50 border border-brand-200 rounded-2xl p-4 md:p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-brand-100 rounded-xl">
+                    <FileText className="text-brand-600" size={22} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">Have your Flying Blue PDF?</p>
+                    <p className="text-sm text-slate-500">
+                      Import all your miles transactions at once instead of adding them manually
+                      <button
+                        onClick={() => setShowPdfInstructions(prev => !prev)}
+                        className="ml-2 text-brand-600 hover:text-brand-700 font-medium underline underline-offset-2"
+                      >
+                        {showPdfInstructions ? 'Hide instructions' : 'How to get it?'}
+                      </button>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPdfImportModal(true)}
+                  className="flex-shrink-0 flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                >
+                  <Upload size={16} />
+                  <span className="hidden sm:inline">Import PDF</span>
+                  <span className="sm:hidden">Import</span>
+                </button>
+              </div>
+              
+              {/* Expandable instructions */}
+              {showPdfInstructions && (
+                <div className="mt-4 pt-4 border-t border-brand-200 space-y-3">
+                  <ol className="space-y-2 text-sm text-slate-600">
+                    <li className="flex gap-2">
+                      <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                      <span>Log in to <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 font-semibold hover:underline">flyingblue.com</a></span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                      <span>Go to <strong>My Account</strong> → <strong>Activity overview</strong></span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex-shrink-0 w-5 h-5 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                      <span className="text-amber-700"><strong>Click "More"</strong> repeatedly until <em>all</em> your activities are visible</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex-shrink-0 w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                      <span>Scroll back up and click <strong>"Download"</strong></span>
+                    </li>
+                  </ol>
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                    <strong>⚠️ Important:</strong> Flying Blue only exports what's visible on screen. If you skip the "More" step, your PDF will be incomplete!
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <MilesIntake
+              milesData={milesData}
+              onUpdate={handleManualLedgerUpdate}
+              currentMonth={currentMonth}
+            />
+          </div>
         );
       case 'miles':
         return (
