@@ -24,6 +24,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
 import { PrivacyPolicy, TermsOfService } from './components/LegalPages';
+import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
@@ -76,7 +77,7 @@ export default function App() {
   
   // UI State
   const [view, setView] = useState<ViewState>('dashboard');
-  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | null>(null);
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -95,6 +96,8 @@ export default function App() {
         setLegalPage('privacy');
       } else if (hash === '#/terms') {
         setLegalPage('terms');
+      } else if (hash === '#/faq' || hash === '#/help') {
+        setLegalPage('faq');
       } else {
         setLegalPage(null);
       }
@@ -444,6 +447,17 @@ export default function App() {
   if (legalPage === 'terms') {
     return (
       <TermsOfService
+        onBack={() => {
+          window.location.hash = '';
+          setLegalPage(null);
+        }}
+      />
+    );
+  }
+
+  if (legalPage === 'faq') {
+    return (
+      <FAQPage
         onBack={() => {
           window.location.hash = '';
           setLegalPage(null);
