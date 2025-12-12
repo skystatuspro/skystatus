@@ -318,7 +318,11 @@ export default function App() {
   };
 
   // PDF import handler for Dashboard empty state
-  const handlePdfImport = (importedFlights: FlightRecord[], importedMiles: MilesRecord[]) => {
+  const handlePdfImport = (
+    importedFlights: FlightRecord[], 
+    importedMiles: MilesRecord[],
+    xpCorrection?: { month: string; correctionXp: number; reason: string }
+  ) => {
     // Merge flights (skip duplicates by date + route)
     const existingFlightKeys = new Set(flights.map(f => `${f.date}-${f.route}`));
     const newFlights = importedFlights.filter(f => !existingFlightKeys.has(`${f.date}-${f.route}`));
@@ -342,12 +346,28 @@ export default function App() {
     }
     
     setBaseMilesData(updatedMiles);
+
+    // Handle XP correction if provided
+    if (xpCorrection && xpCorrection.correctionXp !== 0) {
+      setManualLedger(prev => {
+        const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+        return {
+          ...prev,
+          [xpCorrection.month]: {
+            ...existing,
+            correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
+          }
+        };
+      });
+    }
+
     markDataChanged();
 
     // Show success message
     const flightCount = newFlights.length;
     const milesCount = importedMiles.length;
-    showToast(`Imported ${flightCount} flights and ${milesCount} months of miles data`, 'success');
+    const correctionMsg = xpCorrection?.correctionXp ? ` (+${xpCorrection.correctionXp} XP correction)` : '';
+    showToast(`Imported ${flightCount} flights and ${milesCount} months of miles data${correctionMsg}`, 'success');
   };
 
   // Demo mode handlers
