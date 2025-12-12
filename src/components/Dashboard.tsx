@@ -834,7 +834,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           onClose={() => setShowPdfImport(false)}
           onImport={(flights, miles) => {
             onPdfImport(flights, miles);
-            setShowPdfImport(false);
+            // Modal closes itself via onClose after feedback step
           }}
           existingFlights={state.flights}
           existingMiles={state.milesData}
