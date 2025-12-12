@@ -238,15 +238,24 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
           {step === 'upload' && (
             <div className="space-y-6">
               {/* Instructions */}
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
-                <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">How to get your Flying Blue PDF:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-blue-700">
-                    <li>Log in to <span className="font-medium">flyingblue.com</span></li>
-                    <li>Go to <span className="font-medium">My Account → Activity</span></li>
-                    <li>Click <span className="font-medium">"Download PDF"</span></li>
-                  </ol>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                  <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">How to get your Flying Blue PDF:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                      <li>Log in to <span className="font-medium">flyingblue.com</span></li>
+                      <li>Go to <span className="font-medium">My Account → Activity overview</span></li>
+                      <li><span className="font-medium text-amber-700">Click "More" repeatedly</span> until all activities are loaded</li>
+                      <li>Scroll up and click <span className="font-medium">"Download"</span></li>
+                    </ol>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                  <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700">
+                    <strong>Important:</strong> Flying Blue only exports activities visible on screen. Click "More" until you see your full history, or your import will be incomplete!
+                  </p>
                 </div>
               </div>
 

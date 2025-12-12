@@ -93,8 +93,12 @@ export const FAQModal: React.FC<FAQModalProps> = ({ isOpen, onClose }) => {
           question: 'How do I import my Flying Blue PDF?',
           answer: (
             <>
-              <p><strong>Step 1:</strong> Log in at flyingblue.com → My Account → Activity → "Download transaction history" → Select "All time" → Download as PDF</p>
-              <p className="mt-2"><strong>Step 2:</strong> Click "Import PDF" here, drag your PDF in, review and import.</p>
+              <p><strong>Step 1:</strong> Log in at flyingblue.com → My Account → Activity overview</p>
+              <p className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <strong className="text-amber-700">⚠️ Important:</strong> Click the <strong>"More"</strong> button at the bottom repeatedly until ALL your activities are loaded. Flying Blue only exports what's visible on screen!
+              </p>
+              <p className="mt-2"><strong>Step 2:</strong> Scroll back up and click the <strong>"Download"</strong> button</p>
+              <p className="mt-2"><strong>Step 3:</strong> Click "Import PDF" here, drag your PDF in, review and import.</p>
             </>
           )
         },

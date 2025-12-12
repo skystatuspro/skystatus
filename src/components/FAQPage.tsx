@@ -85,7 +85,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                   <strong>Import your Flying Blue PDF</strong> (recommended)<br/>
                   <span className="text-sm text-slate-500">
                     This automatically extracts all your flights, XP, and miles. Go to Flying Blue → 
-                    My Account → Activity → Download transaction history.
+                    My Account → Activity overview → click "More" until all activities load → Download.
                   </span>
                 </li>
                 <li>
@@ -128,13 +128,21 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           question: 'How do I import my Flying Blue PDF?',
           answer: (
             <>
-              <p><strong>Step 1: Download your PDF</strong></p>
+              <p><strong>Step 1: Download your PDF from Flying Blue</strong></p>
               <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
                 <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
-                <li>Go to My Account → Activity</li>
-                <li>Click "Download transaction history"</li>
-                <li>Select "All time" and download as PDF</li>
+                <li>Go to <strong>My Account</strong> → <strong>Activity overview</strong></li>
+                <li className="text-amber-700 font-medium">
+                  ⚠️ <strong>Important:</strong> Click the <strong>"More"</strong> button at the bottom repeatedly until ALL your activities are visible. Flying Blue only downloads what's currently displayed on screen!
+                </li>
+                <li>Scroll back up and click the <strong>"Download"</strong> button to save the PDF</li>
               </ol>
+              <div className="mt-3 p-3 bg-amber-50 rounded-lg text-sm border border-amber-200">
+                <strong className="text-amber-800">Why is this important?</strong>
+                <p className="text-amber-700 mt-1">
+                  Flying Blue uses "lazy loading" — it only shows recent activities at first. If you don't click "More" to load everything, your downloaded PDF will only contain a few months of data, and your flight history in SkyStatus will be incomplete.
+                </p>
+              </div>
               <p className="mt-3"><strong>Step 2: Import in SkyStatus</strong></p>
               <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
                 <li>Click "Import PDF" (Dashboard or Add Flight page)</li>

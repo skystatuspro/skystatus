@@ -785,17 +785,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </li>
             <li className="flex gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">2</span>
-              <span>Go to <strong>My Account</strong> → <strong>Activity</strong></span>
+              <span>Go to <strong>My Account</strong> → <strong>Activity overview</strong></span>
             </li>
             <li className="flex gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-              <span>Click <strong>"Download transaction history"</strong></span>
+              <div>
+                <span className="text-amber-700 font-semibold">⚠️ Important:</span> Click the <strong>"More"</strong> button repeatedly until <em>all</em> your activities are visible on screen. Flying Blue only downloads what's currently displayed!
+              </div>
             </li>
             <li className="flex gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-sm font-bold">4</span>
-              <span>Select <strong>"All time"</strong> and download as PDF</span>
+              <span>Scroll back up and click <strong>"Download"</strong> to save the PDF</span>
             </li>
           </ol>
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <strong>Note:</strong> If you don't click "More" to load all activities first, your PDF will only contain recent transactions and your flight history will be incomplete.
+          </div>
         </div>
 
         {/* Skip option */}
