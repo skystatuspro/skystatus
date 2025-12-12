@@ -73,6 +73,12 @@ export interface ParsedMilesMonth {
   debit: number;
 }
 
+export interface RequalificationEvent {
+  date: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+}
+
 export interface ParseResult {
   flights: ParsedFlight[];
   miles: ParsedMilesMonth[];
@@ -83,6 +89,11 @@ export interface ParseResult {
   totalXP: number | null;
   totalUXP: number | null;
   errors: string[];
+  // Data range info
+  oldestDate: string | null;
+  newestDate: string | null;
+  // Requalification events detected
+  requalifications: RequalificationEvent[];
 }
 
 /**
@@ -180,6 +191,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
   // Parse flights and miles
   const flights: ParsedFlight[] = [];
   const milesData: Map<string, ParsedMilesMonth> = new Map();
+  const requalifications: RequalificationEvent[] = [];
   
   const getOrCreateMonth = (month: string): ParsedMilesMonth => {
     if (!milesData.has(month)) {
@@ -435,6 +447,17 @@ export function parseFlyingBlueText(text: string): ParseResult {
         // Skip - flight segment
       }
       
+      // === REQUALIFICATION EVENTS ===
+      else if (/XP.?(?:Counter|teller).?offset|Requalif|Herkwalif|Gekwalificeerd|Status.*(?:renewed|verlengd)|(?:renewed|verlengd).*status/i.test(content)) {
+        // Detect requalification/status renewal events
+        const statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
+        requalifications.push({
+          date: transDate,
+          fromStatus: null, // Could potentially parse "from X to Y" patterns
+          toStatus: statusMatch ? statusMatch[1].toUpperCase() : null,
+        });
+      }
+      
       // === OTHER ===
       else {
         const { miles } = extractNumbers(content);
@@ -455,6 +478,11 @@ export function parseFlyingBlueText(text: string): ParseResult {
   // Convert miles map to array
   const milesArray = Array.from(milesData.values()).sort((a, b) => a.month.localeCompare(b.month));
   
+  // Calculate date range
+  const allDates = flights.map(f => f.date).filter(d => d);
+  const oldestDate = allDates.length > 0 ? allDates.reduce((a, b) => a < b ? a : b) : null;
+  const newestDate = allDates.length > 0 ? allDates.reduce((a, b) => a > b ? a : b) : null;
+  
   return {
     flights,
     miles: milesArray,
@@ -464,7 +492,10 @@ export function parseFlyingBlueText(text: string): ParseResult {
     totalMiles,
     totalXP,
     totalUXP,
-    errors
+    errors,
+    oldestDate,
+    newestDate,
+    requalifications, // Will be populated by requalification detection
   };
 }
 
