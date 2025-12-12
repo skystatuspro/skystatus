@@ -106,6 +106,19 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     const xpDiscrepancy = pdfTotalXP !== null ? pdfTotalXP - calculatedXP : null;
     const hasXpDiscrepancy = xpDiscrepancy !== null && xpDiscrepancy !== 0;
 
+    // Data range info
+    const oldestDate = parseResult.oldestDate;
+    const newestDate = parseResult.newestDate;
+    const requalifications = parseResult.requalifications || [];
+    
+    // Determine if data might be incomplete (oldest flight is less than 12 months ago)
+    let dataRangeMonths = 0;
+    if (oldestDate && newestDate) {
+      const oldest = new Date(oldestDate);
+      const newest = new Date(newestDate);
+      dataRangeMonths = Math.round((newest.getTime() - oldest.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    }
+
     return {
       flights,
       miles,
@@ -123,6 +136,11 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       calculatedXP,
       xpDiscrepancy,
       hasXpDiscrepancy,
+      // Data range info
+      oldestDate,
+      newestDate,
+      dataRangeMonths,
+      requalifications,
     };
   }, [parseResult, existingFlights, existingMiles]);
 
@@ -449,6 +467,25 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
                 </div>
               )}
 
+              {/* Data Range Info */}
+              {summary.oldestDate && summary.newestDate && (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Info size={16} className="text-slate-400" />
+                    <span>
+                      PDF contains data from <strong>{summary.oldestDate}</strong> to <strong>{summary.newestDate}</strong>
+                      {summary.dataRangeMonths > 0 && ` (${summary.dataRangeMonths} months)`}
+                    </span>
+                  </div>
+                  {summary.requalifications.length > 0 && (
+                    <div className="mt-2 text-xs text-slate-500">
+                      {summary.requalifications.length} requalification event{summary.requalifications.length > 1 ? 's' : ''} detected
+                      {summary.requalifications[0]?.toStatus && ` (most recent: ${summary.requalifications[0].toStatus})`}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Summary Cards */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Flights Card */}
@@ -611,8 +648,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
               {/* Info */}
               <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
                 <Info size={18} className="text-slate-400 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-slate-600 space-y-2">
                   <p><span className="font-medium">Note:</span> All flights are imported with "Economy" cabin. You can edit the cabin class later in the Flight Ledger.</p>
+                  <p><span className="font-medium">Tip:</span> If your PDF doesn't cover your full qualification period, you can manually add older flights in the Flight Ledger, or add an XP correction in the XP Engine.</p>
                 </div>
               </div>
             </div>
