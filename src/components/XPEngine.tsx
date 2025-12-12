@@ -205,17 +205,19 @@ const getNextStatusFromCurrent = (status: StatusLevel): StatusLevel | null => {
 
 // Cycle Setup Form Component
 interface CycleSetupFormProps {
+  initialValues?: { cycleStartMonth: string; startingStatus: StatusLevel; startingXP: number } | null;
   onSave: (settings: { cycleStartMonth: string; startingStatus: StatusLevel; startingXP: number }) => void;
+  onCancel?: () => void;
   onShowFaq: () => void;
 }
 
-const CycleSetupForm: React.FC<CycleSetupFormProps> = ({ onSave, onShowFaq }) => {
+const CycleSetupForm: React.FC<CycleSetupFormProps> = ({ initialValues, onSave, onCancel, onShowFaq }) => {
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   
-  const [cycleStartMonth, setCycleStartMonth] = useState(defaultMonth);
-  const [startingStatus, setStartingStatus] = useState<StatusLevel>('Explorer');
-  const [startingXP, setStartingXP] = useState(0);
+  const [cycleStartMonth, setCycleStartMonth] = useState(initialValues?.cycleStartMonth || defaultMonth);
+  const [startingStatus, setStartingStatus] = useState<StatusLevel>(initialValues?.startingStatus || 'Explorer');
+  const [startingXP, setStartingXP] = useState(initialValues?.startingXP || 0);
 
   const handleSave = () => {
     onSave({
@@ -224,6 +226,8 @@ const CycleSetupForm: React.FC<CycleSetupFormProps> = ({ onSave, onShowFaq }) =>
       startingXP: Math.max(0, Math.min(300, startingXP)),
     });
   };
+
+  const isEditMode = !!initialValues;
 
   return (
     <>
@@ -304,12 +308,20 @@ const CycleSetupForm: React.FC<CycleSetupFormProps> = ({ onSave, onShowFaq }) =>
             <HelpCircle size={16} />
             Need help?
           </button>
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-700 font-medium text-sm transition-colors whitespace-nowrap"
+            >
+              Cancel
+            </button>
+          )}
           <button
             onClick={handleSave}
             className="inline-flex items-center gap-2 px-5 py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors whitespace-nowrap shadow-sm"
           >
             <CheckCircle2 size={16} />
-            Save & Continue
+            {isEditMode ? 'Save Changes' : 'Save & Continue'}
           </button>
         </div>
       </div>
@@ -374,8 +386,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showCycleSetup, setShowCycleSetup] = useState(false);
 
-  // Check if user needs to configure their cycle
-  const needsCycleSetup = !qualificationSettings && flights.length === 0;
+  // Show cycle setup when:
+  // 1. No settings configured yet (any user), OR
+  // 2. User manually clicked "edit settings"
+  const shouldShowCycleSetup = !qualificationSettings || showCycleSetup;
 
   // Update selectie alleen bij ongeldige index, NIET bij data-wijzigingen
   // Dit voorkomt dat het scherm springt tijdens het typen
@@ -595,16 +609,18 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Edit cycle settings button - only show when configured */}
-          {qualificationSettings && (
-            <button
-              onClick={() => onUpdateQualificationSettings(null)}
-              className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
-              title="Edit cycle settings"
-            >
-              <Settings2 size={20} />
-            </button>
-          )}
+          {/* Edit cycle settings button - always show, toggles edit mode */}
+          <button
+            onClick={() => setShowCycleSetup(!showCycleSetup)}
+            className={`p-2 rounded-lg transition-all ${
+              showCycleSetup 
+                ? 'bg-amber-100 text-amber-600' 
+                : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+            }`}
+            title={showCycleSetup ? "Close cycle settings" : "Edit cycle settings"}
+          >
+            <Settings2 size={20} />
+          </button>
 
           {/* Cycle selector - hidden on mobile */}
           <div className="hidden md:flex items-center space-x-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
@@ -637,8 +653,8 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         </div>
       </div>
 
-      {/* Cycle Setup - For new users or when not configured */}
-      {needsCycleSetup && (
+      {/* Cycle Setup - For new users or when editing */}
+      {shouldShowCycleSetup && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-amber-100 rounded-xl text-amber-600 flex-shrink-0">
@@ -646,11 +662,14 @@ export const XPEngine: React.FC<XPEngineProps> = ({
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-slate-900 text-lg mb-2">
-                Set up your Flying Blue cycle
+                {qualificationSettings ? 'Edit your cycle settings' : 'Set up your Flying Blue cycle'}
               </h3>
               <p className="text-slate-600 text-sm mb-5">
-                To accurately track your XP, tell us when your qualification year started, 
-                what status you had, and your current XP balance. Find this info at{' '}
+                {qualificationSettings 
+                  ? 'Update your qualification year settings below.'
+                  : 'To accurately track your XP, tell us when your qualification year started, what status you had, and your current XP balance.'
+                }
+                {' '}Find this info at{' '}
                 <a 
                   href="https://www.flyingblue.com" 
                   target="_blank" 
@@ -663,7 +682,12 @@ export const XPEngine: React.FC<XPEngineProps> = ({
               
               {/* Setup Form */}
               <CycleSetupForm 
-                onSave={(settings) => onUpdateQualificationSettings(settings)}
+                initialValues={qualificationSettings}
+                onSave={(settings) => {
+                  onUpdateQualificationSettings(settings);
+                  setShowCycleSetup(false);
+                }}
+                onCancel={qualificationSettings ? () => setShowCycleSetup(false) : undefined}
                 onShowFaq={() => setShowFaqModal(true)}
               />
             </div>
