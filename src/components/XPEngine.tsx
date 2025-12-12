@@ -279,8 +279,9 @@ const CycleSetupForm: React.FC<CycleSetupFormProps> = ({ initialValues, onSave, 
               type="number"
               min="0"
               max="300"
-              value={startingXP}
-              onChange={(e) => setStartingXP(Number(e.target.value))}
+              value={startingXP === 0 ? '' : startingXP}
+              placeholder="0"
+              onChange={(e) => setStartingXP(e.target.value === '' ? 0 : Number(e.target.value))}
               className={`flex-1 px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${noSpinnerClass}`}
             />
             <span className="text-slate-500 font-medium">XP</span>
