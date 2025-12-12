@@ -309,6 +309,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             </div>
             
             <div className="flex items-center gap-6 text-sm text-slate-500">
+              <a href="#/faq" className="hover:text-slate-700 transition-colors">Help & FAQ</a>
               <a href="#/privacy" className="hover:text-slate-700 transition-colors">Privacy Policy</a>
               <a href="#/terms" className="hover:text-slate-700 transition-colors">Terms of Service</a>
               <a href="mailto:support@skystatus.pro" className="hover:text-slate-700 transition-colors">Contact</a>
