@@ -717,7 +717,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const hasNoFlights = state.flights.length === 0;
 
   // Empty state for new users (can be skipped)
-  if (hasNoFlights && onPdfImport && !skipWelcome) {
+  // Keep showing Welcome screen while modal is open to prevent unmounting during feedback
+  if ((hasNoFlights || showPdfImport) && onPdfImport && !skipWelcome) {
     return (
       <div className="space-y-8 animate-in fade-in duration-500 pb-12">
         {/* Header */}
@@ -829,16 +830,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* PDF Import Modal */}
-        <PdfImportModal
-          isOpen={showPdfImport}
-          onClose={() => setShowPdfImport(false)}
-          onImport={(flights, miles) => {
-            onPdfImport(flights, miles);
-            // Modal closes itself via onClose after feedback step
-          }}
-          existingFlights={state.flights}
-          existingMiles={state.milesData}
-        />
+        {onPdfImport && (
+          <PdfImportModal
+            isOpen={showPdfImport}
+            onClose={() => setShowPdfImport(false)}
+            onImport={(flights, miles) => {
+              onPdfImport(flights, miles);
+              // Modal closes itself via onClose after feedback step
+            }}
+            existingFlights={state.flights}
+            existingMiles={state.milesData}
+          />
+        )}
 
         {/* FAQ Modal */}
         <FAQModal
@@ -849,7 +852,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     );
   }
 
-  return (
+  const commandCenterContent = (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -1165,5 +1168,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {commandCenterContent}
+      
+      {/* PDF Import Modal - always rendered to persist through state changes */}
+      {onPdfImport && (
+        <PdfImportModal
+          isOpen={showPdfImport}
+          onClose={() => setShowPdfImport(false)}
+          onImport={(flights, miles) => {
+            onPdfImport(flights, miles);
+            // Modal closes itself via onClose after feedback step
+          }}
+          existingFlights={state.flights}
+          existingMiles={state.milesData}
+        />
+      )}
+    </>
   );
 };
