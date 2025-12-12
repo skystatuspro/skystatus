@@ -410,7 +410,12 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     return null;
   }
 
-  const currentCycle: QualificationCycleStats = cycles[selectedIndex];
+  const currentCycle: QualificationCycleStats | undefined = cycles[selectedIndex];
+
+  // Guard against race condition where selectedIndex is temporarily out of bounds
+  if (!currentCycle) {
+    return null;
+  }
 
   // ACTUAL status en XP (gebaseerd op gevlogen vluchten)
   const actualStatus: StatusLevel = currentCycle.actualStatus ?? currentCycle.startStatus;
