@@ -473,7 +473,9 @@ const RiskMonitor: React.FC<RiskMonitorProps> = ({
                 <div className="text-xl font-black text-slate-800">{actualRollover}</div>
                 <div className="text-[10px] text-slate-500">
                   {actualRollover === 0 && actualStatus === 'Platinum' 
-                    ? `Need ${PLATINUM_XP - actualXP + 1}+ more XP`
+                    ? ((potentialRollover ?? projectedRollover) > 0 
+                        ? 'On track via scheduled'
+                        : `Need ${PLATINUM_XP - actualXP + 1}+ more XP`)
                     : 'XP → next cycle'}
                 </div>
               </div>

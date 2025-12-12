@@ -215,7 +215,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">Download Your PDF</h3>
               <p className="text-slate-600">
-                Go to Flying Blue → My Account → Activity and download your transaction history as PDF.
+                Go to Flying Blue → My Account → Activity overview. Click "More" until all activities load, then click "Download".
               </p>
             </div>
 
