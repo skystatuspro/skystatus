@@ -813,7 +813,8 @@ export const calculateQualificationCycles = (
   legacyData: XPRecord[],
   baseRollover: number,
   flights?: FlightRecord[],
-  manualLedger?: ManualLedger
+  manualLedger?: ManualLedger,
+  qualificationSettings?: { cycleStartMonth: string; startingStatus: StatusLevel; startingXP: number } | null
 ): MultiCycleStats => {
   const monthDataList = buildMonthDataList(
     flights ?? [],
@@ -823,20 +824,29 @@ export const calculateQualificationCycles = (
 
   const currentMonth = getCurrentMonth();
 
-  const initialStatus: StatusLevel = baseRollover > 0 ? 'Platinum' : 'Explorer';
-  const initialRollover = clamp(baseRollover, 0, PLATINUM_THRESHOLD);
+  // Use qualification settings if provided, otherwise fall back to legacy behavior
+  const initialStatus: StatusLevel = qualificationSettings?.startingStatus ?? 
+    (baseRollover > 0 ? 'Platinum' : 'Explorer');
+  const initialRollover = clamp(
+    qualificationSettings?.startingXP ?? baseRollover, 
+    0, 
+    PLATINUM_THRESHOLD
+  );
 
-  // Geen data: maak één lege cyclus vanaf "jouw" november
+  // Determine cycle start: use settings if provided
+  const now = new Date();
+  const defaultStartMonth =
+    now.getMonth() >= 10
+      ? `${now.getFullYear()}-11`
+      : `${now.getFullYear() - 1}-11`;
+
+  // Geen data: maak één lege cyclus
   if (monthDataList.length === 0) {
-    const now = new Date();
-    const defaultStartMonth =
-      now.getMonth() >= 10
-        ? `${now.getFullYear()}-11`
-        : `${now.getFullYear() - 1}-11`;
+    const cycleStart = qualificationSettings?.cycleStartMonth ?? defaultStartMonth;
 
     const cycle = buildEmptyCycle(
       0,
-      defaultStartMonth,
+      cycleStart,
       initialStatus,
       initialRollover,
       currentMonth
@@ -856,17 +866,17 @@ export const calculateQualificationCycles = (
   const lastDataMonth = monthDataList[monthDataList.length - 1].month;
 
   // Bepaal "jouw" Flying Blue november voor het huidige jaar
-  const now = new Date();
   const currentYearNov =
     now.getMonth() >= 10
       ? `${now.getFullYear()}-11`
       : `${now.getFullYear() - 1}-11`;
 
   // Start de allereerste cyclus:
-  // of bij eerste data (als dat vóór die november ligt),
+  // If qualification settings provided, use that
+  // Otherwise: or bij eerste data (als dat vóór die november ligt),
   // of bij de november rond het huidige jaar.
-  const initialCycleStart =
-    firstDataMonth < currentYearNov ? firstDataMonth : currentYearNov;
+  const initialCycleStart = qualificationSettings?.cycleStartMonth ??
+    (firstDataMonth < currentYearNov ? firstDataMonth : currentYearNov);
 
   // Tot waar moet je überhaupt cycli bouwen?
   // Altijd tot minimaal de laatste maand met data of de huidige maand.
