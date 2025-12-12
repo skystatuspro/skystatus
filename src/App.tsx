@@ -23,7 +23,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
-import { PrivacyPolicy, TermsOfService } from './components/LegalPages';
+import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage } from './components/LegalPages';
 import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
 import { useToast } from './components/Toast';
@@ -77,7 +77,7 @@ export default function App() {
   
   // UI State
   const [view, setView] = useState<ViewState>('dashboard');
-  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | null>(null);
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -98,6 +98,10 @@ export default function App() {
         setLegalPage('terms');
       } else if (hash === '#/faq' || hash === '#/help') {
         setLegalPage('faq');
+      } else if (hash === '#/about') {
+        setLegalPage('about');
+      } else if (hash === '#/contact') {
+        setLegalPage('contact');
       } else {
         setLegalPage(null);
       }
@@ -476,6 +480,28 @@ export default function App() {
   if (legalPage === 'faq') {
     return (
       <FAQPage
+        onBack={() => {
+          window.location.hash = '';
+          setLegalPage(null);
+        }}
+      />
+    );
+  }
+
+  if (legalPage === 'about') {
+    return (
+      <AboutPage
+        onBack={() => {
+          window.location.hash = '';
+          setLegalPage(null);
+        }}
+      />
+    );
+  }
+
+  if (legalPage === 'contact') {
+    return (
+      <ContactPage
         onBack={() => {
           window.location.hash = '';
           setLegalPage(null);
