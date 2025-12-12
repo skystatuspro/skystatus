@@ -100,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-emerald-500" />
-                Free forever
+                Cloud sync or local-only
               </div>
             </div>
           </div>
