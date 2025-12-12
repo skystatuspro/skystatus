@@ -410,12 +410,9 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     return null;
   }
 
-  const currentCycle: QualificationCycleStats | undefined = cycles[selectedIndex];
-
-  // Guard against race condition where selectedIndex is temporarily out of bounds
-  if (!currentCycle) {
-    return null;
-  }
+  // Ensure selectedIndex is valid - if out of bounds, use safe index
+  const safeSelectedIndex = selectedIndex < cycles.length ? selectedIndex : Math.max(0, cycles.length - 1);
+  const currentCycle: QualificationCycleStats = cycles[safeSelectedIndex];
 
   // ACTUAL status en XP (gebaseerd op gevlogen vluchten)
   const actualStatus: StatusLevel = currentCycle.actualStatus ?? currentCycle.startStatus;
