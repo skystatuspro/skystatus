@@ -28,6 +28,9 @@ import {
   Zap,
   Clock,
   Target,
+  HelpCircle,
+  Lightbulb,
+  ExternalLink,
 } from 'lucide-react';
 import {
   BarChart,
@@ -42,6 +45,7 @@ import {
 } from 'recharts';
 import { PLATINUM_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
+import { FAQModal } from './FAQModal';
 
 interface XPEngineProps {
   data: XPRecord[];
@@ -241,6 +245,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(() =>
     cycles.length > 0 ? findActiveCycleIndex(cycles) : 0
   );
+  const [showFaqModal, setShowFaqModal] = useState(false);
+
+  // Check if this is a new user who needs onboarding help
+  const isNewUser = rollover === 0 && flights.length === 0;
 
   // Update selectie alleen bij ongeldige index, NIET bij data-wijzigingen
   // Dit voorkomt dat het scherm springt tijdens het typen
@@ -488,6 +496,69 @@ export const XPEngine: React.FC<XPEngineProps> = ({
           </button>
         </div>
       </div>
+
+      {/* New User Onboarding Help */}
+      {isNewUser && (
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-amber-100 rounded-xl text-amber-600 flex-shrink-0">
+              <Lightbulb size={24} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-slate-900 text-lg mb-2">
+                Match your Flying Blue cycle with SkyStatus
+              </h3>
+              <p className="text-slate-600 text-sm mb-4">
+                To accurately track your XP progress, you need to set your current cycle start date 
+                and enter your existing XP balance as rollover. Here's how:
+              </p>
+              
+              <div className="grid gap-3 md:grid-cols-2 mb-4">
+                <div className="bg-white/70 rounded-xl p-4 border border-amber-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                    <span className="font-semibold text-slate-800 text-sm">Set your cycle start</span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    Use the cycle selector above to navigate to the month when your current Flying Blue 
+                    status began. Check flyingblue.com for your status expiry date and count back 12 months.
+                  </p>
+                </div>
+                
+                <div className="bg-white/70 rounded-xl p-4 border border-amber-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                    <span className="font-semibold text-slate-800 text-sm">Enter your current XP</span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    In the "Rollover (Start)" card below, enter your current XP balance from flyingblue.com. 
+                    This sets your starting point for accurate tracking.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => setShowFaqModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors"
+                >
+                  <HelpCircle size={16} />
+                  Read full FAQ
+                </button>
+                <a
+                  href="https://www.flyingblue.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-700 rounded-lg font-medium text-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+                >
+                  Go to Flying Blue
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1183,6 +1254,12 @@ export const XPEngine: React.FC<XPEngineProps> = ({
           </table>
         </div>
       </div>
+
+      {/* FAQ Modal */}
+      <FAQModal
+        isOpen={showFaqModal}
+        onClose={() => setShowFaqModal(false)}
+      />
     </div>
   );
 };
