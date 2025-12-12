@@ -267,11 +267,13 @@ export const Layout: React.FC<LayoutProps> = ({
               <div className="flex items-center gap-4">
                 <a href="#/faq" className="hover:text-slate-600 transition-colors">Help & FAQ</a>
                 <span className="text-slate-300">·</span>
-                <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+                <a href="#/about" className="hover:text-slate-600 transition-colors">About</a>
                 <span className="text-slate-300">·</span>
-                <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms of Service</a>
+                <a href="#/contact" className="hover:text-slate-600 transition-colors">Contact</a>
                 <span className="text-slate-300">·</span>
-                <a href="mailto:support@skystatus.pro" className="hover:text-slate-600 transition-colors">Contact</a>
+                <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy</a>
+                <span className="text-slate-300">·</span>
+                <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms</a>
               </div>
             </div>
           </footer>

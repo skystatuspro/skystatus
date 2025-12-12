@@ -392,3 +392,392 @@ export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
     </div>
   );
 };
+
+// ============================================
+// ABOUT PAGE
+// ============================================
+
+export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-8 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          Back to SkyStatus
+        </button>
+
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-brand-100 rounded-xl">
+            <FileText className="text-brand-600" size={28} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">About SkyStatus</h1>
+            <p className="text-slate-500">Your Flying Blue companion</p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-6">
+          {/* Hero Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Why SkyStatus?</h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              Flying Blue is great, but tracking your status progress shouldn't require a spreadsheet. 
+              SkyStatus was built by a frequent flyer who wanted a better way to visualize XP progress, 
+              understand mile valuations, and plan award redemptions.
+            </p>
+            <p className="text-slate-600 leading-relaxed">
+              Whether you're chasing Silver or maintaining Platinum, SkyStatus helps you stay on top 
+              of your qualification cycle with real-time tracking and smart projections.
+            </p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-sky-50 rounded-lg">
+                  <svg className="text-sky-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-slate-900">XP Engine</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                Track your XP across qualification cycles. See your progress toward the next status 
+                level with actual vs projected calculations.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-amber-50 rounded-lg">
+                  <svg className="text-amber-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-slate-900">Miles Tracker</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                Monitor your miles balance, acquisition costs, and CPM metrics. Know exactly 
+                what your miles are worth.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-emerald-50 rounded-lg">
+                  <svg className="text-emerald-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-slate-900">Redemption Calculator</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                Evaluate award bookings by comparing CPM values. Maximize the value 
+                of every mile you spend.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <svg className="text-purple-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-slate-900">PDF Import</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                Import your flight history directly from Flying Blue statements. 
+                No manual data entry required.
+              </p>
+            </div>
+          </div>
+
+          {/* Tech Stack */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Built With</h2>
+            <div className="flex flex-wrap gap-2">
+              {['React', 'TypeScript', 'Tailwind CSS', 'Supabase', 'Vite', 'Vercel'].map((tech) => (
+                <span 
+                  key={tech}
+                  className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium"
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                <svg className="text-amber-600 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-amber-900 mb-1">Independent Project</h3>
+                <p className="text-sm text-amber-800">
+                  SkyStatus is an independent project and is not affiliated with, endorsed by, or 
+                  connected to Air France-KLM or the Flying Blue loyalty program. All trademarks 
+                  belong to their respective owners.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Version Info */}
+          <div className="text-center text-sm text-slate-400">
+            <p>SkyStatus Pro v1.0</p>
+            <p className="mt-1">Made with ☕ in Amsterdam</p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-slate-400">
+          © {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// CONTACT PAGE
+// ============================================
+
+export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
+  const [formData, setFormData] = React.useState({
+    type: 'feedback',
+    email: '',
+    subject: '',
+    message: '',
+  });
+  const [submitted, setSubmitted] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Create a mailto link as the submission method
+    const mailtoLink = `mailto:support@skystatus.pro?subject=${encodeURIComponent(
+      `[${formData.type.toUpperCase()}] ${formData.subject}`
+    )}&body=${encodeURIComponent(
+      `From: ${formData.email}\n\n${formData.message}`
+    )}`;
+    
+    window.location.href = mailtoLink;
+    
+    setTimeout(() => {
+      setSubmitted(true);
+      setIsSubmitting(false);
+    }, 500);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-8 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          Back to SkyStatus
+        </button>
+
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-brand-100 rounded-xl">
+            <Mail className="text-brand-600" size={28} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Contact Us</h1>
+            <p className="text-slate-500">We'd love to hear from you</p>
+          </div>
+        </div>
+
+        {submitted ? (
+          /* Success State */
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="text-emerald-600" size={28} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Opening Email Client...</h2>
+            <p className="text-slate-600 mb-6">
+              Your default email client should open. If it doesn't, please email us directly at{' '}
+              <a href="mailto:support@skystatus.pro" className="text-brand-600 hover:underline">
+                support@skystatus.pro
+              </a>
+            </p>
+            <button
+              onClick={() => {
+                setSubmitted(false);
+                setFormData({ type: 'feedback', email: '', subject: '', message: '' });
+              }}
+              className="text-brand-600 hover:text-brand-700 font-medium"
+            >
+              Send another message
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Quick Contact Options */}
+            <div className="grid grid-cols-3 gap-4">
+              <button
+                onClick={() => setFormData(prev => ({ ...prev, type: 'feedback' }))}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  formData.type === 'feedback'
+                    ? 'border-brand-500 bg-brand-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <svg className={`mx-auto mb-2 w-6 h-6 ${formData.type === 'feedback' ? 'text-brand-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span className={`block font-medium text-sm ${formData.type === 'feedback' ? 'text-brand-700' : 'text-slate-600'}`}>
+                  Feedback
+                </span>
+              </button>
+
+              <button
+                onClick={() => setFormData(prev => ({ ...prev, type: 'bug' }))}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  formData.type === 'bug'
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <svg className={`mx-auto mb-2 w-6 h-6 ${formData.type === 'bug' ? 'text-red-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className={`block font-medium text-sm ${formData.type === 'bug' ? 'text-red-700' : 'text-slate-600'}`}>
+                  Report Bug
+                </span>
+              </button>
+
+              <button
+                onClick={() => setFormData(prev => ({ ...prev, type: 'question' }))}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  formData.type === 'question'
+                    ? 'border-amber-500 bg-amber-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <svg className={`mx-auto mb-2 w-6 h-6 ${formData.type === 'question' ? 'text-amber-600' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className={`block font-medium text-sm ${formData.type === 'question' ? 'text-amber-700' : 'text-slate-600'}`}>
+                  Question
+                </span>
+              </button>
+            </div>
+
+            {/* Contact Form */}
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-8 space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                  Your Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder="your@email.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-slate-700 mb-2">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  id="subject"
+                  required
+                  value={formData.subject}
+                  onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  placeholder={
+                    formData.type === 'bug' 
+                      ? 'Brief description of the issue' 
+                      : formData.type === 'question'
+                      ? 'What would you like to know?'
+                      : "What's on your mind?"
+                  }
+                />
+              </div>
+
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-slate-700 mb-2">
+                  Message
+                </label>
+                <textarea
+                  id="message"
+                  required
+                  rows={5}
+                  value={formData.message}
+                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                  placeholder={
+                    formData.type === 'bug'
+                      ? 'Please describe the issue in detail. Include steps to reproduce if possible.'
+                      : 'Your message...'
+                  }
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Opening email client...
+                  </>
+                ) : (
+                  <>
+                    <Mail size={18} />
+                    Send Message
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Direct Contact */}
+            <div className="bg-slate-100 rounded-xl p-6 text-center">
+              <p className="text-slate-600 mb-2">
+                Or email us directly at
+              </p>
+              <a 
+                href="mailto:support@skystatus.pro" 
+                className="text-brand-600 hover:text-brand-700 font-medium text-lg"
+              >
+                support@skystatus.pro
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-slate-400">
+          © {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.
+        </div>
+      </div>
+    </div>
+  );
+};
