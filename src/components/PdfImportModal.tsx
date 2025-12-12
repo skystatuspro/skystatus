@@ -46,10 +46,15 @@ interface XPCorrection {
   reason: string;
 }
 
+interface CycleSettings {
+  cycleStartMonth: string;
+  startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+}
+
 interface PdfImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (flights: FlightRecord[], miles: MilesRecord[], xpCorrection?: XPCorrection) => void;
+  onImport: (flights: FlightRecord[], miles: MilesRecord[], xpCorrection?: XPCorrection, cycleSettings?: CycleSettings) => void;
   existingFlights: FlightRecord[];
   existingMiles: MilesRecord[];
 }
@@ -79,6 +84,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   
   // XP Correction state
   const [addXpCorrection, setAddXpCorrection] = useState(true); // Default to true
+  
+  // Cycle settings state
+  const [applyCycleSettings, setApplyCycleSettings] = useState(true); // Default to true
 
   // Calculate what will be imported (excluding duplicates)
   const getImportSummary = useCallback(() => {
@@ -119,6 +127,30 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       dataRangeMonths = Math.round((newest.getTime() - oldest.getTime()) / (1000 * 60 * 60 * 24 * 30));
     }
 
+    // Find suggested cycle settings from most recent requalification
+    // Sort requalifications by date descending and take the most recent
+    const sortedRequalifications = [...requalifications].sort((a, b) => b.date.localeCompare(a.date));
+    const mostRecentRequalification = sortedRequalifications[0] || null;
+    
+    let suggestedCycleStart: string | null = null;
+    let suggestedStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null = null;
+    
+    if (mostRecentRequalification) {
+      // Convert date (YYYY-MM-DD) to month (YYYY-MM)
+      suggestedCycleStart = mostRecentRequalification.date.substring(0, 7);
+      // Map status
+      const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
+        'EXPLORER': 'Explorer',
+        'SILVER': 'Silver', 
+        'GOLD': 'Gold',
+        'PLATINUM': 'Platinum',
+        'ULTIMATE': 'Platinum', // Map Ultimate to Platinum for now
+      };
+      suggestedStatus = mostRecentRequalification.toStatus 
+        ? statusMap[mostRecentRequalification.toStatus] || null
+        : null;
+    }
+
     return {
       flights,
       miles,
@@ -141,6 +173,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       newestDate,
       dataRangeMonths,
       requalifications,
+      // Suggested cycle settings
+      suggestedCycleStart,
+      suggestedStatus,
     };
   }, [parseResult, existingFlights, existingMiles]);
 
@@ -244,7 +279,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
     // Prepare XP correction if needed
     let xpCorrection: XPCorrection | undefined;
-    if (summary.hasXpDiscrepancy && addXpCorrection && summary.xpDiscrepancy) {
+    if (summary.hasXpDiscrepancy && addXpCorrection && summary.xpDiscrepancy && summary.xpDiscrepancy > 0) {
       // Get the current month for the correction
       const now = new Date();
       const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -255,8 +290,17 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       };
     }
 
+    // Prepare cycle settings if detected and user opted in
+    let cycleSettings: CycleSettings | undefined;
+    if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus) {
+      cycleSettings = {
+        cycleStartMonth: summary.suggestedCycleStart,
+        startingStatus: summary.suggestedStatus,
+      };
+    }
+
     // Import new flights and all miles (miles will be merged)
-    onImport(summary.newFlights, summary.miles, xpCorrection);
+    onImport(summary.newFlights, summary.miles, xpCorrection, cycleSettings);
     
     // Record first import for feedback triggers
     recordFirstImport();
@@ -305,6 +349,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     setFeedbackMessage('');
     setImportSummaryForFeedback(null);
     setAddXpCorrection(true); // Reset for next import
+    setApplyCycleSettings(true); // Reset for next import
     if (fileInputRef.current) fileInputRef.current.value = '';
     onClose();
   };
@@ -477,12 +522,40 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
                       {summary.dataRangeMonths > 0 && ` (${summary.dataRangeMonths} months)`}
                     </span>
                   </div>
-                  {summary.requalifications.length > 0 && (
+                  {summary.requalifications.length > 0 && !summary.suggestedCycleStart && (
                     <div className="mt-2 text-xs text-slate-500">
                       {summary.requalifications.length} requalification event{summary.requalifications.length > 1 ? 's' : ''} detected
-                      {summary.requalifications[0]?.toStatus && ` (most recent: ${summary.requalifications[0].toStatus})`}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Cycle Settings Suggestion */}
+              {summary.suggestedCycleStart && summary.suggestedStatus && (
+                <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
+                  <div className="flex items-start gap-3">
+                    <Award size={18} className="text-purple-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-purple-800">
+                        Qualification cycle detected
+                      </p>
+                      <p className="text-sm mt-1 text-purple-600">
+                        Your PDF shows a requalification to <strong>{summary.suggestedStatus}</strong> in <strong>{summary.suggestedCycleStart}</strong>.
+                      </p>
+                      
+                      <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={applyCycleSettings}
+                          onChange={(e) => setApplyCycleSettings(e.target.checked)}
+                          className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-sm text-purple-800">
+                          Set my qualification cycle to start {summary.suggestedCycleStart} as {summary.suggestedStatus}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               )}
 
