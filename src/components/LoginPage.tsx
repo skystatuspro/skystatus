@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { Plane, Mail, Lock, AlertCircle, CheckCircle, Loader2, Info } from 'lucide-react';
+import { Plane, Mail, Lock, AlertCircle, CheckCircle, Loader2, Info, ArrowLeft } from 'lucide-react';
 
 interface LoginPageProps {
   onDemoMode: () => void;
   onLocalMode?: () => void;
+  onBack?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, onBack }) => {
   const { signIn, signUp, resetPassword, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
   const [email, setEmail] = useState('');
@@ -70,7 +71,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode })
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+    <div className="relative min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
+      {/* Back button */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-6 left-6 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={18} />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+      )}
+
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
         <div className="bg-white p-3 rounded-2xl shadow-lg">
