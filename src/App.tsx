@@ -823,7 +823,7 @@ export default function App() {
         onClose={() => setShowPdfImportModal(false)}
         onImport={(importedFlights, importedMiles) => {
           handlePdfImport(importedFlights, importedMiles);
-          setShowPdfImportModal(false);
+          // Modal closes itself via onClose after feedback step
         }}
         existingFlights={flights}
         existingMiles={baseMilesData}
