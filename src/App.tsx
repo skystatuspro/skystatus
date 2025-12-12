@@ -321,7 +321,8 @@ export default function App() {
   const handlePdfImport = (
     importedFlights: FlightRecord[], 
     importedMiles: MilesRecord[],
-    xpCorrection?: { month: string; correctionXp: number; reason: string }
+    xpCorrection?: { month: string; correctionXp: number; reason: string },
+    cycleSettings?: { cycleStartMonth: string; startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' }
   ) => {
     // Merge flights (skip duplicates by date + route)
     const existingFlightKeys = new Set(flights.map(f => `${f.date}-${f.route}`));
@@ -361,13 +362,23 @@ export default function App() {
       });
     }
 
+    // Handle cycle settings if provided
+    if (cycleSettings) {
+      setQualificationSettings({
+        cycleStartMonth: cycleSettings.cycleStartMonth,
+        startingStatus: cycleSettings.startingStatus,
+        startingXP: 0, // Default to 0, user can adjust later
+      });
+    }
+
     markDataChanged();
 
     // Show success message
     const flightCount = newFlights.length;
     const milesCount = importedMiles.length;
     const correctionMsg = xpCorrection?.correctionXp ? ` (+${xpCorrection.correctionXp} XP correction)` : '';
-    showToast(`Imported ${flightCount} flights and ${milesCount} months of miles data${correctionMsg}`, 'success');
+    const cycleMsg = cycleSettings ? ` · Cycle set to ${cycleSettings.cycleStartMonth}` : '';
+    showToast(`Imported ${flightCount} flights and ${milesCount} months of miles data${correctionMsg}${cycleMsg}`, 'success');
   };
 
   // Demo mode handlers
