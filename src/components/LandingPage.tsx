@@ -31,6 +31,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             <span className="font-bold text-xl text-slate-900">SkyStatus</span>
           </div>
           <div className="flex items-center gap-3">
+            <a
+              href="#/faq"
+              className="hidden sm:block px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+            >
+              Help & FAQ
+            </a>
             <button
               onClick={onDemo}
               className="hidden sm:block px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"

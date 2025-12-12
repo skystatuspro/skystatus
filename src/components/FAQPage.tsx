@@ -68,6 +68,306 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
   };
 
   const faqSections: FAQSection[] = [
+    // SECTION 1: Using SkyStatus (most important - how to use the product)
+    {
+      title: 'Using SkyStatus',
+      icon: <Award size={20} />,
+      items: [
+        {
+          question: 'How do I enter my current status and XP?',
+          answer: (
+            <>
+              <p>
+                To match your current Flying Blue status with SkyStatus:
+              </p>
+              <ol className="list-decimal list-inside mt-2 space-y-2">
+                <li>
+                  <strong>Import your Flying Blue PDF</strong> (recommended)<br/>
+                  <span className="text-sm text-slate-500">
+                    This automatically extracts all your flights, XP, and miles. Go to Flying Blue → 
+                    My Account → Activity → Download transaction history.
+                  </span>
+                </li>
+                <li>
+                  <strong>Or enter manually:</strong><br/>
+                  <span className="text-sm text-slate-500">
+                    Go to XP Qualification → set your cycle start month → enter your current XP 
+                    balance as "rollover XP" for that start month.
+                  </span>
+                </li>
+              </ol>
+              <p className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                <strong>Tip:</strong> You can find your current XP on flyingblue.com under "My Account". 
+                This is the number you enter as rollover at your cycle start date.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'How do I set my qualification cycle start date?',
+          answer: (
+            <>
+              <p>
+                You can find your cycle start month on flyingblue.com — it's the month when your current 
+                status began.
+              </p>
+              <p className="mt-2"><strong>In SkyStatus:</strong></p>
+              <ol className="list-decimal list-inside mt-1 space-y-1">
+                <li>Go to XP Qualification</li>
+                <li>Look at "Qualification Cycle"</li>
+                <li>Adjust the start month to match your cycle start</li>
+              </ol>
+              <p className="mt-2 text-sm text-slate-500">
+                If you don't know this: check on Flying Blue when your current status expires and 
+                count back 12 months.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'How do I import my Flying Blue PDF?',
+          answer: (
+            <>
+              <p><strong>Step 1: Download your PDF</strong></p>
+              <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
+                <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
+                <li>Go to My Account → Activity</li>
+                <li>Click "Download transaction history"</li>
+                <li>Select "All time" and download as PDF</li>
+              </ol>
+              <p className="mt-3"><strong>Step 2: Import in SkyStatus</strong></p>
+              <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
+                <li>Click "Import PDF" (Dashboard or Add Flight page)</li>
+                <li>Drag your PDF into the field or click to select</li>
+                <li>Review the preview and click "Import"</li>
+              </ol>
+              <p className="mt-2 text-sm text-slate-500">
+                SkyStatus automatically extracts all your flights, miles, and XP from the PDF.
+              </p>
+            </>
+          )
+        },
+        {
+          question: "Why doesn't my XP match exactly with Flying Blue?",
+          answer: (
+            <>
+              <p>There may be small differences due to:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li><strong>Timing:</strong> Flying Blue sometimes processes flights with a delay</li>
+                <li><strong>Bonus XP:</strong> Promotions or challenges not shown in the PDF</li>
+                <li><strong>Rounding:</strong> Small rounding differences in calculations</li>
+                <li><strong>Partner flights:</strong> XP from some partners may differ</li>
+              </ul>
+              <p className="mt-2">
+                <strong>Solution:</strong> Use the correction function in XP Qualification to 
+                manually adjust small differences.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'Does SkyStatus support Ultimate status tracking?',
+          answer: (
+            <>
+              <p>
+                <strong>Yes, SkyStatus tracks your UXP alongside XP.</strong>
+              </p>
+              <p className="mt-2">
+                The system is fully prepared for Ultimate status tracking:
+              </p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>UXP is automatically calculated from KLM/AF flights</li>
+                <li>SAF XP is tracked separately</li>
+                <li>The 900 UXP threshold is tracked</li>
+                <li>The 1800 UXP cap per year is calculated</li>
+                <li>UXP rollover (max 900) is carried over</li>
+              </ul>
+              <p className="mt-2 p-3 bg-amber-50 rounded-lg text-sm">
+                <strong>Status:</strong> The Ultimate indicator in the interface is currently in 
+                development. Your UXP data is already being collected, so once this feature goes 
+                live you'll have immediate insight into your Ultimate progress.
+              </p>
+            </>
+          )
+        }
+      ]
+    },
+    // SECTION 2: Qualification Cycle (the mechanics)
+    {
+      title: 'Qualification Cycle',
+      icon: <Target size={20} />,
+      items: [
+        {
+          question: 'What is a qualification year and when does it start?',
+          answer: (
+            <>
+              <p>
+                Your qualification year is the 12-month period during which you earn XP for your status. 
+                Everyone has a <em>personal</em> qualification year.
+              </p>
+              <p className="mt-2"><strong>It starts:</strong></p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>For new members: when you earn your first XP</li>
+                <li>After a level-up: the first day of the following month</li>
+                <li>After requalification: stays the same as before</li>
+              </ul>
+              <p className="mt-2">
+                <strong>Example:</strong> You reach Gold on May 15 → your new qualification year runs 
+                from June 1 through May 31 next year.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'How does the XP "payment" mechanism work on level-up?',
+          answer: (
+            <>
+              <p>
+                When you have enough XP for a higher level, the threshold is "paid" 
+                (deducted) from your balance. The rest remains.
+              </p>
+              <p className="mt-2"><strong>The thresholds:</strong></p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>Explorer → Silver: 100 XP</li>
+                <li>Silver → Gold: 180 XP</li>
+                <li>Gold → Platinum: 300 XP</li>
+              </ul>
+              <p className="mt-2"><strong>Example:</strong></p>
+              <p className="mt-1 p-3 bg-slate-100 rounded-lg text-sm">
+                You have 250 XP as Silver and fly a trip worth 50 XP.<br/>
+                → New balance: 300 XP<br/>
+                → Gold threshold (180 XP) is paid<br/>
+                → You become Gold with 120 XP remaining
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'What happens if I reach a higher status mid-year?',
+          answer: (
+            <>
+              <p>
+                On a level-up, a <em>new</em> qualification year starts on the first day of the following month.
+              </p>
+              <p className="mt-2"><strong>Example:</strong></p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>Your qualification year runs until October 31</li>
+                <li>On May 3 you reach Gold</li>
+                <li>Your new qualification year becomes June 1 through May 31</li>
+              </ul>
+              <p className="mt-2">
+                <strong>Note:</strong> This only applies to XP levels (Silver, Gold, Platinum). 
+                Ultimate does not change your qualification year — it's a layer on top of Platinum.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'What is rollover XP and how much can I carry over?',
+          answer: (
+            <>
+              <p>
+                Rollover XP is the balance you have left after requalification that carries over to your next year.
+              </p>
+              <p className="mt-2"><strong>Rules:</strong></p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>First, the threshold for your current status is deducted</li>
+                <li>What remains is your rollover</li>
+                <li>Maximum rollover: <strong>300 XP</strong></li>
+                <li>Anything above 300 XP is lost</li>
+              </ul>
+              <p className="mt-2"><strong>Example:</strong></p>
+              <p className="mt-1 p-3 bg-slate-100 rounded-lg text-sm">
+                You end as Platinum with 470 XP<br/>
+                → Pay 300 XP for requalification<br/>
+                → Rollover: 170 XP (under the cap)<br/>
+                → Start new year as Platinum with 170 XP
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                For UXP, a separate rollover of max 900 UXP applies.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'What is soft landing?',
+          answer: (
+            <>
+              <p>
+                Soft landing means you can only drop <strong>one level per year</strong> if you 
+                don't have enough XP to requalify.
+              </p>
+              <p className="mt-2"><strong>Examples:</strong></p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>Platinum without 300 XP → drops to Gold (not Silver)</li>
+                <li>Gold without 180 XP → drops to Silver</li>
+                <li>Silver without 100 XP → drops to Explorer</li>
+              </ul>
+              <p className="mt-2"><strong>Special rule for Ultimate:</strong></p>
+              <p className="mt-1">
+                If you're Ultimate but don't earn 900 UXP, you always drop back to Platinum 
+                (not further). Even if you earned 0 XP. From the following year, normal XP rules 
+                apply again.
+              </p>
+            </>
+          )
+        }
+      ]
+    },
+    // SECTION 3: Miles & Value
+    {
+      title: 'Miles & Value',
+      icon: <Calculator size={20} />,
+      items: [
+        {
+          question: 'How is cost-per-mile calculated?',
+          answer: (
+            <>
+              <p>
+                Cost-per-mile (CPM) is how much you pay per mile earned.
+              </p>
+              <p className="mt-2"><strong>Formula:</strong></p>
+              <p className="mt-1 p-3 bg-slate-100 rounded-lg font-mono text-sm">
+                CPM = Total costs / Total miles earned
+              </p>
+              <p className="mt-2"><strong>Example:</strong></p>
+              <p className="mt-1 text-sm">
+                You spend €1,200 on flights and Amex fees and earn 100,000 miles.<br/>
+                → CPM = €1,200 / 100,000 = €0.012 = 1.2 cents per mile
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                A lower CPM is better — you're paying less per mile.
+              </p>
+            </>
+          )
+        },
+        {
+          question: 'What is a good redemption value?',
+          answer: (
+            <>
+              <p>
+                Redemption value is how much your miles are "worth" when redeeming.
+              </p>
+              <p className="mt-2"><strong>Rule of thumb:</strong></p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li><span className="text-red-600">{'<'} 1.0 cent/mile:</span> Poor value</li>
+                <li><span className="text-amber-600">1.0 - 1.5 cent/mile:</span> Average</li>
+                <li><span className="text-emerald-600">1.5 - 2.5 cent/mile:</span> Good</li>
+                <li><span className="text-emerald-700">{'>'} 2.5 cent/mile:</span> Excellent</li>
+              </ul>
+              <p className="mt-2"><strong>Calculation:</strong></p>
+              <p className="mt-1 p-3 bg-slate-100 rounded-lg font-mono text-sm">
+                Value = (Cash price - Taxes) / Miles used × 100
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Business class tickets often give the best value, economy the worst.
+              </p>
+            </>
+          )
+        }
+      ]
+    },
+    // SECTION 4: Flying Blue Basics (for those who need a refresher)
     {
       title: 'Flying Blue Basics',
       icon: <Plane size={20} />,
@@ -248,302 +548,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
         }
       ]
     },
-    {
-      title: 'Qualification Cycle',
-      icon: <Target size={20} />,
-      items: [
-        {
-          question: 'What is a qualification year and when does it start?',
-          answer: (
-            <>
-              <p>
-                Your qualification year is the 12-month period during which you earn XP for your status. 
-                Everyone has a <em>personal</em> qualification year.
-              </p>
-              <p className="mt-2"><strong>It starts:</strong></p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>For new members: when you earn your first XP</li>
-                <li>After a level-up: the first day of the following month</li>
-                <li>After requalification: stays the same as before</li>
-              </ul>
-              <p className="mt-2">
-                <strong>Example:</strong> You reach Gold on May 15 → your new qualification year runs 
-                from June 1 through May 31 next year.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'How does the XP "payment" mechanism work on level-up?',
-          answer: (
-            <>
-              <p>
-                When you have enough XP for a higher level, the threshold is "paid" 
-                (deducted) from your balance. The rest remains.
-              </p>
-              <p className="mt-2"><strong>The thresholds:</strong></p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Explorer → Silver: 100 XP</li>
-                <li>Silver → Gold: 180 XP</li>
-                <li>Gold → Platinum: 300 XP</li>
-              </ul>
-              <p className="mt-2"><strong>Example:</strong></p>
-              <p className="mt-1 p-3 bg-slate-100 rounded-lg text-sm">
-                You have 250 XP as Silver and fly a trip worth 50 XP.<br/>
-                → New balance: 300 XP<br/>
-                → Gold threshold (180 XP) is paid<br/>
-                → You become Gold with 120 XP remaining
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'What happens if I reach a higher status mid-year?',
-          answer: (
-            <>
-              <p>
-                On a level-up, a <em>new</em> qualification year starts on the first day of the following month.
-              </p>
-              <p className="mt-2"><strong>Example:</strong></p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Your qualification year runs until October 31</li>
-                <li>On May 3 you reach Gold</li>
-                <li>Your new qualification year becomes June 1 through May 31</li>
-              </ul>
-              <p className="mt-2">
-                <strong>Note:</strong> This only applies to XP levels (Silver, Gold, Platinum). 
-                Ultimate does not change your qualification year — it's a layer on top of Platinum.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'What is rollover XP and how much can I carry over?',
-          answer: (
-            <>
-              <p>
-                Rollover XP is the balance you have left after requalification that carries over to your next year.
-              </p>
-              <p className="mt-2"><strong>Rules:</strong></p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>First, the threshold for your current status is deducted</li>
-                <li>What remains is your rollover</li>
-                <li>Maximum rollover: <strong>300 XP</strong></li>
-                <li>Anything above 300 XP is lost</li>
-              </ul>
-              <p className="mt-2"><strong>Example:</strong></p>
-              <p className="mt-1 p-3 bg-slate-100 rounded-lg text-sm">
-                You end as Platinum with 470 XP<br/>
-                → Pay 300 XP for requalification<br/>
-                → Rollover: 170 XP (under the cap)<br/>
-                → Start new year as Platinum with 170 XP
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                For UXP, a separate rollover of max 900 UXP applies.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'What is soft landing?',
-          answer: (
-            <>
-              <p>
-                Soft landing means you can only drop <strong>one level per year</strong> if you 
-                don't have enough XP to requalify.
-              </p>
-              <p className="mt-2"><strong>Examples:</strong></p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Platinum without 300 XP → drops to Gold (not Silver)</li>
-                <li>Gold without 180 XP → drops to Silver</li>
-                <li>Silver without 100 XP → drops to Explorer</li>
-              </ul>
-              <p className="mt-2"><strong>Special rule for Ultimate:</strong></p>
-              <p className="mt-1">
-                If you're Ultimate but don't earn 900 UXP, you always drop back to Platinum 
-                (not further). Even if you earned 0 XP. From the following year, normal XP rules 
-                apply again.
-              </p>
-            </>
-          )
-        }
-      ]
-    },
-    {
-      title: 'Using SkyStatus',
-      icon: <Award size={20} />,
-      items: [
-        {
-          question: 'How do I enter my current status and XP?',
-          answer: (
-            <>
-              <p>
-                To match your current Flying Blue status with SkyStatus:
-              </p>
-              <ol className="list-decimal list-inside mt-2 space-y-2">
-                <li>
-                  <strong>Import your Flying Blue PDF</strong> (recommended)<br/>
-                  <span className="text-sm text-slate-500">
-                    This automatically extracts all your flights, XP, and miles. Go to Flying Blue → 
-                    My Account → Activity → Download transaction history.
-                  </span>
-                </li>
-                <li>
-                  <strong>Or enter manually:</strong><br/>
-                  <span className="text-sm text-slate-500">
-                    Go to XP Qualification → set your cycle start month → enter your current XP 
-                    balance as "rollover XP" for that start month.
-                  </span>
-                </li>
-              </ol>
-              <p className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
-                <strong>Tip:</strong> You can find your current XP on flyingblue.com under "My Account". 
-                This is the number you enter as rollover at your cycle start date.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'How do I set my qualification cycle start date?',
-          answer: (
-            <>
-              <p>
-                You can find your cycle start month on flyingblue.com — it's the month when your current 
-                status began.
-              </p>
-              <p className="mt-2"><strong>In SkyStatus:</strong></p>
-              <ol className="list-decimal list-inside mt-1 space-y-1">
-                <li>Go to XP Qualification</li>
-                <li>Look at "Qualification Cycle"</li>
-                <li>Adjust the start month to match your cycle start</li>
-              </ol>
-              <p className="mt-2 text-sm text-slate-500">
-                If you don't know this: check on Flying Blue when your current status expires and 
-                count back 12 months.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'How do I import my Flying Blue PDF?',
-          answer: (
-            <>
-              <p><strong>Step 1: Download your PDF</strong></p>
-              <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
-                <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
-                <li>Go to My Account → Activity</li>
-                <li>Click "Download transaction history"</li>
-                <li>Select "All time" and download as PDF</li>
-              </ol>
-              <p className="mt-3"><strong>Step 2: Import in SkyStatus</strong></p>
-              <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
-                <li>Click "Import PDF" (Dashboard or Add Flight page)</li>
-                <li>Drag your PDF into the field or click to select</li>
-                <li>Review the preview and click "Import"</li>
-              </ol>
-              <p className="mt-2 text-sm text-slate-500">
-                SkyStatus automatically extracts all your flights, miles, and XP from the PDF.
-              </p>
-            </>
-          )
-        },
-        {
-          question: "Why doesn't my XP match exactly with Flying Blue?",
-          answer: (
-            <>
-              <p>There may be small differences due to:</p>
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li><strong>Timing:</strong> Flying Blue sometimes processes flights with a delay</li>
-                <li><strong>Bonus XP:</strong> Promotions or challenges not shown in the PDF</li>
-                <li><strong>Rounding:</strong> Small rounding differences in calculations</li>
-                <li><strong>Partner flights:</strong> XP from some partners may differ</li>
-              </ul>
-              <p className="mt-2">
-                <strong>Solution:</strong> Use the correction function in XP Qualification to 
-                manually adjust small differences.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'Does SkyStatus support Ultimate status tracking?',
-          answer: (
-            <>
-              <p>
-                <strong>Yes, SkyStatus tracks your UXP alongside XP.</strong>
-              </p>
-              <p className="mt-2">
-                The system is fully prepared for Ultimate status tracking:
-              </p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>UXP is automatically calculated from KLM/AF flights</li>
-                <li>SAF XP is tracked separately</li>
-                <li>The 900 UXP threshold is tracked</li>
-                <li>The 1800 UXP cap per year is calculated</li>
-                <li>UXP rollover (max 900) is carried over</li>
-              </ul>
-              <p className="mt-2 p-3 bg-amber-50 rounded-lg text-sm">
-                <strong>Status:</strong> The Ultimate indicator in the interface is currently in 
-                development. Your UXP data is already being collected, so once this feature goes 
-                live you'll have immediate insight into your Ultimate progress.
-              </p>
-            </>
-          )
-        }
-      ]
-    },
-    {
-      title: 'Miles & Value',
-      icon: <Calculator size={20} />,
-      items: [
-        {
-          question: 'How is cost-per-mile calculated?',
-          answer: (
-            <>
-              <p>
-                Cost-per-mile (CPM) is how much you pay per mile earned.
-              </p>
-              <p className="mt-2"><strong>Formula:</strong></p>
-              <p className="mt-1 p-3 bg-slate-100 rounded-lg font-mono text-sm">
-                CPM = Total costs / Total miles earned
-              </p>
-              <p className="mt-2"><strong>Example:</strong></p>
-              <p className="mt-1 text-sm">
-                You spend €1,200 on flights and Amex fees and earn 100,000 miles.<br/>
-                → CPM = €1,200 / 100,000 = €0.012 = 1.2 cents per mile
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                A lower CPM is better — you're paying less per mile.
-              </p>
-            </>
-          )
-        },
-        {
-          question: 'What is a good redemption value?',
-          answer: (
-            <>
-              <p>
-                Redemption value is how much your miles are "worth" when redeeming.
-              </p>
-              <p className="mt-2"><strong>Rule of thumb:</strong></p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li><span className="text-red-600">{'<'} 1.0 cent/mile:</span> Poor value</li>
-                <li><span className="text-amber-600">1.0 - 1.5 cent/mile:</span> Average</li>
-                <li><span className="text-emerald-600">1.5 - 2.5 cent/mile:</span> Good</li>
-                <li><span className="text-emerald-700">{'>'} 2.5 cent/mile:</span> Excellent</li>
-              </ul>
-              <p className="mt-2"><strong>Calculation:</strong></p>
-              <p className="mt-1 p-3 bg-slate-100 rounded-lg font-mono text-sm">
-                Value = (Cash price - Taxes) / Miles used × 100
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                Business class tickets often give the best value, economy the worst.
-              </p>
-            </>
-          )
-        }
-      ]
-    },
+    // SECTION 5: Data & Privacy (always last)
     {
       title: 'Data & Privacy',
       icon: <Shield size={20} />,
