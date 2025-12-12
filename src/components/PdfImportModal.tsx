@@ -40,10 +40,16 @@ import {
 // Set up PDF.js worker - use unpkg which has all npm versions
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
+interface XPCorrection {
+  month: string;
+  correctionXp: number;
+  reason: string;
+}
+
 interface PdfImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (flights: FlightRecord[], miles: MilesRecord[]) => void;
+  onImport: (flights: FlightRecord[], miles: MilesRecord[], xpCorrection?: XPCorrection) => void;
   existingFlights: FlightRecord[];
   existingMiles: MilesRecord[];
 }
@@ -70,6 +76,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [importSummaryForFeedback, setImportSummaryForFeedback] = useState<{flights: number, miles: number} | null>(null);
+  
+  // XP Correction state
+  const [addXpCorrection, setAddXpCorrection] = useState(true); // Default to true
 
   // Calculate what will be imported (excluding duplicates)
   const getImportSummary = useCallback(() => {
@@ -88,6 +97,15 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     const newMiles = miles.filter(m => !existingMonths.has(m.month));
     const updatedMiles = miles.filter(m => existingMonths.has(m.month));
 
+    const totalFlightXP = flights.reduce((sum, f) => sum + f.earnedXP, 0);
+    const totalFlightSafXP = flights.reduce((sum, f) => sum + f.safXp, 0);
+    const calculatedXP = totalFlightXP + totalFlightSafXP;
+    
+    // XP Discrepancy detection
+    const pdfTotalXP = parseResult.totalXP;
+    const xpDiscrepancy = pdfTotalXP !== null ? pdfTotalXP - calculatedXP : null;
+    const hasXpDiscrepancy = xpDiscrepancy !== null && xpDiscrepancy !== 0;
+
     return {
       flights,
       miles,
@@ -95,11 +113,16 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       duplicateFlights,
       newMiles,
       updatedMiles,
-      totalFlightXP: flights.reduce((sum, f) => sum + f.earnedXP, 0),
-      totalFlightSafXP: flights.reduce((sum, f) => sum + f.safXp, 0),
+      totalFlightXP,
+      totalFlightSafXP,
       totalFlightMiles: flights.reduce((sum, f) => sum + f.earnedMiles, 0),
       totalMilesEarned: miles.reduce((sum, m) => sum + m.miles_subscription + m.miles_amex + m.miles_other, 0),
-      totalMilesDebit: miles.reduce((sum, m) => sum + m.miles_debit, 0)
+      totalMilesDebit: miles.reduce((sum, m) => sum + m.miles_debit, 0),
+      // XP discrepancy info
+      pdfTotalXP,
+      calculatedXP,
+      xpDiscrepancy,
+      hasXpDiscrepancy,
     };
   }, [parseResult, existingFlights, existingMiles]);
 
@@ -201,8 +224,21 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     const summary = getImportSummary();
     if (!summary) return;
 
+    // Prepare XP correction if needed
+    let xpCorrection: XPCorrection | undefined;
+    if (summary.hasXpDiscrepancy && addXpCorrection && summary.xpDiscrepancy) {
+      // Get the current month for the correction
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      xpCorrection = {
+        month: currentMonth,
+        correctionXp: summary.xpDiscrepancy,
+        reason: `PDF import correction (PDF shows ${summary.pdfTotalXP} XP, imported flights total ${summary.calculatedXP} XP)`,
+      };
+    }
+
     // Import new flights and all miles (miles will be merged)
-    onImport(summary.newFlights, summary.miles);
+    onImport(summary.newFlights, summary.miles, xpCorrection);
     
     // Record first import for feedback triggers
     recordFirstImport();
@@ -210,7 +246,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     // Check if we should show feedback
     if (!hasGivenPostImportFeedback()) {
       // Store summary for feedback display
-      const totalMiles = summary.miles.reduce((sum, m) => sum + m.miles, 0);
+      const totalMiles = summary.miles.reduce((sum, m) => sum + m.miles_subscription + m.miles_amex + m.miles_other, 0);
       setImportSummaryForFeedback({
         flights: summary.newFlights.length,
         miles: totalMiles
@@ -250,6 +286,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     setFeedbackRating(null);
     setFeedbackMessage('');
     setImportSummaryForFeedback(null);
+    setAddXpCorrection(true); // Reset for next import
     if (fileInputRef.current) fileInputRef.current.value = '';
     onClose();
   };
@@ -532,6 +569,41 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
                   <div className="text-sm text-amber-800">
                     <p className="font-medium">{summary.duplicateFlights} duplicate flights will be skipped</p>
                     <p className="text-amber-600">These flights already exist in your data (matched by date + route).</p>
+                  </div>
+                </div>
+              )}
+
+              {/* XP Discrepancy Warning */}
+              {summary.hasXpDiscrepancy && summary.xpDiscrepancy !== null && (
+                <div className={`p-4 rounded-xl border ${summary.xpDiscrepancy > 0 ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
+                  <div className="flex items-start gap-3">
+                    <Info size={18} className={`flex-shrink-0 mt-0.5 ${summary.xpDiscrepancy > 0 ? 'text-blue-500' : 'text-amber-500'}`} />
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${summary.xpDiscrepancy > 0 ? 'text-blue-800' : 'text-amber-800'}`}>
+                        XP discrepancy detected
+                      </p>
+                      <p className={`text-sm mt-1 ${summary.xpDiscrepancy > 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+                        Your PDF shows <strong>{summary.pdfTotalXP} XP</strong>, but imported flights total <strong>{summary.calculatedXP} XP</strong>.
+                        {summary.xpDiscrepancy > 0 
+                          ? ` The ${summary.xpDiscrepancy} XP difference likely comes from credit card bonuses, status bonuses, or older flights not in this PDF.`
+                          : ` This might indicate flights outside your current qualification period.`
+                        }
+                      </p>
+                      
+                      {summary.xpDiscrepancy > 0 && (
+                        <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={addXpCorrection}
+                            onChange={(e) => setAddXpCorrection(e.target.checked)}
+                            className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-blue-800">
+                            Add +{summary.xpDiscrepancy} XP correction to match your actual balance
+                          </span>
+                        </label>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
