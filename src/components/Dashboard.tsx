@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { AppState, FlightRecord, MilesRecord } from '../types';
 import { formatCurrency, formatNumber } from '../utils/format';
 import { calculateMilesStats } from '../utils/loyalty-logic';
@@ -27,6 +27,8 @@ import { PLATINUM_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
 import PdfImportModal from './PdfImportModal';
 import { FAQModal } from './FAQModal';
+import { FeedbackCard } from './FeedbackCard';
+import { shouldShowDashboardFeedback, incrementSessionCount } from '../lib/feedbackService';
 
 interface DashboardProps {
   state: AppState;
@@ -631,6 +633,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [skipWelcome, setSkipWelcome] = useState(false);
   const [showFaqModal, setShowFaqModal] = useState(false);
+  const [showFeedbackCard, setShowFeedbackCard] = useState(false);
+  
+  // Check for feedback eligibility on mount and increment session count
+  useEffect(() => {
+    incrementSessionCount();
+    setShowFeedbackCard(shouldShowDashboardFeedback());
+  }, []);
   
   const milesStats = useMemo(
     () =>
@@ -869,6 +878,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
           />
         </div>
       </div>
+
+      {/* Feedback Card - shown after certain triggers */}
+      {showFeedbackCard && (
+        <FeedbackCard onDismiss={() => setShowFeedbackCard(false)} />
+      )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">

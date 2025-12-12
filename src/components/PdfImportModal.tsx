@@ -15,7 +15,11 @@ import {
   ChevronUp,
   User,
   Award,
-  Info
+  Info,
+  Smile,
+  Meh,
+  Frown,
+  Send
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
@@ -25,6 +29,13 @@ import {
   ParseResult 
 } from '../utils/parseFlyingBluePdf';
 import { FlightRecord, MilesRecord } from '../types';
+import {
+  submitFeedback,
+  recordFirstImport,
+  hasGivenPostImportFeedback,
+  markPostImportFeedbackGiven,
+  FeedbackRating
+} from '../lib/feedbackService';
 
 // Set up PDF.js worker - use unpkg which has all npm versions
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -37,7 +48,7 @@ interface PdfImportModalProps {
   existingMiles: MilesRecord[];
 }
 
-type ImportStep = 'upload' | 'parsing' | 'preview' | 'error';
+type ImportStep = 'upload' | 'parsing' | 'preview' | 'feedback' | 'error';
 
 const PdfImportModal: React.FC<PdfImportModalProps> = ({
   isOpen,
@@ -53,6 +64,12 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const [showFlightDetails, setShowFlightDetails] = useState(false);
   const [showMilesDetails, setShowMilesDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Feedback state
+  const [feedbackRating, setFeedbackRating] = useState<FeedbackRating>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [importSummaryForFeedback, setImportSummaryForFeedback] = useState<{flights: number, miles: number} | null>(null);
 
   // Calculate what will be imported (excluding duplicates)
   const getImportSummary = useCallback(() => {
@@ -186,6 +203,41 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
     // Import new flights and all miles (miles will be merged)
     onImport(summary.newFlights, summary.miles);
+    
+    // Record first import for feedback triggers
+    recordFirstImport();
+    
+    // Check if we should show feedback
+    if (!hasGivenPostImportFeedback()) {
+      // Store summary for feedback display
+      const totalMiles = summary.miles.reduce((sum, m) => sum + m.miles, 0);
+      setImportSummaryForFeedback({
+        flights: summary.newFlights.length,
+        miles: totalMiles
+      });
+      setStep('feedback');
+    } else {
+      handleClose();
+    }
+  };
+
+  const handleFeedbackSubmit = async () => {
+    setFeedbackSubmitting(true);
+    
+    await submitFeedback({
+      trigger: 'post_import',
+      rating: feedbackRating,
+      message: feedbackMessage.trim() || undefined,
+      page: 'pdf_import',
+    });
+    
+    markPostImportFeedbackGiven();
+    setFeedbackSubmitting(false);
+    handleClose();
+  };
+
+  const handleFeedbackSkip = () => {
+    markPostImportFeedbackGiven();
     handleClose();
   };
 
@@ -195,6 +247,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     setError(null);
     setShowFlightDetails(false);
     setShowMilesDetails(false);
+    setFeedbackRating(null);
+    setFeedbackMessage('');
+    setImportSummaryForFeedback(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     onClose();
   };
@@ -512,6 +567,88 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
               </button>
             </div>
           </div>
+        )}
+
+        {/* Feedback Step */}
+        {step === 'feedback' && (
+          <>
+            {/* Success header */}
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <CheckCircle2 size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Import successful!</h3>
+                  <p className="text-emerald-100 text-sm">
+                    {importSummaryForFeedback?.flights ? `${importSummaryForFeedback.flights} flights` : ''}
+                    {importSummaryForFeedback?.flights && importSummaryForFeedback?.miles ? ' · ' : ''}
+                    {importSummaryForFeedback?.miles ? `${importSummaryForFeedback.miles.toLocaleString()} miles` : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback content */}
+            <div className="p-6">
+              <p className="text-slate-600 mb-4">
+                Quick question: how was the import process?
+              </p>
+
+              {/* Rating buttons */}
+              <div className="flex gap-3 mb-4">
+                {[
+                  { value: 'easy' as FeedbackRating, icon: <Smile size={24} />, label: 'Easy' },
+                  { value: 'okay' as FeedbackRating, icon: <Meh size={24} />, label: 'Okay' },
+                  { value: 'confusing' as FeedbackRating, icon: <Frown size={24} />, label: 'Confusing' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setFeedbackRating(option.value)}
+                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      feedbackRating === option.value
+                        ? 'border-brand-500 bg-brand-50 text-brand-600'
+                        : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500'
+                    }`}
+                  >
+                    {option.icon}
+                    <span className="text-sm font-medium">{option.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Optional message */}
+              <textarea
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                placeholder="Any details? (optional)"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                rows={2}
+              />
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={handleFeedbackSkip}
+                  className="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm transition-colors"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={handleFeedbackSubmit}
+                  disabled={feedbackSubmitting}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {feedbackSubmitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  Send
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
