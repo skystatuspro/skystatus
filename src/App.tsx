@@ -24,6 +24,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
 import { PrivacyPolicy, TermsOfService } from './components/LegalPages';
+import { LandingPage } from './components/LandingPage';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 
@@ -76,6 +77,7 @@ export default function App() {
   // UI State
   const [view, setView] = useState<ViewState>('dashboard');
   const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | null>(null);
+  const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
@@ -462,9 +464,23 @@ export default function App() {
     );
   }
 
-  // Not authenticated and not in demo/local mode - show login
+  // Not authenticated and not in demo/local mode - show landing or login
   if (!user && !isDemoMode && !isLocalMode) {
-    return <LoginPage onDemoMode={handleEnterDemoMode} onLocalMode={handleEnterLocalMode} />;
+    if (showLoginPage) {
+      return (
+        <LoginPage 
+          onDemoMode={handleEnterDemoMode} 
+          onLocalMode={handleEnterLocalMode}
+          onBack={() => setShowLoginPage(false)}
+        />
+      );
+    }
+    return (
+      <LandingPage 
+        onGetStarted={() => setShowLoginPage(true)}
+        onDemo={handleEnterDemoMode}
+      />
+    );
   }
 
   // Loading user data
