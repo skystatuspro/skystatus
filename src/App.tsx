@@ -23,6 +23,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
+import { PrivacyPolicy, TermsOfService } from './components/LegalPages';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 
@@ -74,6 +75,7 @@ export default function App() {
   
   // UI State
   const [view, setView] = useState<ViewState>('dashboard');
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
@@ -82,6 +84,27 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Handle hash-based routing for legal pages
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#/privacy') {
+        setLegalPage('privacy');
+      } else if (hash === '#/terms') {
+        setLegalPage('terms');
+      } else {
+        setLegalPage(null);
+      }
+    };
+    
+    // Check on mount
+    handleHashChange();
+    
+    // Listen for changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Track if initial data load has completed (prevents reload on window focus)
   const hasInitiallyLoaded = useRef(false);
@@ -403,6 +426,29 @@ export default function App() {
     const status = cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer';
     return status as 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
   }, [xpData, xpRollover, flights, manualLedger]);
+
+  // Legal pages (accessible without login)
+  if (legalPage === 'privacy') {
+    return (
+      <PrivacyPolicy
+        onBack={() => {
+          window.location.hash = '';
+          setLegalPage(null);
+        }}
+      />
+    );
+  }
+  
+  if (legalPage === 'terms') {
+    return (
+      <TermsOfService
+        onBack={() => {
+          window.location.hash = '';
+          setLegalPage(null);
+        }}
+      />
+    );
+  }
 
   // Loading state
   if (authLoading) {
