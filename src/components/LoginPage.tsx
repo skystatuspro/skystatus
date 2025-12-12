@@ -282,9 +282,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode })
       </div>
 
       {/* Footer */}
-      <p className="mt-8 text-slate-500 text-sm">
-        Track your Flying Blue XP, miles, and redemptions
-      </p>
+      <div className="mt-8 text-center">
+        <p className="text-slate-500 text-sm mb-4">
+          Track your Flying Blue XP, miles, and redemptions
+        </p>
+        <div className="flex items-center justify-center gap-3 text-xs text-slate-400">
+          <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms of Service</a>
+        </div>
+      </div>
     </div>
   );
 };

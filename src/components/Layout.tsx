@@ -259,6 +259,20 @@ export const Layout: React.FC<LayoutProps> = ({
 
             {children}
           </div>
+          
+          {/* Footer */}
+          <footer className="mt-auto border-t border-slate-200 py-6 px-4 sm:px-6 lg:px-10 bg-white/50">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400">
+              <p>© {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.</p>
+              <div className="flex items-center gap-4">
+                <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+                <span className="text-slate-300">·</span>
+                <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms of Service</a>
+                <span className="text-slate-300">·</span>
+                <a href="mailto:support@skystatus.pro" className="hover:text-slate-600 transition-colors">Contact</a>
+              </div>
+            </div>
+          </footer>
         </div>
       </main>
     </div>
