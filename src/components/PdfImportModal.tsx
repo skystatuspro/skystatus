@@ -583,10 +583,10 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
                         XP discrepancy detected
                       </p>
                       <p className={`text-sm mt-1 ${summary.xpDiscrepancy > 0 ? 'text-blue-600' : 'text-amber-600'}`}>
-                        Your PDF shows <strong>{summary.pdfTotalXP} XP</strong>, but imported flights total <strong>{summary.calculatedXP} XP</strong>.
+                        Your official Flying Blue balance is <strong>{summary.pdfTotalXP} XP</strong>, but imported flights total <strong>{summary.calculatedXP} XP</strong>.
                         {summary.xpDiscrepancy > 0 
                           ? ` The ${summary.xpDiscrepancy} XP difference likely comes from credit card bonuses, status bonuses, or older flights not in this PDF.`
-                          : ` This might indicate flights outside your current qualification period.`
+                          : ` This is normal — older flights in the PDF don't count towards your current qualification period.`
                         }
                       </p>
                       
