@@ -26,6 +26,7 @@ import PdfImportModal from './components/PdfImportModal';
 import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage } from './components/LegalPages';
 import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
+import { CalculatorPage } from './components/CalculatorPage';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 
@@ -77,7 +78,7 @@ export default function App() {
   
   // UI State
   const [view, setView] = useState<ViewState>('dashboard');
-  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | null>(null);
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -102,6 +103,8 @@ export default function App() {
         setLegalPage('about');
       } else if (hash === '#/contact') {
         setLegalPage('contact');
+      } else if (hash === '#/calculator') {
+        setLegalPage('calculator');
       } else {
         setLegalPage(null);
       }
@@ -502,6 +505,17 @@ export default function App() {
   if (legalPage === 'contact') {
     return (
       <ContactPage
+        onBack={() => {
+          window.location.hash = '';
+          setLegalPage(null);
+        }}
+      />
+    );
+  }
+
+  if (legalPage === 'calculator') {
+    return (
+      <CalculatorPage
         onBack={() => {
           window.location.hash = '';
           setLegalPage(null);
