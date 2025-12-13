@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 // Cookie categories following GDPR guidelines
 export interface CookieConsent {
@@ -53,33 +53,27 @@ interface StoredConsent {
   timestamp: string;
 }
 
-export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [consent, setConsent] = useState<CookieConsent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-
-  // Load consent from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(CONSENT_STORAGE_KEY);
-      if (stored) {
-        const parsed: StoredConsent = JSON.parse(stored);
-        // Check if consent version matches (re-ask if policy changed)
-        if (parsed.version === CONSENT_VERSION) {
-          setConsent(parsed.consent);
-          setShowBanner(false);
-        } else {
-          // Policy changed, need new consent
-          setShowBanner(true);
-        }
-      } else {
-        // No consent stored, show banner
-        setShowBanner(true);
+// Check localStorage synchronously to determine initial state
+const getInitialState = (): { consent: CookieConsent | null; showBanner: boolean } => {
+  try {
+    const stored = localStorage.getItem(CONSENT_STORAGE_KEY);
+    if (stored) {
+      const parsed: StoredConsent = JSON.parse(stored);
+      if (parsed.version === CONSENT_VERSION) {
+        return { consent: parsed.consent, showBanner: false };
       }
-    } catch {
-      setShowBanner(true);
     }
-  }, []);
+  } catch {
+    // localStorage not available or parse error
+  }
+  // No valid consent found - show banner
+  return { consent: null, showBanner: true };
+};
+
+export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Initialize state synchronously from localStorage
+  const [state, setState] = useState(getInitialState);
+  const [showSettings, setShowSettings] = useState(false);
 
   const saveConsent = useCallback((newConsent: CookieConsent) => {
     const stored: StoredConsent = {
@@ -88,8 +82,7 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(stored));
-    setConsent(newConsent);
-    setShowBanner(false);
+    setState({ consent: newConsent, showBanner: false });
     setShowSettings(false);
 
     // Trigger analytics initialization if accepted
@@ -136,9 +129,9 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <CookieConsentContext.Provider
       value={{
-        consent,
-        hasConsented: consent !== null,
-        showBanner,
+        consent: state.consent,
+        hasConsented: state.consent !== null,
+        showBanner: state.showBanner,
         acceptAll,
         rejectAll,
         acceptSelected,
