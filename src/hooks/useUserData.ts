@@ -42,6 +42,7 @@ export interface QualificationSettings {
   cycleStartMonth: string;
   startingStatus: StatusLevel;
   startingXP: number;
+  ultimateCycleType?: 'qualification' | 'calendar'; // 'calendar' for legacy Ultimate members
 }
 
 export interface UserDataState {
@@ -239,6 +240,7 @@ export function useUserData(): UseUserDataReturn {
               cycleStartMonth: data.profile.qualificationStartMonth,
               startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
               startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
+              ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
             });
           }
         }
@@ -280,6 +282,7 @@ export function useUserData(): UseUserDataReturn {
           qualification_start_month: qualificationSettings?.cycleStartMonth,
           starting_status: qualificationSettings?.startingStatus,
           starting_xp: qualificationSettings?.startingXP,
+          ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
         }),
       ]);
     } catch (error) {
