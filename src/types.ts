@@ -5,9 +5,10 @@
 // STATUS TYPES
 // ============================================================================
 
-// Base XP-determined status levels (4 levels)
-// Ultimate is NOT a 5th level - it's a boolean property on top of Platinum
-export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+// Base XP-determined status levels
+// Note: In Flying Blue, Ultimate is technically Platinum + 900 UXP, but for UI purposes
+// we allow selecting "Ultimate" as a starting status to simplify the user experience
+export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
 
 // View states for the app
 export type ViewState = 'xp' | 'miles' | 'analytics' | 'calculator' | 'faq' | 'redemption' | 'mileagerun';
