@@ -41,7 +41,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
               onClick={onDemo}
               className="hidden sm:block px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
             >
-              Try Demo
+              View Demo
             </button>
             <button
               onClick={onGetStarted}
@@ -88,21 +88,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
                 onClick={onGetStarted}
                 className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all hover:scale-[1.02]"
               >
-                Get Started Free
+                Start Tracking
                 <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={onDemo}
                 className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-slate-700 rounded-2xl font-bold text-lg border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all"
               >
-                Try Demo
+                Explore with sample data
               </button>
             </div>
 
             <div className="flex items-center gap-6 mt-8 text-sm text-slate-500">
               <div className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-emerald-500" />
-                No credit card required
+                100% free
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle size={16} className="text-emerald-500" />
@@ -292,14 +292,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
               onClick={onGetStarted}
               className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all hover:scale-[1.02]"
             >
-              Get Started Free
+              Start Tracking
               <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
             <button
               onClick={onDemo}
               className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-100 text-slate-700 rounded-2xl font-bold text-lg hover:bg-slate-200 transition-all"
             >
-              Explore Demo
+              Explore sample data
             </button>
           </div>
         </div>
