@@ -121,13 +121,49 @@ export default function App() {
     setLegalPage(null);
   };
 
-  if (legalPage === 'privacy') return <PrivacyPolicy onBack={handleLegalBack} />;
-  if (legalPage === 'terms') return <TermsOfService onBack={handleLegalBack} />;
-  if (legalPage === 'faq') return <FAQPage onBack={handleLegalBack} />;
-  if (legalPage === 'about') return <AboutPage onBack={handleLegalBack} />;
-  if (legalPage === 'contact') return <ContactPage onBack={handleLegalBack} />;
-  if (legalPage === 'cookies') return <CookiePolicy onBack={handleLegalBack} />;
-  if (legalPage === 'calculator') return <CalculatorPage onBack={handleLegalBack} />;
+  // Legal pages - wrap with cookie consent
+  if (legalPage === 'privacy') return (
+    <CookieConsentProvider>
+      <PrivacyPolicy onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'terms') return (
+    <CookieConsentProvider>
+      <TermsOfService onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'faq') return (
+    <CookieConsentProvider>
+      <FAQPage onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'about') return (
+    <CookieConsentProvider>
+      <AboutPage onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'contact') return (
+    <CookieConsentProvider>
+      <ContactPage onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'cookies') return (
+    <CookieConsentProvider>
+      <CookiePolicy onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'calculator') return (
+    <CookieConsentProvider>
+      <CalculatorPage onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
 
   // -------------------------------------------------------------------------
   // LOADING STATE
@@ -135,12 +171,15 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-slate-400">Loading...</p>
+      <CookieConsentProvider>
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
+            <p className="text-slate-400">Loading...</p>
+          </div>
         </div>
-      </div>
+        <CookieConsentUI />
+      </CookieConsentProvider>
     );
   }
 
@@ -151,18 +190,24 @@ export default function App() {
   if (!user && !meta.isDemoMode && !meta.isLocalMode) {
     if (showLoginPage) {
       return (
-        <LoginPage
-          onDemoMode={actions.handleEnterDemoMode}
-          onLocalMode={actions.handleEnterLocalMode}
-          onBack={() => setShowLoginPage(false)}
-        />
+        <CookieConsentProvider>
+          <LoginPage
+            onDemoMode={actions.handleEnterDemoMode}
+            onLocalMode={actions.handleEnterLocalMode}
+            onBack={() => setShowLoginPage(false)}
+          />
+          <CookieConsentUI />
+        </CookieConsentProvider>
       );
     }
     return (
-      <LandingPage
-        onGetStarted={() => setShowLoginPage(true)}
-        onDemo={actions.handleEnterDemoMode}
-      />
+      <CookieConsentProvider>
+        <LandingPage
+          onGetStarted={() => setShowLoginPage(true)}
+          onDemo={actions.handleEnterDemoMode}
+        />
+        <CookieConsentUI />
+      </CookieConsentProvider>
     );
   }
 
@@ -172,12 +217,15 @@ export default function App() {
 
   if (meta.isLoading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-slate-500">Loading your portfolio...</p>
+      <CookieConsentProvider>
+        <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
+            <p className="text-slate-500">Loading your portfolio...</p>
+          </div>
         </div>
-      </div>
+        <CookieConsentUI />
+      </CookieConsentProvider>
     );
   }
 
