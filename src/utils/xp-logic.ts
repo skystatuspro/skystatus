@@ -953,6 +953,90 @@ const buildEmptyCycle = (
 };
 
 // ============================================================================
+// CALENDAR YEAR UXP CALCULATION (for legacy Ultimate members)
+// ============================================================================
+
+/**
+ * Calculate UXP based on calendar year (Jan-Dec) instead of qualification cycle.
+ * Used for legacy Ultimate members who are still on the old calendar year system.
+ */
+const calculateCalendarYearUXP = (
+  flights: FlightRecord[],
+  year: number
+): { actualUXP: number; projectedUXP: number; totalUXP: number } => {
+  const today = new Date().toISOString().slice(0, 10);
+  const yearStart = `${year}-01-01`;
+  const yearEnd = `${year}-12-31`;
+
+  let actualUXP = 0;
+  let projectedUXP = 0;
+
+  for (const flight of flights) {
+    // Only count flights within the calendar year
+    if (flight.date < yearStart || flight.date > yearEnd) continue;
+
+    const uxp = getFlightUXP(flight);
+    if (uxp === 0) continue;
+
+    const isFlown = flight.date < today;
+    if (isFlown) {
+      actualUXP += uxp;
+    } else {
+      projectedUXP += uxp;
+    }
+  }
+
+  // Cap at 1800 (max possible in a year)
+  const totalUXP = Math.min(1800, actualUXP + projectedUXP);
+  actualUXP = Math.min(1800, actualUXP);
+
+  return { actualUXP, projectedUXP, totalUXP };
+};
+
+/**
+ * Apply calendar year UXP calculation to cycles.
+ * Overrides the cycle-based UXP with calendar year UXP for the active cycle.
+ */
+const applyCalendarYearUXPToCycles = (
+  cycles: QualificationCycleStats[],
+  flights: FlightRecord[]
+): QualificationCycleStats[] => {
+  const currentYear = new Date().getFullYear();
+
+  return cycles.map((cycle) => {
+    // Find which calendar year this cycle overlaps with
+    // For the active cycle, calculate calendar year UXP
+    const cycleEndYear = parseInt(cycle.endDate.slice(0, 4));
+    const cycleStartYear = parseInt(cycle.startDate.slice(0, 4));
+    
+    // Determine which calendar year to use for UXP calculation
+    // Use the year where most of the cycle falls, or current year if active
+    const today = new Date().toISOString().slice(0, 10);
+    const isActiveCycle = today >= cycle.startDate && today <= cycle.endDate;
+    
+    const uxpYear = isActiveCycle ? currentYear : cycleEndYear;
+    const { actualUXP, projectedUXP, totalUXP } = calculateCalendarYearUXP(flights, uxpYear);
+
+    // Recalculate Ultimate status based on calendar year UXP
+    const isUltimate = isUltimateStatus(cycle.actualStatus, actualUXP);
+    const projectedUltimate = isUltimateStatus(cycle.projectedStatus, totalUXP);
+    const uxpRolloverOut = calculateUXPRollover(totalUXP);
+
+    return {
+      ...cycle,
+      actualUXP,
+      projectedUXP,
+      totalUXP,
+      uxpRolloverOut,
+      isUltimate,
+      projectedUltimate,
+      // Note: uxpRolloverIn stays 0 for calendar year mode (fresh start each Jan 1)
+      uxpRolloverIn: 0,
+    };
+  });
+};
+
+// ============================================================================
 // MAIN EXPORT
 // ============================================================================
 
@@ -961,7 +1045,12 @@ export const calculateQualificationCycles = (
   baseRollover: number,
   flights?: FlightRecord[],
   manualLedger?: ManualLedger,
-  qualificationSettings?: { cycleStartMonth: string; startingStatus: StatusLevel; startingXP: number } | null
+  qualificationSettings?: { 
+    cycleStartMonth: string; 
+    startingStatus: StatusLevel; 
+    startingXP: number;
+    ultimateCycleType?: 'qualification' | 'calendar';
+  } | null
 ): MultiCycleStats => {
   const monthDataList = buildMonthDataList(
     flights ?? [],
@@ -1191,6 +1280,12 @@ export const calculateQualificationCycles = (
     if (cycleStartMonth > maxRelevantMonth) {
       break;
     }
+  }
+
+  // Apply calendar year UXP calculation if needed
+  if (qualificationSettings?.ultimateCycleType === 'calendar') {
+    const adjustedCycles = applyCalendarYearUXPToCycles(cycles, flights ?? []);
+    return { cycles: adjustedCycles };
   }
 
   return { cycles };
