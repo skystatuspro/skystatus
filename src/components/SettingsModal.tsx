@@ -10,6 +10,7 @@ import {
   User,
   AlertTriangle,
   FileText,
+  UserX,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import PdfImportModal from './PdfImportModal';
@@ -73,8 +74,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   markDataChanged,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const { signOut, user } = useAuth();
+  const { signOut, user, deleteAccount } = useAuth();
   const [showPdfImport, setShowPdfImport] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -331,6 +335,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    
+    setIsDeleting(true);
+    try {
+      const { error } = await deleteAccount();
+      if (error) {
+        alert('Failed to delete account. Please try again.');
+        console.error('Delete account error:', error);
+      } else {
+        // Clear local storage as well
+        localStorage.clear();
+        onClose();
+        // Reload the page to reset all state
+        window.location.reload();
+      }
+    } catch (e) {
+      alert('Failed to delete account. Please try again.');
+      console.error('Delete account error:', e);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Determine header subtitle
   const getHeaderSubtitle = () => {
     if (isLocalMode) return 'Local mode — export to save your data';
@@ -571,6 +599,103 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </button>
           </div>
+
+          {/* Delete Account - only show for logged in users */}
+          {isLoggedIn && !isDemoMode && !isLocalMode && (
+            <div className="mt-6 pt-6 border-t border-red-200">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-red-500 mb-3">
+                Danger Zone
+              </p>
+
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full rounded-2xl border-2 border-red-200 bg-white hover:bg-red-50 transition-colors px-4 py-3.5 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-100">
+                      <UserX className="text-red-600" size={16} />
+                    </span>
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-red-700">
+                        Delete Account
+                      </p>
+                      <p className="text-[11px] text-red-500">
+                        Permanently delete your account and all data.
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ) : (
+                <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-4">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="p-2 rounded-xl bg-red-100 shrink-0">
+                      <AlertTriangle className="text-red-600" size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-red-800 mb-1">
+                        Are you absolutely sure?
+                      </p>
+                      <p className="text-xs text-red-700 leading-relaxed">
+                        This action <span className="font-bold">cannot be undone</span>. This will permanently delete your account and remove all your data from our servers.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <Download className="text-amber-600 shrink-0 mt-0.5" size={14} />
+                      <p className="text-xs text-amber-800">
+                        <span className="font-bold">Recommended:</span> Export your data first using the "Export JSON" button above. Once deleted, your data cannot be recovered.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-xs font-semibold text-red-700 mb-1.5">
+                      Type <span className="font-mono bg-red-100 px-1.5 py-0.5 rounded">DELETE</span> to confirm:
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                      placeholder="DELETE"
+                      className="w-full px-3 py-2 text-sm border-2 border-red-200 rounded-lg focus:border-red-400 focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteConfirmText('');
+                      }}
+                      className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                      className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <UserX size={14} />
+                          Delete My Account
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
