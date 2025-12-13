@@ -41,6 +41,7 @@ import {
   Lightbulb,
   ArrowRight,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { PLATINUM_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
@@ -381,8 +382,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({
     if (efficiencyRate < 80) {
       list.push({
         icon: AlertTriangle,
-        title: `${(100 - efficiencyRate).toFixed(0)}% XP wasted`,
-        description: `${totalXPWastedLifetime} XP lost to rollover caps - consider timing flights`,
+        title: `${(100 - efficiencyRate).toFixed(0)}% XP above cap`,
+        description: `${totalXPWastedLifetime} XP exceeded rollover limits — you over-achieved!`,
         color: 'amber',
       });
     } else if (efficiencyRate >= 95) {
@@ -478,10 +479,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({
             <AnalyticsKPI 
               title="XP Efficiency"
               value={`${efficiencyRate.toFixed(0)}%`}
-              subtext={efficiencyRate >= 90 ? "Well optimized" : `${totalXPWastedLifetime} XP wasted`}
+              subtext={efficiencyRate >= 90 ? "Well optimized" : `${totalXPWastedLifetime} XP above cap`}
               icon={efficiencyRate >= 90 ? CheckCircle2 : AlertTriangle}
               colorClass={efficiencyRate >= 90 ? { bg: 'bg-emerald-50', text: 'text-emerald-600' } : { bg: 'bg-amber-50', text: 'text-amber-600' }}
-              tooltip="Percentage of earned XP actually used (not lost to caps)."
+              tooltip="XP earned beyond the 300 rollover cap doesn't carry over. This isn't lost progress — you still reached your status! It means you could achieve the same result with fewer flights."
             />
             <AnalyticsKPI 
               title="Acquisition Cost"
@@ -748,9 +749,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({
             <AnalyticsKPI 
               title="XP Efficiency"
               value={`${efficiencyRate.toFixed(1)}%`}
-              subtext={totalXPWastedLifetime > 0 ? `${totalXPWastedLifetime} XP lost` : 'No waste!'}
+              subtext={totalXPWastedLifetime > 0 ? `${totalXPWastedLifetime} XP above cap` : 'Perfectly optimized!'}
               icon={efficiencyRate >= 90 ? CheckCircle2 : AlertTriangle}
               colorClass={efficiencyRate >= 90 ? { bg: 'bg-emerald-50', text: 'text-emerald-600' } : { bg: 'bg-amber-50', text: 'text-amber-600' }}
+              tooltip="XP beyond the 300 rollover cap doesn't carry over — but you still earned your status!"
             />
             <AnalyticsKPI 
               title="Years Tracked"
@@ -809,8 +811,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({
             <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
               <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                 <PieIcon size={18} className="text-slate-400" />
-                Efficiency Cap
-                <Tooltip text="Grey = XP lost to the 300 rollover cap." />
+                Rollover Efficiency
+                <Tooltip text="Shows how much of your earned XP stayed within the 300 rollover cap. XP above this cap doesn't carry over, but you still earned your status — this metric helps optimize future flight timing." />
               </h3>
               <div className="flex-1 flex flex-col items-center justify-center relative h-[200px]">
                 <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
@@ -837,12 +839,12 @@ export const Analytics: React.FC<AnalyticsProps> = ({
               
               <div className="mt-4">
                 {totalXPWastedLifetime > 0 ? (
-                  <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl border border-orange-100">
-                    <AlertTriangle className="text-orange-500 shrink-0" size={18} />
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <Info className="text-blue-500 shrink-0" size={18} />
                     <div>
-                      <p className="text-xs font-bold text-orange-800 uppercase">Warning</p>
-                      <p className="text-[11px] text-orange-600/80 leading-tight">
-                        {totalXPWastedLifetime} XP lost due to cap
+                      <p className="text-xs font-bold text-blue-800 uppercase">Over-achieved</p>
+                      <p className="text-[11px] text-blue-600/80 leading-tight">
+                        {totalXPWastedLifetime} XP exceeded rollover cap (max 300/cycle)
                       </p>
                     </div>
                   </div>
@@ -852,7 +854,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                     <div>
                       <p className="text-xs font-bold text-emerald-800 uppercase">Optimized</p>
                       <p className="text-[11px] text-emerald-600/80 leading-tight">
-                        No XP waste detected
+                        All XP within rollover limits
                       </p>
                     </div>
                   </div>
