@@ -281,16 +281,28 @@ export const StatusCard: React.FC<StatusCardProps> = ({
                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                   Next Rollover
                 </p>
-                <Tooltip text="Projected XP carried over to the next qualification cycle. Based on scheduled flights." />
+                <Tooltip text="Projected XP/UXP carried over to the next qualification cycle. Based on scheduled flights." />
               </div>
-              <p
-                className={`text-xl font-black ${
-                  currentCycle.rolloverOut > 0 ? theme.accentText : 'text-slate-300'
-                }`}
-              >
-                {currentCycle.rolloverOut}{' '}
-                <span className="text-sm font-bold text-slate-400">XP</span>
-              </p>
+              <div className="flex gap-3 justify-end">
+                <p
+                  className={`text-xl font-black ${
+                    currentCycle.rolloverOut > 0 ? theme.accentText : 'text-slate-300'
+                  }`}
+                >
+                  {currentCycle.rolloverOut}{' '}
+                  <span className="text-sm font-bold text-slate-400">XP</span>
+                </p>
+                {(actualStatus === 'Platinum' || isUltimate) && (
+                  <p
+                    className={`text-xl font-black ${
+                      currentCycle.uxpRolloverOut > 0 ? 'text-slate-600' : 'text-slate-300'
+                    }`}
+                  >
+                    {currentCycle.uxpRolloverOut ?? 0}{' '}
+                    <span className="text-sm font-bold text-slate-400">UXP</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

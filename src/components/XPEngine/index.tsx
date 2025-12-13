@@ -47,6 +47,8 @@ interface XPEngineProps {
   onUpdate: (data: XPRecord[]) => void;
   rollover: number;
   onUpdateRollover: (val: number) => void;
+  uxpRollover: number;
+  onUpdateUxpRollover: (val: number) => void;
   flights: FlightRecord[];
   onUpdateFlights: (flights: FlightRecord[]) => void;
   manualLedger: ManualLedger;
@@ -61,6 +63,8 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   onUpdate: _onUpdate,
   rollover,
   onUpdateRollover,
+  uxpRollover,
+  onUpdateUxpRollover,
   flights,
   onUpdateFlights: _onUpdateFlights,
   manualLedger,
@@ -210,6 +214,11 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const handleManualRolloverChange = (val: number) => {
     const clamped = Math.max(0, Math.min(300, val));
     onUpdateRollover(Number.isFinite(clamped) ? clamped : 0);
+  };
+
+  const handleManualUxpRolloverChange = (val: number) => {
+    const clamped = Math.max(0, Math.min(900, val));
+    onUpdateUxpRollover(Number.isFinite(clamped) ? clamped : 0);
   };
 
   const ensureManualMonth = (month: string): ManualMonthXP => {
@@ -439,27 +448,48 @@ export const XPEngine: React.FC<XPEngineProps> = ({
             {/* Rollover card */}
             <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:border-slate-200 transition-colors relative z-0 hover:z-10">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-1.5 mb-1">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                       Rollover (Start)
                     </p>
-                    <Tooltip text="XP balance carried over from the previous qualification cycle." />
+                    <Tooltip text="XP and UXP balances carried over from the previous qualification cycle." />
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    {isChained ? (
-                      <span className="text-4xl font-black text-slate-800">
-                        {currentCycle.rolloverIn}
-                      </span>
-                    ) : (
-                      <input
-                        type="number"
-                        value={rollover}
-                        onChange={(e) => handleManualRolloverChange(Number(e.target.value))}
-                        className={`text-4xl font-black text-slate-800 w-24 bg-transparent border-b-2 border-slate-100 focus:border-blue-500 focus:outline-none ${noSpinnerClass}`}
-                      />
+                  <div className="flex gap-4">
+                    {/* XP Input */}
+                    <div className="flex items-baseline gap-1.5">
+                      {isChained ? (
+                        <span className="text-3xl font-black text-slate-800">
+                          {currentCycle.rolloverIn}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          value={rollover}
+                          onChange={(e) => handleManualRolloverChange(Number(e.target.value))}
+                          className={`text-3xl font-black text-slate-800 w-20 bg-transparent border-b-2 border-slate-100 focus:border-blue-500 focus:outline-none ${noSpinnerClass}`}
+                        />
+                      )}
+                      <span className="text-sm font-bold text-slate-400">XP</span>
+                    </div>
+                    {/* UXP Input - only for Platinum starting status */}
+                    {(actualStatus === 'Platinum' || currentCycle.isUltimate) && (
+                      <div className="flex items-baseline gap-1.5">
+                        {isChained ? (
+                          <span className="text-3xl font-black text-slate-600">
+                            {currentCycle.uxpRolloverIn ?? 0}
+                          </span>
+                        ) : (
+                          <input
+                            type="number"
+                            value={uxpRollover}
+                            onChange={(e) => handleManualUxpRolloverChange(Number(e.target.value))}
+                            className={`text-3xl font-black text-slate-600 w-20 bg-transparent border-b-2 border-slate-100 focus:border-slate-400 focus:outline-none ${noSpinnerClass}`}
+                          />
+                        )}
+                        <span className="text-sm font-bold text-slate-400">UXP</span>
+                      </div>
                     )}
-                    <span className="text-sm font-bold text-slate-400">XP</span>
                   </div>
                 </div>
                 <div className="p-2.5 bg-slate-50 rounded-xl text-slate-500 border border-slate-100">
