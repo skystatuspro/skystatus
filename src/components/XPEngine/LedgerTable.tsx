@@ -4,7 +4,7 @@
 import React from 'react';
 import { FlightRecord, ManualLedger, ManualMonthXP, ManualField } from '../../types';
 import { QualificationCycleStats, XPLedgerRow } from '../../utils/xp-logic';
-import { Plane, Clock, ArrowUpRight, Zap } from 'lucide-react';
+import { Plane, Clock, ArrowUpRight, Zap, Crown } from 'lucide-react';
 import { StatusPill, InputCell, StatusTheme } from './helpers';
 
 interface EnhancedLedgerRow {
@@ -23,6 +23,7 @@ interface LedgerTableProps {
   levelUpIsActual: boolean;
   isChained: boolean;
   onManualCellChange: (month: string, field: ManualField, value: number) => void;
+  showUXP?: boolean; // Only show for Platinum/Ultimate members
 }
 
 export const LedgerTable: React.FC<LedgerTableProps> = ({
@@ -35,6 +36,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({
   levelUpIsActual,
   isChained,
   onManualCellChange,
+  showUXP = false,
 }) => {
   const ensureManualMonth = (month: string): ManualMonthXP => {
     const base: ManualMonthXP = {
@@ -95,6 +97,14 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({
                 Total
               </th>
               <th className="px-4 py-4 text-right bg-blue-50/30 text-blue-900">Cumul.</th>
+              {showUXP && (
+                <th className="px-4 py-4 text-right bg-amber-50/30 text-amber-700 border-l border-amber-100/50">
+                  <div className="flex items-center justify-end gap-1">
+                    <Crown size={10} />
+                    UXP
+                  </div>
+                </th>
+              )}
             </tr>
           </thead>
 
@@ -288,6 +298,16 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({
                   >
                     {row.cumulative}
                   </td>
+
+                  {showUXP && (
+                    <td className="px-4 py-3 text-right tabular-nums border-l border-amber-100/50 bg-amber-50/10">
+                      <span className={`font-medium text-sm ${
+                        (row.uxp ?? 0) > 0 ? 'text-amber-700' : 'text-slate-300'
+                      }`}>
+                        {(row.uxp ?? 0) > 0 ? row.uxp : '-'}
+                      </span>
+                    </td>
+                  )}
                 </tr>
               );
             })}

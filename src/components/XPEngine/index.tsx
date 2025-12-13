@@ -162,7 +162,7 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const hasProjectedXPDifference = projectedCumulativeXP !== actualXP;
 
   // Theme
-  const theme = getStatusTheme(actualStatus);
+  const theme = getStatusTheme(actualStatus, currentCycle.isUltimate);
   const nextStatus = getNextStatusFromCurrent(actualStatus);
 
   // Cycle info
@@ -533,6 +533,7 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         levelUpIsActual={levelUpIsActual}
         isChained={isChained}
         onManualCellChange={handleManualCellChange}
+        showUXP={actualStatus === 'Platinum' || currentCycle.isUltimate}
       />
 
       {/* FAQ Modal */}
