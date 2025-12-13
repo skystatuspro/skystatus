@@ -111,17 +111,24 @@ export const XPEngine: React.FC<XPEngineProps> = ({
 
   const shouldShowCycleSetup = !qualificationSettings || showCycleSetup;
 
-  // Update selection on invalid index
+  // Create a stable identifier for the cycles array to detect significant changes
+  // This changes when cycle dates change (e.g., qualificationSettings updates)
+  const cyclesFingerprint = useMemo(() => {
+    if (cycles.length === 0) return '';
+    return cycles.map(c => `${c.startDate}-${c.endDate}`).join('|');
+  }, [cycles]);
+
+  // Update selection when cycles change significantly (not just during typing)
   useEffect(() => {
     if (cycles.length === 0) {
       setSelectedIndex(0);
       return;
     }
 
-    if (selectedIndex >= cycles.length) {
-      setSelectedIndex(findActiveCycleIndex(cycles));
-    }
-  }, [cycles.length]);
+    // Always recalculate when cycles structure changes
+    const newIndex = findActiveCycleIndex(cycles);
+    setSelectedIndex(newIndex);
+  }, [cyclesFingerprint]);
 
   if (cycles.length === 0) {
     return null;
