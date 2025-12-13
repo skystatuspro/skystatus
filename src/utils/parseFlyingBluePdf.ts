@@ -3,28 +3,98 @@
 
 import { FlightRecord, MilesRecord } from '../types';
 
-// Dutch month mapping
-const MONTHS_NL: Record<string, string> = {
-  'jan': '01', 'feb': '02', 'mrt': '03', 'apr': '04',
-  'mei': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-  'sep': '09', 'okt': '10', 'nov': '11', 'dec': '12'
+// Comprehensive month mapping for all major languages
+// First 3 characters are used for matching
+const MONTH_MAP: Record<string, number> = {
+  // English
+  'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+  'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+  // Dutch
+  'mrt': 3, 'mei': 5, 'okt': 10,
+  // French
+  'fév': 2, 'avr': 4, 'mai': 5, 'jui': 6, 'aoû': 8, 'déc': 12,
+  // German
+  'mär': 3, 'mrz': 3, 'dez': 12,
+  // Spanish/Portuguese (excluding duplicates)
+  'ene': 1, 'abr': 4, 'ago': 8, 'set': 9, 'dic': 12, 'out': 10,
+  // Italian
+  'gen': 1, 'mag': 5, 'giu': 6, 'lug': 7, 'ott': 10,
+  // Full month names (first 3 chars) - these overlap with abbreviations above
+  'january': 1, 'february': 2, 'march': 3, 'april': 4, 'june': 6,
+  'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12,
 };
 
-// English month mapping (Flying Blue PDFs can be in multiple languages)
-const MONTHS_EN: Record<string, string> = {
-  'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-  'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-  'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
-};
+// Legacy mapping for backward compatibility
+const ALL_MONTHS: Record<string, string> = {};
+for (const [key, val] of Object.entries(MONTH_MAP)) {
+  ALL_MONTHS[key] = String(val).padStart(2, '0');
+}
 
-// French month mapping
-const MONTHS_FR: Record<string, string> = {
-  'jan': '01', 'fév': '02', 'mar': '03', 'avr': '04',
-  'mai': '05', 'juin': '06', 'juil': '07', 'aoû': '08',
-  'sep': '09', 'oct': '10', 'nov': '11', 'déc': '12'
-};
+/**
+ * Try to find month number from a string
+ * Handles full names, abbreviations, multiple languages
+ */
+function findMonth(str: string): number | null {
+  const cleaned = str.toLowerCase().replace(/[^a-zéûôàèùäöüß]/g, '');
+  
+  // Try exact match first
+  if (MONTH_MAP[cleaned]) return MONTH_MAP[cleaned];
+  
+  // Try first 3 characters
+  const prefix = cleaned.substring(0, 3);
+  if (MONTH_MAP[prefix]) return MONTH_MAP[prefix];
+  
+  // Try matching any known month prefix
+  for (const [monthKey, monthNum] of Object.entries(MONTH_MAP)) {
+    if (cleaned.startsWith(monthKey) || monthKey.startsWith(cleaned)) {
+      return monthNum;
+    }
+  }
+  
+  return null;
+}
 
-const ALL_MONTHS = { ...MONTHS_NL, ...MONTHS_EN, ...MONTHS_FR };
+/**
+ * Check if a string looks like it starts with a date
+ * Very permissive - just needs to have date-like components
+ */
+function looksLikeDate(str: string): boolean {
+  const s = str.toLowerCase();
+  
+  // Must contain at least one number
+  if (!/\d/.test(s)) return false;
+  
+  // Check for common date patterns
+  // Has month name?
+  const hasMonthWord = Object.keys(MONTH_MAP).some(m => s.includes(m));
+  
+  // Has numeric separators (/, -, .)?
+  const hasDateSeparators = /\d+[/.-]\d+[/.-]\d+/.test(s);
+  
+  // Has day + month or month + day pattern?
+  const hasDayMonth = /\d{1,2}\s+\w{3,}|\w{3,}\s+\d{1,2}/.test(s);
+  
+  return hasMonthWord || hasDateSeparators || hasDayMonth;
+}
+
+/**
+ * Check if a line looks like a new transaction (starts with a parseable date)
+ * Used to detect transaction boundaries
+ */
+function looksLikeNewTransaction(line: string): boolean {
+  if (!looksLikeDate(line)) return false;
+  
+  // Try to parse the beginning as a date
+  const words = line.split(/\s+/);
+  for (let n = 2; n <= Math.min(5, words.length); n++) {
+    const potentialDate = words.slice(0, n).join(' ');
+    if (parseDate(potentialDate)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 // Airline code to name mapping
 const AIRLINE_MAP: Record<string, string> = {
@@ -97,17 +167,91 @@ export interface ParseResult {
 }
 
 /**
- * Parse a date string like "30 nov 2025" to "2025-11-30"
+ * Parse a date string to "2025-11-30" format
+ * Universal parser that handles virtually any date format:
+ * - European text: "30 nov 2025", "30 november 2025"
+ * - North American text: "Dec 9, 2025", "December 9 2025"
+ * - European numeric: "30-11-2025", "30/11/2025", "30.11.2025"
+ * - US numeric: "12/9/2025", "12-9-2025"
+ * - ISO: "2025-11-30", "2025/11/30"
+ * - Any language month names
  */
 function parseDate(dateStr: string): string | null {
-  const parts = dateStr.trim().toLowerCase().split(/\s+/);
-  if (parts.length === 3) {
-    const [day, month, year] = parts;
-    const monthNum = ALL_MONTHS[month.substring(0, 3)];
-    if (monthNum) {
-      return `${year}-${monthNum}-${day.padStart(2, '0')}`;
+  // Clean input: remove commas, normalize whitespace
+  const cleaned = dateStr.trim().replace(/,/g, ' ').replace(/\s+/g, ' ');
+  
+  let day: number | null = null;
+  let month: number | null = null;
+  let year: number | null = null;
+  
+  // Strategy 1: Pure numeric formats (e.g., "30/11/2025", "2025-11-30", "12.9.2025")
+  const numericMatch = cleaned.match(/^(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})$/);
+  if (numericMatch) {
+    const [, a, b, c] = numericMatch.map(Number);
+    
+    // ISO format: 2025-11-30 (first number is 4 digits)
+    if (a > 1000) {
+      year = a;
+      month = b;
+      day = c;
+    }
+    // European or US: depends on values
+    // If third number is 4 digits, it's the year
+    else if (c > 1000) {
+      year = c;
+      // European (DD/MM/YYYY) vs US (MM/DD/YYYY)
+      // Heuristic: if first > 12, it must be day
+      if (a > 12) {
+        day = a;
+        month = b;
+      } else if (b > 12) {
+        month = a;
+        day = b;
+      } else {
+        // Ambiguous - assume European (DD/MM/YYYY) as that's more common globally
+        day = a;
+        month = b;
+      }
     }
   }
+  
+  // Strategy 2: Text month formats (e.g., "30 nov 2025", "Dec 9 2025")
+  if (!year) {
+    const tokens = cleaned.split(/[\s/.-]+/);
+    
+    // Find all numbers and potential month words
+    const numbers: number[] = [];
+    let foundMonth: number | null = null;
+    
+    for (const token of tokens) {
+      const num = parseInt(token, 10);
+      if (!isNaN(num)) {
+        numbers.push(num);
+      } else {
+        const m = findMonth(token);
+        if (m !== null) {
+          foundMonth = m;
+        }
+      }
+    }
+    
+    if (foundMonth !== null) {
+      month = foundMonth;
+      
+      // Separate potential day and year from numbers
+      const potentialYear = numbers.find(n => n > 1000 && n < 2100);
+      const potentialDays = numbers.filter(n => n >= 1 && n <= 31 && n < 1000);
+      
+      if (potentialYear) year = potentialYear;
+      if (potentialDays.length > 0) day = potentialDays[0];
+    }
+  }
+  
+  // Validate and return
+  if (day && month && year && day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2000 && year <= 2100) {
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  
   return null;
 }
 
@@ -214,15 +358,33 @@ export function parseFlyingBlueText(text: string): ParseResult {
   while (i < lines.length) {
     const line = lines[i];
     
-    // Main transaction line with date: "30 nov 2025 Description..."
-    const dateMatch = line.match(/^(\d{1,2}\s+\w{3,4}\s+\d{4})\s+(.+)$/);
+    // Universal date detection: try to find a date at the start of the line
+    // Instead of specific regex patterns, we split on the first likely content boundary
+    // and test if the first part parses as a valid date
+    let transDate: string | null = null;
+    let content: string = '';
     
-    if (dateMatch) {
-      const transDate = parseDate(dateMatch[1]);
-      const content = dateMatch[2];
-      const month = transDate?.substring(0, 7);
+    // Try progressively longer prefixes to find a valid date
+    // This handles any date format without specific patterns
+    if (looksLikeDate(line)) {
+      const words = line.split(/\s+/);
       
-      if (!transDate || !month) {
+      // Try combining first 2, 3, 4, or 5 words as a date
+      for (let n = 2; n <= Math.min(5, words.length - 1); n++) {
+        const potentialDate = words.slice(0, n).join(' ');
+        const parsed = parseDate(potentialDate);
+        if (parsed) {
+          transDate = parsed;
+          content = words.slice(n).join(' ');
+          break;
+        }
+      }
+    }
+    
+    if (transDate && content) {
+      const month = transDate.substring(0, 7);
+      
+      if (!month) {
         i++;
         continue;
       }
@@ -252,10 +414,11 @@ export function parseFlyingBlueText(text: string): ParseResult {
           }
           
           // New main transaction = end of this trip (but NOT SAF, NOT segment lines, NOT "op" date lines)
-          if (/^\d{1,2}\s+\w{3,4}\s+\d{4}\s+/.test(subline) && 
-              !/Sustainable|gespaarde|reisafstand|^op\s/i.test(subline)) {
-            // Check if this is actually a new trip or other transaction
-            if (/Mijn\s+reis|Hotel|Subscribe|AMERICAN|Winkelen|RevPoints|Miles\s+overdragen/i.test(subline)) {
+          // Use universal date detection
+          if (looksLikeNewTransaction(subline) && 
+              !/Sustainable|gespaarde|reisafstand|^op\s|^on\s|^le\s/i.test(subline)) {
+            // Check if this is actually a new trip or other transaction type
+            if (/Mijn\s+reis|My\s+trip|Mon\s+voyage|Hotel|Subscribe|Winkelen|Shopping|Miles\s+(earn|overdragen)/i.test(subline)) {
               break;
             }
           }
@@ -275,7 +438,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
                 const lookAhead = lines[k];
                 // Stop if we hit a new segment or new transaction
                 if (/^[A-Z]{3}\s*[-–]\s*[A-Z]{3}/.test(lookAhead) || 
-                    /^\d{1,2}\s+\w{3,4}\s+\d{4}\s+(?!op|Sustainable)/.test(lookAhead)) {
+                    (looksLikeNewTransaction(lookAhead) && !/^op\s|^on\s|Sustainable/i.test(lookAhead))) {
                   break;
                 }
                 // Look for miles/XP pattern
@@ -295,13 +458,16 @@ export function parseFlyingBlueText(text: string): ParseResult {
             const isRevenue = /bestede euro|spent euro|euros dépensés/i.test(rest);
             
             // Look for actual flight date in next lines
+            // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
             let flightDate = transDate;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const opMatch = lines[k].match(/op\s+(\d{1,2}\s+\w{3,4}\s+\d{4})/i);
+              const opMatch = lines[k].match(/(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
-                if (parsed) flightDate = parsed;
-                break;
+                if (parsed) {
+                  flightDate = parsed;
+                  break;
+                }
               }
             }
             
@@ -350,13 +516,16 @@ export function parseFlyingBlueText(text: string): ParseResult {
             }
             
             // Look for flight date
+            // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
             let flightDate = transDate;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const opMatch = lines[k].match(/op\s+(\d{1,2}\s+\w{3,4}\s+\d{4})/i);
+              const opMatch = lines[k].match(/(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
-                if (parsed) flightDate = parsed;
-                break;
+                if (parsed) {
+                  flightDate = parsed;
+                  break;
+                }
               }
             }
             
@@ -397,16 +566,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
         }
       }
       
-      // === AMEX ===
-      else if (/AMERICAN EXPRESS|AMEX/i.test(content)) {
-        const { miles } = extractNumbers(content);
-        if (miles > 0) {
-          getOrCreateMonth(month).amex += miles;
-        }
-      }
-      
       // === HOTELS ===
-      else if (/Hotel|BOOKING\.COM|Accor|ALL-|Marriott/i.test(content)) {
+      // Specific hotel brands and booking platforms
+      else if (/Hotel|BOOKING\.COM|Accor|ALL-|Marriott|Hilton|IHG|Hyatt|Radisson/i.test(content)) {
         const { miles } = extractNumbers(content);
         if (miles > 0) {
           getOrCreateMonth(month).hotel += miles;
@@ -414,15 +576,17 @@ export function parseFlyingBlueText(text: string): ParseResult {
       }
       
       // === SHOPPING ===
-      else if (/Winkelen|Shopping|SHOP|AMAZON/i.test(content)) {
+      // Shopping platforms and retailers
+      else if (/Winkelen|Shopping|SHOP|AMAZON|retail|store/i.test(content)) {
         const { miles } = extractNumbers(content);
         if (miles > 0) {
           getOrCreateMonth(month).shopping += miles;
         }
       }
       
-      // === PARTNERS ===
-      else if (/RevPoints|REVOLUT|Batavia|Partner/i.test(content)) {
+      // === SPECIFIC PARTNERS ===
+      // Known partner programs
+      else if (/RevPoints|REVOLUT|Batavia/i.test(content)) {
         const { miles } = extractNumbers(content);
         if (miles > 0) {
           getOrCreateMonth(month).partner += miles;
@@ -445,6 +609,27 @@ export function parseFlyingBlueText(text: string): ParseResult {
       // === SKIP: Flight segment lines that somehow got a date prefix ===
       else if (/^[A-Z]{3}\s*-\s*[A-Z]{3}/.test(content)) {
         // Skip - flight segment
+      }
+      
+      // === CREDIT/DEBIT CARDS (universal detection) ===
+      // This is AFTER all specific categories - catches any card-related earning
+      // We use broad patterns that work regardless of card brand/issuer/country
+      else if (
+        // Any card network/type mention
+        /Mastercard|Visa|Express|Amex|Diners|Discover|Debit|Credit|Betaal/i.test(content) ||
+        // Earning/spending patterns (most Flying Blue PDFs describe card earnings this way)
+        /Miles\s+(earn|on|from|voor)/i.test(content) ||
+        /earn.*Miles/i.test(content) ||
+        /(expenses|uitgaven|purchases|aankopen|spending|spend|transactions?)/i.test(content) ||
+        // Card-related terms in multiple languages
+        /kaart|carte|tarjeta|card|co-?brand/i.test(content)
+      ) {
+        const { miles } = extractNumbers(content);
+        if (miles > 0) {
+          getOrCreateMonth(month).amex += miles; // "amex" field stores all credit card miles
+        } else if (miles < 0) {
+          getOrCreateMonth(month).debit += Math.abs(miles);
+        }
       }
       
       // === REQUALIFICATION EVENTS ===
