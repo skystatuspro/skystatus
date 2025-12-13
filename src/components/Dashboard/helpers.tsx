@@ -43,9 +43,25 @@ export interface StatusTheme {
   iconColor: string;
   progressBar: string;
   projectedBar: string;
+  // Ultimate-specific
+  cardBg?: string;
+  borderColor?: string;
 }
 
-export const getStatusTheme = (status: StatusLevel): StatusTheme => {
+export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false): StatusTheme => {
+  // Ultimate theme - black with subtle amber accents
+  if (isUltimate) {
+    return {
+      meshGradient: 'from-slate-900 via-slate-800 to-slate-900',
+      accentColor: 'text-white',
+      iconColor: 'text-amber-400',
+      progressBar: 'from-amber-500 to-amber-400',
+      projectedBar: 'from-amber-600 to-amber-500',
+      cardBg: 'bg-slate-900',
+      borderColor: 'border-slate-700',
+    };
+  }
+
   switch (status) {
     case 'Platinum':
       return {
@@ -80,6 +96,55 @@ export const getStatusTheme = (status: StatusLevel): StatusTheme => {
         projectedBar: 'from-emerald-300 to-teal-300',
       };
   }
+};
+
+// Calculate Ultimate achievement probability
+export const calculateUltimateChance = (
+  actualUXP: number,
+  projectedUXP: number,
+  monthsRemaining: number
+): { percentage: number; message: string; sentiment: 'positive' | 'neutral' | 'encouraging' } => {
+  const target = 900;
+  
+  // Already achieved or will achieve with booked flights
+  if (actualUXP >= target) {
+    return { percentage: 100, message: "You've achieved Ultimate!", sentiment: 'positive' };
+  }
+  
+  if (projectedUXP >= target) {
+    return { percentage: 100, message: 'Ultimate secured with booked flights!', sentiment: 'positive' };
+  }
+  
+  // Calculate based on projected UXP
+  const progressPercent = Math.round((projectedUXP / target) * 100);
+  
+  // High chance - over 70% there
+  if (progressPercent >= 70) {
+    const uxpNeeded = target - projectedUXP;
+    return { 
+      percentage: progressPercent, 
+      message: `Only ${uxpNeeded} UXP to go – you're almost there!`, 
+      sentiment: 'positive' 
+    };
+  }
+  
+  // Medium chance - 40-70%
+  if (progressPercent >= 40) {
+    const uxpPerMonth = monthsRemaining > 0 ? Math.ceil((target - projectedUXP) / monthsRemaining) : target - projectedUXP;
+    return { 
+      percentage: progressPercent, 
+      message: `${uxpPerMonth} UXP/month on KLM/AF to reach Ultimate`, 
+      sentiment: 'neutral' 
+    };
+  }
+  
+  // Lower chance - under 40%
+  const flightsNeeded = Math.ceil((target - projectedUXP) / 40); // ~40 UXP per avg EU flight
+  return { 
+    percentage: progressPercent, 
+    message: `Book ${flightsNeeded} more KLM/AF flights to unlock Ultimate`, 
+    sentiment: 'encouraging' 
+  };
 };
 
 export const findActiveCycle = (cycles: QualificationCycleStats[]): QualificationCycleStats | null => {
