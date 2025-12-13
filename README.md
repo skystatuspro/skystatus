@@ -1,60 +1,64 @@
-# SkyStatus - Flying Blue Analytics
+# SkyStatus Pro - Flying Blue Analytics
 
-A comprehensive analytics dashboard for tracking your Flying Blue loyalty program portfolio.
+A comprehensive analytics dashboard for tracking your Flying Blue loyalty program portfolio. Track XP qualification, miles balance, and optimize your loyalty strategy.
 
-![SkyStatus Dashboard](https://img.shields.io/badge/Version-1.0.0-blue)
-![React](https://img.shields.io/badge/React-18.2-61dafb)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.3-38bdf8)
+![Version](https://img.shields.io/badge/Version-2.0.0-blue)
+![React](https://img.shields.io/badge/React-18.3-61dafb)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
+![Supabase](https://img.shields.io/badge/Supabase-Auth-3ecf8e)
 
 ## Features
 
-### 📊 Dashboard
-- Real-time status overview
-- XP qualification progress
-- Miles portfolio value
-- Risk monitoring
+### 📊 Command Center (Dashboard)
+- Real-time Flying Blue status overview
+- XP qualification progress with actual vs projected
+- Miles portfolio value estimation
+- Risk monitoring with actionable tips
+- Recent redemption activity
+
+### 🎯 XP Engine
+- Multi-cycle qualification tracking
+- Automatic cycle detection from PDF imports
+- Manual ledger for AMEX, SAF bonus, misc XP
+- Level-up cycle detection and chaining
+- Rollover calculations (max 300 XP)
+
+### 💰 Miles Engine
+- Track miles from all sources (Subscriptions, Amex, Flights, Other)
+- Cost per mile (CPM) analysis
+- Source efficiency comparison
+- ROI multiplier tracking
+- Projected portfolio value
 
 ### ✈️ Flight Management
-- Add single or multi-leg flights
-- Automatic XP calculation
+- PDF import from Flying Blue activity statements
+- Manual flight entry with multi-leg support
+- Automatic XP calculation based on cabin, status, fare class
 - Revenue-based miles for KLM/AF
 - SkyTeam partner support
 
-### 💰 Miles Engine
-- Track miles from all sources (Subscriptions, Amex, Flights)
-- Cost per mile (CPM) analysis
-- Source efficiency comparison
-- Projected portfolio value
-
-### 🎯 XP Qualification
-- Multi-year cycle tracking
-- Actual vs Projected XP
-- Status level progression
-- Rollover calculations
-
 ### 🔥 Redemption Analyzer
-- Track redemption value
-- ROI analysis vs acquisition cost
+- Track award bookings and their value
+- CPM achieved vs acquisition cost
 - Best/worst redemption tracking
-- Value map visualization
+- Value verdict (Excellent/Good/Fair/Poor)
 
 ### 📈 Analytics Center
-- Deep dive into miles trends
+- Miles accumulation trends
 - XP efficiency analysis
-- Source diversification
-- CPM trend over time
+- Source diversification charts
+- Historical performance
 
 ### 🛫 XP Run Simulator
-- Plan status runs
-- Route optimization
-- Cost per XP analysis
-- Quick route suggestions
+- Plan mileage runs for status qualification
+- Route suggestions with XP/cost analysis
+- Quick route calculator
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation
@@ -73,6 +77,15 @@ npm install
 npm run dev
 ```
 
+### Environment Variables
+
+Create a `.env` file for Supabase integration:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
 ### Build for Production
 
 ```bash
@@ -87,6 +100,16 @@ npm run build
 - **Tailwind CSS** - Styling
 - **Recharts** - Data Visualization
 - **Lucide React** - Icons
+- **Supabase** - Authentication & Database
+- **PDF.js** - PDF parsing for Flying Blue imports
+
+## Data Storage
+
+SkyStatus supports three storage modes:
+
+1. **Cloud Sync** (Authenticated) - Data stored in Supabase, syncs across devices
+2. **Local Mode** - Data stored in browser localStorage
+3. **Demo Mode** - Sample data for exploration, no persistence
 
 ## Deployment
 
@@ -94,7 +117,8 @@ npm run build
 
 1. Push your code to GitHub
 2. Import project in Vercel
-3. Deploy automatically
+3. Add environment variables
+4. Deploy automatically
 
 ### Netlify
 
@@ -102,10 +126,11 @@ npm run build
 2. Connect repository in Netlify
 3. Build command: `npm run build`
 4. Publish directory: `dist`
+5. Add environment variables
 
-## Data Storage
+## Documentation
 
-All data is stored locally in your browser's localStorage. No data is sent to any server.
+- [Architecture Overview](./ARCHITECTURE.md) - Technical documentation for developers
 
 ## License
 
@@ -113,9 +138,8 @@ MIT License - feel free to use this for personal projects.
 
 ## Disclaimer
 
-This is an unofficial tool and is not affiliated with Air France-KLM or the Flying Blue program. 
-All calculations are estimates based on publicly available information.
+This is an unofficial tool and is not affiliated with Air France-KLM or the Flying Blue program. All calculations are estimates based on publicly available information.
 
 ---
 
-Built with ❤️ for Flying Blue enthusiasts
+Built with ❤️ for Flying Blue enthusiasts | [skystatus.pro](https://skystatus.pro)
