@@ -20,6 +20,7 @@ import {
   Pencil,
   Save,
   X,
+  Euro,
 } from 'lucide-react';
 import { RedemptionRecord } from '../types';
 import { calculateBurnStats } from '../utils/loyalty-logic';
