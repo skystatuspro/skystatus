@@ -429,6 +429,8 @@ export async function updateProfile(userId: string, updates: {
   home_airport?: string;
   display_name?: string;
   xp_rollover?: number;
+  starting_status?: string;
+  starting_xp?: number;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -539,6 +541,8 @@ export interface UserData {
     qualificationStartMonth: string;
     homeAirport: string;
     xpRollover: number;
+    startingStatus: string | null;
+    startingXP: number | null;
   } | null;
 }
 
@@ -561,6 +565,8 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       qualificationStartMonth: profile.qualification_start_month,
       homeAirport: profile.home_airport,
       xpRollover: profile.xp_rollover || 0,
+      startingStatus: profile.starting_status || null,
+      startingXP: profile.starting_xp || null,
     } : null,
   };
 }
@@ -605,4 +611,40 @@ export async function saveAllUserData(
 
   const results = await Promise.all(promises);
   return results.every(r => r);
+}
+
+// ============================================
+// DELETE ALL USER DATA
+// ============================================
+
+export async function deleteAllUserData(userId: string): Promise<boolean> {
+  try {
+    // Delete from all tables in parallel
+    const [flightsResult, milesResult, redemptionsResult, profileResult, xpLedgerResult] = await Promise.all([
+      supabase.from('flights').delete().eq('user_id', userId),
+      supabase.from('miles_transactions').delete().eq('user_id', userId),
+      supabase.from('redemptions').delete().eq('user_id', userId),
+      supabase.from('profiles').delete().eq('user_id', userId),
+      supabase.from('xp_ledger').delete().eq('user_id', userId),
+    ]);
+
+    // Check for errors
+    const errors = [
+      flightsResult.error,
+      milesResult.error,
+      redemptionsResult.error,
+      profileResult.error,
+      xpLedgerResult.error,
+    ].filter(Boolean);
+
+    if (errors.length > 0) {
+      console.error('Errors deleting user data:', errors);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting all user data:', error);
+    return false;
+  }
 }
