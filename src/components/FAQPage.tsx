@@ -178,22 +178,22 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           answer: (
             <>
               <p>
-                <strong>Yes, SkyStatus tracks your UXP alongside XP.</strong>
+                <strong>Yes! SkyStatus fully supports Ultimate status tracking.</strong>
               </p>
               <p className="mt-2">
-                The system is fully prepared for Ultimate status tracking:
+                Here's what's included:
               </p>
               <ul className="list-disc list-inside mt-1 space-y-1">
                 <li>UXP is automatically calculated from KLM/AF flights</li>
                 <li>SAF XP is tracked separately</li>
-                <li>The 900 UXP threshold is tracked</li>
-                <li>The 1800 UXP cap per year is calculated</li>
-                <li>UXP rollover (max 900) is carried over</li>
+                <li>Ultimate Requalification section in Risk Monitor (900 UXP target)</li>
+                <li>UXP Rollover Forecast with correct 900 UXP cap</li>
+                <li>UXP Waste indicator based on 1800 total cap</li>
+                <li>Dual XP/UXP rollover inputs in cycle settings</li>
+                <li>Ultimate Cycle Type toggle (Qualification vs Calendar year)</li>
               </ul>
-              <p className="mt-2 p-3 bg-amber-50 rounded-lg text-sm">
-                <strong>Status:</strong> The Ultimate indicator in the interface is currently in 
-                development. Your UXP data is already being collected, so once this feature goes 
-                live you'll have immediate insight into your Ultimate progress.
+              <p className="mt-3">
+                <strong>To set up:</strong> Go to XP Engine → Edit your cycle settings → Select "Ultimate" as your starting status and enter your UXP rollover balance.
               </p>
             </>
           )

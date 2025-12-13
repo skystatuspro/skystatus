@@ -111,7 +111,7 @@ export const FAQModal: React.FC<FAQModalProps> = ({ isOpen, onClose }) => {
         {
           question: 'Does SkyStatus support Ultimate status tracking?',
           answer: (
-            <p>Yes! SkyStatus tracks UXP alongside XP. The system calculates the 900 UXP threshold, 1800 UXP cap, and rollover. The Ultimate indicator UI is in development — your data is already being collected.</p>
+            <p>Yes! SkyStatus fully supports Ultimate tracking. Select "Ultimate" in your cycle settings, enter your UXP rollover, and track your progress with dedicated Ultimate Requalification monitoring, UXP Rollover Forecast (900 cap), and waste indicators (1800 total cap).</p>
           )
         }
       ]

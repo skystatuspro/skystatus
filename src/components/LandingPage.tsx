@@ -80,7 +80,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             
             <p className="text-xl text-slate-600 leading-relaxed mb-8 max-w-2xl">
               Track your XP, analyze miles value, plan mileage runs, and optimize your path to 
-              Platinum status. The ultimate companion for Flying Blue members.
+              Platinum status. Full Ultimate tracking included for those chasing the top tier.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -252,23 +252,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
               Track Every Status Level
             </h2>
             <p className="text-lg text-slate-400">
-              From Explorer to Platinum, we help you reach your goals
+              From Explorer to Ultimate, we help you reach your goals
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               { name: 'Explorer', xp: '0', color: 'from-slate-400 to-slate-500', multiplier: '4x' },
               { name: 'Silver', xp: '100', color: 'from-gray-300 to-gray-400', multiplier: '6x' },
               { name: 'Gold', xp: '180', color: 'from-amber-400 to-amber-500', multiplier: '7x' },
               { name: 'Platinum', xp: '300', color: 'from-slate-300 to-slate-400', multiplier: '8x' },
+              { name: 'Ultimate', xp: '900 UXP', color: 'from-slate-600 to-slate-800', multiplier: '8x' },
             ].map((level) => (
               <div key={level.name} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${level.color} flex items-center justify-center mb-4`}>
                   <Award className="text-white" size={24} />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-1">{level.name}</h3>
-                <p className="text-slate-400 text-sm mb-3">{level.xp} XP required</p>
+                <p className="text-slate-400 text-sm mb-3">{level.xp} {level.name !== 'Ultimate' ? 'XP required' : 'as Platinum'}</p>
                 <div className="text-emerald-400 font-semibold">{level.multiplier} Miles</div>
               </div>
             ))}
