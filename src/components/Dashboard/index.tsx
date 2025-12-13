@@ -2,7 +2,8 @@
 // Main Dashboard component - Command Center
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { AppState, FlightRecord, MilesRecord } from '../../types';
+import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
+import { QualificationSettings } from '../../hooks/useUserData';
 import { formatCurrency, formatNumber } from '../../utils/format';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { calculateQualificationCycles } from '../../utils/xp-logic';
@@ -36,8 +37,20 @@ import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveC
 import { KPICard } from './KPICard';
 import { RiskMonitor } from './RiskMonitor';
 
+interface DashboardState {
+  milesData: { month: string; totalMiles: number }[];
+  xpData: XPRecord[];
+  redemptions: RedemptionRecord[];
+  xpRollover: number;
+  currentMonth: string;
+  flights: FlightRecord[];
+  targetCPM: number;
+  manualLedger: ManualLedger;
+  qualificationSettings?: QualificationSettings | null;
+}
+
 interface DashboardProps {
-  state: AppState;
+  state: DashboardState;
   navigateTo: (view: any) => void;
   onUpdateCurrentMonth: (month: string) => void;
   onPdfImport?: (flights: FlightRecord[], miles: MilesRecord[]) => void;
@@ -77,9 +90,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         state.xpData,
         state.xpRollover,
         state.flights,
-        state.manualLedger
+        state.manualLedger,
+        state.qualificationSettings
       ),
-    [state.xpData, state.xpRollover, state.flights, state.manualLedger]
+    [state.xpData, state.xpRollover, state.flights, state.manualLedger, state.qualificationSettings]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
