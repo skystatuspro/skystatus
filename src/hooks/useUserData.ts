@@ -212,8 +212,11 @@ export function useUserData(): UseUserDataReturn {
     try {
       const data = await fetchAllUserData(user.id);
 
+      // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
+      // Logged-in users with empty data will see the Dashboard welcome screen instead
       if (data.flights.length === 0 && data.milesData.length === 0 && data.redemptions.length === 0) {
-        setShowWelcome(true);
+        // Don't set showWelcome - logged-in users use Dashboard welcome screen
+        // Just mark as loaded so they can start adding data
       } else {
         setFlightsInternal(data.flights);
         setBaseMilesDataInternal(data.milesData);
