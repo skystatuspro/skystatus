@@ -679,8 +679,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               Data Actions
             </p>
 
-            {/* Reload Demo Data - only show if NOT in local mode */}
-            {!isLocalMode && (
+            {/* Reload Demo Data - only show in demo mode (not for logged-in users) */}
+            {isDemoMode && (
               <button
                 onClick={handleReloadDemo}
                 className="w-full mb-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors px-4 py-3.5 flex items-center justify-between"
