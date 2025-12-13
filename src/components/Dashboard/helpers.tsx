@@ -49,16 +49,16 @@ export interface StatusTheme {
 }
 
 export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false): StatusTheme => {
-  // Ultimate theme - black with subtle amber accents
+  // Ultimate theme - sophisticated dark with subtle amber accents
   if (isUltimate) {
     return {
-      meshGradient: 'from-slate-900 via-slate-800 to-slate-900',
+      meshGradient: 'from-slate-800 via-slate-700/90 to-slate-800',
       accentColor: 'text-white',
-      iconColor: 'text-amber-400',
-      progressBar: 'from-amber-500 to-amber-400',
-      projectedBar: 'from-amber-600 to-amber-500',
-      cardBg: 'bg-slate-900',
-      borderColor: 'border-slate-700',
+      iconColor: 'text-amber-300/80',
+      progressBar: 'from-slate-500 to-slate-400',
+      projectedBar: 'from-slate-600 to-slate-500',
+      cardBg: 'bg-slate-800',
+      borderColor: 'border-slate-600',
     };
   }
 

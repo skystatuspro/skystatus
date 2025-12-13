@@ -305,13 +305,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Status Card */}
           <div className={`relative overflow-hidden rounded-[2.5rem] pl-10 pr-8 py-8 shadow-xl border ${
             isUltimate 
-              ? 'border-slate-700 bg-slate-900' 
+              ? 'border-slate-600 bg-slate-800' 
               : 'border-slate-100 bg-white'
           }`}>
             <div className={`absolute inset-0 bg-gradient-to-br ${theme.meshGradient}`} />
             <div className="absolute top-1 right-0 p-12 opacity-10">
               {isUltimate ? (
-                <Crown size={180} className="text-amber-400" />
+                <Crown size={180} className="text-slate-400" />
               ) : (
                 <Award size={180} className={theme.iconColor} />
               )}
@@ -322,7 +322,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Plane className={`${isUltimate ? 'text-amber-400' : theme.iconColor} rotate-45`} size={22} />
+                    <Plane className={`${isUltimate ? 'text-slate-400' : theme.iconColor} rotate-45`} size={22} />
                     <span className={`text-xs font-extrabold tracking-widest uppercase ${isUltimate ? 'text-slate-400' : 'text-slate-400'}`}>
                       SkyTeam Alliance
                     </span>
@@ -331,7 +331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <h3 className={`text-4xl font-black tracking-tight flex items-center gap-3 ${theme.accentColor}`}>
                     {isUltimate ? 'Ultimate' : actualStatus}
                     {isUltimate ? (
-                      <Crown size={32} className="text-amber-400" />
+                      <Crown size={32} className="text-slate-300" />
                     ) : actualStatus === 'Platinum' ? (
                       <CheckCircle2 size={32} className="text-emerald-500" />
                     ) : null}
@@ -349,8 +349,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   {/* Projected Ultimate badge */}
                   {projectedUltimate && !isUltimate && actualStatus === 'Platinum' && (
                     <div className="mt-2 flex items-center gap-1.5">
-                      <Crown size={12} className="text-amber-500" />
-                      <span className="text-xs font-bold text-amber-600">
+                      <Crown size={12} className="text-slate-500" />
+                      <span className="text-xs font-bold text-slate-600">
                         Projected: Ultimate
                       </span>
                     </div>
@@ -423,30 +423,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {showUltimateProgress && (
                 <div className={`mb-6 p-4 rounded-2xl border ${
                   isUltimate 
-                    ? 'bg-amber-900/20 border-amber-700/30' 
+                    ? 'bg-slate-700/30 border-slate-600/30' 
                     : 'bg-gradient-to-r from-slate-50 to-slate-100/50 border-slate-200/50'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Crown size={16} className={isUltimate ? 'text-amber-400' : 'text-slate-600'} />
-                      <span className={`text-xs font-bold uppercase tracking-wide ${isUltimate ? 'text-amber-300' : 'text-slate-700'}`}>
+                      <Crown size={16} className={isUltimate ? 'text-slate-300' : 'text-slate-600'} />
+                      <span className={`text-xs font-bold uppercase tracking-wide ${isUltimate ? 'text-slate-300' : 'text-slate-700'}`}>
                         Ultimate Progress
                       </span>
                       <Tooltip text="UXP is earned from KLM and Air France operated flights only. Earn 900 UXP as Platinum to unlock Ultimate status." />
                     </div>
-                    <span className={`text-sm font-bold ${isUltimate ? 'text-amber-300' : 'text-slate-700'}`}>
+                    <span className={`text-sm font-bold ${isUltimate ? 'text-slate-300' : 'text-slate-700'}`}>
                       {actualUXP} / 900 UXP
                     </span>
                   </div>
-                  <div className={`relative h-2.5 rounded-full overflow-hidden ${isUltimate ? 'bg-slate-700' : 'bg-slate-200/50'}`}>
+                  <div className={`relative h-2.5 rounded-full overflow-hidden ${isUltimate ? 'bg-slate-600' : 'bg-slate-200/50'}`}>
                     {projectedUXP > actualUXP && (
                       <div
-                        className="absolute inset-y-0 left-0 bg-amber-300/40 rounded-full transition-all duration-500"
+                        className="absolute inset-y-0 left-0 bg-slate-400/40 rounded-full transition-all duration-500"
                         style={{ width: `${Math.min((projectedUXP / 900) * 100, 100)}%` }}
                       />
                     )}
                     <div
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-slate-400 to-slate-300 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min((actualUXP / 900) * 100, 100)}%` }}
                     />
                   </div>
@@ -457,8 +457,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       ultimateChance.sentiment === 'positive' 
                         ? isUltimate ? 'text-emerald-400' : 'text-emerald-600'
                         : ultimateChance.sentiment === 'neutral'
-                        ? isUltimate ? 'text-amber-300' : 'text-slate-600'
-                        : isUltimate ? 'text-amber-400' : 'text-blue-600'
+                        ? isUltimate ? 'text-slate-300' : 'text-slate-600'
+                        : isUltimate ? 'text-slate-300' : 'text-blue-600'
                     }`}>
                       {ultimateChance.sentiment === 'positive' ? (
                         <CheckCircle2 size={14} />
@@ -476,7 +476,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 isUltimate ? 'border-slate-700' : 'border-slate-200/60'
               }`}>
                 <div className={`flex items-center gap-2 text-xs font-semibold ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${isUltimate ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${isUltimate ? 'bg-slate-300' : 'bg-emerald-500'}`} />
                   <span>Qualification active</span>
                 </div>
 
@@ -484,12 +484,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onClick={() => navigateTo('xp')}
                   className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${
                     isUltimate 
-                      ? 'bg-amber-500 text-slate-900 hover:bg-amber-400' 
+                      ? 'bg-slate-600 text-white hover:bg-slate-500' 
                       : 'bg-blue-900 text-white hover:bg-blue-800'
                   }`}
                 >
                   XP Engine
-                  <ChevronRight size={16} className={isUltimate ? 'text-slate-700' : 'text-blue-300'} />
+                  <ChevronRight size={16} className={isUltimate ? 'text-slate-300' : 'text-blue-300'} />
                 </button>
               </div>
             </div>
