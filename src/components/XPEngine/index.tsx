@@ -392,7 +392,7 @@ export const XPEngine: React.FC<XPEngineProps> = ({
                   onUpdateQualificationSettings(settings);
                   setShowCycleSetup(false);
                 }}
-                onCancel={qualificationSettings ? () => setShowCycleSetup(false) : undefined}
+                onCancel={() => setShowCycleSetup(false)}
                 onShowFaq={() => setShowFaqModal(true)}
               />
             </div>

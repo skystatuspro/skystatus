@@ -133,7 +133,7 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
               onClick={onCancel}
               className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-700 font-medium text-sm transition-colors whitespace-nowrap"
             >
-              Cancel
+              {isEditMode ? 'Cancel' : 'Skip for now'}
             </button>
           )}
           <button
