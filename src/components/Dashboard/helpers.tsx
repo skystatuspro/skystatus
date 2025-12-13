@@ -3,7 +3,7 @@
 
 import { QualificationCycleStats } from '../../utils/xp-logic';
 
-export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
 export type BadgeColor = 'blue' | 'amber' | 'emerald' | 'violet' | 'slate';
 
 export const getProgressLabel = (status: StatusLevel, isRequalify: boolean): string => {
@@ -16,6 +16,8 @@ export const getProgressLabel = (status: StatusLevel, isRequalify: boolean): str
     case 'Gold':
       return 'Progress to Platinum';
     case 'Platinum':
+      return 'Progress to requalify';
+    case 'Ultimate':
       return 'Progress to requalify';
     default:
       return 'Progress';
@@ -32,6 +34,8 @@ export const getTargetXP = (status: StatusLevel): number => {
       return 300; // naar Platinum
     case 'Platinum':
       return 300; // requalificatie
+    case 'Ultimate':
+      return 300; // requalificatie (XP target, UXP is tracked separately)
     default:
       return 100;
   }
