@@ -431,6 +431,7 @@ export default function App() {
         onExitDemo={actions.handleExitDemoMode}
         isLoggedIn={!!user}
         markDataChanged={actions.markDataChanged}
+        showToast={showToast}
       />
 
       <ToastContainer />
