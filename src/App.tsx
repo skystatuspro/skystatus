@@ -402,6 +402,7 @@ export default function App() {
           currentMonth: state.currentMonth,
           targetCPM: state.targetCPM,
           manualLedger: state.manualLedger,
+          qualificationSettings: state.qualificationSettings,
         }}
         setters={{
           setBaseMilesData: actions.setBaseMilesData,
@@ -412,6 +413,7 @@ export default function App() {
           setCurrentMonth: actions.setCurrentMonth,
           setTargetCPM: actions.setTargetCPM,
           setManualLedger: actions.setManualLedger,
+          setQualificationSettings: actions.setQualificationSettings,
         }}
         onReset={actions.handleStartEmpty}
         onLoadDemo={actions.handleLoadDemo}
