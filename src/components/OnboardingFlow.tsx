@@ -57,6 +57,20 @@ interface OnboardingFlowProps {
     milesBalance: number;
   } | null;
   onSkip?: () => void;
+  isReturningUser?: boolean;
+  // Existing data to prefill
+  existingData?: {
+    currency?: CurrencyCode;
+    homeAirport?: string | null;
+    currentStatus?: StatusLevel;
+    currentXP?: number;
+    currentUXP?: number;
+    rolloverXP?: number;
+    milesBalance?: number;
+    ultimateCycleType?: 'qualification' | 'calendar';
+    targetCPM?: number;
+    emailConsent?: boolean;
+  };
 }
 
 // ============================================================================
@@ -213,22 +227,24 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onPdfImport,
   pdfImportResult,
   onSkip,
+  isReturningUser = false,
+  existingData,
 }) => {
   // Step management
   const [currentStep, setCurrentStep] = useState(0);
   const [skippedPdf, setSkippedPdf] = useState(false);
 
-  // Form data
-  const [currency, setCurrency] = useState<CurrencyCode>('EUR');
-  const [homeAirport, setHomeAirport] = useState<string | null>(null);
-  const [currentStatus, setCurrentStatus] = useState<StatusLevel>('Explorer');
-  const [currentXP, setCurrentXP] = useState<number>(0);
-  const [currentUXP, setCurrentUXP] = useState<number>(0);
-  const [rolloverXP, setRolloverXP] = useState<number>(0);
-  const [milesBalance, setMilesBalance] = useState<number>(0);
-  const [ultimateCycleType, setUltimateCycleType] = useState<'qualification' | 'calendar'>('qualification');
-  const [targetCPM, setTargetCPM] = useState<number>(0.012);
-  const [emailConsent, setEmailConsent] = useState<boolean>(false);
+  // Form data - prefilled with existing data if available
+  const [currency, setCurrency] = useState<CurrencyCode>(existingData?.currency || 'EUR');
+  const [homeAirport, setHomeAirport] = useState<string | null>(existingData?.homeAirport || null);
+  const [currentStatus, setCurrentStatus] = useState<StatusLevel>(existingData?.currentStatus || 'Explorer');
+  const [currentXP, setCurrentXP] = useState<number>(existingData?.currentXP || 0);
+  const [currentUXP, setCurrentUXP] = useState<number>(existingData?.currentUXP || 0);
+  const [rolloverXP, setRolloverXP] = useState<number>(existingData?.rolloverXP || 0);
+  const [milesBalance, setMilesBalance] = useState<number>(existingData?.milesBalance || 0);
+  const [ultimateCycleType, setUltimateCycleType] = useState<'qualification' | 'calendar'>(existingData?.ultimateCycleType || 'qualification');
+  const [targetCPM, setTargetCPM] = useState<number>(existingData?.targetCPM || 0.012);
+  const [emailConsent, setEmailConsent] = useState<boolean>(existingData?.emailConsent || false);
 
   // Get currency symbol
   const currencySymbol = SUPPORTED_CURRENCIES.find((c) => c.code === currency)?.symbol || '€';
@@ -323,10 +339,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                 <Plane className="text-white transform -rotate-45" size={32} />
               </div>
               <h2 className="text-2xl font-black text-slate-900 mb-2">
-                Welcome to SkyStatus Pro!
+                {isReturningUser ? 'Welcome Back!' : 'Welcome to SkyStatus Pro!'}
               </h2>
               <p className="text-slate-500">
-                Let's personalize your experience in a few quick steps.
+                {isReturningUser 
+                  ? "Let's update your preferences."
+                  : "Let's personalize your experience in a few quick steps."}
               </p>
             </div>
 
@@ -438,15 +456,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                 </div>
               </div>
             )}
-
-            <div className="text-center">
-              <button
-                onClick={handleSkipPdf}
-                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                Skip for now, I'll do this later
-              </button>
-            </div>
           </div>
         );
 
@@ -724,8 +733,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
               <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                 <Rocket className="text-white" size={32} />
               </div>
-              <h2 className="text-2xl font-black text-slate-900 mb-2">You're All Set!</h2>
-              <p className="text-slate-500">Here's your setup summary</p>
+              <h2 className="text-2xl font-black text-slate-900 mb-2">
+                {isReturningUser ? 'Settings Updated!' : "You're All Set!"}
+              </h2>
+              <p className="text-slate-500">
+                {isReturningUser ? 'Your new preferences' : "Here's your setup summary"}
+              </p>
             </div>
 
             <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
@@ -782,8 +795,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   // =========================================================================
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]">
         {/* Header with progress */}
         <div className="p-4 border-b border-slate-100">
           <div className="flex items-center justify-between mb-3">
@@ -817,8 +830,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">{renderStep()}</div>
+        {/* Content - min-h-0 needed for flex overflow to work */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">{renderStep()}</div>
 
         {/* Footer with navigation */}
         <div className="p-4 border-t border-slate-100 bg-slate-50">
@@ -836,12 +849,22 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
               Back
             </button>
 
+            {/* Skip button - shown on steps 2-5 (not welcome or done) */}
+            {steps[currentStep]?.id !== 'welcome' && steps[currentStep]?.id !== 'done' && (
+              <button
+                onClick={steps[currentStep]?.id === 'import' ? handleSkipPdf : goNext}
+                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Skip
+              </button>
+            )}
+
             {steps[currentStep]?.id === 'done' ? (
               <button
                 onClick={handleComplete}
                 className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
               >
-                Start Exploring
+                {isReturningUser ? 'Save & Close' : 'Start Exploring'}
                 <Rocket size={18} />
               </button>
             ) : steps[currentStep]?.id === 'import' && pdfImportResult ? (

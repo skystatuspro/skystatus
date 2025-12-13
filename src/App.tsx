@@ -14,6 +14,7 @@ import { MilesIntake } from './components/MilesIntake';
 import { MileageRun } from './components/MileageRun';
 import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
+import { OnboardingFlow, OnboardingData } from './components/OnboardingFlow';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
 import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage } from './components/LegalPages';
@@ -22,7 +23,7 @@ import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
-import { ViewState } from './types';
+import { ViewState, StatusLevel } from './types';
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -39,6 +40,15 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const [showPdfInstructions, setShowPdfInstructions] = useState(false);
+  
+  // Onboarding state
+  const [showOnboardingPdfModal, setShowOnboardingPdfModal] = useState(false);
+  const [onboardingPdfResult, setOnboardingPdfResult] = useState<{
+    flightsCount: number;
+    xpDetected: number;
+    statusDetected: StatusLevel | null;
+    milesBalance: number;
+  } | null>(null);
 
   // -------------------------------------------------------------------------
   // HASH ROUTING
@@ -391,6 +401,81 @@ export default function App() {
         onStartEmpty={actions.handleStartEmpty}
       />
 
+      {/* Onboarding Flow for logged-in users */}
+      {user && !meta.onboardingCompleted && !meta.isDemoMode && !meta.isLocalMode && (
+        <OnboardingFlow
+          userEmail={user.email || ''}
+          isReturningUser={state.flights.length > 0}
+          existingData={{
+            currency: state.currency,
+            homeAirport: state.homeAirport,
+            currentStatus: state.currentStatus,
+            currentXP: state.qualificationSettings?.startingXP || 0,
+            currentUXP: state.currentUXP,
+            rolloverXP: state.xpRollover,
+            milesBalance: state.milesBalance,
+            ultimateCycleType: state.qualificationSettings?.ultimateCycleType || 'qualification',
+            targetCPM: state.targetCPM,
+            emailConsent: meta.emailConsent,
+          }}
+          onComplete={(data: OnboardingData) => {
+            actions.handleOnboardingComplete(data);
+            // Show appropriate toast
+            if (data.pdfImported) {
+              showToast(`Imported ${data.pdfFlightsCount} flights.`, 'success');
+            } else if (state.flights.length > 0) {
+              showToast('Settings updated!', 'success');
+            } else {
+              showToast('Welcome to SkyStatus Pro!', 'success');
+            }
+          }}
+          onPdfImport={() => setShowOnboardingPdfModal(true)}
+          pdfImportResult={onboardingPdfResult}
+          onSkip={() => {
+            // Quick skip - just mark onboarding complete with current/default values
+            actions.handleOnboardingComplete({
+              currency: state.currency || 'EUR',
+              homeAirport: state.homeAirport || null,
+              currentStatus: state.currentStatus || 'Explorer',
+              currentXP: state.qualificationSettings?.startingXP || 0,
+              currentUXP: state.currentUXP || 0,
+              rolloverXP: state.xpRollover || 0,
+              milesBalance: state.milesBalance || 0,
+              ultimateCycleType: state.qualificationSettings?.ultimateCycleType || 'qualification',
+              targetCPM: state.targetCPM || 0.012,
+              emailConsent: meta.emailConsent || false,
+            });
+          }}
+        />
+      )}
+
+      {/* PDF Import Modal for Onboarding */}
+      <PdfImportModal
+        isOpen={showOnboardingPdfModal}
+        onClose={() => setShowOnboardingPdfModal(false)}
+        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings) => {
+          // Save the flights
+          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings);
+          
+          // Calculate summary for onboarding display
+          const totalXP = importedFlights.reduce((sum, f) => sum + (f.earnedXP || 0), 0);
+          const milesBalance = importedMiles.reduce((sum, m) => 
+            sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+          );
+          
+          setOnboardingPdfResult({
+            flightsCount: importedFlights.length,
+            xpDetected: totalXP,
+            statusDetected: cycleSettings?.startingStatus || null,
+            milesBalance: Math.max(0, milesBalance),
+          });
+          
+          setShowOnboardingPdfModal(false);
+        }}
+        existingFlights={state.flights}
+        existingMiles={state.baseMilesData}
+      />
+
       <PdfImportModal
         isOpen={showPdfImportModal}
         onClose={() => setShowPdfImportModal(false)}
@@ -431,6 +516,7 @@ export default function App() {
         onReset={actions.handleStartEmpty}
         onLoadDemo={actions.handleLoadDemo}
         onStartOver={actions.handleStartOver}
+        onRerunOnboarding={actions.handleRerunOnboarding}
         isDemoMode={meta.isDemoMode || meta.isLocalMode}
         isLocalMode={meta.isLocalMode}
         onExitDemo={actions.handleExitDemoMode}

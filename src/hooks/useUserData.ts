@@ -173,6 +173,11 @@ export function useUserData(): UseUserDataReturn {
   const [targetCPM, setTargetCPMInternal] = useState<number>(0.012);
   const [currency, setCurrencyInternal] = useState<CurrencyCode>('EUR');
   const [qualificationSettings, setQualificationSettingsInternal] = useState<QualificationSettings | null>(null);
+  const [homeAirport, setHomeAirportInternal] = useState<string | null>(null);
+  const [onboardingCompleted, setOnboardingCompletedInternal] = useState<boolean>(true); // Default true to prevent flash
+  const [emailConsent, setEmailConsentInternal] = useState<boolean>(false);
+  const [milesBalance, setMilesBalanceInternal] = useState<number>(0);
+  const [currentUXP, setCurrentUXPInternal] = useState<number>(0);
 
   // Loading/saving state
   const [dataLoading, setDataLoading] = useState(false);
@@ -218,41 +223,51 @@ export function useUserData(): UseUserDataReturn {
       const data = await fetchAllUserData(user.id);
 
       // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
-      // Logged-in users with empty data will see the Dashboard welcome screen instead
-      if (data.flights.length === 0 && data.milesData.length === 0 && data.redemptions.length === 0) {
-        // Don't set showWelcome - logged-in users use Dashboard welcome screen
-        // Just mark as loaded so they can start adding data
-      } else {
-        setFlightsInternal(data.flights);
-        setBaseMilesDataInternal(data.milesData);
-        setRedemptionsInternal(data.redemptions);
+      // Load all data regardless of whether flights exist
+      setFlightsInternal(data.flights);
+      setBaseMilesDataInternal(data.milesData);
+      setRedemptionsInternal(data.redemptions);
 
-        // Load XP Ledger
-        const loadedLedger: ManualLedger = {};
-        Object.entries(data.xpLedger).forEach(([month, entry]) => {
-          loadedLedger[month] = {
-            amexXp: entry.amexXp,
-            bonusSafXp: entry.bonusSafXp,
-            miscXp: entry.miscXp,
-            correctionXp: entry.correctionXp,
-          };
-        });
-        setManualLedgerInternal(loadedLedger);
+      // Load XP Ledger
+      const loadedLedger: ManualLedger = {};
+      Object.entries(data.xpLedger).forEach(([month, entry]) => {
+        loadedLedger[month] = {
+          amexXp: entry.amexXp,
+          bonusSafXp: entry.bonusSafXp,
+          miscXp: entry.miscXp,
+          correctionXp: entry.correctionXp,
+        };
+      });
+      setManualLedgerInternal(loadedLedger);
 
-        if (data.profile) {
-          setTargetCPMInternal(data.profile.targetCPM);
-          setXpRolloverInternal(data.profile.xpRollover || 0);
-          setCurrencyInternal((data.profile.currency || 'EUR') as CurrencyCode);
+      // Determine if this is an existing user (has any data)
+      const hasExistingData = data.flights.length > 0 || data.milesData.length > 0 || data.redemptions.length > 0;
 
-          if (data.profile.qualificationStartMonth) {
-            setQualificationSettingsInternal({
-              cycleStartMonth: data.profile.qualificationStartMonth,
-              startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
-              startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
-              ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
-            });
-          }
+      if (data.profile) {
+        setTargetCPMInternal(data.profile.targetCPM || 0.012);
+        setXpRolloverInternal(data.profile.xpRollover || 0);
+        setCurrencyInternal((data.profile.currency || 'EUR') as CurrencyCode);
+        setHomeAirportInternal(data.profile.homeAirport || null);
+        setMilesBalanceInternal(data.profile.milesBalance || 0);
+        setCurrentUXPInternal(data.profile.currentUXP || 0);
+        setEmailConsentInternal(data.profile.emailConsent ?? false);
+        
+        // CRITICAL: For existing users without the new column, default to TRUE (they've already been using the app)
+        // Only new users (no data AND onboarding_completed explicitly false) should see onboarding
+        const onboardingStatus = data.profile.onboardingCompleted ?? hasExistingData;
+        setOnboardingCompletedInternal(onboardingStatus);
+
+        if (data.profile.qualificationStartMonth) {
+          setQualificationSettingsInternal({
+            cycleStartMonth: data.profile.qualificationStartMonth,
+            startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
+            startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
+            ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
+          });
         }
+      } else {
+        // No profile at all - new user, show onboarding
+        setOnboardingCompletedInternal(false);
       }
 
       hasInitiallyLoaded.current = true;
@@ -585,6 +600,72 @@ export function useUserData(): UseUserDataReturn {
   }, [user, loadUserData]);
 
   // -------------------------------------------------------------------------
+  // ONBOARDING HANDLERS
+  // -------------------------------------------------------------------------
+
+  const handleOnboardingComplete = useCallback(async (data: {
+    currency: CurrencyCode;
+    homeAirport: string | null;
+    currentStatus: StatusLevel;
+    currentXP: number;
+    currentUXP: number;
+    rolloverXP: number;
+    milesBalance: number;
+    ultimateCycleType: 'qualification' | 'calendar';
+    targetCPM: number;
+    emailConsent: boolean;
+  }) => {
+    // Update local state
+    setCurrencyInternal(data.currency);
+    setHomeAirportInternal(data.homeAirport);
+    setTargetCPMInternal(data.targetCPM);
+    setXpRolloverInternal(data.rolloverXP);
+    setEmailConsentInternal(data.emailConsent);
+    setMilesBalanceInternal(data.milesBalance);
+    setCurrentUXPInternal(data.currentUXP);
+    setOnboardingCompletedInternal(true);
+
+    // Set qualification settings if status data provided
+    if (data.currentStatus !== 'Explorer' || data.currentXP > 0) {
+      const now = new Date();
+      const qYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+      const cycleStartMonth = `${qYear - 1}-11`;
+      
+      setQualificationSettingsInternal({
+        cycleStartMonth,
+        startingStatus: data.currentStatus,
+        startingXP: data.currentXP,
+        ultimateCycleType: data.ultimateCycleType,
+      });
+    }
+
+    // Save to database if logged in
+    if (user && !isDemoMode) {
+      try {
+        await updateProfile(user.id, {
+          currency: data.currency,
+          home_airport: data.homeAirport,
+          target_cpm: data.targetCPM,
+          xp_rollover: data.rolloverXP,
+          email_consent: data.emailConsent,
+          miles_balance: data.milesBalance,
+          current_uxp: data.currentUXP,
+          onboarding_completed: true,
+          starting_status: data.currentStatus,
+          starting_xp: data.currentXP,
+          ultimate_cycle_type: data.ultimateCycleType,
+        });
+      } catch (error) {
+        console.error('Error saving onboarding data:', error);
+      }
+    }
+  }, [user, isDemoMode]);
+
+  const handleRerunOnboarding = useCallback(() => {
+    setOnboardingCompletedInternal(false);
+  }, []);
+
+  // -------------------------------------------------------------------------
   // UTILITY
   // -------------------------------------------------------------------------
 
@@ -619,6 +700,9 @@ export function useUserData(): UseUserDataReturn {
       xpData,
       currentStatus,
       currentMonth,
+      homeAirport,
+      milesBalance,
+      currentUXP,
     },
     actions: {
       setFlights,
@@ -649,6 +733,8 @@ export function useUserData(): UseUserDataReturn {
       handleExitDemoMode,
       markDataChanged,
       calculateGlobalCPM,
+      handleOnboardingComplete,
+      handleRerunOnboarding,
     },
     meta: {
       isLoading: dataLoading,
@@ -657,6 +743,8 @@ export function useUserData(): UseUserDataReturn {
       isLocalMode,
       showWelcome,
       setShowWelcome,
+      onboardingCompleted,
+      emailConsent,
     },
   };
 }
