@@ -383,7 +383,7 @@ export default function App() {
       </Layout>
 
       <WelcomeModal
-        isOpen={meta.showWelcome}
+        isOpen={meta.showWelcome && !user}
         onLoadDemo={actions.handleLoadDemo}
         onStartEmpty={actions.handleStartEmpty}
       />
