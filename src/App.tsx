@@ -48,16 +48,22 @@ export default function App() {
       const hash = window.location.hash;
       if (hash === '#/privacy') {
         setLegalPage('privacy');
+        window.scrollTo(0, 0);
       } else if (hash === '#/terms') {
         setLegalPage('terms');
+        window.scrollTo(0, 0);
       } else if (hash === '#/faq' || hash === '#/help') {
         setLegalPage('faq');
+        window.scrollTo(0, 0);
       } else if (hash === '#/about') {
         setLegalPage('about');
+        window.scrollTo(0, 0);
       } else if (hash === '#/contact') {
         setLegalPage('contact');
+        window.scrollTo(0, 0);
       } else if (hash === '#/calculator') {
         setLegalPage('calculator');
+        window.scrollTo(0, 0);
       } else {
         setLegalPage(null);
       }
