@@ -108,8 +108,9 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   );
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showCycleSetup, setShowCycleSetup] = useState(false);
+  const [skipCycleSetup, setSkipCycleSetup] = useState(false);
 
-  const shouldShowCycleSetup = !qualificationSettings || showCycleSetup;
+  const shouldShowCycleSetup = (!qualificationSettings && !skipCycleSetup) || showCycleSetup;
 
   // Create a stable identifier for the cycles array to detect significant changes
   // This changes when cycle dates change (e.g., qualificationSettings updates)
@@ -392,7 +393,12 @@ export const XPEngine: React.FC<XPEngineProps> = ({
                   onUpdateQualificationSettings(settings);
                   setShowCycleSetup(false);
                 }}
-                onCancel={() => setShowCycleSetup(false)}
+                onCancel={() => {
+                  setShowCycleSetup(false);
+                  if (!qualificationSettings) {
+                    setSkipCycleSetup(true);
+                  }
+                }}
                 onShowFaq={() => setShowFaqModal(true)}
               />
             </div>
