@@ -244,6 +244,7 @@ export default function App() {
               flights: state.flights,
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
+              qualificationSettings: state.qualificationSettings,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -347,6 +348,7 @@ export default function App() {
               flights: state.flights,
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
+              qualificationSettings: state.qualificationSettings,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
