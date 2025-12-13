@@ -21,18 +21,18 @@ export interface StatusTheme {
 }
 
 export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false): StatusTheme => {
-  // Ultimate theme - black with amber accents
+  // Ultimate theme - sophisticated dark with subtle amber accents (matches Dashboard)
   if (isUltimate) {
     return {
-      blob1: 'bg-amber-900/20',
-      blob2: 'bg-slate-800/40',
-      accentText: 'text-amber-400',
-      subText: 'text-amber-500',
-      iconBg: 'bg-slate-800 text-amber-400 border-slate-700',
-      gaugeStart: '#f59e0b',
-      gaugeEnd: '#fbbf24',
+      blob1: 'bg-slate-700/40',
+      blob2: 'bg-slate-600/30',
+      accentText: 'text-slate-700',
+      subText: 'text-slate-500',
+      iconBg: 'bg-slate-100 text-slate-700 border-slate-200',
+      gaugeStart: '#475569',
+      gaugeEnd: '#64748b',
       icon: <Crown size={20} strokeWidth={2.5} />,
-      badge: 'bg-slate-900 text-amber-400 border-slate-700',
+      badge: 'bg-slate-800 text-white border-slate-700',
     };
   }
 
