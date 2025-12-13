@@ -19,7 +19,9 @@ import {
   Smile,
   Meh,
   Frown,
-  Send
+  Send,
+  Shield,
+  ExternalLink
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { 
@@ -78,6 +80,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   
   // Feedback state
   const [feedbackRating, setFeedbackRating] = useState<FeedbackRating>(null);
+  const [showPrivacyOverlay, setShowPrivacyOverlay] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [importSummaryForFeedback, setImportSummaryForFeedback] = useState<{flights: number, miles: number} | null>(null);
@@ -458,6 +461,26 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
                 onChange={handleFileSelect}
                 className="hidden"
               />
+
+              {/* Privacy Notice */}
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                <Shield size={18} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-emerald-800">
+                  <p className="font-medium mb-1">🔒 Your PDF stays private</p>
+                  <p className="text-emerald-700 text-xs leading-relaxed">
+                    Your PDF is processed <strong>entirely in your browser</strong> — it's never uploaded to our servers. 
+                    We only extract flight data (dates, routes, XP). Personal details like your name or Flying Blue number are not stored.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrivacyOverlay(true)}
+                    className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-emerald-700 hover:text-emerald-900 transition-colors"
+                  >
+                    Read full Privacy Policy
+                    <ExternalLink size={12} />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -843,6 +866,118 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
           </>
         )}
       </div>
+
+      {/* Privacy Policy Overlay */}
+      {showPrivacyOverlay && (
+        <div className="absolute inset-0 bg-white z-10 flex flex-col rounded-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <Shield size={20} className="text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">Privacy Policy</h3>
+                <p className="text-xs text-slate-500">How we handle your data</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowPrivacyOverlay(false)}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-6 text-sm">
+              
+              {/* Key Point */}
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="font-medium text-emerald-800">
+                  🔒 Your Flying Blue PDFs are processed entirely in your browser. The PDF file is never uploaded to our servers.
+                </p>
+              </div>
+
+              {/* PDF Processing */}
+              <section>
+                <h4 className="font-bold text-slate-900 mb-2">PDF Import &amp; Processing</h4>
+                <p className="text-slate-600 mb-3">When you import a Flying Blue PDF:</p>
+                <ul className="space-y-2 text-slate-600">
+                  <li className="flex gap-2">
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span><strong>Client-side processing:</strong> The PDF is parsed entirely in your browser using JavaScript. No server is involved.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span><strong>Data extraction:</strong> We extract only flight data: dates, routes, cabin class, XP earned, and miles. Personal details like your name or Flying Blue number are not stored.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span><strong>No file storage:</strong> The original PDF is never saved — not on our servers, not in your browser. Only the extracted flight records are kept.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span><strong>Your choice:</strong> Extracted data is stored locally (Local Mode) or synced to your account (Cloud Mode), depending on your preference.</span>
+                  </li>
+                </ul>
+              </section>
+
+              {/* Data Storage */}
+              <section>
+                <h4 className="font-bold text-slate-900 mb-2">Data Storage</h4>
+                <p className="text-slate-600 mb-3">SkyStatus offers two storage modes:</p>
+                <ul className="space-y-2 text-slate-600">
+                  <li className="flex gap-2">
+                    <span className="text-blue-500 font-bold">•</span>
+                    <span><strong>Local Mode:</strong> Data stays only in your browser. We have zero access. Use export/import to backup.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-blue-500 font-bold">•</span>
+                    <span><strong>Cloud Mode:</strong> Data syncs to your account via Supabase with encryption and row-level security. Only you can access your data.</span>
+                  </li>
+                </ul>
+              </section>
+
+              {/* Your Rights */}
+              <section>
+                <h4 className="font-bold text-slate-900 mb-2">Your Rights (GDPR)</h4>
+                <ul className="space-y-2 text-slate-600">
+                  <li className="flex gap-2">
+                    <span className="text-slate-400 font-bold">•</span>
+                    <span><strong>Export:</strong> Download all your data anytime (Data Settings → Export JSON)</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-slate-400 font-bold">•</span>
+                    <span><strong>Delete:</strong> Remove all data permanently (Data Settings → Delete All Data)</span>
+                  </li>
+                </ul>
+              </section>
+
+              {/* Contact */}
+              <section className="pt-4 border-t border-slate-200">
+                <p className="text-slate-500 text-xs">
+                  Questions? Contact us at{' '}
+                  <a href="mailto:privacy@skystatus.pro" className="text-blue-600 hover:underline">privacy@skystatus.pro</a>
+                  {' '}or read the{' '}
+                  <a href="#/privacy" className="text-blue-600 hover:underline" onClick={() => setShowPrivacyOverlay(false)}>full Privacy Policy</a>.
+                </p>
+              </section>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+            <button
+              onClick={() => setShowPrivacyOverlay(false)}
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl transition-colors"
+            >
+              Got it, continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
