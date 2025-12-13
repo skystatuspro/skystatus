@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type FeedbackTrigger = 'post_import' | '7_days' | '5_sessions' | 'manual' | 'contact_form';
+export type FeedbackTrigger = 'post_import' | '7_days' | '5_sessions' | 'manual' | 'contact_form' | 'bug_report';
 export type FeedbackRating = 'easy' | 'okay' | 'confusing' | null;
 
 export interface FeedbackData {
