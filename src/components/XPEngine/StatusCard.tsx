@@ -4,7 +4,7 @@
 import React from 'react';
 import { StatusLevel } from '../../types';
 import { QualificationCycleStats } from '../../utils/xp-logic';
-import { CheckCircle2, Clock, Target } from 'lucide-react';
+import { CheckCircle2, Clock, Target, Crown, Sparkles } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 import { StatusTheme } from './helpers';
 
@@ -25,6 +25,11 @@ interface StatusCardProps {
   hasProjectedXPDifference: boolean;
   actualProgress: number;
   projectedProgress: number;
+  // Ultimate status props
+  isUltimate: boolean;
+  projectedUltimate: boolean;
+  actualUXP: number;
+  projectedUXP: number;
 }
 
 export const StatusCard: React.FC<StatusCardProps> = ({
@@ -43,6 +48,10 @@ export const StatusCard: React.FC<StatusCardProps> = ({
   hasProjectedXPDifference,
   actualProgress,
   projectedProgress,
+  isUltimate,
+  projectedUltimate,
+  actualUXP,
+  projectedUXP,
 }) => {
   return (
     <div className="lg:col-span-4 h-full">
@@ -62,8 +71,8 @@ export const StatusCard: React.FC<StatusCardProps> = ({
               </span>
               <Tooltip text="Your actual status based on flown flights only. Scheduled flights are shown as projections." />
             </div>
-            <h3 className={`text-4xl font-black tracking-tight ${theme.accentText}`}>
-              {actualStatus}
+            <h3 className={`text-4xl font-black tracking-tight ${isUltimate ? 'text-amber-600' : theme.accentText}`}>
+              {isUltimate ? 'Ultimate' : actualStatus}
             </h3>
 
             {/* Status explanation */}
@@ -167,6 +176,56 @@ export const StatusCard: React.FC<StatusCardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* UXP Progress Bar - Only shown for Platinum/Ultimate members */}
+        {(actualStatus === 'Platinum' || isUltimate) && (
+          <div className="relative z-10 mb-4 p-4 bg-gradient-to-r from-amber-50 to-amber-100/50 rounded-2xl border border-amber-200/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Crown size={16} className="text-amber-600" />
+                <span className="text-xs font-bold text-amber-800 uppercase tracking-wide">
+                  Ultimate Progress
+                </span>
+                <Tooltip text="UXP (Ultimate XP) is earned from KLM and Air France operated flights only. Earn 900 UXP as Platinum to unlock Ultimate status." />
+              </div>
+              <span className="text-sm font-bold text-amber-700">
+                {actualUXP} / 900 UXP
+              </span>
+            </div>
+            <div className="relative h-3 bg-amber-200/50 rounded-full overflow-hidden">
+              {/* Projected UXP bar (faint) */}
+              {projectedUXP > actualUXP && (
+                <div
+                  className="absolute inset-y-0 left-0 bg-amber-300/40 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min((projectedUXP / 900) * 100, 100)}%` }}
+                />
+              )}
+              {/* Actual UXP bar */}
+              <div
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min((actualUXP / 900) * 100, 100)}%` }}
+              />
+            </div>
+            <div className="mt-2 flex justify-between items-center">
+              {isUltimate ? (
+                <div className="flex items-center gap-1.5 text-amber-700">
+                  <CheckCircle2 size={14} />
+                  <span className="text-xs font-semibold">Ultimate status achieved!</span>
+                </div>
+              ) : (
+                <span className="text-xs text-amber-600">
+                  {900 - actualUXP} UXP to Ultimate
+                </span>
+              )}
+              {projectedUltimate && !isUltimate && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-200/50 rounded-full">
+                  <Sparkles size={10} className="text-amber-600" />
+                  <span className="text-[10px] font-bold text-amber-700">Projected</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Bottom status info */}
         <div className="relative z-10 pt-6 border-t border-slate-100">

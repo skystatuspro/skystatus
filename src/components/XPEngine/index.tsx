@@ -426,6 +426,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
           hasProjectedXPDifference={hasProjectedXPDifference}
           actualProgress={actualProgress}
           projectedProgress={projectedProgress}
+          isUltimate={currentCycle.isUltimate}
+          projectedUltimate={currentCycle.projectedUltimate}
+          actualUXP={currentCycle.actualUXP}
+          projectedUXP={currentCycle.projectedUXP}
         />
 
         {/* Right column */}
