@@ -429,17 +429,13 @@ export async function fetchProfile(userId: string) {
 export async function updateProfile(userId: string, updates: {
   target_cpm?: number;
   qualification_start_month?: string;
-  home_airport?: string | null;
+  home_airport?: string;
   display_name?: string;
   xp_rollover?: number;
   starting_status?: string;
   starting_xp?: number;
   ultimate_cycle_type?: string;
   currency?: string;
-  onboarding_completed?: boolean;
-  email_consent?: boolean;
-  miles_balance?: number;
-  current_uxp?: number;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -548,16 +544,12 @@ export interface UserData {
   profile: {
     targetCPM: number;
     qualificationStartMonth: string;
-    homeAirport: string | null;
+    homeAirport: string;
     xpRollover: number;
     startingStatus: string | null;
     startingXP: number | null;
     ultimateCycleType: 'qualification' | 'calendar' | null;
     currency: string;
-    onboardingCompleted: boolean;
-    emailConsent: boolean;
-    milesBalance: number;
-    currentUXP: number;
   } | null;
 }
 
@@ -578,16 +570,12 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
     profile: profile ? {
       targetCPM: profile.target_cpm,
       qualificationStartMonth: profile.qualification_start_month,
-      homeAirport: profile.home_airport || null,
+      homeAirport: profile.home_airport,
       xpRollover: profile.xp_rollover || 0,
       startingStatus: profile.starting_status || null,
       startingXP: profile.starting_xp || null,
       ultimateCycleType: profile.ultimate_cycle_type || null,
       currency: profile.currency || 'EUR',
-      onboardingCompleted: profile.onboarding_completed || false,
-      emailConsent: profile.email_consent || false,
-      milesBalance: profile.miles_balance || 0,
-      currentUXP: profile.current_uxp || 0,
     } : null,
   };
 }
