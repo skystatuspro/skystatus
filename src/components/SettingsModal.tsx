@@ -253,16 +253,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         if (showToast) {
           showToast(message, 'success');
         }
+        onClose(); // Auto-close modal after successful import
       } else {
         if (showToast) {
           showToast('Import completed. No new data to add — all entries already exist.', 'info');
         }
+        onClose(); // Also close when no new data
       }
     } catch (e) {
       console.error('Import failed', e);
       if (showToast) {
         showToast('Import failed. Make sure you selected a valid SkyStatus JSON file.', 'error');
       }
+      // Don't close on error - let user try again
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -318,6 +321,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (showToast) {
       showToast(message, 'success');
     }
+    
+    // Close the PDF import modal (handled by setShowPdfImport(false) in the modal)
+    // Also close the settings modal
+    onClose();
   };
 
   const handleReloadDemo = () => {
