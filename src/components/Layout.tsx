@@ -283,7 +283,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
 
         {/* Floating Beta Bar - Desktop Only */}
-        <div className="hidden lg:block fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ml-36">
+        <div className="hidden lg:block fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <div className="bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 px-6 py-3 flex items-center gap-6 border border-slate-700">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
