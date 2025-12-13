@@ -416,10 +416,11 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <div className="p-3 bg-slate-100 rounded-lg border border-slate-300">
                   <div className="font-semibold text-slate-700">Platinum (300 XP)</div>
                   <div className="text-sm text-slate-500">8x Miles • 2 extra bags • All seats free • 24/7 Platinum Line</div>
+                  <div className="text-xs text-slate-400 mt-1">Start earning UXP toward Ultimate</div>
                 </div>
                 <div className="p-3 bg-gradient-to-r from-slate-100 to-amber-50 rounded-lg border border-amber-200">
                   <div className="font-semibold text-slate-800">Ultimate (900 UXP as Platinum)</div>
-                  <div className="text-sm text-slate-600">Lounge + 8 guests • 4 upgrade vouchers • Ultimate Assistant</div>
+                  <div className="text-sm text-slate-600">9x Miles • Lounge + 8 guests • 4 upgrade vouchers • Ultimate Assistant</div>
                 </div>
               </div>
             </>

@@ -178,8 +178,8 @@ export const FAQModal: React.FC<FAQModalProps> = ({ isOpen, onClose }) => {
               <p><strong>Explorer:</strong> Base level, 4x Miles</p>
               <p><strong>Silver (100 XP):</strong> 6x Miles, 1 extra bag, SkyTeam Elite</p>
               <p><strong>Gold (180 XP):</strong> 7x Miles, Lounge+1, SkyPriority</p>
-              <p><strong>Platinum (300 XP):</strong> 8x Miles, 2 bags, all seats free</p>
-              <p><strong>Ultimate (900 UXP):</strong> Lounge+8, 4 upgrade vouchers</p>
+              <p><strong>Platinum (300 XP):</strong> 8x Miles, 2 bags, all seats free, start earning UXP</p>
+              <p><strong>Ultimate (900 UXP):</strong> 9x Miles, Lounge+8, 4 upgrade vouchers</p>
             </div>
           )
         },
