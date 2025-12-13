@@ -57,6 +57,7 @@ interface SettingsModalProps {
   onExitDemo?: () => void;
   isLoggedIn?: boolean;
   markDataChanged?: () => void;
+  showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -72,6 +73,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onExitDemo,
   isLoggedIn = false,
   markDataChanged,
+  showToast,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { signOut, user, deleteAccount } = useAuth();
@@ -98,7 +100,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('Export failed', e);
-      alert('Export failed. Please try again.');
+      if (showToast) {
+        showToast('Export failed. Please try again.', 'error');
+      }
     }
   };
 
@@ -242,17 +246,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         // Trigger auto-save
         if (markDataChanged) markDataChanged();
         
-        let message = 'Import completed!\n\n';
-        if (additions.length > 0) message += `Added: ${additions.join(', ')}\n`;
-        if (updates.length > 0) message += `Updated: ${updates.join(', ')}\n`;
-        message += '\nExisting data was preserved.';
-        alert(message);
+        let message = `Import completed! Added: ${additions.join(', ')}`;
+        if (updates.length > 0) message += `. Updated: ${updates.join(', ')}`;
+        message += '. Existing data was preserved.';
+        
+        if (showToast) {
+          showToast(message, 'success');
+        }
       } else {
-        alert('Import completed. No new data to add — all entries already exist.');
+        if (showToast) {
+          showToast('Import completed. No new data to add — all entries already exist.', 'info');
+        }
       }
     } catch (e) {
       console.error('Import failed', e);
-      alert('Import failed. Make sure you selected a valid SkyStatus JSON file.');
+      if (showToast) {
+        showToast('Import failed. Make sure you selected a valid SkyStatus JSON file.', 'error');
+      }
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -298,14 +308,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     // Show success message
     const newMilesCount = miles.filter(m => !data.baseMilesData.some(e => e.month === m.month)).length;
-    const updatedMilesCount = miles.length - newMilesCount;
     
-    let message = 'Flying Blue import completed!\n\n';
-    if (newFlights.length > 0) message += `✈️ Added ${newFlights.length} flights\n`;
-    if (newMilesCount > 0) message += `💰 Added ${newMilesCount} months of miles\n`;
-    if (updatedMilesCount > 0) message += `🔄 Updated ${updatedMilesCount} months of miles\n`;
+    let message = 'Flying Blue import completed!';
+    const parts = [];
+    if (newFlights.length > 0) parts.push(`${newFlights.length} flights`);
+    if (newMilesCount > 0) parts.push(`${newMilesCount} months of miles`);
+    if (parts.length > 0) message += ` Added: ${parts.join(', ')}`;
     
-    alert(message);
+    if (showToast) {
+      showToast(message, 'success');
+    }
   };
 
   const handleReloadDemo = () => {
@@ -342,7 +354,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     try {
       const { error } = await deleteAccount();
       if (error) {
-        alert('Failed to delete account. Please try again.');
+        if (showToast) {
+          showToast('Failed to delete account. Please try again.', 'error');
+        }
         console.error('Delete account error:', error);
       } else {
         // Clear local storage as well
@@ -352,7 +366,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         window.location.reload();
       }
     } catch (e) {
-      alert('Failed to delete account. Please try again.');
+      if (showToast) {
+        showToast('Failed to delete account. Please try again.', 'error');
+      }
       console.error('Delete account error:', e);
     } finally {
       setIsDeleting(false);
