@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../lib/AuthContext';
+import { BugReportModal } from './BugReportModal';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -69,6 +70,7 @@ export const Layout: React.FC<LayoutProps> = ({
   isLocalMode = false,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isBugReportOpen, setIsBugReportOpen] = React.useState(false);
   const { user, signOut } = useAuth();
 
   const menuItems = [
@@ -311,16 +313,22 @@ export const Layout: React.FC<LayoutProps> = ({
                 <Download size={14} />
                 Export
               </button>
-              <a
-                href={`mailto:support@skystatus.pro?subject=${encodeURIComponent('Bug Report - SkyStatus v2.0 beta')}&body=${encodeURIComponent('Hi SkyStatus team,\n\nI found an issue:\n\n**What happened:**\n[Describe what went wrong]\n\n**What I expected:**\n[Describe what should have happened]\n\n**Steps to reproduce:**\n1. \n2. \n3. \n\n**Browser/Device:**\n[e.g., Chrome on Windows, Safari on iPhone]\n\n**Screenshot:**\n[Please attach a screenshot if possible]\n\n---\nSent from SkyStatus v2.0 beta')}`}
+              <button
+                onClick={() => setIsBugReportOpen(true)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25"
               >
                 <Bug size={14} />
                 Report Bug
-              </a>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Bug Report Modal */}
+        <BugReportModal 
+          isOpen={isBugReportOpen} 
+          onClose={() => setIsBugReportOpen(false)} 
+        />
       </main>
     </div>
   );
