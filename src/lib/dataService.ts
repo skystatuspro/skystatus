@@ -28,6 +28,7 @@ export async function fetchFlights(userId: string): Promise<FlightRecord[]> {
     earnedMiles: f.miles_earned,
     earnedXP: f.xp_earned,
     safXp: f.saf_xp || 0,
+    uxp: f.uxp || 0,
   }));
 }
 
@@ -48,6 +49,7 @@ export async function saveFlight(userId: string, flight: FlightRecord): Promise<
       miles_earned: flight.earnedMiles,
       xp_earned: flight.earnedXP,
       saf_xp: flight.safXp || 0,
+      uxp: flight.uxp || 0,
       is_scheduled: new Date(flight.date) > new Date(),
     });
 
@@ -89,6 +91,7 @@ export async function saveFlights(userId: string, flights: FlightRecord[]): Prom
       miles_earned: flight.earnedMiles,
       xp_earned: flight.earnedXP,
       saf_xp: flight.safXp || 0,
+      uxp: flight.uxp || 0,
       is_scheduled: new Date(flight.date) > new Date(),
     };
   });
