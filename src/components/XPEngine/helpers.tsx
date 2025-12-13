@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { StatusLevel, ManualField } from '../../types';
-import { Zap, Clock, Plane, Star, Compass, CheckCircle2 } from 'lucide-react';
+import { Zap, Clock, Plane, Star, Compass, CheckCircle2, Crown } from 'lucide-react';
 
 export const noSpinnerClass =
   '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
@@ -20,7 +20,22 @@ export interface StatusTheme {
   badge: string;
 }
 
-export const getStatusTheme = (status: StatusLevel): StatusTheme => {
+export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false): StatusTheme => {
+  // Ultimate theme - black with amber accents
+  if (isUltimate) {
+    return {
+      blob1: 'bg-amber-900/20',
+      blob2: 'bg-slate-800/40',
+      accentText: 'text-amber-400',
+      subText: 'text-amber-500',
+      iconBg: 'bg-slate-800 text-amber-400 border-slate-700',
+      gaugeStart: '#f59e0b',
+      gaugeEnd: '#fbbf24',
+      icon: <Crown size={20} strokeWidth={2.5} />,
+      badge: 'bg-slate-900 text-amber-400 border-slate-700',
+    };
+  }
+
   switch (status) {
     case 'Platinum':
       return {
