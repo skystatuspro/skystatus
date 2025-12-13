@@ -302,6 +302,8 @@ export default function App() {
             onUpdate={actions.setBaseXpData}
             rollover={state.xpRollover}
             onUpdateRollover={actions.handleXPRolloverUpdate}
+            uxpRollover={state.uxpRollover}
+            onUpdateUxpRollover={actions.handleUxpRolloverUpdate}
             flights={state.flights}
             onUpdateFlights={actions.handleFlightsUpdate}
             manualLedger={state.manualLedger}
