@@ -34,7 +34,8 @@ interface RiskMonitorProps {
 const ROLLOVER_CAP = 300;
 const PLATINUM_XP = 300;
 const UXP_ROLLOVER_CAP = 900;
-const UXP_THRESHOLD = 900;
+const UXP_REQUALIFICATION = 900;
+const UXP_TOTAL_CAP = 1800; // 900 requalification + 900 rollover
 
 export const RiskMonitor: React.FC<RiskMonitorProps> = ({
   actualStatus,
@@ -90,16 +91,18 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
     : 0;
   
   // UXP waste calculations (only for Ultimate members)
+  // Total cap is 1800 (900 requalification + 900 rollover)
   const actualUXPWaste = isUltimate 
-    ? Math.max(0, actualUXP - UXP_ROLLOVER_CAP)
+    ? Math.max(0, actualUXP - UXP_TOTAL_CAP)
     : 0;
   const projectedUXPWaste = isUltimate
-    ? Math.max(0, projectedUXP - UXP_ROLLOVER_CAP)
+    ? Math.max(0, projectedUXP - UXP_TOTAL_CAP)
     : 0;
   
   // UXP rollover calculations (only for Ultimate)
-  const actualUXPRollover = isUltimate ? Math.min(UXP_ROLLOVER_CAP, actualUXP) : 0;
-  const projectedUXPRollover = isUltimate ? Math.min(UXP_ROLLOVER_CAP, projectedUXP) : 0;
+  // Rollover = UXP above 900 (requalification), capped at 900
+  const actualUXPRollover = isUltimate ? Math.min(UXP_ROLLOVER_CAP, Math.max(0, actualUXP - UXP_REQUALIFICATION)) : 0;
+  const projectedUXPRollover = isUltimate ? Math.min(UXP_ROLLOVER_CAP, Math.max(0, projectedUXP - UXP_REQUALIFICATION)) : 0;
   
   // Overall health assessment
   type HealthStatus = 'optimal' | 'good' | 'warning' | 'critical';
@@ -107,6 +110,13 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
   const getOverallHealth = (): { status: HealthStatus; label: string } => {
     // Ultimate-specific health checks
     if (isUltimate) {
+      // Check if Ultimate requalification is at risk
+      if (actualUXP < UXP_REQUALIFICATION && projectedUXP < UXP_REQUALIFICATION) {
+        return { status: 'critical', label: 'Action needed' };
+      }
+      if (actualUXP < UXP_REQUALIFICATION && projectedUXP >= UXP_REQUALIFICATION) {
+        return { status: 'good', label: 'On track' };
+      }
       if (projectedUXPWaste > 200) {
         return { status: 'warning', label: 'Optimize timing' };
       }
@@ -154,6 +164,26 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
   const getTip = (): { icon: React.ReactNode; text: string; subtext?: string } | null => {
     // Ultimate-specific tips
     if (isUltimate) {
+      // Need to requalify
+      if (actualUXP < UXP_REQUALIFICATION && projectedUXP < UXP_REQUALIFICATION) {
+        const uxpNeeded = UXP_REQUALIFICATION - actualUXP;
+        return {
+          icon: <AlertTriangle size={16} />,
+          text: `Book ${uxpNeeded} UXP worth of KLM/AF flights`,
+          subtext: `${daysLeft} days left to secure your Ultimate status`,
+        };
+      }
+      
+      // On track to requalify
+      if (actualUXP < UXP_REQUALIFICATION && projectedUXP >= UXP_REQUALIFICATION) {
+        const scheduledUXP = projectedUXP - actualUXP;
+        return {
+          icon: <Plane size={16} />,
+          text: 'Stay on track with scheduled KLM/AF flights',
+          subtext: `${scheduledUXP} UXP from upcoming trips will secure Ultimate requalification`,
+        };
+      }
+      
       if (projectedUXPWaste > 100) {
         return {
           icon: <TrendingDown size={16} />,
@@ -262,88 +292,169 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
       </div>
 
       <div className="space-y-4">
-        {/* Status Security */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              Requalification Status
-            </span>
-            {statusSecuredActual ? (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
-                <CheckCircle2 size={12} />
-                Secured
+        {/* Status Security - Different display for Ultimate vs non-Ultimate */}
+        {isUltimate ? (
+          // Ultimate member requalification status
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200/50 border border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Crown size={12} />
+                Ultimate Requalification
               </span>
-            ) : statusSecuredProjected ? (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600">
-                <Clock size={12} />
-                On track
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
-                <AlertTriangle size={12} />
-                Action needed
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-end justify-between">
-            <div>
-              <div className="text-2xl font-black text-slate-800">
-                {actualStatus}
-              </div>
-              {hasProjectedUpgrade && (
-                <div className="text-xs text-blue-600 font-medium flex items-center gap-1 mt-0.5">
-                  <Clock size={10} />
-                  → {projectedStatus} projected
-                </div>
+              {actualUXP >= UXP_REQUALIFICATION ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                  <CheckCircle2 size={12} />
+                  Secured
+                </span>
+              ) : projectedUXP >= UXP_REQUALIFICATION ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600">
+                  <Clock size={12} />
+                  On track
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
+                  <AlertTriangle size={12} />
+                  Action needed
+                </span>
               )}
             </div>
             
-            <div className="text-right">
-              {statusSecuredActual ? (
-                <div>
-                  <div className="text-lg font-bold text-emerald-600">+{actualBuffer}</div>
-                  <div className="text-[10px] text-slate-400 uppercase font-medium">XP buffer</div>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-black text-slate-800">
+                  Ultimate
                 </div>
-              ) : statusSecuredProjected ? (
-                <div>
-                  <div className="text-lg font-bold text-blue-600">+{projectedBuffer}</div>
-                  <div className="text-[10px] text-blue-400 uppercase font-medium flex items-center gap-0.5 justify-end">
-                    <Clock size={9} />
-                    projected buffer
+              </div>
+              
+              <div className="text-right">
+                {actualUXP >= UXP_REQUALIFICATION ? (
+                  <div>
+                    <div className="text-lg font-bold text-emerald-600">+{actualUXP - UXP_REQUALIFICATION}</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-medium">UXP buffer</div>
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-lg font-bold text-amber-600">{xpNeededForStatus}</div>
-                  <div className="text-[10px] text-slate-400 uppercase font-medium">XP needed</div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Mini progress to target */}
-          <div className="mt-3 pt-3 border-t border-slate-200/50">
-            <div className="flex justify-between text-[9px] text-slate-400 mb-1">
-              <span>Progress to {targetXP} XP</span>
-              <span>{actualXP} / {targetXP}</span>
-            </div>
-            <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-              <div className="relative h-full">
-                {projectedTotalXP > actualXP && (
-                  <div 
-                    className="absolute inset-y-0 left-0 bg-blue-300 rounded-full"
-                    style={{ width: `${Math.min(100, (projectedTotalXP / targetXP) * 100)}%` }}
-                  />
+                ) : projectedUXP >= UXP_REQUALIFICATION ? (
+                  <div>
+                    <div className="text-lg font-bold text-blue-600">+{projectedUXP - UXP_REQUALIFICATION}</div>
+                    <div className="text-[10px] text-blue-400 uppercase font-medium flex items-center gap-0.5 justify-end">
+                      <Clock size={9} />
+                      projected buffer
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-lg font-bold text-amber-600">{UXP_REQUALIFICATION - actualUXP}</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-medium">UXP needed</div>
+                  </div>
                 )}
-                <div 
-                  className={`absolute inset-y-0 left-0 rounded-full ${statusSecuredActual ? 'bg-emerald-500' : 'bg-slate-400'}`}
-                  style={{ width: `${Math.min(100, (actualXP / targetXP) * 100)}%` }}
-                />
+              </div>
+            </div>
+
+            {/* Mini progress to 900 UXP */}
+            <div className="mt-3 pt-3 border-t border-slate-300/50">
+              <div className="flex justify-between text-[9px] text-slate-400 mb-1">
+                <span>Progress to {UXP_REQUALIFICATION} UXP</span>
+                <span>{actualUXP} / {UXP_REQUALIFICATION}</span>
+              </div>
+              <div className="h-1.5 bg-slate-300 rounded-full overflow-hidden">
+                <div className="relative h-full">
+                  {projectedUXP > actualUXP && (
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-slate-400 rounded-full"
+                      style={{ width: `${Math.min(100, (projectedUXP / UXP_REQUALIFICATION) * 100)}%` }}
+                    />
+                  )}
+                  <div 
+                    className={`absolute inset-y-0 left-0 rounded-full ${actualUXP >= UXP_REQUALIFICATION ? 'bg-emerald-500' : 'bg-slate-500'}`}
+                    style={{ width: `${Math.min(100, (actualUXP / UXP_REQUALIFICATION) * 100)}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          // Non-Ultimate requalification status (original)
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Requalification Status
+              </span>
+              {statusSecuredActual ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                  <CheckCircle2 size={12} />
+                  Secured
+                </span>
+              ) : statusSecuredProjected ? (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600">
+                  <Clock size={12} />
+                  On track
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600">
+                  <AlertTriangle size={12} />
+                  Action needed
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-black text-slate-800">
+                  {actualStatus}
+                </div>
+                {hasProjectedUpgrade && (
+                  <div className="text-xs text-blue-600 font-medium flex items-center gap-1 mt-0.5">
+                    <Clock size={10} />
+                    → {projectedStatus} projected
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-right">
+                {statusSecuredActual ? (
+                  <div>
+                    <div className="text-lg font-bold text-emerald-600">+{actualBuffer}</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-medium">XP buffer</div>
+                  </div>
+                ) : statusSecuredProjected ? (
+                  <div>
+                    <div className="text-lg font-bold text-blue-600">+{projectedBuffer}</div>
+                    <div className="text-[10px] text-blue-400 uppercase font-medium flex items-center gap-0.5 justify-end">
+                      <Clock size={9} />
+                      projected buffer
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-lg font-bold text-amber-600">{xpNeededForStatus}</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-medium">XP needed</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mini progress to target */}
+            <div className="mt-3 pt-3 border-t border-slate-200/50">
+              <div className="flex justify-between text-[9px] text-slate-400 mb-1">
+                <span>Progress to {targetXP} XP</span>
+                <span>{actualXP} / {targetXP}</span>
+              </div>
+              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="relative h-full">
+                  {projectedTotalXP > actualXP && (
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-blue-300 rounded-full"
+                      style={{ width: `${Math.min(100, (projectedTotalXP / targetXP) * 100)}%` }}
+                    />
+                  )}
+                  <div 
+                    className={`absolute inset-y-0 left-0 rounded-full ${statusSecuredActual ? 'bg-emerald-500' : 'bg-slate-400'}`}
+                    style={{ width: `${Math.min(100, (actualXP / targetXP) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Rollover Forecast - XP for Platinum, UXP for Ultimate */}
         {isUltimate ? (
@@ -484,7 +595,7 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
               </div>
               
               <div className="text-[10px] text-slate-500 text-right max-w-[140px]">
-                UXP above {UXP_ROLLOVER_CAP} cannot roll over to next cycle
+                UXP above {UXP_TOTAL_CAP} cannot roll over to next cycle
               </div>
             </div>
           </div>
