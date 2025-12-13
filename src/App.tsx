@@ -444,6 +444,7 @@ export default function App() {
               ultimateCycleType: state.qualificationSettings?.ultimateCycleType || 'qualification',
               targetCPM: state.targetCPM || 0.012,
               emailConsent: meta.emailConsent || false,
+              isReturningUser: state.flights.length > 0,
             });
           }}
         />

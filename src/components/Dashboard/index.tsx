@@ -65,9 +65,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const { format: formatCurrency, symbol: currencySymbol, formatPrecise } = useCurrency();
   const [showPdfImport, setShowPdfImport] = useState(false);
-  const [skipWelcome, setSkipWelcome] = useState(false);
+  // Skip welcome screen if user already has flights (returning user)
+  const [skipWelcome, setSkipWelcome] = useState(state.flights.length > 0);
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showFeedbackCard, setShowFeedbackCard] = useState(false);
+
+  // Auto-skip welcome when flights are loaded (handles async data loading)
+  useEffect(() => {
+    if (state.flights.length > 0 && !skipWelcome) {
+      setSkipWelcome(true);
+    }
+  }, [state.flights.length, skipWelcome]);
 
   // Check for feedback eligibility on mount
   useEffect(() => {

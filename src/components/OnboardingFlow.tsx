@@ -44,6 +44,7 @@ export interface OnboardingData {
   // Tracking
   pdfImported: boolean;
   pdfFlightsCount: number;
+  isReturningUser: boolean;
 }
 
 interface OnboardingFlowProps {
@@ -313,6 +314,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       emailConsent,
       pdfImported: !!pdfImportResult,
       pdfFlightsCount: pdfImportResult?.flightsCount || 0,
+      isReturningUser,
     });
   };
 

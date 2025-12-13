@@ -614,47 +614,60 @@ export function useUserData(): UseUserDataReturn {
     ultimateCycleType: 'qualification' | 'calendar';
     targetCPM: number;
     emailConsent: boolean;
+    isReturningUser?: boolean;  // If true, don't overwrite qualification settings
   }) => {
-    // Update local state
+    // Update local state - these are always safe to update
     setCurrencyInternal(data.currency);
     setHomeAirportInternal(data.homeAirport);
     setTargetCPMInternal(data.targetCPM);
-    setXpRolloverInternal(data.rolloverXP);
     setEmailConsentInternal(data.emailConsent);
-    setMilesBalanceInternal(data.milesBalance);
-    setCurrentUXPInternal(data.currentUXP);
     setOnboardingCompletedInternal(true);
 
-    // Set qualification settings if status data provided
-    if (data.currentStatus !== 'Explorer' || data.currentXP > 0) {
-      const now = new Date();
-      const qYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-      const cycleStartMonth = `${qYear - 1}-11`;
-      
-      setQualificationSettingsInternal({
-        cycleStartMonth,
-        startingStatus: data.currentStatus,
-        startingXP: data.currentXP,
-        ultimateCycleType: data.ultimateCycleType,
-      });
+    // Only update these for NEW users (not returning users who already have flight data)
+    // For returning users, XP is calculated from flights, not from manual entry
+    if (!data.isReturningUser) {
+      setXpRolloverInternal(data.rolloverXP);
+      setMilesBalanceInternal(data.milesBalance);
+      setCurrentUXPInternal(data.currentUXP);
+
+      // Set qualification settings only for new users
+      if (data.currentStatus !== 'Explorer' || data.currentXP > 0) {
+        const now = new Date();
+        const qYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+        const cycleStartMonth = `${qYear - 1}-11`;
+        
+        setQualificationSettingsInternal({
+          cycleStartMonth,
+          startingStatus: data.currentStatus,
+          startingXP: data.currentXP,
+          ultimateCycleType: data.ultimateCycleType,
+        });
+      }
     }
 
     // Save to database if logged in
     if (user && !isDemoMode) {
       try {
-        await updateProfile(user.id, {
+        // For returning users, only save preference-type settings
+        const profileUpdates: Record<string, unknown> = {
           currency: data.currency,
           home_airport: data.homeAirport,
           target_cpm: data.targetCPM,
-          xp_rollover: data.rolloverXP,
           email_consent: data.emailConsent,
-          miles_balance: data.milesBalance,
-          current_uxp: data.currentUXP,
           onboarding_completed: true,
-          starting_status: data.currentStatus,
-          starting_xp: data.currentXP,
-          ultimate_cycle_type: data.ultimateCycleType,
-        });
+        };
+
+        // Only save XP/status data for new users
+        if (!data.isReturningUser) {
+          profileUpdates.xp_rollover = data.rolloverXP;
+          profileUpdates.miles_balance = data.milesBalance;
+          profileUpdates.current_uxp = data.currentUXP;
+          profileUpdates.starting_status = data.currentStatus;
+          profileUpdates.starting_xp = data.currentXP;
+          profileUpdates.ultimate_cycle_type = data.ultimateCycleType;
+        }
+
+        await updateProfile(user.id, profileUpdates);
       } catch (error) {
         console.error('Error saving onboarding data:', error);
       }
