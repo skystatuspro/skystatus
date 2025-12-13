@@ -11,6 +11,8 @@ import {
   Wallet,
   Coins,
   PiggyBank,
+  Target,
+  ChevronRight,
 } from 'lucide-react';
 import {
   BarChart,
@@ -336,6 +338,88 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
             <span>Est. Value</span>
           </div>
         </KPICard>
+      </div>
+
+      {/* Miles Valuation Settings */}
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[1.5rem] p-5 border border-indigo-100">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-white shadow-sm rounded-xl text-indigo-600 border border-indigo-100">
+                <Target size={18} strokeWidth={2.5} />
+              </div>
+              <h3 className="font-bold text-slate-800">How do you value a mile?</h3>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
+              Your target CPM (cost per mile) determines how SkyStatus calculates the value of your portfolio. 
+              Set this to the redemption rate you typically aim for when booking award flights.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Quick presets */}
+            <div className="hidden sm:flex items-center gap-1">
+              {[
+                { value: 0.008, label: 'Conservative', color: 'text-slate-500' },
+                { value: 0.012, label: 'Average', color: 'text-blue-600' },
+                { value: 0.018, label: 'Aspirational', color: 'text-indigo-600' },
+              ].map(preset => (
+                <button
+                  key={preset.value}
+                  onClick={() => onUpdateTargetCPM(preset.value)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    Math.abs(targetCPM - preset.value) < 0.001
+                      ? 'bg-white shadow-sm border border-indigo-200 text-indigo-700'
+                      : 'bg-white/50 hover:bg-white text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {preset.label}
+                  <span className="block text-[9px] font-medium opacity-70">€{preset.value.toFixed(3)}</span>
+                </button>
+              ))}
+            </div>
+            
+            {/* Custom input */}
+            <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-indigo-100 min-w-[120px]">
+              <label className="text-[9px] font-bold text-indigo-400 uppercase tracking-wide block mb-1">
+                Target CPM
+              </label>
+              <div className="flex items-center gap-1">
+                <span className="text-sm text-indigo-400 font-medium">€</span>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  value={targetCPM}
+                  onChange={(e) => onUpdateTargetCPM(parseFloat(e.target.value) || 0.012)}
+                  className={`text-lg font-black text-indigo-700 outline-none bg-transparent w-20 ${noSpinnerClass}`}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Expandable explanation */}
+        <details className="mt-3 group">
+          <summary className="text-[10px] font-medium text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors flex items-center gap-1">
+            <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
+            What's a good target CPM?
+          </summary>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
+            <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50">
+              <div className="font-bold text-slate-700 mb-1">€0.006 - €0.010</div>
+              <div className="text-slate-500">Conservative. Easy to achieve on most economy redemptions within Europe.</div>
+            </div>
+            <div className="bg-white/70 rounded-lg p-3 border border-blue-200/50">
+              <div className="font-bold text-blue-700 mb-1">€0.012 - €0.015</div>
+              <div className="text-slate-500">Average. Typical for business class on medium-haul or good economy deals on long-haul.</div>
+            </div>
+            <div className="bg-white/70 rounded-lg p-3 border border-indigo-200/50">
+              <div className="font-bold text-indigo-700 mb-1">€0.018+</div>
+              <div className="text-slate-500">Aspirational. Achievable on premium cabin long-haul or La Première. Requires strategic booking.</div>
+            </div>
+          </div>
+        </details>
       </div>
 
       {/* Charts & Source Performance */}
