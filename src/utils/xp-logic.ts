@@ -880,8 +880,16 @@ export const calculateQualificationCycles = (
 
   // Tot waar moet je überhaupt cycli bouwen?
   // Altijd tot minimaal de laatste maand met data of de huidige maand.
-  const maxRelevantMonth =
+  // PLUS: voeg 12 maanden toe zodat er altijd minstens één toekomstige cyclus is.
+  const baseMaxMonth =
     lastDataMonth > currentMonth ? lastDataMonth : currentMonth;
+  
+  // Bereken de maand 12 maanden na de baseMaxMonth om de volgende cyclus te dekken
+  const [baseYear, baseMonthNum] = baseMaxMonth.split('-').map(Number);
+  const futureDate = new Date(baseYear, baseMonthNum - 1 + 12, 1);
+  const futureMonth = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}`;
+  
+  const maxRelevantMonth = futureMonth;
 
   let state: CycleProcessingState = {
     status: initialStatus,
