@@ -434,6 +434,7 @@ export async function updateProfile(userId: string, updates: {
   xp_rollover?: number;
   starting_status?: string;
   starting_xp?: number;
+  ultimate_cycle_type?: string;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -546,6 +547,7 @@ export interface UserData {
     xpRollover: number;
     startingStatus: string | null;
     startingXP: number | null;
+    ultimateCycleType: 'qualification' | 'calendar' | null;
   } | null;
 }
 
@@ -570,6 +572,7 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       xpRollover: profile.xp_rollover || 0,
       startingStatus: profile.starting_status || null,
       startingXP: profile.starting_xp || null,
+      ultimateCycleType: profile.ultimate_cycle_type || null,
     } : null,
   };
 }
