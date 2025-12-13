@@ -569,6 +569,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             hasProjectedUpgrade={hasProjectedUpgrade}
             cycleStartDate={activeCycle?.startDate ?? new Date().toISOString().slice(0, 10)}
             cycleEndDate={activeCycle?.endDate ?? new Date().toISOString().slice(0, 10)}
+            isUltimate={isUltimate}
+            actualUXP={actualUXP}
+            projectedUXP={projectedUXP}
           />
 
           {/* Recent Activity */}

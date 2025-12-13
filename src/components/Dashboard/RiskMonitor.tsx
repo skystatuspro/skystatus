@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Plane,
   Sparkles,
+  Crown,
 } from 'lucide-react';
 import { StatusLevel } from './helpers';
 
@@ -24,10 +25,16 @@ interface RiskMonitorProps {
   hasProjectedUpgrade: boolean;
   cycleStartDate: string;
   cycleEndDate: string;
+  // Ultimate-specific props
+  isUltimate?: boolean;
+  actualUXP?: number;
+  projectedUXP?: number;
 }
 
 const ROLLOVER_CAP = 300;
 const PLATINUM_XP = 300;
+const UXP_ROLLOVER_CAP = 900;
+const UXP_THRESHOLD = 900;
 
 export const RiskMonitor: React.FC<RiskMonitorProps> = ({
   actualStatus,
@@ -39,6 +46,9 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
   hasProjectedUpgrade,
   cycleStartDate,
   cycleEndDate,
+  isUltimate = false,
+  actualUXP = 0,
+  projectedUXP = 0,
 }) => {
   // Cycle timing calculations
   const today = new Date();
@@ -71,18 +81,45 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
     ? Math.min(ROLLOVER_CAP, Math.max(0, projectedTotalXP - PLATINUM_XP))
     : null;
   
-  // Waste calculations
-  const actualWaste = actualStatus === 'Platinum' 
+  // Waste calculations (XP - only for Platinum, not Ultimate)
+  const actualWaste = !isUltimate && actualStatus === 'Platinum' 
     ? Math.max(0, actualXP - PLATINUM_XP - ROLLOVER_CAP)
     : 0;
-  const projectedWaste = projectedStatus === 'Platinum'
+  const projectedWaste = !isUltimate && projectedStatus === 'Platinum'
     ? Math.max(0, projectedTotalXP - PLATINUM_XP - ROLLOVER_CAP)
     : 0;
+  
+  // UXP waste calculations (only for Ultimate members)
+  const actualUXPWaste = isUltimate 
+    ? Math.max(0, actualUXP - UXP_ROLLOVER_CAP)
+    : 0;
+  const projectedUXPWaste = isUltimate
+    ? Math.max(0, projectedUXP - UXP_ROLLOVER_CAP)
+    : 0;
+  
+  // UXP rollover calculations (only for Ultimate)
+  const actualUXPRollover = isUltimate ? Math.min(UXP_ROLLOVER_CAP, actualUXP) : 0;
+  const projectedUXPRollover = isUltimate ? Math.min(UXP_ROLLOVER_CAP, projectedUXP) : 0;
   
   // Overall health assessment
   type HealthStatus = 'optimal' | 'good' | 'warning' | 'critical';
   
   const getOverallHealth = (): { status: HealthStatus; label: string } => {
+    // Ultimate-specific health checks
+    if (isUltimate) {
+      if (projectedUXPWaste > 200) {
+        return { status: 'warning', label: 'Optimize timing' };
+      }
+      if (projectedUXPWaste > 0) {
+        return { status: 'good', label: 'Minor UXP waste' };
+      }
+      if (actualUXPRollover >= UXP_ROLLOVER_CAP) {
+        return { status: 'optimal', label: 'Maximized' };
+      }
+      return { status: 'optimal', label: 'Healthy' };
+    }
+    
+    // Standard health checks for non-Ultimate
     if (!statusSecuredActual && !statusSecuredProjected) {
       return { status: 'critical', label: 'Action needed' };
     }
@@ -115,6 +152,37 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
 
   // Generate actionable tip
   const getTip = (): { icon: React.ReactNode; text: string; subtext?: string } | null => {
+    // Ultimate-specific tips
+    if (isUltimate) {
+      if (projectedUXPWaste > 100) {
+        return {
+          icon: <TrendingDown size={16} />,
+          text: `${projectedUXPWaste} UXP will be lost to cap`,
+          subtext: 'Consider postponing KLM/AF flights to next cycle if possible',
+        };
+      }
+      
+      if (actualUXPRollover >= UXP_ROLLOVER_CAP && projectedUXPWaste === 0) {
+        return {
+          icon: <CheckCircle2 size={16} />,
+          text: 'Perfect! Maximum UXP rollover locked in',
+          subtext: 'Additional KLM/AF flights this cycle would waste UXP',
+        };
+      }
+      
+      if (actualUXPRollover < UXP_ROLLOVER_CAP) {
+        const potential = UXP_ROLLOVER_CAP - actualUXPRollover;
+        return {
+          icon: <Sparkles size={16} />,
+          text: `Room for ${potential} more UXP rollover`,
+          subtext: 'Extra KLM/AF flights carry UXP over to next year',
+        };
+      }
+      
+      return null;
+    }
+    
+    // Standard tips for non-Ultimate
     if (!statusSecuredActual && !statusSecuredProjected) {
       return {
         icon: <AlertTriangle size={16} />,
@@ -277,8 +345,56 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
           </div>
         </div>
 
-        {/* Rollover Forecast */}
-        {(actualStatus === 'Platinum' || projectedStatus === 'Platinum') && (
+        {/* Rollover Forecast - XP for Platinum, UXP for Ultimate */}
+        {isUltimate ? (
+          // UXP Rollover Forecast for Ultimate members
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/50">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Crown size={12} />
+                UXP Rollover Forecast
+              </span>
+              <span className="text-[10px] font-medium text-slate-400">
+                Cap: {UXP_ROLLOVER_CAP} UXP
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/60 rounded-xl p-3 border border-white">
+                <div className="text-[10px] font-bold uppercase text-slate-400 mb-1">Actual</div>
+                <div className="text-xl font-black text-slate-800">{actualUXPRollover}</div>
+                <div className="text-[10px] text-slate-500">UXP → next cycle</div>
+              </div>
+              
+              <div className="bg-white/60 rounded-xl p-3 border border-white">
+                <div className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-1 mb-1">
+                  <Clock size={10} />
+                  Projected
+                </div>
+                <div className="text-xl font-black text-slate-800">{projectedUXPRollover}</div>
+                <div className="text-[10px] text-slate-500">UXP → next cycle</div>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <div className="h-2.5 bg-slate-200 rounded-full overflow-hidden relative">
+                <div 
+                  className="absolute inset-y-0 left-0 bg-slate-300 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (projectedUXPRollover / UXP_ROLLOVER_CAP) * 100)}%` }}
+                />
+                <div 
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-slate-500 to-slate-600 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (actualUXPRollover / UXP_ROLLOVER_CAP) * 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[9px] text-slate-400">0</span>
+                <span className="text-[9px] text-slate-400">{UXP_ROLLOVER_CAP} UXP max</span>
+              </div>
+            </div>
+          </div>
+        ) : (actualStatus === 'Platinum' || projectedStatus === 'Platinum') && (
+          // XP Rollover Forecast for Platinum members
           <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/50 to-indigo-50/50 border border-blue-100/50">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -333,8 +449,49 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
           </div>
         )}
 
-        {/* Waste Indicator */}
-        {(actualWaste > 0 || projectedWaste > 0) && (
+        {/* UXP Waste Indicator - Only for Ultimate */}
+        {isUltimate && (actualUXPWaste > 0 || projectedUXPWaste > 0) && (
+          <div className={`p-4 rounded-2xl border ${
+            actualUXPWaste > 0 
+              ? 'bg-red-50 border-red-100' 
+              : 'bg-amber-50 border-amber-100'
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Crown size={12} />
+                UXP Waste
+              </span>
+              <AlertTriangle size={14} className={actualUXPWaste > 0 ? 'text-red-500' : 'text-amber-500'} />
+            </div>
+
+            <div className="flex items-end justify-between">
+              <div className="flex gap-4">
+                {actualUXPWaste > 0 && (
+                  <div>
+                    <div className="text-xl font-black text-red-600">-{actualUXPWaste}</div>
+                    <div className="text-[10px] text-red-600/70 uppercase font-medium">Already lost</div>
+                  </div>
+                )}
+                {projectedUXPWaste > 0 && projectedUXPWaste !== actualUXPWaste && (
+                  <div>
+                    <div className="text-xl font-black text-amber-600">-{projectedUXPWaste}</div>
+                    <div className="text-[10px] text-amber-600/70 uppercase font-medium flex items-center gap-0.5">
+                      <Clock size={9} />
+                      Projected
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-[10px] text-slate-500 text-right max-w-[140px]">
+                UXP above {UXP_ROLLOVER_CAP} cannot roll over to next cycle
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* XP Waste Indicator - Only for Platinum (not Ultimate) */}
+        {!isUltimate && (actualWaste > 0 || projectedWaste > 0) && (
           <div className={`p-4 rounded-2xl border ${
             actualWaste > 0 
               ? 'bg-red-50 border-red-100' 
@@ -373,8 +530,23 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
           </div>
         )}
 
-        {/* No waste indicator */}
-        {actualWaste === 0 && projectedWaste === 0 && statusSecuredActual && (
+        {/* No UXP waste indicator - Ultimate */}
+        {isUltimate && actualUXPWaste === 0 && projectedUXPWaste === 0 && (
+          <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600">
+                <CheckCircle2 size={16} />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-emerald-800">No UXP waste</div>
+                <div className="text-[10px] text-emerald-600/70">All earned UXP is being utilized efficiently</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No XP waste indicator - Platinum (not Ultimate) */}
+        {!isUltimate && actualWaste === 0 && projectedWaste === 0 && statusSecuredActual && (
           <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100/50">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600">
