@@ -233,8 +233,8 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
     if (projectedWaste > 50) {
       return {
         icon: <TrendingDown size={16} />,
-        text: `${projectedWaste} XP will be lost to cap`,
-        subtext: 'Consider postponing flights to next cycle if possible',
+        text: `${projectedWaste} XP will exceed cap`,
+        subtext: 'Consider timing flights for next cycle if optimizing',
       };
     }
     
@@ -242,7 +242,7 @@ export const RiskMonitor: React.FC<RiskMonitorProps> = ({
       return {
         icon: <CheckCircle2 size={16} />,
         text: 'Perfect! Maximum rollover locked in',
-        subtext: 'Additional XP this cycle would be wasted',
+        subtext: 'Additional XP won\'t carry over, but you\'ve hit the sweet spot',
       };
     }
     
