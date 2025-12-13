@@ -1,7 +1,7 @@
 // src/components/MilesEngine/index.tsx
 // Main MilesEngine component - Financial backbone of the loyalty portfolio
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MilesRecord, RedemptionRecord } from '../../types';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { formatCurrency, formatNumber, generateId } from '../../utils/format';
@@ -13,6 +13,10 @@ import {
   PiggyBank,
   Target,
   ChevronRight,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 import {
   BarChart,
@@ -52,6 +56,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   redemptions,
 }) => {
   const safeTargetCPM = Number.isFinite(targetCPM) ? targetCPM : 0;
+  const [showValuationGuide, setShowValuationGuide] = useState(false);
 
   const stats = useMemo(
     () => calculateMilesStats(data, currentMonth, redemptions, safeTargetCPM),
@@ -190,21 +195,22 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
               className="text-sm font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
             />
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 flex flex-col shadow-sm w-32">
+          <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-200 rounded-xl px-3 py-2 flex flex-col shadow-sm w-36 group hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer">
             <div className="flex justify-between items-center">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+              <label className="text-[9px] font-bold text-indigo-500 uppercase tracking-wide flex items-center gap-1">
+                <Sparkles size={10} />
                 Target CPM
               </label>
-              <Tooltip text="The value you AIM to get per mile when redeeming. Used to calculate projected value." />
+              <Tooltip text="How much is a mile worth to you? This affects all value calculations. Scroll down to 'How do you value a mile?' for presets and guidance." />
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-xs text-slate-400 font-medium">€</span>
+              <span className="text-xs text-indigo-400 font-medium">€</span>
               <input
                 type="number"
                 step="0.001"
                 value={targetCPM}
                 onChange={(e) => onUpdateTargetCPM(parseFloat(e.target.value))}
-                className={`text-sm font-bold text-slate-800 outline-none bg-transparent w-full ${noSpinnerClass}`}
+                className={`text-sm font-bold text-indigo-700 outline-none bg-transparent w-full ${noSpinnerClass}`}
               />
             </div>
           </div>
@@ -341,14 +347,20 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
       </div>
 
       {/* Miles Valuation Settings */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[1.5rem] p-5 border border-indigo-100">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[1.5rem] p-5 border border-indigo-100 relative overflow-hidden">
+        {/* Decorative background */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 rounded-full blur-2xl -mr-16 -mt-16" />
+        
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-2 bg-white shadow-sm rounded-xl text-indigo-600 border border-indigo-100">
                 <Target size={18} strokeWidth={2.5} />
               </div>
-              <h3 className="font-bold text-slate-800">How do you value a mile?</h3>
+              <div>
+                <h3 className="font-bold text-slate-800">How do you value a mile?</h3>
+                <p className="text-[10px] text-indigo-600 font-medium">This setting affects all value calculations</p>
+              </div>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
               Your target CPM (cost per mile) determines how SkyStatus calculates the value of your portfolio. 
@@ -400,21 +412,22 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
         </div>
         
         {/* Expandable explanation */}
-        <details className="mt-3 group">
-          <summary className="text-[10px] font-medium text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors flex items-center gap-1">
-            <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
+        <details className="mt-4 group" open>
+          <summary className="text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors flex items-center gap-1.5">
+            <HelpCircle size={14} />
             What's a good target CPM?
+            <ChevronDown size={14} className="transition-transform group-open:rotate-180 ml-auto" />
           </summary>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
-            <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50">
+            <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50 hover:border-slate-300 transition-colors">
               <div className="font-bold text-slate-700 mb-1">€0.006 - €0.010</div>
               <div className="text-slate-500">Conservative. Easy to achieve on most economy redemptions within Europe.</div>
             </div>
-            <div className="bg-white/70 rounded-lg p-3 border border-blue-200/50">
+            <div className="bg-white/70 rounded-lg p-3 border border-blue-200/50 hover:border-blue-300 transition-colors">
               <div className="font-bold text-blue-700 mb-1">€0.012 - €0.015</div>
               <div className="text-slate-500">Average. Typical for business class on medium-haul or good economy deals on long-haul.</div>
             </div>
-            <div className="bg-white/70 rounded-lg p-3 border border-indigo-200/50">
+            <div className="bg-white/70 rounded-lg p-3 border border-indigo-200/50 hover:border-indigo-300 transition-colors">
               <div className="font-bold text-indigo-700 mb-1">€0.018+</div>
               <div className="text-slate-500">Aspirational. Achievable on premium cabin long-haul or La Première. Requires strategic booking.</div>
             </div>
