@@ -72,7 +72,7 @@ All user data flows through the `useUserData` hook (`src/hooks/useUserData.ts`):
 │  State:                                                  │
 │  - flights, milesData, xpData, redemptions              │
 │  - qualificationSettings, manualLedger                  │
-│  - currentMonth, targetCPM, xpRollover                  │
+│  - currentMonth, targetCPM, xpRollover, uxpRollover    │
 │  - authState (user, session, isDemo, isLocalMode)       │
 ├─────────────────────────────────────────────────────────┤
 │  Persistence:                                            │
@@ -105,9 +105,13 @@ Flights + ManualLedger + QualificationSettings
     │ - ledger[]        │ (monthly breakdown)
     │ - actualXP        │ (flown only)
     │ - projectedXP     │ (including scheduled)
+    │ - actualUXP       │ (KLM/AF flights only)
+    │ - projectedUXP    │ (including scheduled)
     │ - actualStatus    │
     │ - projectedStatus │
-    │ - rolloverIn/Out  │
+    │ - isUltimate      │ (900+ UXP achieved)
+    │ - rolloverIn/Out  │ (XP rollover, max 300)
+    │ - uxpRolloverIn/Out │ (UXP rollover, max 900)
     │ - isLevelUpCycle  │
     └───────────────────┘
 ```
@@ -143,7 +147,18 @@ SILVER_THRESHOLD = 100   // XP needed for Silver
 GOLD_THRESHOLD = 180     // XP needed for Gold  
 PLATINUM_THRESHOLD = 300 // XP needed for Platinum
 MAX_ROLLOVER = 300       // Maximum XP that rolls over
+
+// Ultimate (requires Platinum status)
+ULTIMATE_UXP_THRESHOLD = 900  // UXP needed for Ultimate
+MAX_UXP_ROLLOVER = 900        // Maximum UXP that rolls over
+ULTIMATE_TOTAL_CAP = 1800     // 900 requalification + 900 rollover
 ```
+
+### XP vs UXP
+
+- **XP** - Earned from all SkyTeam flights, determines status level (Silver/Gold/Platinum)
+- **UXP** - Earned only from KLM/Air France operated flights, determines Ultimate eligibility
+- Every UXP counts as XP, but not every XP is UXP
 
 ### XP Sources
 
@@ -152,12 +167,27 @@ MAX_ROLLOVER = 300       // Maximum XP that rolls over
 3. **SAF Bonus** - Sustainable Aviation Fuel bonus
 4. **Misc XP** - Promotions, corrections, other sources
 
+### UXP Sources (Ultimate XP)
+
+UXP is a subset of XP, earned only from:
+1. **KLM operated flights** - Same calculation as XP
+2. **Air France operated flights** - Same calculation as XP
+3. **SAF purchases** - SAF XP also counts as UXP
+
+Partner flights (Delta, Kenya Airways, etc.) earn XP but NOT UXP.
+
 ### Cycle Detection
 
 The system automatically detects qualification cycles:
 - Standard cycle: 12 months from user's status start date
 - Level-up cycle: Ends early when user achieves next status level
 - Chained cycles: New cycle starts immediately after level-up
+
+### Ultimate Cycle Type
+
+Ultimate members can choose between two cycle tracking modes:
+- **Qualification cycle** (default): UXP tracks alongside your status qualification year
+- **Calendar year** (legacy): For members who earned Ultimate before 2024, UXP may still be calculated per calendar year
 
 ## Component Patterns
 

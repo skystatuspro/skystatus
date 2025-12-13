@@ -16,13 +16,23 @@ A comprehensive analytics dashboard for tracking your Flying Blue loyalty progra
 - Miles portfolio value estimation
 - Risk monitoring with actionable tips
 - Recent redemption activity
+- **Ultimate Requalification tracking** (900 UXP target)
 
 ### 🎯 XP Engine
 - Multi-cycle qualification tracking
 - Automatic cycle detection from PDF imports
 - Manual ledger for AMEX, SAF bonus, misc XP
 - Level-up cycle detection and chaining
-- Rollover calculations (max 300 XP)
+- Rollover calculations (max 300 XP, max 900 UXP)
+- **Full Ultimate status support**
+
+### 🎖️ Ultimate Status Tracking
+- UXP automatically calculated from KLM/AF flights
+- Separate UXP rollover input (max 900)
+- Ultimate Requalification monitoring in Risk Monitor
+- UXP Rollover Forecast with 900 UXP cap
+- UXP Waste indicator based on 1800 total cap
+- Cycle type toggle (Qualification vs Calendar year)
 
 ### 💰 Miles Engine
 - Track miles from all sources (Subscriptions, Amex, Flights, Other)
