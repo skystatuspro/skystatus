@@ -1,5 +1,4 @@
 // src/components/MilesEngine/index.tsx
-// Force deploy
 // Main MilesEngine component - Financial backbone of the loyalty portfolio
 
 import React, { useMemo, useState } from 'react';
@@ -57,7 +56,18 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   redemptions,
 }) => {
   const safeTargetCPM = Number.isFinite(targetCPM) ? targetCPM : 0;
-  const [showValuationGuide, setShowValuationGuide] = useState(false);
+  
+  // Valuation guide collapsed state - persisted in localStorage
+  const [valuationGuideExpanded, setValuationGuideExpanded] = useState(() => {
+    const stored = localStorage.getItem('skystatus_valuation_guide_expanded');
+    return stored === 'true'; // Default collapsed (false)
+  });
+  
+  const toggleValuationGuide = () => {
+    const newValue = !valuationGuideExpanded;
+    setValuationGuideExpanded(newValue);
+    localStorage.setItem('skystatus_valuation_guide_expanded', String(newValue));
+  };
 
   const stats = useMemo(
     () => calculateMilesStats(data, currentMonth, redemptions, safeTargetCPM),
@@ -347,93 +357,111 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
         </KPICard>
       </div>
 
-      {/* Miles Valuation Settings */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[1.5rem] p-5 border border-indigo-100 relative overflow-hidden">
+      {/* Miles Valuation Settings - Collapsible */}
+      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-[1.5rem] border border-indigo-100 relative overflow-hidden">
         {/* Decorative background */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 rounded-full blur-2xl -mr-16 -mt-16" />
         
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 bg-white shadow-sm rounded-xl text-indigo-600 border border-indigo-100">
-                <Target size={18} strokeWidth={2.5} />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-800">How do you value a mile?</h3>
-                <p className="text-[10px] text-indigo-600 font-medium">This setting affects all value calculations</p>
-              </div>
+        {/* Collapsible Header - Always visible */}
+        <button
+          onClick={toggleValuationGuide}
+          className="relative w-full p-5 flex items-center justify-between text-left hover:bg-indigo-100/30 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white shadow-sm rounded-xl text-indigo-600 border border-indigo-100">
+              <Target size={18} strokeWidth={2.5} />
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
-              Your target CPM (cost per mile) determines how SkyStatus calculates the value of your portfolio. 
-              Set this to the redemption rate you typically aim for when booking award flights.
-            </p>
+            <div>
+              <h3 className="font-bold text-slate-800">How do you value a mile?</h3>
+              <p className="text-[10px] text-indigo-600 font-medium">
+                {valuationGuideExpanded ? 'Click to collapse' : `Current: €${targetCPM.toFixed(3)} per mile`}
+              </p>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Quick presets */}
-            <div className="hidden sm:flex items-center gap-1">
-              {[
-                { value: 0.008, label: 'Conservative', color: 'text-slate-500' },
-                { value: 0.012, label: 'Average', color: 'text-blue-600' },
-                { value: 0.018, label: 'Aspirational', color: 'text-indigo-600' },
-              ].map(preset => (
-                <button
-                  key={preset.value}
-                  onClick={() => onUpdateTargetCPM(preset.value)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                    Math.abs(targetCPM - preset.value) < 0.001
-                      ? 'bg-white shadow-sm border border-indigo-200 text-indigo-700'
-                      : 'bg-white/50 hover:bg-white text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {preset.label}
-                  <span className="block text-[9px] font-medium opacity-70">€{preset.value.toFixed(3)}</span>
-                </button>
-              ))}
+          <ChevronDown 
+            size={20} 
+            className={`text-indigo-400 transition-transform duration-200 ${valuationGuideExpanded ? 'rotate-180' : ''}`} 
+          />
+        </button>
+        
+        {/* Expandable Content */}
+        {valuationGuideExpanded && (
+          <div className="relative px-5 pb-5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-indigo-100/50">
+              <div className="flex-1">
+                <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
+                  Your target CPM (cost per mile) determines how SkyStatus calculates the value of your portfolio. 
+                  Set this to the redemption rate you typically aim for when booking award flights.
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {/* Quick presets */}
+                <div className="hidden sm:flex items-center gap-1">
+                  {[
+                    { value: 0.008, label: 'Conservative', color: 'text-slate-500' },
+                    { value: 0.012, label: 'Average', color: 'text-blue-600' },
+                    { value: 0.018, label: 'Aspirational', color: 'text-indigo-600' },
+                  ].map(preset => (
+                    <button
+                      key={preset.value}
+                      onClick={() => onUpdateTargetCPM(preset.value)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                        Math.abs(targetCPM - preset.value) < 0.001
+                          ? 'bg-white shadow-sm border border-indigo-200 text-indigo-700'
+                          : 'bg-white/50 hover:bg-white text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      {preset.label}
+                      <span className="block text-[9px] font-medium opacity-70">€{preset.value.toFixed(3)}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Custom input */}
+                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-indigo-100 min-w-[120px]">
+                  <label className="text-[9px] font-bold text-indigo-400 uppercase tracking-wide block mb-1">
+                    Target CPM
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-indigo-400 font-medium">€</span>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0.001"
+                      value={targetCPM}
+                      onChange={(e) => onUpdateTargetCPM(parseFloat(e.target.value) || 0.012)}
+                      className={`text-lg font-black text-indigo-700 outline-none bg-transparent w-20 ${noSpinnerClass}`}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             
-            {/* Custom input */}
-            <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-indigo-100 min-w-[120px]">
-              <label className="text-[9px] font-bold text-indigo-400 uppercase tracking-wide block mb-1">
-                Target CPM
-              </label>
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-indigo-400 font-medium">€</span>
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0.001"
-                  value={targetCPM}
-                  onChange={(e) => onUpdateTargetCPM(parseFloat(e.target.value) || 0.012)}
-                  className={`text-lg font-black text-indigo-700 outline-none bg-transparent w-20 ${noSpinnerClass}`}
-                />
+            {/* Expandable explanation */}
+            <details className="mt-4 group">
+              <summary className="text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors flex items-center gap-1.5">
+                <HelpCircle size={14} />
+                What's a good target CPM?
+                <ChevronDown size={14} className="transition-transform group-open:rotate-180 ml-auto" />
+              </summary>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
+                <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50 hover:border-slate-300 transition-colors">
+                  <div className="font-bold text-slate-700 mb-1">€0.006 - €0.010</div>
+                  <div className="text-slate-500">Conservative. Easy to achieve on most economy redemptions within Europe.</div>
+                </div>
+                <div className="bg-white/70 rounded-lg p-3 border border-blue-200/50 hover:border-blue-300 transition-colors">
+                  <div className="font-bold text-blue-700 mb-1">€0.012 - €0.015</div>
+                  <div className="text-slate-500">Average. Typical for business class on medium-haul or good economy deals on long-haul.</div>
+                </div>
+                <div className="bg-white/70 rounded-lg p-3 border border-indigo-200/50 hover:border-indigo-300 transition-colors">
+                  <div className="font-bold text-indigo-700 mb-1">€0.018+</div>
+                  <div className="text-slate-500">Aspirational. Achievable on premium cabin long-haul or La Première. Requires strategic booking.</div>
+                </div>
               </div>
-            </div>
+            </details>
           </div>
-        </div>
-        
-        {/* Expandable explanation */}
-        <details className="mt-4 group" open>
-          <summary className="text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors flex items-center gap-1.5">
-            <HelpCircle size={14} />
-            What's a good target CPM?
-            <ChevronDown size={14} className="transition-transform group-open:rotate-180 ml-auto" />
-          </summary>
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
-            <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50 hover:border-slate-300 transition-colors">
-              <div className="font-bold text-slate-700 mb-1">€0.006 - €0.010</div>
-              <div className="text-slate-500">Conservative. Easy to achieve on most economy redemptions within Europe.</div>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3 border border-blue-200/50 hover:border-blue-300 transition-colors">
-              <div className="font-bold text-blue-700 mb-1">€0.012 - €0.015</div>
-              <div className="text-slate-500">Average. Typical for business class on medium-haul or good economy deals on long-haul.</div>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3 border border-indigo-200/50 hover:border-indigo-300 transition-colors">
-              <div className="font-bold text-indigo-700 mb-1">€0.018+</div>
-              <div className="text-slate-500">Aspirational. Achievable on premium cabin long-haul or La Première. Requires strategic booking.</div>
-            </div>
-          </div>
-        </details>
+        )}
       </div>
 
       {/* Charts & Source Performance */}
