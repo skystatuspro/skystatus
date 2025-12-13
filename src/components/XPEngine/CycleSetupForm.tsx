@@ -10,6 +10,7 @@ export interface CycleSetupFormValues {
   cycleStartMonth: string;
   startingStatus: StatusLevel;
   startingXP: number;
+  startingUXP?: number;
   ultimateCycleType?: 'qualification' | 'calendar';
 }
 
@@ -36,6 +37,7 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
     initialValues?.startingStatus || 'Explorer'
   );
   const [startingXP, setStartingXP] = useState(initialValues?.startingXP || 0);
+  const [startingUXP, setStartingUXP] = useState(initialValues?.startingUXP || 0);
   const [ultimateCycleType, setUltimateCycleType] = useState<'qualification' | 'calendar'>(
     initialValues?.ultimateCycleType || 'qualification'
   );
@@ -45,12 +47,13 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
       cycleStartMonth,
       startingStatus,
       startingXP: Math.max(0, Math.min(300, startingXP)),
+      startingUXP: Math.max(0, Math.min(900, startingUXP)),
       ultimateCycleType,
     });
   };
 
   const isEditMode = !!initialValues;
-  const showUltimateOption = startingStatus === 'Platinum';
+  const showUltimateOptions = startingStatus === 'Platinum' || startingStatus === 'Ultimate';
 
   return (
     <>
@@ -86,6 +89,7 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
             <option value="Silver">Silver (100 XP)</option>
             <option value="Gold">Gold (180 XP)</option>
             <option value="Platinum">Platinum (300 XP)</option>
+            <option value="Ultimate">Ultimate (900 UXP)</option>
           </select>
           <p className="text-[10px] text-slate-400 mt-1.5">
             What status did you have when this cycle started?
@@ -117,8 +121,37 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
         </div>
       </div>
 
-      {/* Ultimate Cycle Type - Only shown for Platinum members */}
-      {showUltimateOption && (
+      {/* Starting UXP (Rollover) - Only shown for Platinum/Ultimate */}
+      {showUltimateOptions && (
+        <div className="grid gap-4 md:grid-cols-3 mb-5">
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Crown size={12} className="text-slate-400" />
+              Starting UXP (Rollover)
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                max="900"
+                value={startingUXP === 0 ? '' : startingUXP}
+                placeholder="0"
+                onChange={(e) =>
+                  setStartingUXP(e.target.value === '' ? 0 : Number(e.target.value))
+                }
+                className={`flex-1 px-3 py-2 border border-slate-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent ${noSpinnerClass}`}
+              />
+              <span className="text-slate-500 font-medium">UXP</span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1.5">
+              Your UXP balance at cycle start (max 900)
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Ultimate Cycle Type - Only shown for Platinum/Ultimate members */}
+      {showUltimateOptions && (
         <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-slate-200 rounded-lg">
