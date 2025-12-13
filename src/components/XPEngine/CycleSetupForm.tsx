@@ -3,13 +3,14 @@
 
 import React, { useState } from 'react';
 import { StatusLevel } from '../../types';
-import { HelpCircle, CheckCircle2 } from 'lucide-react';
+import { HelpCircle, CheckCircle2, Crown, Info } from 'lucide-react';
 import { noSpinnerClass } from './helpers';
 
 export interface CycleSetupFormValues {
   cycleStartMonth: string;
   startingStatus: StatusLevel;
   startingXP: number;
+  ultimateCycleType?: 'qualification' | 'calendar';
 }
 
 interface CycleSetupFormProps {
@@ -35,16 +36,21 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
     initialValues?.startingStatus || 'Explorer'
   );
   const [startingXP, setStartingXP] = useState(initialValues?.startingXP || 0);
+  const [ultimateCycleType, setUltimateCycleType] = useState<'qualification' | 'calendar'>(
+    initialValues?.ultimateCycleType || 'qualification'
+  );
 
   const handleSave = () => {
     onSave({
       cycleStartMonth,
       startingStatus,
       startingXP: Math.max(0, Math.min(300, startingXP)),
+      ultimateCycleType,
     });
   };
 
   const isEditMode = !!initialValues;
+  const showUltimateOption = startingStatus === 'Platinum';
 
   return (
     <>
@@ -110,6 +116,65 @@ export const CycleSetupForm: React.FC<CycleSetupFormProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Ultimate Cycle Type - Only shown for Platinum members */}
+      {showUltimateOption && (
+        <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-slate-200 rounded-lg">
+              <Crown size={18} className="text-slate-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="text-sm font-bold text-slate-700">Ultimate Progress Cycle</h4>
+                <div className="group relative">
+                  <Info size={14} className="text-slate-400 cursor-help" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-64 pointer-events-none z-10">
+                    Flying Blue is transitioning from calendar year to qualification cycle for Ultimate status. If you earned Ultimate before 2024, your UXP may still be calculated per calendar year.
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mb-3">
+                Does your Ultimate progress run differently from your status cycle?
+              </p>
+              <div className="flex gap-3">
+                <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer border transition-colors ${
+                  ultimateCycleType === 'qualification' 
+                    ? 'bg-slate-700 text-white border-slate-700' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="ultimateCycle"
+                    value="qualification"
+                    checked={ultimateCycleType === 'qualification'}
+                    onChange={() => setUltimateCycleType('qualification')}
+                    className="sr-only"
+                  />
+                  <span className="text-sm font-medium">Qualification cycle</span>
+                  <span className={`text-xs ${ultimateCycleType === 'qualification' ? 'text-slate-300' : 'text-slate-400'}`}>(default)</span>
+                </label>
+                <label className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer border transition-colors ${
+                  ultimateCycleType === 'calendar' 
+                    ? 'bg-slate-700 text-white border-slate-700' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="ultimateCycle"
+                    value="calendar"
+                    checked={ultimateCycleType === 'calendar'}
+                    onChange={() => setUltimateCycleType('calendar')}
+                    className="sr-only"
+                  />
+                  <span className="text-sm font-medium">Calendar year</span>
+                  <span className={`text-xs ${ultimateCycleType === 'calendar' ? 'text-slate-300' : 'text-slate-400'}`}>(legacy)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save button and help */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-amber-200/50">
