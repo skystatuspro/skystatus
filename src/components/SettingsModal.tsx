@@ -21,6 +21,7 @@ import {
   FlightRecord,
   ManualLedger,
 } from '../types';
+import { QualificationSettings } from '../hooks/useUserData';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ interface SettingsModalProps {
     currentMonth: string;
     targetCPM: number;
     manualLedger: ManualLedger;
+    qualificationSettings: QualificationSettings | null;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;
@@ -44,6 +46,7 @@ interface SettingsModalProps {
     setCurrentMonth: React.Dispatch<React.SetStateAction<string>>;
     setTargetCPM: React.Dispatch<React.SetStateAction<number>>;
     setManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
+    setQualificationSettings: React.Dispatch<React.SetStateAction<QualificationSettings | null>>;
   };
   onReset: () => void;      
   onLoadDemo: () => void;
@@ -211,6 +214,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         const merged = mergeManualLedger(data.manualLedger || {}, parsed.manualLedger);
         addedCount.manualLedger = Object.keys(merged).length - existingMonths;
         if (addedCount.manualLedger > 0) setters.setManualLedger(merged);
+      }
+
+      // Import qualificationSettings (only if not already set)
+      if (parsed.qualificationSettings && !data.qualificationSettings) {
+        setters.setQualificationSettings(parsed.qualificationSettings);
       }
 
       // Build summary message
