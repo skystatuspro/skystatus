@@ -20,6 +20,7 @@ import {
 import { ViewState } from '../types';
 import { useAuth } from '../lib/AuthContext';
 import { BugReportModal } from './BugReportModal';
+import { CookieSettingsLink } from './CookieConsent';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -278,7 +279,11 @@ export const Layout: React.FC<LayoutProps> = ({
                 <span className="text-slate-300">·</span>
                 <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy</a>
                 <span className="text-slate-300">·</span>
+                <a href="#/cookies" className="hover:text-slate-600 transition-colors">Cookies</a>
+                <span className="text-slate-300">·</span>
                 <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms</a>
+                <span className="text-slate-300">·</span>
+                <CookieSettingsLink />
               </div>
             </div>
           </footer>

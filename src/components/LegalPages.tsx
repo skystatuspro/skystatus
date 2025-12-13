@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Shield, FileText, Mail } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, Mail, Cookie } from 'lucide-react';
 
 interface LegalPageProps {
   onBack: () => void;
@@ -802,6 +802,262 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
             </div>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-slate-400">
+          © {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Cookie Policy Page
+export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
+  const lastUpdated = '13 December 2024';
+  
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-8 transition-colors"
+        >
+          <ArrowLeft size={18} />
+          Back to SkyStatus
+        </button>
+
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-brand-100 rounded-xl">
+            <Cookie className="text-brand-600" size={28} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Cookie Policy</h1>
+            <p className="text-slate-500">Last updated: {lastUpdated}</p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 space-y-8">
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">1. What Are Cookies?</h2>
+            <p className="text-slate-600 leading-relaxed">
+              Cookies are small text files that are placed on your device when you visit a website. 
+              They are widely used to make websites work more efficiently, provide a better user experience, 
+              and give website owners information about how their site is being used.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">2. How We Use Cookies</h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              SkyStatus uses cookies for different purposes. We categorize them as follows:
+            </p>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <h3 className="font-bold text-emerald-800 mb-2">Strictly Necessary Cookies</h3>
+                <p className="text-sm text-emerald-700 mb-2">
+                  These cookies are essential for the website to function. They enable core functionality 
+                  such as security, authentication, and accessibility. Without these cookies, the website 
+                  cannot function properly.
+                </p>
+                <p className="text-xs text-emerald-600">
+                  <strong>Examples:</strong> Authentication tokens, session identifiers, security preferences, 
+                  cookie consent preferences.
+                </p>
+                <p className="text-xs text-emerald-800 font-semibold mt-2">
+                  ✓ These cookies cannot be disabled.
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <h3 className="font-bold text-blue-800 mb-2">Functional Cookies</h3>
+                <p className="text-sm text-blue-700 mb-2">
+                  These cookies remember your preferences and settings to enhance your experience. 
+                  Without these cookies, some features may not work optimally.
+                </p>
+                <p className="text-xs text-blue-600">
+                  <strong>Examples:</strong> Currency preference (EUR, USD, GBP, CHF), home airport setting, 
+                  display preferences, language settings.
+                </p>
+                <p className="text-xs text-blue-800 font-semibold mt-2">
+                  ⚙️ You can disable these in Cookie Settings.
+                </p>
+              </div>
+
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <h3 className="font-bold text-amber-800 mb-2">Analytics Cookies</h3>
+                <p className="text-sm text-amber-700 mb-2">
+                  These cookies help us understand how visitors interact with our website. 
+                  All data is anonymized and used solely to improve SkyStatus.
+                </p>
+                <p className="text-xs text-amber-600">
+                  <strong>Examples:</strong> Page views, feature usage statistics, error tracking, 
+                  performance monitoring.
+                </p>
+                <p className="text-xs text-amber-800 font-semibold mt-2">
+                  ⚙️ You can disable these in Cookie Settings.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-100 border border-slate-200 rounded-xl">
+                <h3 className="font-bold text-slate-700 mb-2">Marketing Cookies</h3>
+                <p className="text-sm text-slate-600 mb-2">
+                  These cookies are used to track visitors across websites for advertising purposes. 
+                </p>
+                <p className="text-xs text-slate-500">
+                  <strong>Note:</strong> SkyStatus currently does not use any marketing or advertising cookies.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">3. Cookie Details</h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              Below is a detailed list of cookies we use:
+            </p>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Cookie Name</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Purpose</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Duration</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Type</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-600">
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 px-3 font-mono text-xs">skystatus_cookie_consent</td>
+                    <td className="py-2 px-3">Stores your cookie preferences</td>
+                    <td className="py-2 px-3">12 months</td>
+                    <td className="py-2 px-3">Necessary</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 px-3 font-mono text-xs">sb-*-auth-token</td>
+                    <td className="py-2 px-3">Authentication session (Supabase)</td>
+                    <td className="py-2 px-3">Session</td>
+                    <td className="py-2 px-3">Necessary</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 px-3 font-mono text-xs">skystatus_local_*</td>
+                    <td className="py-2 px-3">Local mode data storage</td>
+                    <td className="py-2 px-3">Persistent</td>
+                    <td className="py-2 px-3">Functional</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">4. Managing Your Cookie Preferences</h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              You have several options for managing cookies:
+            </p>
+            <ul className="space-y-2 text-slate-600">
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span>
+                  <strong>Cookie Settings:</strong> Click "Cookie Settings" in the footer to change your 
+                  preferences at any time. Your choices will be saved for 12 months.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span>
+                  <strong>Browser Settings:</strong> Most browsers allow you to block or delete cookies 
+                  through their settings. Note that blocking all cookies may affect website functionality.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span>
+                  <strong>Local Mode:</strong> Use SkyStatus in Local Mode to minimize data storage. 
+                  In this mode, data is only stored in your browser and no cloud services are used.
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">5. Third-Party Cookies</h2>
+            <p className="text-slate-600 leading-relaxed">
+              SkyStatus uses the following third-party services that may set their own cookies:
+            </p>
+            <ul className="space-y-2 text-slate-600 mt-3">
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span>
+                  <strong>Supabase:</strong> For authentication and data storage. 
+                  <a href="https://supabase.com/privacy" className="text-brand-600 hover:underline ml-1" target="_blank" rel="noopener noreferrer">
+                    Supabase Privacy Policy
+                  </a>
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span>
+                  <strong>Google Fonts:</strong> For typography. Google may collect anonymous usage data.
+                  <a href="https://policies.google.com/privacy" className="text-brand-600 hover:underline ml-1" target="_blank" rel="noopener noreferrer">
+                    Google Privacy Policy
+                  </a>
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">6. Your Rights Under GDPR</h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              If you are located in the European Union, you have the following rights regarding cookies and personal data:
+            </p>
+            <ul className="space-y-2 text-slate-600">
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span><strong>Right to be informed:</strong> You have the right to know what cookies we use and why.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span><strong>Right to consent:</strong> Non-essential cookies are only set after you give explicit consent.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span><strong>Right to withdraw consent:</strong> You can change your cookie preferences at any time.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span><strong>Right to erasure:</strong> You can delete all cookies through your browser settings.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">7. Updates to This Policy</h2>
+            <p className="text-slate-600 leading-relaxed">
+              We may update this Cookie Policy from time to time to reflect changes in our practices or 
+              for legal reasons. If we make significant changes, we will ask for your consent again. 
+              The "Last updated" date at the top of this policy indicates when it was last revised.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">8. Contact Us</h2>
+            <p className="text-slate-600 leading-relaxed">
+              If you have any questions about our use of cookies or this Cookie Policy, please contact us at:
+            </p>
+            <p className="mt-3">
+              <a href="mailto:support@skystatus.pro" className="text-brand-600 hover:underline font-medium">
+                support@skystatus.pro
+              </a>
+            </p>
+          </section>
+        </div>
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-slate-400">

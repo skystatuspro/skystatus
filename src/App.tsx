@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useUserData } from './hooks/useUserData';
 import { CurrencyProvider } from './lib/CurrencyContext';
+import { CookieConsentProvider } from './lib/CookieContext';
+import { CookieConsentUI } from './components/CookieConsent';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { MilesEngine } from './components/MilesEngine';
@@ -17,7 +19,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { OnboardingFlow, OnboardingData } from './components/OnboardingFlow';
 import { LoginPage } from './components/LoginPage';
 import PdfImportModal from './components/PdfImportModal';
-import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage } from './components/LegalPages';
+import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage, CookiePolicy } from './components/LegalPages';
 import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
@@ -35,7 +37,7 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   const [view, setView] = useState<ViewState>('dashboard');
-  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | null>(null);
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | 'cookies' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
@@ -74,6 +76,9 @@ export default function App() {
         window.scrollTo(0, 0);
       } else if (hash === '#/calculator') {
         setLegalPage('calculator');
+        window.scrollTo(0, 0);
+      } else if (hash === '#/cookies') {
+        setLegalPage('cookies');
         window.scrollTo(0, 0);
       } else {
         setLegalPage(null);
@@ -121,6 +126,7 @@ export default function App() {
   if (legalPage === 'faq') return <FAQPage onBack={handleLegalBack} />;
   if (legalPage === 'about') return <AboutPage onBack={handleLegalBack} />;
   if (legalPage === 'contact') return <ContactPage onBack={handleLegalBack} />;
+  if (legalPage === 'cookies') return <CookiePolicy onBack={handleLegalBack} />;
   if (legalPage === 'calculator') return <CalculatorPage onBack={handleLegalBack} />;
 
   // -------------------------------------------------------------------------
@@ -384,6 +390,7 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   return (
+    <CookieConsentProvider>
     <CurrencyProvider currency={state.currency}>
       <Layout
         currentView={view}
@@ -537,6 +544,8 @@ export default function App() {
       />
 
       <ToastContainer />
+      <CookieConsentUI />
     </CurrencyProvider>
+    </CookieConsentProvider>
   );
 }
