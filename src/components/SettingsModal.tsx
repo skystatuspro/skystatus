@@ -368,9 +368,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+      <div className="bg-white w-full max-w-lg max-h-[90vh] rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${
               isLocalMode ? 'bg-amber-50' : 'bg-indigo-50'
@@ -394,8 +394,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-5 space-y-6">
+        {/* Content - scrollable */}
+        <div className="px-6 py-5 pb-6 space-y-6 overflow-y-auto custom-scrollbar">
           
           {/* Account Section (if logged in) */}
           {isLoggedIn && user && (
