@@ -196,27 +196,36 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       rawText += '\n';
     }
     
-    // Now split into logical lines using date pattern as delimiter
-    // Flying Blue dates look like: "10 dec 2025", "30 nov 2025", etc.
-    // Insert newlines before each date pattern
-    const datePattern = /(\d{1,2}\s+(?:jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)[a-z]*\s+\d{4})/gi;
+    // Split into logical lines using date patterns as delimiters
+    // Universal approach: match various date formats used worldwide
     
-    let processed = rawText.replace(datePattern, '\n$1');
+    // Text-based dates (any language month name)
+    // Matches: "10 dec 2025", "Dec 9, 2025", "9 décembre 2025", "dezembro 9 2025", etc.
+    const monthNames = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|mrt|mei|okt|fév|avr|mai|aoû|déc|mär|dez|ene|ago|dic|gen|mag|giu|lug|ott';
+    const dateWithMonthName = new RegExp(
+      `(\\d{1,2}\\s+(?:${monthNames})[a-zéûôàèùäöü]*\\s+\\d{4}|(?:${monthNames})[a-zéûôàèùäöü]*\\s+\\d{1,2},?\\s+\\d{4})`,
+      'gi'
+    );
+    
+    // Numeric dates: "30/11/2025", "2025-11-30", "11-30-2025", etc.
+    const dateNumeric = /(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})/g;
+    
+    let processed = rawText.replace(dateWithMonthName, '\n$1');
+    processed = processed.replace(dateNumeric, '\n$1');
     
     // Also split on flight segment patterns: "AMS - BER KL1234"
-    const flightPattern = /([A-Z]{3}\s*-\s*[A-Z]{3}\s+[A-Z]{2}\d{2,5})/g;
+    const flightPattern = /([A-Z]{3}\s*[-–]\s*[A-Z]{3}\s+[A-Z]{2}\d{2,5})/g;
     processed = processed.replace(flightPattern, '\n$1');
     
     // Split on "Sustainable Aviation Fuel"
     processed = processed.replace(/(Sustainable Aviation Fuel)/gi, '\n$1');
     
-    // Split on common transaction types
-    processed = processed.replace(/(AMERICAN EXPRESS)/gi, '\n$1');
-    processed = processed.replace(/(Subscribe to Miles)/gi, '\n$1');
-    processed = processed.replace(/(Hotel\s*-)/gi, '\n$1');
-    processed = processed.replace(/(Winkelen\s*-)/gi, '\n$1');
-    processed = processed.replace(/(RevPoints)/gi, '\n$1');
-    processed = processed.replace(/(op\s+\d{1,2}\s+\w{3,4}\s+\d{4})/gi, '\n$1');
+    // Split on transaction type keywords (language-neutral where possible)
+    processed = processed.replace(/(Subscribe to Miles|Miles\s*Complete)/gi, '\n$1');
+    processed = processed.replace(/(Hotel\s*[-–])/gi, '\n$1');
+    
+    // Split on "op/on <date>" patterns (multilingual date reference)
+    processed = processed.replace(/((?:op|on|le|am)\s+\d{1,2}\s+\w{3,12}\s+\d{4})/gi, '\n$1');
     
     return processed;
   };
