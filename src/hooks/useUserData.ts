@@ -238,7 +238,7 @@ export function useUserData(): UseUserDataReturn {
             setQualificationSettingsInternal({
               cycleStartMonth: data.profile.qualificationStartMonth,
               startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
-              startingXP: data.profile.xpRollover || 0,
+              startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
             });
           }
         }
@@ -279,6 +279,7 @@ export function useUserData(): UseUserDataReturn {
           xp_rollover: xpRollover,
           qualification_start_month: qualificationSettings?.cycleStartMonth,
           starting_status: qualificationSettings?.startingStatus,
+          starting_xp: qualificationSettings?.startingXP,
         }),
       ]);
     } catch (error) {
