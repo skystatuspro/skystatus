@@ -173,6 +173,11 @@ export function useUserData(): UseUserDataReturn {
   const [targetCPM, setTargetCPMInternal] = useState<number>(0.012);
   const [currency, setCurrencyInternal] = useState<CurrencyCode>('EUR');
   const [qualificationSettings, setQualificationSettingsInternal] = useState<QualificationSettings | null>(null);
+  const [homeAirport, setHomeAirportInternal] = useState<string | null>(null);
+  const [onboardingCompleted, setOnboardingCompletedInternal] = useState<boolean>(true); // Default true to prevent flash
+  const [emailConsent, setEmailConsentInternal] = useState<boolean>(false);
+  const [milesBalance, setMilesBalanceInternal] = useState<number>(0);
+  const [currentUXP, setCurrentUXPInternal] = useState<number>(0);
 
   // Loading/saving state
   const [dataLoading, setDataLoading] = useState(false);
@@ -243,6 +248,11 @@ export function useUserData(): UseUserDataReturn {
           setTargetCPMInternal(data.profile.targetCPM);
           setXpRolloverInternal(data.profile.xpRollover || 0);
           setCurrencyInternal((data.profile.currency || 'EUR') as CurrencyCode);
+          setHomeAirportInternal(data.profile.homeAirport || null);
+          setOnboardingCompletedInternal(data.profile.onboardingCompleted ?? false);
+          setEmailConsentInternal(data.profile.emailConsent ?? false);
+          setMilesBalanceInternal(data.profile.milesBalance || 0);
+          setCurrentUXPInternal(data.profile.currentUXP || 0);
 
           if (data.profile.qualificationStartMonth) {
             setQualificationSettingsInternal({
@@ -252,6 +262,9 @@ export function useUserData(): UseUserDataReturn {
               ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
             });
           }
+        } else {
+          // New user - show onboarding
+          setOnboardingCompletedInternal(false);
         }
       }
 
@@ -585,6 +598,72 @@ export function useUserData(): UseUserDataReturn {
   }, [user, loadUserData]);
 
   // -------------------------------------------------------------------------
+  // ONBOARDING HANDLERS
+  // -------------------------------------------------------------------------
+
+  const handleOnboardingComplete = useCallback(async (data: {
+    currency: CurrencyCode;
+    homeAirport: string | null;
+    currentStatus: StatusLevel;
+    currentXP: number;
+    currentUXP: number;
+    rolloverXP: number;
+    milesBalance: number;
+    ultimateCycleType: 'qualification' | 'calendar';
+    targetCPM: number;
+    emailConsent: boolean;
+  }) => {
+    // Update local state
+    setCurrencyInternal(data.currency);
+    setHomeAirportInternal(data.homeAirport);
+    setTargetCPMInternal(data.targetCPM);
+    setXpRolloverInternal(data.rolloverXP);
+    setEmailConsentInternal(data.emailConsent);
+    setMilesBalanceInternal(data.milesBalance);
+    setCurrentUXPInternal(data.currentUXP);
+    setOnboardingCompletedInternal(true);
+
+    // Set qualification settings if status data provided
+    if (data.currentStatus !== 'Explorer' || data.currentXP > 0) {
+      const now = new Date();
+      const qYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+      const cycleStartMonth = `${qYear - 1}-11`;
+      
+      setQualificationSettingsInternal({
+        cycleStartMonth,
+        startingStatus: data.currentStatus,
+        startingXP: data.currentXP,
+        ultimateCycleType: data.ultimateCycleType,
+      });
+    }
+
+    // Save to database if logged in
+    if (user && !isDemoMode) {
+      try {
+        await updateProfile(user.id, {
+          currency: data.currency,
+          home_airport: data.homeAirport,
+          target_cpm: data.targetCPM,
+          xp_rollover: data.rolloverXP,
+          email_consent: data.emailConsent,
+          miles_balance: data.milesBalance,
+          current_uxp: data.currentUXP,
+          onboarding_completed: true,
+          starting_status: data.currentStatus,
+          starting_xp: data.currentXP,
+          ultimate_cycle_type: data.ultimateCycleType,
+        });
+      } catch (error) {
+        console.error('Error saving onboarding data:', error);
+      }
+    }
+  }, [user, isDemoMode]);
+
+  const handleRerunOnboarding = useCallback(() => {
+    setOnboardingCompletedInternal(false);
+  }, []);
+
+  // -------------------------------------------------------------------------
   // UTILITY
   // -------------------------------------------------------------------------
 
@@ -619,6 +698,9 @@ export function useUserData(): UseUserDataReturn {
       xpData,
       currentStatus,
       currentMonth,
+      homeAirport,
+      milesBalance,
+      currentUXP,
     },
     actions: {
       setFlights,
@@ -649,6 +731,8 @@ export function useUserData(): UseUserDataReturn {
       handleExitDemoMode,
       markDataChanged,
       calculateGlobalCPM,
+      handleOnboardingComplete,
+      handleRerunOnboarding,
     },
     meta: {
       isLoading: dataLoading,
@@ -657,6 +741,8 @@ export function useUserData(): UseUserDataReturn {
       isLocalMode,
       showWelcome,
       setShowWelcome,
+      onboardingCompleted,
+      emailConsent,
     },
   };
 }
