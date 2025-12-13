@@ -8,7 +8,6 @@ import {
   TrendingUp, 
   Target, 
   Trophy,
-  Euro,
   Award,
   Plane,
   Calendar,
@@ -24,7 +23,8 @@ import {
 } from 'lucide-react';
 import { RedemptionRecord } from '../types';
 import { calculateBurnStats } from '../utils/loyalty-logic';
-import { formatCurrency, formatNumber, generateId } from '../utils/format';
+import { formatNumber, generateId } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import { getValuationStatus } from '../utils/valuation';
 import {
   ScatterChart,
@@ -104,6 +104,7 @@ const StatBadge = ({ icon: Icon, label, value, color = 'slate' }: any) => {
 };
 
 export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onUpdate, baselineCpm, targetCpm }) => {
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const [form, setForm] = useState<Partial<RedemptionRecord>>({
     date: new Date().toISOString().slice(0, 10),
     description: '',
@@ -328,7 +329,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
               <StatBadge 
                 icon={Trophy} 
                 label="Best" 
-                value={enhancedStats.bestRedemption ? `€${(enhancedStats.bestRedemption.cpm / 100).toFixed(4)}` : '-'} 
+                value={enhancedStats.bestRedemption ? `${currencySymbol}${(enhancedStats.bestRedemption.cpm / 100).toFixed(4)}` : '-'} 
                 color="emerald" 
               />
               <StatBadge 
@@ -355,7 +356,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
         />
         <MetricCard 
           title="Baseline (CPM)"
-          value={`€${baselineEuro.toFixed(4)}`}
+          value={`${currencySymbol}${baselineEuro.toFixed(4)}`}
           subtitle="Your acquisition cost"
           icon={Target}
           color="slate"
@@ -363,8 +364,8 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
         />
         <MetricCard 
           title="Avg. Redemption"
-          value={`€${avgRedemptionEuro.toFixed(4)}`}
-          subtitle={`${performanceDelta >= 0 ? '+' : ''}€${performanceDelta.toFixed(4)} vs baseline`}
+          value={`${currencySymbol}${avgRedemptionEuro.toFixed(4)}`}
+          subtitle={`${performanceDelta >= 0 ? '+' : ''}${currencySymbol}${performanceDelta.toFixed(4)} vs baseline`}
           icon={TrendingUp}
           color={performanceDelta >= 0 ? 'emerald' : 'amber'}
           tooltip="Average value realized per mile across all redemptions."
@@ -427,7 +428,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                     isProfitable ? 'bg-emerald-500' : 'bg-red-400'
                   }`}
                   style={{ left: `${position}%` }}
-                  title={`${r.description}: €${(r.cpm / 100).toFixed(4)}`}
+                  title={`${r.description}: ${currencySymbol}${(r.cpm / 100).toFixed(4)}`}
                 />
               );
             })}
@@ -437,7 +438,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
             <div>
               <div className="text-[10px] font-bold text-red-500 uppercase">Worst</div>
               <div className="text-lg font-black text-slate-800">
-                €{((enhancedStats.worstRedemption?.cpm || 0) / 100).toFixed(4)}
+                {currencySymbol}{((enhancedStats.worstRedemption?.cpm || 0) / 100).toFixed(4)}
               </div>
               <div className="text-[10px] text-slate-400 truncate max-w-[120px]">
                 {enhancedStats.worstRedemption?.description || '-'}
@@ -446,7 +447,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
             <div className="text-right">
               <div className="text-[10px] font-bold text-emerald-500 uppercase">Best</div>
               <div className="text-lg font-black text-slate-800">
-                €{((enhancedStats.bestRedemption?.cpm || 0) / 100).toFixed(4)}
+                {currencySymbol}{((enhancedStats.bestRedemption?.cpm || 0) / 100).toFixed(4)}
               </div>
               <div className="text-[10px] text-slate-400 truncate max-w-[120px]">
                 {enhancedStats.bestRedemption?.description || '-'}
@@ -534,7 +535,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                       onChange={e => setForm({...form, surcharges: Number(e.target.value)})} 
                       className={`w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all pr-8 ${noSpinnerClass}`} 
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">€</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
                   </div>
                 </div>
               </div>
@@ -551,7 +552,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                     onChange={e => setForm({...form, cash_price_estimate: Number(e.target.value)})} 
                     className={`w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all pr-8 ${noSpinnerClass}`} 
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">€</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">{currencySymbol}</span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">What would this ticket cost in cash?</p>
               </div>
@@ -570,7 +571,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                       <span className="text-[10px] uppercase font-bold text-slate-500">Projected Value</span>
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-black text-slate-900">
-                          €{previewStats.euroPerMile.toFixed(4)}
+                          {currencySymbol}{previewStats.euroPerMile.toFixed(4)}
                         </span>
                         <span className="text-xs text-slate-500">per mile</span>
                       </div>
@@ -586,7 +587,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                   {/* Comparison to baseline */}
                   <div className="mt-3 pt-3 border-t border-slate-200/50">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-500">vs Baseline ({`€${baselineEuro.toFixed(4)}`})</span>
+                      <span className="text-slate-500">vs Baseline ({currencySymbol}{baselineEuro.toFixed(4)})</span>
                       <span className={`font-bold ${previewStats.euroPerMile >= baselineEuro ? 'text-emerald-600' : 'text-red-500'}`}>
                         {previewStats.euroPerMile >= baselineEuro ? '+' : ''}
                         {((previewStats.euroPerMile - baselineEuro) / baselineEuro * 100).toFixed(0)}%
@@ -684,7 +685,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                       tick={{fontSize: 10, fill: '#94a3b8'}} 
                       axisLine={false} 
                       tickLine={false}
-                      tickFormatter={(v) => `€${v}`}
+                      tickFormatter={(v) => `${currencySymbol}${v}`}
                     />
                     <RechartsTooltip 
                       cursor={{ strokeDasharray: '3 3' }} 
@@ -697,7 +698,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                               <p className="font-bold mb-1">{data.description}</p>
                               <p>Miles: {formatNumber(data.award_miles)}</p>
                               <p>Value: {formatCurrency(data.value)}</p>
-                              <p className="text-emerald-400 font-bold">€{(data.cpm / 100).toFixed(4)}/mi</p>
+                              <p className="text-emerald-400 font-bold">{currencySymbol}{(data.cpm / 100).toFixed(4)}/mi</p>
                             </div>
                           );
                         }
@@ -898,7 +899,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                           {formatCurrency(r.value)}
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <div className="font-bold text-slate-900">€{euroCpm.toFixed(4)}</div>
+                          <div className="font-bold text-slate-900">{currencySymbol}{euroCpm.toFixed(4)}</div>
                           <div className={`text-[10px] font-medium ${delta >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                             {delta >= 0 ? '+' : ''}{deltaPercent.toFixed(0)}%
                           </div>
@@ -950,7 +951,7 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                         {formatCurrency(displayData.reduce((sum, r) => sum + r.value, 0))}
                       </td>
                       <td className="px-5 py-3 text-right text-xs">
-                        €{(displayData.reduce((sum, r) => sum + r.value, 0) / Math.max(1, displayData.reduce((sum, r) => sum + r.award_miles, 0))).toFixed(4)}
+                        {currencySymbol}{(displayData.reduce((sum, r) => sum + r.value, 0) / Math.max(1, displayData.reduce((sum, r) => sum + r.award_miles, 0))).toFixed(4)}
                       </td>
                       <td colSpan={2}></td>
                     </tr>

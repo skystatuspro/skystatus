@@ -4,7 +4,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
-import { formatCurrency, formatNumber } from '../../utils/format';
+import { formatNumber } from '../../utils/format';
+import { useCurrency } from '../../lib/CurrencyContext';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { calculateQualificationCycles } from '../../utils/xp-logic';
 import { getValuationStatus } from '../../utils/valuation';
@@ -62,6 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onUpdateCurrentMonth,
   onPdfImport,
 }) => {
+  const { format: formatCurrency, symbol: currencySymbol, formatPrecise } = useCurrency();
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [skipWelcome, setSkipWelcome] = useState(false);
   const [showFaqModal, setShowFaqModal] = useState(false);
@@ -525,7 +527,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               title="Acquisition cost"
               value={
                 <span className="font-mono text-[15px] tracking-tight">
-                  €{baselineEarnCpmEuro.toFixed(5)}
+                  {currencySymbol}{baselineEarnCpmEuro.toFixed(5)}
                 </span>
               }
               subtitle="Avg cost per mile"
@@ -618,7 +620,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
 
                         <div className="text-right font-mono font-bold text-base text-slate-900 whitespace-nowrap">
-                          €{val.toFixed(4)}
+                          {currencySymbol}{val.toFixed(4)}
                         </div>
                       </div>
 

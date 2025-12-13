@@ -11,9 +11,11 @@ import {
   AlertTriangle,
   FileText,
   UserX,
+  Globe,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import PdfImportModal from './PdfImportModal';
+import { CurrencyCode, SUPPORTED_CURRENCIES } from '../utils/format';
 
 import {
   MilesRecord,
@@ -35,6 +37,7 @@ interface SettingsModalProps {
     xpRollover: number;
     currentMonth: string;
     targetCPM: number;
+    currency: CurrencyCode;
     manualLedger: ManualLedger;
     qualificationSettings: QualificationSettings | null;
   };
@@ -46,6 +49,7 @@ interface SettingsModalProps {
     setXpRollover: React.Dispatch<React.SetStateAction<number>>;
     setCurrentMonth: React.Dispatch<React.SetStateAction<string>>;
     setTargetCPM: React.Dispatch<React.SetStateAction<number>>;
+    setCurrency: (currency: CurrencyCode) => void;
     setManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
     setQualificationSettings: React.Dispatch<React.SetStateAction<QualificationSettings | null>>;
   };
@@ -528,6 +532,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <p className="text-xs text-slate-500">Upload your transaction history from flyingblue.com</p>
               </div>
             </button>
+          </div>
+
+          {/* Preferences */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Preferences
+            </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100">
+                    <Globe className="text-slate-600" size={16} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">Currency</p>
+                    <p className="text-[11px] text-slate-500">For all costs and valuations</p>
+                  </div>
+                </div>
+                <select
+                  value={data.currency}
+                  onChange={(e) => setters.setCurrency(e.target.value as CurrencyCode)}
+                  className="px-3 py-2 text-sm font-medium border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer"
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.symbol} {c.code} - {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Backup & Restore */}

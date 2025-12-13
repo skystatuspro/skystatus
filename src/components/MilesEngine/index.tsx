@@ -4,7 +4,8 @@
 import React, { useMemo, useState } from 'react';
 import { MilesRecord, RedemptionRecord } from '../../types';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
-import { formatCurrency, formatNumber, generateId } from '../../utils/format';
+import { formatNumber, generateId } from '../../utils/format';
+import { useCurrency } from '../../lib/CurrencyContext';
 import {
   Download,
   Upload,
@@ -33,7 +34,7 @@ import { Tooltip } from '../Tooltip';
 import { SharedLedger } from '../SharedLedger';
 
 // Subcomponents
-import { noSpinnerClass, formatCPM } from './helpers';
+import { noSpinnerClass } from './helpers';
 import { CpmSparkline, RoiBar, SourceEfficiencyCard, KPICard } from './components';
 
 interface MilesEngineProps {
@@ -55,7 +56,11 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   onUpdateTargetCPM,
   redemptions,
 }) => {
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const safeTargetCPM = Number.isFinite(targetCPM) ? targetCPM : 0;
+
+  // Local formatting helper
+  const formatCPM = (cpm: number) => `${currencySymbol}${cpm.toFixed(4)}`;
   
   // Valuation guide collapsed state - persisted in localStorage
   const [valuationGuideExpanded, setValuationGuideExpanded] = useState(() => {
@@ -215,7 +220,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
               <Tooltip text="How much is a mile worth to you? This affects all value calculations. Scroll down to 'How do you value a mile?' for presets and guidance." />
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-xs text-indigo-400 font-medium">€</span>
+              <span className="text-xs text-indigo-400 font-medium">{currencySymbol}</span>
               <input
                 type="number"
                 step="0.001"
@@ -374,7 +379,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
             <div>
               <h3 className="font-bold text-slate-800">How do you value a mile?</h3>
               <p className="text-[10px] text-indigo-600 font-medium">
-                {valuationGuideExpanded ? 'Click to collapse' : `Current: €${targetCPM.toFixed(3)} per mile`}
+                {valuationGuideExpanded ? 'Click to collapse' : `Current: ${currencySymbol}${targetCPM.toFixed(3)} per mile`}
               </p>
             </div>
           </div>
@@ -413,7 +418,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                       }`}
                     >
                       {preset.label}
-                      <span className="block text-[9px] font-medium opacity-70">€{preset.value.toFixed(3)}</span>
+                      <span className="block text-[9px] font-medium opacity-70">{currencySymbol}{preset.value.toFixed(3)}</span>
                     </button>
                   ))}
                 </div>
@@ -424,7 +429,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                     Target CPM
                   </label>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm text-indigo-400 font-medium">€</span>
+                    <span className="text-sm text-indigo-400 font-medium">{currencySymbol}</span>
                     <input
                       type="number"
                       step="0.001"
@@ -447,15 +452,15 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
               </summary>
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
                 <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50 hover:border-slate-300 transition-colors">
-                  <div className="font-bold text-slate-700 mb-1">€0.006 - €0.010</div>
+                  <div className="font-bold text-slate-700 mb-1">{currencySymbol}0.006 - {currencySymbol}0.010</div>
                   <div className="text-slate-500">Conservative. Easy to achieve on most economy redemptions within Europe.</div>
                 </div>
                 <div className="bg-white/70 rounded-lg p-3 border border-blue-200/50 hover:border-blue-300 transition-colors">
-                  <div className="font-bold text-blue-700 mb-1">€0.012 - €0.015</div>
+                  <div className="font-bold text-blue-700 mb-1">{currencySymbol}0.012 - {currencySymbol}0.015</div>
                   <div className="text-slate-500">Average. Typical for business class on medium-haul or good economy deals on long-haul.</div>
                 </div>
                 <div className="bg-white/70 rounded-lg p-3 border border-indigo-200/50 hover:border-indigo-300 transition-colors">
-                  <div className="font-bold text-indigo-700 mb-1">€0.018+</div>
+                  <div className="font-bold text-indigo-700 mb-1">{currencySymbol}0.018+</div>
                   <div className="text-slate-500">Aspirational. Achievable on premium cabin long-haul or La Première. Requires strategic booking.</div>
                 </div>
               </div>
@@ -554,7 +559,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                   />
                   <YAxis
                     tick={{ fontSize: 10, fill: '#64748b' }}
-                    tickFormatter={(v) => `€${v.toFixed(3)}`}
+                    tickFormatter={(v) => `${currencySymbol}${v.toFixed(3)}`}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -629,10 +634,10 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
                   For every{' '}
-                  <span className="font-bold text-slate-600">€1</span> spent, you
+                  <span className="font-bold text-slate-600">{currencySymbol}1</span> spent, you
                   realize{' '}
                   <span className="font-bold text-slate-600">
-                    €{stats.roiMultiplier.toFixed(2)}
+                    {currencySymbol}{stats.roiMultiplier.toFixed(2)}
                   </span>{' '}
                   in value.
                 </p>

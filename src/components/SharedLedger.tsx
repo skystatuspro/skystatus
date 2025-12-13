@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MilesRecord } from '../types';
-import { formatCurrency, formatNumber } from '../utils/format';
+import { formatNumber } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import { 
   Trash2, 
   Pencil, 
@@ -210,6 +211,7 @@ export const SharedLedger: React.FC<SharedLedgerProps> = ({
   title = 'Transaction Ledger',
   subtitle = 'Detailed record of all accumulation and redemption.'
 }) => {
+  const { format: formatCurrency } = useCurrency();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<MilesRecord>>({});
   const [showEarlierMonths, setShowEarlierMonths] = useState(false);
@@ -545,7 +547,7 @@ export const SharedLedger: React.FC<SharedLedgerProps> = ({
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono text-[10px] text-slate-500">
-                            {row.totalCost > 0 ? formatCurrency(row.totalCost) : <span className="text-slate-300">€NaN</span>}
+                            {row.totalCost > 0 ? formatCurrency(row.totalCost) : <span className="text-slate-300">-</span>}
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <div className="flex items-center justify-end gap-1">

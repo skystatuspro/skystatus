@@ -14,8 +14,8 @@ import {
 } from 'recharts';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
-import { formatCurrency, formatNumber } from '../../utils/format';
-import { formatCPM } from './helpers';
+import { formatNumber } from '../../utils/format';
+import { useCurrency } from '../../lib/CurrencyContext';
 
 // CpmSparkline - Mini chart showing CPM trend
 interface CpmSparklineProps {
@@ -61,6 +61,7 @@ interface RoiBarProps {
 }
 
 export const RoiBar: React.FC<RoiBarProps> = ({ cost, value }) => {
+  const { format: formatCurrency } = useCurrency();
   const maxValue = Math.max(cost, value) * 1.1;
   const data = [
     { name: 'Cost', amount: cost, fill: '#94a3b8' },
@@ -122,6 +123,9 @@ export const SourceEfficiencyCard: React.FC<SourceEfficiencyCardProps> = ({
   source,
   targetCPM,
 }) => {
+  const { symbol: currencySymbol } = useCurrency();
+  const formatCPM = (cpm: number) => `${currencySymbol}${cpm.toFixed(4)}`;
+  
   const isFree = source.cpm === 0 && source.miles > 0;
   const isEfficient = source.cpm > 0 && source.cpm <= targetCPM;
   const isAcceptable = source.cpm > targetCPM && source.cpm <= targetCPM * 1.5;

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { MilesRecord } from '../types';
 import { generateId } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import { Tooltip } from './Tooltip';
 import { SharedLedger } from './SharedLedger';
 
@@ -57,6 +58,7 @@ const inputBase =
   '[color-scheme:light] ' + noSpinnerClass;
 
 export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, currentMonth }) => {
+  const { symbol: currencySymbol } = useCurrency();
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState({
@@ -238,7 +240,7 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, c
                 />
               </InputGroup>
 
-              <InputGroup label="Total Cost" icon={Tag} rightElement="€" tooltip="What did you pay for these miles? (e.g. monthly fee, surcharges).">
+              <InputGroup label="Total Cost" icon={Tag} rightElement={currencySymbol} tooltip="What did you pay for these miles? (e.g. monthly fee, surcharges).">
                 <input 
                   type="number"
                   className={`${inputBase} text-right pr-12`}
@@ -254,7 +256,7 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, c
             {form.amount > 0 && form.cost > 0 && (
               <div className="flex items-center justify-center gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100 border-dashed">
                 <span>Acquisition CPM:</span>
-                <span className="font-bold text-slate-800">€{(form.cost / form.amount).toFixed(5)}</span>
+                <span className="font-bold text-slate-800">{currencySymbol}{(form.cost / form.amount).toFixed(5)}</span>
                 <span>/ mile</span>
               </div>
             )}

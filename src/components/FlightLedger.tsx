@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FlightRecord, XPRecord } from '../types';
-import { formatCurrency, formatNumber } from '../utils/format';
+import { formatNumber } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import { calculateMultiYearStats } from '../utils/xp-logic';
 import { 
   Trash2, 
@@ -128,6 +129,7 @@ interface EditFlightModalProps {
 }
 
 const EditFlightModal: React.FC<EditFlightModalProps> = ({ flight, onSave, onClose }) => {
+  const { symbol: currencySymbol } = useCurrency();
   const [formData, setFormData] = useState({
     date: flight.date,
     origin: flight.route.split('-')[0],
@@ -265,7 +267,7 @@ const EditFlightModal: React.FC<EditFlightModalProps> = ({ flight, onSave, onClo
 
           {/* Price */}
           <div>
-            <label className={labelClass}>Ticket Price (€)</label>
+            <label className={labelClass}>Ticket Price ({currencySymbol})</label>
             <input
               type="number"
               value={formData.ticketPrice}
@@ -415,6 +417,7 @@ export const FlightLedger: React.FC<FlightLedgerProps> = ({
   xpData = [], 
   currentRollover = 0
 }) => {
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const monthGroups = useMemo(() => groupFlightsByMonth(flights), [flights]);
   
   // Track expanded months - default all expanded

@@ -1,14 +1,52 @@
 // src/utils/format.ts
 
 // ---------------------------------------------
+// Supported Currencies
+// ---------------------------------------------
+export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CAD' | 'CHF' | 'AUD' | 'SEK' | 'NOK' | 'DKK' | 'PLN';
+
+export const SUPPORTED_CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'GBP', label: 'British Pound', symbol: '£' },
+  { code: 'CAD', label: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'CHF', label: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'AUD', label: 'Australian Dollar', symbol: 'A$' },
+  { code: 'SEK', label: 'Swedish Krona', symbol: 'kr' },
+  { code: 'NOK', label: 'Norwegian Krone', symbol: 'kr' },
+  { code: 'DKK', label: 'Danish Krone', symbol: 'kr' },
+  { code: 'PLN', label: 'Polish Złoty', symbol: 'zł' },
+];
+
+export const getCurrencySymbol = (currency: CurrencyCode = 'EUR'): string => {
+  return SUPPORTED_CURRENCIES.find(c => c.code === currency)?.symbol || '€';
+};
+
+// ---------------------------------------------
 // Currency + Number formatting
 // ---------------------------------------------
-export const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-EU', {
+export const formatCurrency = (value: number, currency: CurrencyCode = 'EUR') => {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'EUR',
+    currency: currency,
     minimumFractionDigits: 2,
   }).format(value);
+};
+
+// Short format for tight spaces (e.g., "€1,234" instead of "€1,234.00")
+export const formatCurrencyShort = (value: number, currency: CurrencyCode = 'EUR') => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+// Format small values like CPM (e.g., "€0.0123")
+export const formatCurrencyPrecise = (value: number, currency: CurrencyCode = 'EUR', decimals: number = 4) => {
+  const symbol = getCurrencySymbol(currency);
+  return `${symbol}${value.toFixed(decimals)}`;
 };
 
 export const formatNumber = (value: number) => {

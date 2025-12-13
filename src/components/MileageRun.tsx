@@ -33,6 +33,7 @@ import {
 } from '../utils/airports';
 import { calculateMultiYearStats } from '../utils/xp-logic';
 import { formatNumber } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import { PLATINUM_THRESHOLD, GOLD_THRESHOLD, SILVER_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
 
@@ -451,6 +452,7 @@ const RunSummary: React.FC<{
 // --- Main Component ---
 
 export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
+  const { symbol: currencySymbol } = useCurrency();
   const [routeString, setRouteString] = useState('');
   const [defaultCabin, setDefaultCabin] = useState<CabinClass>('Business');
   const [isReturn, setIsReturn] = useState(true);
@@ -587,12 +589,12 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
           <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 flex flex-col shadow-sm w-36 group hover:border-indigo-200 transition-colors">
             <div className="flex items-center gap-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide group-hover:text-indigo-500">
-                Target €/XP
+                Target {currencySymbol}/XP
               </label>
               <Tooltip text="What is the maximum you want to pay for 1 XP? Used to calculate the Verdict." />
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-xs text-slate-400 font-medium">€</span>
+              <span className="text-xs text-slate-400 font-medium">{currencySymbol}</span>
               <input 
                 type="number" 
                 step="0.5" 
@@ -694,7 +696,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
                         <Tooltip text="The price of the cheapest Economy ticket." />
                       </div>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">€</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">{currencySymbol}</span>
                         <input
                           type="number"
                           className={`${inputBase} ${noSpinnerClass} pl-8`}
@@ -717,7 +719,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
                         <Coins size={12} /> Premium Cost
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">€</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">{currencySymbol}</span>
                         <input
                           type="number"
                           className={`${inputBase} ${noSpinnerClass} pl-8 text-lg font-bold text-indigo-900`}
@@ -734,7 +736,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
                       <Coins size={12} /> Total Run Cost
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">€</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">{currencySymbol}</span>
                       <input
                         type="number"
                         className={`${inputBase} ${noSpinnerClass} pl-8 text-lg font-bold`}
@@ -785,7 +787,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
             />
             <KPI 
               title="Efficiency" 
-              value={costPerXP > 0 ? `€${costPerXP.toFixed(2)}` : '€0.00'} 
+              value={costPerXP > 0 ? `${currencySymbol}${costPerXP.toFixed(2)}` : `${currencySymbol}0.00`} 
               subtitle={efficiencySub}
               icon={Wallet} 
               badgeText={verdict.label} 

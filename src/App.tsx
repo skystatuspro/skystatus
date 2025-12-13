@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useUserData } from './hooks/useUserData';
+import { CurrencyProvider } from './lib/CurrencyContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { MilesEngine } from './components/MilesEngine';
@@ -365,7 +366,7 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   return (
-    <>
+    <CurrencyProvider currency={state.currency}>
       <Layout
         currentView={view}
         onNavigate={setView}
@@ -411,6 +412,7 @@ export default function App() {
           xpRollover: state.xpRollover,
           currentMonth: state.currentMonth,
           targetCPM: state.targetCPM,
+          currency: state.currency,
           manualLedger: state.manualLedger,
           qualificationSettings: state.qualificationSettings,
         }}
@@ -422,6 +424,7 @@ export default function App() {
           setXpRollover: actions.setXpRollover,
           setCurrentMonth: actions.setCurrentMonth,
           setTargetCPM: actions.setTargetCPM,
+          setCurrency: actions.handleCurrencyUpdate,
           setManualLedger: actions.setManualLedger,
           setQualificationSettings: actions.setQualificationSettings,
         }}
@@ -437,6 +440,6 @@ export default function App() {
       />
 
       <ToastContainer />
-    </>
+    </CurrencyProvider>
   );
 }

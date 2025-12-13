@@ -33,6 +33,7 @@ import {
   createFlightRecord,
 } from '../utils/flight-intake';
 import { calculateMultiYearStats } from '../utils/xp-logic';
+import { CurrencyCode } from '../utils/format';
 
 // ============================================================================
 // TYPES
@@ -54,6 +55,7 @@ export interface UserDataState {
   flights: FlightRecord[];
   xpRollover: number;
   targetCPM: number;
+  currency: CurrencyCode;
   qualificationSettings: QualificationSettings | null;
   
   // Computed data (derived from base + flights)
@@ -76,6 +78,7 @@ export interface UserDataActions {
   setManualLedger: (ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => void;
   setXpRollover: (rollover: number) => void;
   setTargetCPM: (cpm: number) => void;
+  setCurrency: (currency: CurrencyCode) => void;
   setQualificationSettings: (settings: QualificationSettings | null) => void;
   setCurrentMonth: (month: string) => void;
   
@@ -85,6 +88,7 @@ export interface UserDataActions {
   handleManualLedgerUpdate: (data: MilesRecord[]) => void;
   handleRedemptionsUpdate: (redemptions: RedemptionRecord[]) => void;
   handleTargetCPMUpdate: (cpm: number) => void;
+  handleCurrencyUpdate: (currency: CurrencyCode) => void;
   handleManualXPLedgerUpdate: (ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => void;
   handleXPRolloverUpdate: (rollover: number) => void;
   handlePdfImport: (
@@ -167,6 +171,7 @@ export function useUserData(): UseUserDataReturn {
   const [flights, setFlightsInternal] = useState<FlightRecord[]>([]);
   const [xpRollover, setXpRolloverInternal] = useState<number>(0);
   const [targetCPM, setTargetCPMInternal] = useState<number>(0.012);
+  const [currency, setCurrencyInternal] = useState<CurrencyCode>('EUR');
   const [qualificationSettings, setQualificationSettingsInternal] = useState<QualificationSettings | null>(null);
 
   // Loading/saving state
@@ -237,6 +242,7 @@ export function useUserData(): UseUserDataReturn {
         if (data.profile) {
           setTargetCPMInternal(data.profile.targetCPM);
           setXpRolloverInternal(data.profile.xpRollover || 0);
+          setCurrencyInternal((data.profile.currency || 'EUR') as CurrencyCode);
 
           if (data.profile.qualificationStartMonth) {
             setQualificationSettingsInternal({
@@ -282,6 +288,7 @@ export function useUserData(): UseUserDataReturn {
         updateProfile(user.id, {
           target_cpm: targetCPM,
           xp_rollover: xpRollover,
+          currency: currency,
           qualification_start_month: qualificationSettings?.cycleStartMonth,
           starting_status: qualificationSettings?.startingStatus,
           starting_xp: qualificationSettings?.startingXP,
@@ -293,7 +300,7 @@ export function useUserData(): UseUserDataReturn {
     } finally {
       setIsSaving(false);
     }
-  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, qualificationSettings]);
+  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings]);
 
   // Load on auth change
   useEffect(() => {
@@ -372,6 +379,11 @@ export function useUserData(): UseUserDataReturn {
     markDataChanged();
   }, [markDataChanged]);
 
+  const setCurrency = useCallback((newCurrency: CurrencyCode) => {
+    setCurrencyInternal(newCurrency);
+    markDataChanged();
+  }, [markDataChanged]);
+
   // -------------------------------------------------------------------------
   // HIGH-LEVEL HANDLERS
   // -------------------------------------------------------------------------
@@ -402,6 +414,10 @@ export function useUserData(): UseUserDataReturn {
   const handleTargetCPMUpdate = useCallback((newTargetCPM: number) => {
     setTargetCPM(newTargetCPM);
   }, [setTargetCPM]);
+
+  const handleCurrencyUpdate = useCallback((newCurrency: CurrencyCode) => {
+    setCurrency(newCurrency);
+  }, [setCurrency]);
 
   const handleManualXPLedgerUpdate = useCallback((ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => {
     setManualLedger(ledger);
@@ -597,6 +613,7 @@ export function useUserData(): UseUserDataReturn {
       flights,
       xpRollover,
       targetCPM,
+      currency,
       qualificationSettings,
       milesData,
       xpData,
@@ -611,6 +628,7 @@ export function useUserData(): UseUserDataReturn {
       setManualLedger,
       setXpRollover,
       setTargetCPM,
+      setCurrency,
       setQualificationSettings,
       setCurrentMonth,
       handleFlightsUpdate,
@@ -618,6 +636,7 @@ export function useUserData(): UseUserDataReturn {
       handleManualLedgerUpdate,
       handleRedemptionsUpdate,
       handleTargetCPMUpdate,
+      handleCurrencyUpdate,
       handleManualXPLedgerUpdate,
       handleXPRolloverUpdate,
       handlePdfImport,

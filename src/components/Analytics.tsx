@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { XPRecord, RedemptionRecord, MilesRecord } from '../types';
 import { calculateMultiYearStats } from '../utils/xp-logic';
-import { formatCurrency, formatNumber } from '../utils/format';
+import { formatNumber } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import {
   BarChart,
   Bar,
@@ -56,12 +57,6 @@ interface AnalyticsProps {
 }
 
 const ROLLOVER_CAP = PLATINUM_THRESHOLD + 300;
-
-// --- Formatting Helpers ---
-const formatCPM = (cpm: number): string => {
-  if (cpm === 0) return '€0.0000';
-  return `€${cpm.toFixed(4)}`;
-};
 
 // --- KPI Card Component ---
 const AnalyticsKPI = ({ title, value, subtext, icon: Icon, colorClass, tooltip, trend }: any) => (
@@ -134,7 +129,14 @@ export const Analytics: React.FC<AnalyticsProps> = ({
   currentMonth,
   targetCPM,
 }) => {
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const [activeSection, setActiveSection] = useState<'overview' | 'miles' | 'xp' | 'redemptions'>('overview');
+
+  // Local formatting helper using currency context
+  const formatCPM = (cpm: number): string => {
+    if (cpm === 0) return `${currencySymbol}0.0000`;
+    return `${currencySymbol}${cpm.toFixed(4)}`;
+  };
 
   // ============================================
   // MILES ANALYTICS CALCULATIONS
@@ -338,7 +340,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
         list.push({
           icon: Sparkles,
           title: `${milesAnalytics.bestSource.name} is your best source`,
-          description: `Free miles! ${formatNumber(milesAnalytics.bestSource.miles)} miles at €0.0000 CPM`,
+          description: `Free miles! ${formatNumber(milesAnalytics.bestSource.miles)} miles at ${currencySymbol}0.0000 CPM`,
           color: 'emerald',
         });
       } else if (milesAnalytics.bestSource) {
@@ -718,7 +720,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                 <LineChart data={milesAnalytics.balanceHistory.filter(h => h.cpm > 0)}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `€${v.toFixed(3)}`} />
+                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${currencySymbol}${v.toFixed(3)}`} />
                   <RechartsTooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px' }}
                     formatter={(value: number) => [formatCPM(value), 'CPM']}
@@ -947,10 +949,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                       dataKey="cpm"
                       name="CPM"
                       tick={{ fontSize: 12, fill: '#64748b' }}
-                      tickFormatter={(v) => `€${v.toFixed(3)}`}
+                      tickFormatter={(v) => `${currencySymbol}${v.toFixed(3)}`}
                       tickLine={false}
                       axisLine={false}
-                      label={{ value: 'Value (€/mile)', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#94a3b8' }}
+                      label={{ value: `Value (${currencySymbol}/mile)`, angle: -90, position: 'insideLeft', fontSize: 11, fill: '#94a3b8' }}
                     />
                     <ZAxis type="number" dataKey="value" range={[100, 500]} />
                     <ReferenceLine y={targetCPM} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Target', position: 'right', fontSize: 10, fill: '#f59e0b' }} />

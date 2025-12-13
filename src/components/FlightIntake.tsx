@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plane, Plus, Calendar, MapPin, Tag, Award, Leaf, ArrowRight, Split, Layers, Zap, Repeat, TrendingUp, CheckCircle2, ChevronDown, AlertTriangle, Clock, Star } from 'lucide-react';
 import { FlightIntakePayload, CabinClass } from '../utils/flight-intake';
 import { calculateXPForRoute, AIRPORTS, DistanceBand } from '../utils/airports';
-import { formatCurrency } from '../utils/format';
+import { useCurrency } from '../lib/CurrencyContext';
 import { getStatusMultiplier, isRevenueAirline } from '../utils/loyalty-logic';
 import { Tooltip } from './Tooltip';
 import { FlightRecord } from '../types';
@@ -122,6 +122,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
   const today = new Date().toISOString().slice(0, 10);
   const routeInputRef = useRef<HTMLInputElement>(null);
   const airlineDropdownRef = useRef<HTMLDivElement>(null);
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
 
   const [form, setForm] = useState({
     date: today,
@@ -697,7 +698,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
                         className={`${inputBase} font-mono`}
                         step="0.01"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs font-medium">€</div>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs font-medium">{currencySymbol}</div>
                 </div>
             </div>
 

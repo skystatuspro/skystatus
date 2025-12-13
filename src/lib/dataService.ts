@@ -435,6 +435,7 @@ export async function updateProfile(userId: string, updates: {
   starting_status?: string;
   starting_xp?: number;
   ultimate_cycle_type?: string;
+  currency?: string;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -548,6 +549,7 @@ export interface UserData {
     startingStatus: string | null;
     startingXP: number | null;
     ultimateCycleType: 'qualification' | 'calendar' | null;
+    currency: string;
   } | null;
 }
 
@@ -573,6 +575,7 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       startingStatus: profile.starting_status || null,
       startingXP: profile.starting_xp || null,
       ultimateCycleType: profile.ultimate_cycle_type || null,
+      currency: profile.currency || 'EUR',
     } : null,
   };
 }
