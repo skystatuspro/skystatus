@@ -22,6 +22,8 @@ import {
   FileText,
   PlusCircle,
   HelpCircle,
+  Crown,
+  TrendingUp,
 } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 import PdfImportModal from '../PdfImportModal';
@@ -30,7 +32,7 @@ import { FeedbackCard } from '../FeedbackCard';
 import { shouldShowDashboardFeedback, incrementSessionCount } from '../../lib/feedbackService';
 
 // Subcomponents
-import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveCycle } from './helpers';
+import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveCycle, calculateUltimateChance } from './helpers';
 import { KPICard } from './KPICard';
 import { RiskMonitor } from './RiskMonitor';
 
@@ -89,6 +91,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const rolloverIn: number = activeCycle?.rolloverIn ?? 0;
   const rolloverOut: number = activeCycle?.rolloverOut ?? 0;
 
+  // Ultimate status data
+  const isUltimate: boolean = activeCycle?.isUltimate ?? false;
+  const projectedUltimate: boolean = activeCycle?.projectedUltimate ?? false;
+  const actualUXP: number = activeCycle?.actualUXP ?? 0;
+  const projectedUXP: number = activeCycle?.projectedUXP ?? 0;
+  const showUltimateProgress = actualStatus === 'Platinum' || isUltimate;
+
+  // Calculate months remaining in cycle
+  const monthsRemaining = useMemo(() => {
+    if (!activeCycle) return 12;
+    const endDate = new Date(activeCycle.endDate);
+    const today = new Date();
+    const months = (endDate.getFullYear() - today.getFullYear()) * 12 + (endDate.getMonth() - today.getMonth());
+    return Math.max(0, months);
+  }, [activeCycle]);
+
+  // Ultimate chance calculation
+  const ultimateChance = useMemo(() => {
+    if (!showUltimateProgress) return null;
+    return calculateUltimateChance(actualUXP, projectedUXP, monthsRemaining);
+  }, [showUltimateProgress, actualUXP, projectedUXP, monthsRemaining]);
+
   const projectedTotalXP = useMemo(() => {
     if (!activeCycle) return 0;
     const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
@@ -101,7 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     ? new Date(activeCycle.endDate).getFullYear()
     : new Date().getFullYear();
 
-  const theme = getStatusTheme(actualStatus);
+  const theme = getStatusTheme(actualStatus, isUltimate);
   const targetXP = getTargetXP(actualStatus);
   const baselineEarnCpmEuro = milesStats.globalCPM / 100;
 
@@ -279,10 +303,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Left column */}
         <div className="xl:col-span-7 flex flex-col gap-6">
           {/* Status Card */}
-          <div className="relative overflow-hidden rounded-[2.5rem] pl-10 pr-8 py-8 shadow-xl border border-slate-100 bg-white">
+          <div className={`relative overflow-hidden rounded-[2.5rem] pl-10 pr-8 py-8 shadow-xl border ${
+            isUltimate 
+              ? 'border-slate-700 bg-slate-900' 
+              : 'border-slate-100 bg-white'
+          }`}>
             <div className={`absolute inset-0 bg-gradient-to-br ${theme.meshGradient}`} />
             <div className="absolute top-1 right-0 p-12 opacity-10">
-              <Award size={180} className={theme.iconColor} />
+              {isUltimate ? (
+                <Crown size={180} className="text-amber-400" />
+              ) : (
+                <Award size={180} className={theme.iconColor} />
+              )}
             </div>
 
             <div className="relative z-10 flex flex-col justify-between">
@@ -290,20 +322,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Plane className={`${theme.iconColor} rotate-45`} size={22} />
-                    <span className="text-xs font-extrabold tracking-widest uppercase text-slate-400">
+                    <Plane className={`${isUltimate ? 'text-amber-400' : theme.iconColor} rotate-45`} size={22} />
+                    <span className={`text-xs font-extrabold tracking-widest uppercase ${isUltimate ? 'text-slate-400' : 'text-slate-400'}`}>
                       SkyTeam Alliance
                     </span>
                   </div>
 
                   <h3 className={`text-4xl font-black tracking-tight flex items-center gap-3 ${theme.accentColor}`}>
-                    {actualStatus}
-                    {actualStatus === 'Platinum' && (
+                    {isUltimate ? 'Ultimate' : actualStatus}
+                    {isUltimate ? (
+                      <Crown size={32} className="text-amber-400" />
+                    ) : actualStatus === 'Platinum' ? (
                       <CheckCircle2 size={32} className="text-emerald-500" />
-                    )}
+                    ) : null}
                   </h3>
 
-                  {hasProjectedUpgrade && (
+                  {hasProjectedUpgrade && !isUltimate && (
                     <div className="mt-2 flex items-center gap-1.5">
                       <Clock size={12} className="text-blue-500" />
                       <span className="text-xs font-bold text-blue-600">
@@ -311,16 +345,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     </div>
                   )}
+                  
+                  {/* Projected Ultimate badge */}
+                  {projectedUltimate && !isUltimate && actualStatus === 'Platinum' && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <Crown size={12} className="text-amber-500" />
+                      <span className="text-xs font-bold text-amber-600">
+                        Projected: Ultimate
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-400/80 bg-white/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/40">
+                <div className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-sm border ${
+                  isUltimate 
+                    ? 'text-slate-300 bg-slate-800/60 border-slate-600' 
+                    : 'text-slate-400/80 bg-white/60 border-white/40'
+                }`}>
                   {cycleYear} cycle
                 </div>
               </div>
 
               {/* Progress Section */}
               <div className="mb-8">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-slate-400 mb-2.5">
+                <div className={`flex justify-between text-xs font-bold uppercase tracking-widest mb-2.5 ${isUltimate ? 'text-slate-400' : 'text-slate-400'}`}>
                   <span className="flex items-center gap-1">
                     {getProgressLabel(actualStatus, actualStatus === 'Platinum')}
                     <Tooltip text="Actual XP earned from flown flights vs. the XP required to maintain or achieve your target status this cycle." />
@@ -328,7 +376,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>Target: {targetXP} XP</span>
                 </div>
 
-                <div className="relative w-full bg-white/70 rounded-full h-[20px] shadow-inner border border-white/50 overflow-hidden">
+                <div className={`relative w-full rounded-full h-[20px] shadow-inner border overflow-hidden ${
+                  isUltimate 
+                    ? 'bg-slate-800 border-slate-700' 
+                    : 'bg-white/70 border-white/50'
+                }`}>
                   {projectedTotalXP > actualXP && (
                     <div
                       className={`absolute inset-y-0 left-0 bg-gradient-to-r ${theme.projectedBar} opacity-50 transition-all duration-1000 ease-out`}
@@ -346,10 +398,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className={`text-5xl font-black tracking-tighter ${theme.accentColor}`}>
                       {actualXP}
                     </div>
-                    <div className="text-xs font-bold uppercase text-slate-400 mt-1 ml-1 flex items-center gap-1">
+                    <div className={`text-xs font-bold uppercase mt-1 ml-1 flex items-center gap-1 ${isUltimate ? 'text-slate-400' : 'text-slate-400'}`}>
                       Actual XP
                       {projectedTotalXP > actualXP && (
-                        <span className="text-blue-500 font-medium flex items-center gap-0.5">
+                        <span className={`font-medium flex items-center gap-0.5 ${isUltimate ? 'text-amber-400' : 'text-blue-500'}`}>
                           <Clock size={10} />
                           {projectedTotalXP} projected
                         </span>
@@ -360,26 +412,84 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className={`text-2xl font-bold ${theme.accentColor}`}>
                       {Math.min(300, rolloverOut)} XP
                     </div>
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <div className={`text-xs font-bold uppercase tracking-wider ${isUltimate ? 'text-slate-400' : 'text-slate-400'}`}>
                       Next rollover
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* UXP Progress Section - Only for Platinum/Ultimate */}
+              {showUltimateProgress && (
+                <div className={`mb-6 p-4 rounded-2xl border ${
+                  isUltimate 
+                    ? 'bg-amber-900/20 border-amber-700/30' 
+                    : 'bg-gradient-to-r from-slate-50 to-slate-100/50 border-slate-200/50'
+                }`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Crown size={16} className={isUltimate ? 'text-amber-400' : 'text-slate-600'} />
+                      <span className={`text-xs font-bold uppercase tracking-wide ${isUltimate ? 'text-amber-300' : 'text-slate-700'}`}>
+                        Ultimate Progress
+                      </span>
+                      <Tooltip text="UXP is earned from KLM and Air France operated flights only. Earn 900 UXP as Platinum to unlock Ultimate status." />
+                    </div>
+                    <span className={`text-sm font-bold ${isUltimate ? 'text-amber-300' : 'text-slate-700'}`}>
+                      {actualUXP} / 900 UXP
+                    </span>
+                  </div>
+                  <div className={`relative h-2.5 rounded-full overflow-hidden ${isUltimate ? 'bg-slate-700' : 'bg-slate-200/50'}`}>
+                    {projectedUXP > actualUXP && (
+                      <div
+                        className="absolute inset-y-0 left-0 bg-amber-300/40 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min((projectedUXP / 900) * 100, 100)}%` }}
+                      />
+                    )}
+                    <div
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min((actualUXP / 900) * 100, 100)}%` }}
+                    />
+                  </div>
+                  
+                  {/* Ultimate Chance Alert */}
+                  {ultimateChance && (
+                    <div className={`mt-3 flex items-center gap-2 ${
+                      ultimateChance.sentiment === 'positive' 
+                        ? isUltimate ? 'text-emerald-400' : 'text-emerald-600'
+                        : ultimateChance.sentiment === 'neutral'
+                        ? isUltimate ? 'text-amber-300' : 'text-slate-600'
+                        : isUltimate ? 'text-amber-400' : 'text-blue-600'
+                    }`}>
+                      {ultimateChance.sentiment === 'positive' ? (
+                        <CheckCircle2 size={14} />
+                      ) : (
+                        <TrendingUp size={14} />
+                      )}
+                      <span className="text-xs font-medium">{ultimateChance.message}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Bottom CTA */}
-              <div className="pt-6 border-t border-slate-200/60 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className={`pt-6 border-t flex items-center justify-between ${
+                isUltimate ? 'border-slate-700' : 'border-slate-200/60'
+              }`}>
+                <div className={`flex items-center gap-2 text-xs font-semibold ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${isUltimate ? 'bg-amber-400' : 'bg-emerald-500'}`} />
                   <span>Qualification active</span>
                 </div>
 
                 <button
                   onClick={() => navigateTo('xp')}
-                  className="flex items-center gap-2 bg-blue-900 text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-blue-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${
+                    isUltimate 
+                      ? 'bg-amber-500 text-slate-900 hover:bg-amber-400' 
+                      : 'bg-blue-900 text-white hover:bg-blue-800'
+                  }`}
                 >
                   XP Engine
-                  <ChevronRight size={16} className="text-blue-300" />
+                  <ChevronRight size={16} className={isUltimate ? 'text-slate-700' : 'text-blue-300'} />
                 </button>
               </div>
             </div>
