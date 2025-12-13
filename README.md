@@ -2,13 +2,27 @@
 
 A comprehensive analytics dashboard for tracking your Flying Blue loyalty program portfolio. Track XP qualification, miles balance, and optimize your loyalty strategy.
 
-![Version](https://img.shields.io/badge/Version-2.0.0-blue)
+![Version](https://img.shields.io/badge/Version-2.1.0-blue)
 ![React](https://img.shields.io/badge/React-18.3-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth-3ecf8e)
 
 ## Features
+
+### 🚀 Onboarding Wizard
+- 6-step guided setup for new users
+- PDF import integration during onboarding
+- Home airport selector (500+ airports, Flying Blue hubs prioritized)
+- Status and XP pre-configuration
+- Email consent management
+- Returning user support with prefilled settings
+
+### 🌍 Multi-Currency Support
+- 10 currencies: EUR, USD, GBP, CHF, SEK, NOK, DKK, PLN, CAD, AUD
+- Automatic conversion for all costs and valuations
+- Currency selector in settings and onboarding
+- Consistent formatting across all components
 
 ### 📊 Command Center (Dashboard)
 - Real-time Flying Blue status overview
@@ -36,7 +50,7 @@ A comprehensive analytics dashboard for tracking your Flying Blue loyalty progra
 
 ### 💰 Miles Engine
 - Track miles from all sources (Subscriptions, Amex, Flights, Other)
-- Cost per mile (CPM) analysis
+- Cost per mile (CPM) analysis in your preferred currency
 - Source efficiency comparison
 - ROI multiplier tracking
 - Projected portfolio value
@@ -94,6 +108,20 @@ Create a `.env` file for Supabase integration:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Database Migration
+
+Run the following SQL in Supabase SQL Editor for full functionality:
+
+```sql
+-- Add new profile columns
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'EUR';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS home_airport VARCHAR(3);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email_consent BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS miles_balance INTEGER DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS current_uxp INTEGER DEFAULT 0;
 ```
 
 ### Build for Production

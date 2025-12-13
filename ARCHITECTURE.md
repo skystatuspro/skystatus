@@ -26,12 +26,14 @@ src/
 │   │   ├── helpers.tsx   # formatCPM, utilities
 │   │   └── components.tsx # KPICard, charts, SourceEfficiencyCard
 │   │
+│   ├── OnboardingFlow.tsx # 6-step new user wizard
 │   ├── Analytics.tsx     # Analytics dashboard
 │   ├── FlightIntake.tsx  # Add flight form
 │   ├── FlightLedger.tsx  # Flight list/management
 │   ├── RedemptionCalc.tsx # Redemption analyzer
 │   ├── MileageRun.tsx    # XP run simulator
 │   ├── PdfImportModal.tsx # Flying Blue PDF import
+│   ├── SettingsModal.tsx # Data settings & preferences
 │   ├── SharedLedger.tsx  # Reusable ledger table
 │   └── ...
 │
@@ -40,6 +42,8 @@ src/
 │
 ├── lib/
 │   ├── supabase.ts       # Supabase client initialization
+│   ├── AuthContext.tsx   # Authentication context provider
+│   ├── CurrencyContext.tsx # Multi-currency context provider
 │   ├── dataService.ts    # Cloud data operations
 │   └── feedbackService.ts # Feedback card logic
 │
@@ -48,8 +52,8 @@ src/
 │   ├── loyalty-logic.ts  # Miles calculations, CPM
 │   ├── flight-xp.ts      # Flight XP calculation rules
 │   ├── parseFlyingBluePdf.ts # PDF parsing logic
-│   ├── airports.ts       # Airport database (1200+ airports)
-│   ├── format.ts         # Number/currency formatters
+│   ├── airports.ts       # Airport database (500+ airports)
+│   ├── format.ts         # Number/currency formatters + SUPPORTED_CURRENCIES
 │   ├── valuation.ts      # Redemption value analysis
 │   └── dataService.ts    # localStorage operations
 │
@@ -73,6 +77,8 @@ All user data flows through the `useUserData` hook (`src/hooks/useUserData.ts`):
 │  - flights, milesData, xpData, redemptions              │
 │  - qualificationSettings, manualLedger                  │
 │  - currentMonth, targetCPM, xpRollover, uxpRollover    │
+│  - currency, homeAirport                                │
+│  - onboardingCompleted, emailConsent                    │
 │  - authState (user, session, isDemo, isLocalMode)       │
 ├─────────────────────────────────────────────────────────┤
 │  Persistence:                                            │
@@ -80,6 +86,31 @@ All user data flows through the `useUserData` hook (`src/hooks/useUserData.ts`):
 │  - Local Mode → localStorage (utils/dataService.ts)     │
 │  - Demo Mode → in-memory only                           │
 └─────────────────────────────────────────────────────────┘
+```
+
+### Currency System
+
+Currency is managed via `CurrencyContext` (`src/lib/CurrencyContext.tsx`):
+
+```typescript
+// Supported currencies (src/utils/format.ts)
+SUPPORTED_CURRENCIES = [
+  { code: 'EUR', symbol: '€', label: 'Euro' },
+  { code: 'USD', symbol: '$', label: 'US Dollar' },
+  { code: 'GBP', symbol: '£', label: 'British Pound' },
+  { code: 'CHF', symbol: 'CHF', label: 'Swiss Franc' },
+  { code: 'SEK', symbol: 'kr', label: 'Swedish Krona' },
+  { code: 'NOK', symbol: 'kr', label: 'Norwegian Krone' },
+  { code: 'DKK', symbol: 'kr', label: 'Danish Krone' },
+  { code: 'PLN', symbol: 'zł', label: 'Polish Zloty' },
+  { code: 'CAD', symbol: 'C$', label: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', label: 'Australian Dollar' },
+];
+
+// Usage in components
+const { format, symbol, formatPrecise } = useCurrency();
+format(1234.56);        // "€1,235" or "$1,235"
+formatPrecise(0.012);   // "€0.012" or "$0.012"
 ```
 
 ### Authentication Modes
@@ -209,16 +240,105 @@ import { XPEngine } from './components/XPEngine';
 - `SharedLedger` - Reusable data table with editing
 - `Tooltip` - Info tooltips throughout the app
 - `FAQModal` - Help documentation modal
+- `OnboardingFlow` - Multi-step wizard with conditional steps
+
+### Context Providers
+
+The app uses two main context providers:
+
+```tsx
+// App.tsx structure
+<AuthProvider>
+  <CurrencyProvider currency={state.currency}>
+    <App />
+  </CurrencyProvider>
+</AuthProvider>
+```
+
+- **AuthContext** - User authentication state, sign in/out
+- **CurrencyContext** - Currency formatting throughout app
 
 ## Database Schema (Supabase)
 
 ```sql
--- User data stored as JSON blob per user
-user_data (
-  user_id: uuid (primary key, references auth.users)
-  data: jsonb (contains all app state)
+-- Profiles table (per user preferences)
+profiles (
+  id: uuid (primary key, references auth.users)
+  target_cpm: numeric
+  qualification_start_month: varchar
+  home_airport: varchar(3)
+  xp_rollover: integer
+  starting_status: varchar
+  starting_xp: integer
+  ultimate_cycle_type: varchar ('qualification' | 'calendar')
+  currency: varchar(3) default 'EUR'
+  onboarding_completed: boolean default false
+  email_consent: boolean default false
+  miles_balance: integer default 0
+  current_uxp: integer default 0
+  created_at: timestamp
   updated_at: timestamp
 )
+
+-- Flights table
+flights (
+  id: uuid (primary key)
+  user_id: uuid (references auth.users)
+  date: date
+  origin: varchar(3)
+  destination: varchar(3)
+  airline: varchar
+  cabin: varchar
+  status_at_flight: varchar
+  xp: integer
+  uxp: integer
+  miles: integer
+  cost: numeric
+  ...
+)
+
+-- Miles transactions, redemptions, xp_ledger tables follow similar pattern
+```
+
+## Onboarding Flow
+
+The `OnboardingFlow` component (`src/components/OnboardingFlow.tsx`) guides new users through setup:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Onboarding Wizard                      │
+├──────────────────────────────────────────────────────────┤
+│  Step 1: Welcome                                          │
+│  - Currency selection (10 options)                        │
+│  - Home airport (searchable, 500+ airports)              │
+├──────────────────────────────────────────────────────────┤
+│  Step 2: Import (skippable)                               │
+│  - PDF upload from Flying Blue                           │
+│  - Shows import summary if successful                    │
+├──────────────────────────────────────────────────────────┤
+│  Step 3: Status (conditional - if PDF skipped)           │
+│  - Current status selector                               │
+│  - XP, UXP, rollover inputs                              │
+│  - Ultimate cycle type toggle                            │
+├──────────────────────────────────────────────────────────┤
+│  Step 4: Valuation (skippable)                           │
+│  - CPM presets (Conservative/Average/Aspirational)       │
+│  - Custom CPM input                                      │
+├──────────────────────────────────────────────────────────┤
+│  Step 5: Email (skippable)                               │
+│  - Email consent checkbox                                │
+│  - Privacy messaging                                     │
+├──────────────────────────────────────────────────────────┤
+│  Step 6: Done                                             │
+│  - Settings summary                                       │
+│  - "Start Exploring" button                              │
+└──────────────────────────────────────────────────────────┘
+
+Returning users (isReturningUser=true):
+- See "Welcome Back!" instead of "Welcome to SkyStatus Pro!"
+- All fields prefilled with existing data
+- XP/status settings NOT overwritten (calculated from flights)
+- Only preferences saved (currency, home airport, CPM, email)
 ```
 
 ## Environment Variables
@@ -287,3 +407,21 @@ npm run preview  # Preview production build
 ### Adding new flight airlines
 1. Update `flight-xp.ts` with earning rules
 2. Add to airline dropdown in `FlightIntake.tsx`
+
+### Adding a new currency
+1. Add to `SUPPORTED_CURRENCIES` array in `src/utils/format.ts`
+2. Include code, symbol, and label
+3. Currency will automatically appear in settings and onboarding
+
+### Modifying onboarding steps
+1. Edit `OnboardingFlow.tsx`
+2. Update step array and `renderStep()` switch cases
+3. Add/remove from `steps` array for progress dots
+4. Handle new data in `handleComplete()`
+
+### Adding new profile fields
+1. Add column to Supabase `profiles` table
+2. Update `UserData` type in `lib/dataService.ts`
+3. Add state variable in `useUserData.ts`
+4. Include in `fetchAllUserData()` and `saveAllUserData()`
+5. Add to onboarding if user-facing
