@@ -303,8 +303,9 @@ export function useUserData(): UseUserDataReturn {
   }, [user, isDemoMode, loadUserData]);
 
   // Auto-save on debounced data change
+  // CRITICAL: Only save if data has been loaded first to prevent wiping user data
   useEffect(() => {
-    if (user && !isDemoMode && debouncedDataVersion > 0) {
+    if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
       saveUserData();
     }
   }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
@@ -490,7 +491,7 @@ export function useUserData(): UseUserDataReturn {
     markDataChanged();
   }, [markDataChanged]);
 
-  const handleStartOver = useCallback(() => {
+  const handleStartOver = useCallback(async () => {
     if (!window.confirm('Are you sure you want to start over? This wipes all data.')) {
       return;
     }
@@ -501,18 +502,35 @@ export function useUserData(): UseUserDataReturn {
     setFlightsInternal([]);
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
+    setQualificationSettingsInternal(null);
     setIsDemoMode(false);
     setIsLocalMode(false);
 
-    hasInitiallyLoaded.current = false;
-    loadedForUserId.current = null;
-
+    // Explicitly save empty data to database when user confirms wipe
     if (user) {
-      markDataChanged();
+      try {
+        await Promise.all([
+          saveFlights(user.id, []),
+          saveMilesRecords(user.id, []),
+          saveRedemptions(user.id, []),
+          saveXPLedger(user.id, {}),
+          updateProfile(user.id, {
+            xp_rollover: 0,
+            qualification_start_month: undefined,
+            starting_status: undefined,
+            starting_xp: undefined,
+            ultimate_cycle_type: undefined,
+          }),
+        ]);
+      } catch (error) {
+        console.error('Error clearing user data:', error);
+      }
     }
 
+    hasInitiallyLoaded.current = false;
+    loadedForUserId.current = null;
     setShowWelcome(true);
-  }, [user, markDataChanged]);
+  }, [user]);
 
   const handleEnterDemoMode = useCallback(() => {
     setIsDemoMode(true);
