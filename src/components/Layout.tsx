@@ -263,64 +263,63 @@ export const Layout: React.FC<LayoutProps> = ({
             {children}
           </div>
           
-          {/* Beta Footer */}
-          <footer className="mt-auto border-t border-slate-200 bg-gradient-to-b from-white to-slate-50">
-            {/* Beta Notice */}
-            <div className="border-b border-slate-100 py-4 px-4 sm:px-6 lg:px-10">
-              <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
-                      <AlertTriangle size={16} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold text-slate-700">Beta Version</span>
-                        <span className="px-1.5 py-0.5 text-[9px] bg-amber-100 text-amber-700 rounded font-bold">v2.0</span>
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed max-w-xl">
-                        SkyStatus is in active development. We recommend <strong>exporting your data</strong> after each session via Data Settings → Export JSON.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 sm:flex-shrink-0">
-                    <button
-                      onClick={onOpenSettings}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                    >
-                      <Download size={12} />
-                      Export Data
-                    </button>
-                    <a
-                      href={`mailto:support@skystatus.pro?subject=${encodeURIComponent('Bug Report - SkyStatus v2.0 beta')}&body=${encodeURIComponent('Hi SkyStatus team,\n\nI found an issue:\n\n**What happened:**\n[Describe what went wrong]\n\n**What I expected:**\n[Describe what should have happened]\n\n**Steps to reproduce:**\n1. \n2. \n3. \n\n**Browser/Device:**\n[e.g., Chrome on Windows, Safari on iPhone]\n\n**Screenshot:**\n[Please attach a screenshot if possible]\n\n---\nSent from SkyStatus v2.0 beta')}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-colors"
-                    >
-                      <Bug size={12} />
-                      Report Bug
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Standard Footer */}
-            <div className="py-4 px-4 sm:px-6 lg:px-10">
-              <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-                <p>© {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.</p>
-                <div className="flex items-center gap-3">
-                  <a href="#/faq" className="hover:text-slate-600 transition-colors">Help & FAQ</a>
-                  <span className="text-slate-300">·</span>
-                  <a href="#/about" className="hover:text-slate-600 transition-colors">About</a>
-                  <span className="text-slate-300">·</span>
-                  <a href="#/contact" className="hover:text-slate-600 transition-colors">Contact</a>
-                  <span className="text-slate-300">·</span>
-                  <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy</a>
-                  <span className="text-slate-300">·</span>
-                  <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms</a>
-                </div>
+          {/* Simple Footer */}
+          <footer className="mt-auto border-t border-slate-200 py-4 px-4 sm:px-6 lg:px-10 bg-white/50">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+              <p>© {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.</p>
+              <div className="flex items-center gap-3">
+                <a href="#/faq" className="hover:text-slate-600 transition-colors">Help & FAQ</a>
+                <span className="text-slate-300">·</span>
+                <a href="#/about" className="hover:text-slate-600 transition-colors">About</a>
+                <span className="text-slate-300">·</span>
+                <a href="#/contact" className="hover:text-slate-600 transition-colors">Contact</a>
+                <span className="text-slate-300">·</span>
+                <a href="#/privacy" className="hover:text-slate-600 transition-colors">Privacy</a>
+                <span className="text-slate-300">·</span>
+                <a href="#/terms" className="hover:text-slate-600 transition-colors">Terms</a>
               </div>
             </div>
           </footer>
+        </div>
+
+        {/* Floating Beta Bar - Desktop Only */}
+        <div className="hidden lg:block fixed bottom-6 left-1/2 -translate-x-1/2 z-50 ml-36">
+          <div className="bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 px-6 py-3 flex items-center gap-6 border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30">
+                <AlertTriangle size={16} className="text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">Beta v2.0</span>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">Export your data regularly</p>
+              </div>
+            </div>
+            
+            <div className="w-px h-8 bg-slate-700" />
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenSettings}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-300 bg-slate-800 rounded-xl hover:bg-slate-700 hover:text-white transition-all"
+              >
+                <Download size={14} />
+                Export
+              </button>
+              <a
+                href={`mailto:support@skystatus.pro?subject=${encodeURIComponent('Bug Report - SkyStatus v2.0 beta')}&body=${encodeURIComponent('Hi SkyStatus team,\n\nI found an issue:\n\n**What happened:**\n[Describe what went wrong]\n\n**What I expected:**\n[Describe what should have happened]\n\n**Steps to reproduce:**\n1. \n2. \n3. \n\n**Browser/Device:**\n[e.g., Chrome on Windows, Safari on iPhone]\n\n**Screenshot:**\n[Please attach a screenshot if possible]\n\n---\nSent from SkyStatus v2.0 beta')}`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25"
+              >
+                <Bug size={14} />
+                Report Bug
+              </a>
+            </div>
+          </div>
         </div>
       </main>
     </div>
