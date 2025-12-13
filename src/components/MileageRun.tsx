@@ -23,6 +23,11 @@ import {
   Clock,
   Globe,
   Star,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  MessageSquare,
 } from 'lucide-react';
 
 import { CabinClass, XPRecord } from '../types';
@@ -34,6 +39,7 @@ import {
 import { calculateMultiYearStats } from '../utils/xp-logic';
 import { formatNumber } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
+import { submitFeedback } from '../lib/feedbackService';
 import { PLATINUM_THRESHOLD, GOLD_THRESHOLD, SILVER_THRESHOLD } from '../constants';
 import { Tooltip } from './Tooltip';
 
@@ -464,6 +470,19 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
 
   const [segments, setSegments] = useState<EditableSegment[]>([]);
   const [unknownAirports, setUnknownAirports] = useState<string[]>([]);
+  
+  // Disclaimer & Report state
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportForm, setReportForm] = useState({
+    route: '',
+    calculatedXP: '',
+    actualXP: '',
+    cabin: 'Economy' as CabinClass,
+    notes: '',
+  });
+  const [reportSending, setReportSending] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
 
   // Calculate Status
   const currentStatusData = useMemo(() => {
@@ -622,6 +641,222 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
           </div>
         </div>
       </div>
+
+      {/* XP Calculation Disclaimer Banner */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <Info size={16} className="text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                XP calculations are estimates based on distance
+              </p>
+              <p className="text-xs text-amber-700">
+                Some routes may differ from actual Flying Blue values
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors"
+            >
+              <MessageSquare size={12} />
+              Report Issue
+            </button>
+            <button
+              onClick={() => setShowDisclaimer(!showDisclaimer)}
+              className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+            >
+              {showDisclaimer ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          </div>
+        </div>
+        
+        {/* Expandable Details */}
+        {showDisclaimer && (
+          <div className="px-4 pb-4 pt-2 border-t border-amber-200 bg-amber-50/50">
+            <div className="space-y-3 text-xs text-amber-800">
+              <div>
+                <p className="font-semibold mb-1">How we calculate XP:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-amber-700">
+                  <li>Flight distance determines the category (Domestic, Short, Medium, Long 1/2/3)</li>
+                  <li>Cabin class and your status determine the XP multiplier</li>
+                  <li>This follows the official Flying Blue distance bands</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">Why estimates may differ:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-amber-700">
+                  <li>AF/KLM manually override certain routes near category boundaries</li>
+                  <li>Example: AMS-PEK is Long 3 (not Long 2) despite the distance</li>
+                  <li>These overrides aren't publicly documented</li>
+                </ul>
+              </div>
+              <p className="text-amber-600 italic">
+                💡 Tip: Your Dashboard shows actual XP from imported PDFs, which reflects these exceptions.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Report Issue Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <MessageSquare size={20} className="text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Report XP Discrepancy</h3>
+                  <p className="text-xs text-slate-500">Help us improve our calculations</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowReportModal(false); setReportSent(false); }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            {reportSent ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <Send size={24} className="text-emerald-600" />
+                </div>
+                <h4 className="text-lg font-bold text-slate-900 mb-2">Thanks for your report!</h4>
+                <p className="text-sm text-slate-500 mb-4">
+                  We'll investigate this route and update our calculations if needed.
+                </p>
+                <button
+                  onClick={() => { setShowReportModal(false); setReportSent(false); }}
+                  className="px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setReportSending(true);
+                  
+                  // Send via Supabase feedback table
+                  const message = [
+                    `Route: ${reportForm.route}`,
+                    `Cabin: ${reportForm.cabin}`,
+                    `Calculated XP: ${reportForm.calculatedXP}`,
+                    `Actual XP: ${reportForm.actualXP}`,
+                    `Difference: ${Number(reportForm.actualXP) - Number(reportForm.calculatedXP)} XP`,
+                    reportForm.notes ? `Notes: ${reportForm.notes}` : null,
+                  ].filter(Boolean).join('\n');
+                  
+                  const success = await submitFeedback({
+                    trigger: 'xp_discrepancy',
+                    message,
+                    page: 'xp_run_simulator',
+                  });
+                  
+                  setReportSending(false);
+                  if (success) {
+                    setReportSent(true);
+                    setReportForm({ route: '', calculatedXP: '', actualXP: '', cabin: 'Economy', notes: '' });
+                  } else {
+                    alert('Failed to send report. Please try again.');
+                  }
+                }}
+                className="p-6 space-y-4"
+              >
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Route (e.g., AMS-PEK or AMS-CDG-JFK)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={reportForm.route}
+                    onChange={(e) => setReportForm({ ...reportForm, route: e.target.value.toUpperCase() })}
+                    placeholder="AMS-PEK"
+                    className={inputBase}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Cabin</label>
+                    <select
+                      value={reportForm.cabin}
+                      onChange={(e) => setReportForm({ ...reportForm, cabin: e.target.value as CabinClass })}
+                      className={inputBase}
+                    >
+                      <option value="Economy">Economy</option>
+                      <option value="PremiumEconomy">Premium Eco</option>
+                      <option value="Business">Business</option>
+                      <option value="First">First</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Calculated</label>
+                    <input
+                      type="number"
+                      required
+                      value={reportForm.calculatedXP}
+                      onChange={(e) => setReportForm({ ...reportForm, calculatedXP: e.target.value })}
+                      placeholder="15"
+                      className={inputBase}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">Actual XP</label>
+                    <input
+                      type="number"
+                      required
+                      value={reportForm.actualXP}
+                      onChange={(e) => setReportForm({ ...reportForm, actualXP: e.target.value })}
+                      placeholder="20"
+                      className={inputBase}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    value={reportForm.notes}
+                    onChange={(e) => setReportForm({ ...reportForm, notes: e.target.value })}
+                    placeholder="Any additional context..."
+                    rows={2}
+                    className={inputBase}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={reportSending}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50"
+                >
+                  {reportSending ? (
+                    <>Sending...</>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Send Report
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* --- LEFT COLUMN: Status + Input --- */}
