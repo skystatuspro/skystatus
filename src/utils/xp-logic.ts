@@ -13,6 +13,10 @@ import {
   PLATINUM_THRESHOLD,
   GOLD_THRESHOLD,
   SILVER_THRESHOLD,
+  ULTIMATE_UXP_THRESHOLD,
+  UXP_YEARLY_CAP,
+  UXP_ROLLOVER_MAX,
+  UXP_ELIGIBLE_AIRLINES,
 } from '../constants';
 
 // ============================================================================
@@ -85,6 +89,42 @@ const getStatusFromXP = (xp: number): StatusLevel => {
   if (xp >= GOLD_THRESHOLD) return 'Gold';
   if (xp >= SILVER_THRESHOLD) return 'Silver';
   return 'Explorer';
+};
+
+// ============================================================================
+// UXP (ULTIMATE XP) HELPERS
+// ============================================================================
+
+/** Check if an airline generates UXP (only KLM/AF flights) */
+export const isUXPEligible = (airline: string): boolean => {
+  const normalizedAirline = airline.toUpperCase().replace(/\s+/g, '');
+  return UXP_ELIGIBLE_AIRLINES.some(code => 
+    normalizedAirline === code || normalizedAirline.startsWith(code)
+  );
+};
+
+/** Calculate UXP from a single flight (only KLM/AF flights generate UXP) */
+export const getFlightUXP = (flight: FlightRecord): number => {
+  if (!isUXPEligible(flight.airline)) return 0;
+  // UXP = base XP + SAF XP for KLM/AF flights
+  return (flight.earnedXP || 0) + (flight.safXp || 0);
+};
+
+/** Check if Ultimate status is achieved (Platinum + 900 UXP) */
+export const isUltimateStatus = (status: StatusLevel, uxp: number): boolean => {
+  return status === 'Platinum' && uxp >= ULTIMATE_UXP_THRESHOLD;
+};
+
+/** Apply yearly UXP cap (1800 max) */
+export const getEffectiveUXP = (rawUXP: number): number => {
+  return Math.min(rawUXP, UXP_YEARLY_CAP);
+};
+
+/** Calculate UXP rollover to next year (max 900) */
+export const calculateUXPRollover = (totalUXP: number): number => {
+  // Only UXP above 900 (Ultimate threshold) can roll over, up to 900 max
+  const excessUXP = Math.max(0, totalUXP - ULTIMATE_UXP_THRESHOLD);
+  return Math.min(excessUXP, UXP_ROLLOVER_MAX);
 };
 
 // ============================================================================
@@ -197,6 +237,13 @@ export interface XPLedgerRow {
   actualXP: number; // XP van gevlogen vluchten in deze maand
   projectedXP: number; // XP van geplande vluchten in deze maand
   actualCumulative: number; // Cumulatief XP alleen van gevlogen vluchten
+
+  // UXP fields (Ultimate XP from KLM/AF flights only)
+  uxp: number;                    // UXP earned this month
+  cumulativeUXP: number;          // Cumulative UXP in this cycle (projected)
+  actualUXP: number;              // UXP from flown flights this month
+  projectedUXP: number;           // UXP from scheduled flights this month
+  actualCumulativeUXP: number;    // Cumulative UXP from flown flights only
 }
 
 export interface QualificationCycleStats {
@@ -236,6 +283,15 @@ export interface QualificationCycleStats {
   currentStatus: StatusLevel; // = actualStatus
   currentXP: number; // = actualXP
   currentXPToNext: number; // = actualXPToNext
+
+  // UXP (Ultimate XP) tracking - only shown to Platinum/Ultimate members
+  uxpRolloverIn: number;          // UXP carried over from previous cycle
+  totalUXP: number;               // Total UXP in this cycle (projected, capped at 1800)
+  actualUXP: number;              // Actual UXP from flown flights
+  projectedUXP: number;           // Projected UXP including scheduled flights
+  uxpRolloverOut: number;         // UXP to roll over to next cycle (max 900)
+  isUltimate: boolean;            // Current Ultimate status (actual)
+  projectedUltimate: boolean;     // Projected Ultimate status
 }
 
 export interface MultiCycleStats {
@@ -254,6 +310,10 @@ interface FlightMonthAggregate {
   projectedFlightXP: number; // Alleen gepland
   projectedFlightSafXP: number;
   projectedFlightCount: number;
+  // UXP tracking (only KLM/AF flights)
+  flightUXP: number;            // Total UXP this month
+  actualFlightUXP: number;      // UXP from flown flights
+  projectedFlightUXP: number;   // UXP from scheduled flights
 }
 
 interface MonthData {
@@ -271,6 +331,10 @@ interface MonthData {
   projectedFlightXP: number;
   projectedFlightSafXP: number;
   isFullyPast: boolean;
+  // UXP tracking (only KLM/AF flights)
+  flightUXP: number;            // Total UXP this month
+  actualFlightUXP: number;      // UXP from flown flights
+  projectedFlightUXP: number;   // UXP from scheduled flights
 }
 
 // ============================================================================
@@ -297,10 +361,14 @@ const aggregateFlightsByMonth = (
       projectedFlightXP: 0,
       projectedFlightSafXP: 0,
       projectedFlightCount: 0,
+      flightUXP: 0,
+      actualFlightUXP: 0,
+      projectedFlightUXP: 0,
     };
 
     const xp = flight.earnedXP ?? 0;
     const safXp = flight.safXp ?? 0;
+    const uxp = getFlightUXP(flight);
 
     map.set(monthKey, {
       flightXP: prev.flightXP + xp,
@@ -313,6 +381,9 @@ const aggregateFlightsByMonth = (
       projectedFlightSafXP:
         prev.projectedFlightSafXP + (flightIsFlown ? 0 : safXp),
       projectedFlightCount: prev.projectedFlightCount + (flightIsFlown ? 0 : 1),
+      flightUXP: prev.flightUXP + uxp,
+      actualFlightUXP: prev.actualFlightUXP + (flightIsFlown ? uxp : 0),
+      projectedFlightUXP: prev.projectedFlightUXP + (flightIsFlown ? 0 : uxp),
     });
   }
 
@@ -344,6 +415,9 @@ const buildMonthDataList = (
       projectedFlightXP: 0,
       projectedFlightSafXP: 0,
       projectedFlightCount: 0,
+      flightUXP: 0,
+      actualFlightUXP: 0,
+      projectedFlightUXP: 0,
     };
     const manual: ManualMonthXP = manualLedger[month] ?? {
       amexXp: 0,
@@ -380,6 +454,10 @@ const buildMonthDataList = (
         projectedFlightXP: 0,
         projectedFlightSafXP: 0,
         isFullyPast: true,
+        // Legacy data has no UXP tracking (predates Ultimate)
+        flightUXP: 0,
+        actualFlightUXP: 0,
+        projectedFlightUXP: 0,
       };
     }
 
@@ -397,6 +475,10 @@ const buildMonthDataList = (
       projectedFlightXP: agg.projectedFlightXP,
       projectedFlightSafXP: agg.projectedFlightSafXP,
       isFullyPast,
+      // UXP tracking from flight aggregates
+      flightUXP: agg.flightUXP,
+      actualFlightUXP: agg.actualFlightUXP,
+      projectedFlightUXP: agg.projectedFlightUXP,
     };
   });
 };
@@ -527,7 +609,9 @@ const processMonth = (
 const buildLedgerRow = (
   processed: ProcessedMonth,
   cumulative: number,
-  actualCumulative: number
+  actualCumulative: number,
+  cumulativeUXP: number,
+  actualCumulativeUXP: number
 ): XPLedgerRow => {
   const { monthData, xpEarned, levelUpCorrection, actualXPEarned } = processed;
   const date = parseMonth(monthData.month);
@@ -535,6 +619,11 @@ const buildLedgerRow = (
 
   const isFullyFlown = monthData.isFullyPast;
   const isFuture = monthData.month > currentMonth;
+
+  // UXP for this month
+  const monthUXP = monthData.flightUXP;
+  const monthActualUXP = monthData.actualFlightUXP;
+  const monthProjectedUXP = monthData.projectedFlightUXP;
 
   return {
     month: monthData.month,
@@ -570,6 +659,13 @@ const buildLedgerRow = (
     actualXP: actualXPEarned,
     projectedXP: xpEarned - actualXPEarned,
     actualCumulative,
+
+    // UXP fields
+    uxp: monthUXP,
+    cumulativeUXP,
+    actualUXP: monthActualUXP,
+    projectedUXP: monthProjectedUXP,
+    actualCumulativeUXP,
   };
 };
 
@@ -593,6 +689,7 @@ interface FinalizeCycleParams {
   finalBalance: number;
   actualStatus: StatusLevel;
   actualBalance: number;
+  uxpRolloverIn: number;
 }
 
 const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => {
@@ -610,6 +707,7 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
     finalBalance,
     actualStatus,
     actualBalance,
+    uxpRolloverIn,
   } = params;
 
   const grossXP =
@@ -682,6 +780,27 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
     }
   }
 
+  // UXP calculations
+  // Sum UXP from ledger (includes rollover from first row's cumulative)
+  const totalUXPFromFlights = ledger.reduce((sum, row) => sum + row.uxp, 0);
+  const rawTotalUXP = uxpRolloverIn + totalUXPFromFlights;
+  const totalUXP = getEffectiveUXP(rawTotalUXP); // Apply 1800 cap
+
+  // Actual UXP = UXP from flown flights only
+  const actualUXPFromFlights = ledger.reduce((sum, row) => sum + row.actualUXP, 0);
+  const rawActualUXP = uxpRolloverIn + actualUXPFromFlights;
+  const cycleActualUXP = getEffectiveUXP(rawActualUXP);
+
+  // Projected UXP = total including scheduled flights
+  const projectedUXP = totalUXP;
+
+  // UXP rollover to next cycle (max 900, only excess above threshold)
+  const uxpRolloverOut = calculateUXPRollover(totalUXP);
+
+  // Ultimate status checks
+  const isUltimate = isUltimateStatus(currentActualStatus, cycleActualUXP);
+  const projectedUltimate = isUltimateStatus(projectedStatus, projectedUXP);
+
   return {
     cycleIndex,
     startDate,
@@ -714,6 +833,15 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
     currentStatus: currentActualStatus,
     currentXP: actualXP,
     currentXPToNext: actualXPToNext,
+
+    // UXP fields
+    uxpRolloverIn,
+    totalUXP,
+    actualUXP: cycleActualUXP,
+    projectedUXP,
+    uxpRolloverOut,
+    isUltimate,
+    projectedUltimate,
   };
 };
 
@@ -722,7 +850,8 @@ const buildEmptyCycle = (
   startMonth: string,
   startStatus: StatusLevel,
   rolloverIn: number,
-  currentMonth: string
+  currentMonth: string,
+  uxpRolloverIn: number = 0
 ): QualificationCycleStats => {
   const endMonth = getNaturalEndMonth(startMonth);
   const months = getMonthRange(startMonth, endMonth);
@@ -760,6 +889,12 @@ const buildEmptyCycle = (
       actualXP: 0,
       projectedXP: 0,
       actualCumulative: rolloverIn,
+      // UXP fields
+      uxp: 0,
+      cumulativeUXP: uxpRolloverIn,
+      actualUXP: 0,
+      projectedUXP: 0,
+      actualCumulativeUXP: uxpRolloverIn,
     };
   });
 
@@ -770,6 +905,9 @@ const buildEmptyCycle = (
 
   const isCurrentInCycle =
     currentMonth >= startMonth && currentMonth <= endMonth;
+
+  // UXP calculations for empty cycle
+  const isUltimate = isUltimateStatus(startStatus, uxpRolloverIn);
 
   return {
     cycleIndex,
@@ -802,6 +940,15 @@ const buildEmptyCycle = (
     currentStatus: startStatus,
     currentXP: rolloverIn,
     currentXPToNext: xpToNext,
+
+    // UXP fields
+    uxpRolloverIn,
+    totalUXP: uxpRolloverIn,
+    actualUXP: uxpRolloverIn,
+    projectedUXP: uxpRolloverIn,
+    uxpRolloverOut: calculateUXPRollover(uxpRolloverIn),
+    isUltimate,
+    projectedUltimate: isUltimate,
   };
 };
 
@@ -849,7 +996,8 @@ export const calculateQualificationCycles = (
       cycleStart,
       initialStatus,
       initialRollover,
-      currentMonth
+      currentMonth,
+      0 // uxpRolloverIn = 0 for empty cycle
     );
 
     return { cycles: [cycle] };
@@ -904,6 +1052,7 @@ export const calculateQualificationCycles = (
   let cycleStartMonth = initialCycleStart;
   let cycleStartStatus: StatusLevel = state.status;
   let rolloverIn = initialRollover;
+  let uxpRolloverIn = 0; // UXP rollover starts at 0 (no prior Ultimate history)
 
   // Bouw cycli door totdat de start van een volgende cyclus
   // voorbij de relevante horizon ligt.
@@ -912,6 +1061,10 @@ export const calculateQualificationCycles = (
     const months = getMonthRange(cycleStartMonth, naturalEndMonth);
 
     const ledger: XPLedgerRow[] = [];
+
+    // Track cumulative UXP for this cycle
+    let cumulativeUXP = uxpRolloverIn;
+    let actualCumulativeUXP = uxpRolloverIn;
 
     // Track projected level-up in deze cyclus (label)
     let cycleProjectedLevelUpOccurred = false;
@@ -942,14 +1095,23 @@ export const calculateQualificationCycles = (
           projectedFlightXP: 0,
           projectedFlightSafXP: 0,
           isFullyPast: isMonthFullyPast(month),
+          flightUXP: 0,
+          actualFlightUXP: 0,
+          projectedFlightUXP: 0,
         };
 
       const { processed, newState } = processMonth(monthData, state);
 
+      // Update cumulative UXP for this month
+      cumulativeUXP += monthData.flightUXP;
+      actualCumulativeUXP += monthData.actualFlightUXP;
+
       const ledgerRow = buildLedgerRow(
         processed,
         newState.balance,
-        newState.actualBalance
+        newState.actualBalance,
+        cumulativeUXP,
+        actualCumulativeUXP
       );
       ledger.push(ledgerRow);
 
@@ -1000,6 +1162,7 @@ export const calculateQualificationCycles = (
       finalBalance: state.balance,
       actualStatus: state.actualStatus,
       actualBalance: state.actualBalance,
+      uxpRolloverIn,
     });
 
     cycles.push(cycle);
@@ -1014,12 +1177,14 @@ export const calculateQualificationCycles = (
       cycleStartMonth = getFirstOfNextMonth(cycleActualLevelUpMonth);
       cycleStartStatus = state.actualStatus;
       rolloverIn = state.actualBalance;
+      uxpRolloverIn = cycle.uxpRolloverOut;
     } else {
       // Geen ACTUAL level-up: volgende cyclus start na het natuurlijke einde
       const endMonth = getNaturalEndMonth(cycleStartMonth);
       cycleStartMonth = getFirstOfNextMonth(endMonth);
       cycleStartStatus = cycle.endStatus;
       rolloverIn = cycle.rolloverOut;
+      uxpRolloverIn = cycle.uxpRolloverOut;
     }
 
     // Stop als we voorbij de horizon zijn
