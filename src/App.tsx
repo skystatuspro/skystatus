@@ -347,7 +347,15 @@ export default function App() {
         );
 
       case 'mileageRun':
-        return <MileageRun xpData={state.xpData} rollover={state.xpRollover} />;
+        return (
+          <MileageRun 
+            xpData={state.xpData} 
+            rollover={state.xpRollover}
+            flights={state.flights}
+            manualLedger={state.manualLedger}
+            qualificationSettings={state.qualificationSettings}
+          />
+        );
 
       default:
         return (

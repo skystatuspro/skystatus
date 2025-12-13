@@ -30,13 +30,14 @@ import {
   MessageSquare,
 } from 'lucide-react';
 
-import { CabinClass, XPRecord } from '../types';
+import { CabinClass, XPRecord, FlightRecord, ManualXPLedger, QualificationSettings } from '../types';
 import {
   AIRPORTS,
   DistanceBand,
   calculateXPForRoute,
 } from '../utils/airports';
-import { calculateMultiYearStats } from '../utils/xp-logic';
+import { calculateQualificationCycles } from '../utils/xp-logic';
+import { findActiveCycle } from './Dashboard/helpers';
 import { formatNumber } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
 import { submitFeedback } from '../lib/feedbackService';
@@ -63,6 +64,9 @@ interface EditableSegment {
 interface MileageRunProps {
   xpData: XPRecord[];
   rollover: number;
+  flights: FlightRecord[];
+  manualLedger: ManualXPLedger;
+  qualificationSettings: QualificationSettings;
 }
 
 type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
@@ -220,48 +224,109 @@ const KPI: React.FC<any> = ({ title, value, subtitle, icon: Icon, badgeText, bad
 };
 
 const StatusProjectionCard: React.FC<{
-  currentXP: number;
+  actualXP: number;
+  projectedXP: number;
   runXP: number;
-  currentStatus: StatusLevel;
+  actualStatus: StatusLevel;
   projectedStatus: StatusLevel;
-}> = ({ currentXP, runXP, currentStatus, projectedStatus }) => {
-  const projectedXP = currentXP + runXP;
-  const nextTarget = getNextThreshold(currentXP);
-  const projectedNextTarget = getNextThreshold(projectedXP);
+  segments: EditableSegment[];
+}> = ({ actualXP, projectedXP, runXP, actualStatus, projectedStatus, segments }) => {
+  // After run calculations
+  const actualAfterRun = actualXP + runXP;
+  const projectedAfterRun = projectedXP + runXP;
+  const actualStatusAfterRun = getStatusFromXP(actualAfterRun);
+  const projectedStatusAfterRun = getStatusFromXP(projectedAfterRun);
   
-  const currentTheme = getStatusTheme(currentStatus);
-  const projectedTheme = getStatusTheme(projectedStatus);
+  const hasScheduledFlights = projectedXP > actualXP;
+  const scheduledXP = projectedXP - actualXP;
   
-  const isUpgrade = projectedStatus !== currentStatus && runXP > 0;
-  const xpToNext = Math.max(0, nextTarget.xp - currentXP);
-  const xpToNextAfterRun = Math.max(0, projectedNextTarget.xp - projectedXP);
+  const projectedTheme = getStatusTheme(projectedStatusAfterRun);
+  const actualTheme = getStatusTheme(actualStatusAfterRun);
   
-  // Progress calculation
-  const currentLevelStart = currentStatus === 'Platinum' ? PLATINUM_THRESHOLD : 
-    currentStatus === 'Gold' ? GOLD_THRESHOLD : 
-    currentStatus === 'Silver' ? SILVER_THRESHOLD : 0;
-  const currentLevelEnd = nextTarget.xp;
-  const progressRange = currentLevelEnd - currentLevelStart;
-  const currentProgress = progressRange > 0 ? ((currentXP - currentLevelStart) / progressRange) * 100 : 100;
-  const projectedProgress = progressRange > 0 ? ((projectedXP - currentLevelStart) / progressRange) * 100 : 100;
+  const isActualUpgrade = actualStatusAfterRun !== actualStatus && runXP > 0;
+  const isProjectedUpgrade = projectedStatusAfterRun !== projectedStatus && runXP > 0;
+  
+  // Next targets
+  const actualNextTarget = getNextThreshold(actualAfterRun);
+  const projectedNextTarget = getNextThreshold(projectedAfterRun);
+  const xpToNextActual = Math.max(0, actualNextTarget.xp - actualAfterRun);
+  const xpToNextProjected = Math.max(0, projectedNextTarget.xp - projectedAfterRun);
+  
+  // Smart tips
+  const getTips = () => {
+    const tips: { icon: React.ReactNode; text: string; type: 'success' | 'info' | 'tip' }[] = [];
+    
+    // Upgrade achieved
+    if (isActualUpgrade) {
+      tips.push({
+        icon: <Sparkles size={14} />,
+        text: `This run gets you to ${actualStatusAfterRun}!`,
+        type: 'success'
+      });
+    } else if (isProjectedUpgrade && hasScheduledFlights) {
+      tips.push({
+        icon: <Sparkles size={14} />,
+        text: `Combined with scheduled flights, you'll reach ${projectedStatusAfterRun}!`,
+        type: 'success'
+      });
+    }
+    
+    // Close to next level
+    if (!isActualUpgrade && xpToNextActual > 0 && xpToNextActual <= 30) {
+      tips.push({
+        icon: <Target size={14} />,
+        text: `Only ${xpToNextActual} XP away from ${actualNextTarget.level}!`,
+        type: 'info'
+      });
+    }
+    
+    // Stopover suggestion
+    if (runXP > 0 && segments.length >= 2 && segments.length <= 4) {
+      const avgXPPerSegment = runXP / segments.length;
+      if (avgXPPerSegment < 15) {
+        tips.push({
+          icon: <MapPin size={14} />,
+          text: 'Add a stopover hub (CDG/AMS) for bonus XP on long routes',
+          type: 'tip'
+        });
+      }
+    }
+    
+    // Coverage percentage
+    if (runXP > 0 && !isActualUpgrade && xpToNextActual > 0) {
+      const xpNeededBefore = getNextThreshold(actualXP).xp - actualXP;
+      const coverage = Math.min(100, Math.round((runXP / xpNeededBefore) * 100));
+      if (coverage >= 50 && coverage < 100) {
+        tips.push({
+          icon: <TrendingUp size={14} />,
+          text: `This covers ${coverage}% of your path to ${actualNextTarget.level}`,
+          type: 'info'
+        });
+      }
+    }
+    
+    return tips.slice(0, 2); // Max 2 tips
+  };
+  
+  const tips = getTips();
 
   return (
     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
       {/* Header */}
-      <div className={`bg-gradient-to-r ${projectedTheme.gradient} p-6 text-white relative overflow-hidden`}>
+      <div className={`bg-gradient-to-r ${projectedTheme.gradient} p-5 text-white relative overflow-hidden`}>
         <div className="absolute top-0 right-0 opacity-10">
-          <Award size={120} />
+          <Award size={100} />
         </div>
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <Plane size={16} className="opacity-80" />
-            <span className="text-xs font-bold uppercase tracking-wider opacity-80">Status Projection</span>
+          <div className="flex items-center gap-2 mb-1">
+            <Plane size={14} className="opacity-80" />
+            <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Status Projection</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-3xl font-black">{projectedStatus}</span>
-            {isUpgrade && (
-              <span className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold">
-                <Sparkles size={12} />
+            <span className="text-2xl font-black">{projectedStatusAfterRun}</span>
+            {(isActualUpgrade || isProjectedUpgrade) && (
+              <span className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold">
+                <Sparkles size={10} />
                 Upgrade!
               </span>
             )}
@@ -269,110 +334,111 @@ const StatusProjectionCard: React.FC<{
         </div>
       </div>
 
-      {/* Progress Section */}
-      <div className="p-6">
-        {/* XP Journey */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-center">
-            <div className="text-xs font-bold text-slate-400 uppercase mb-1">Current</div>
-            <div className="text-2xl font-black text-slate-800">{currentXP}</div>
-            <div className={`text-xs font-bold ${currentTheme.accent}`}>{currentStatus}</div>
+      {/* XP Breakdown */}
+      <div className="p-5 space-y-4">
+        {/* Actual XP Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+            <span className="text-xs font-semibold text-slate-600">Actual XP</span>
+            <Tooltip text="XP from flights you've already taken" />
           </div>
-          
-          <div className="flex-1 mx-4 flex items-center">
-            <div className="flex-1 h-0.5 bg-slate-200" />
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-800">{actualXP}</span>
             {runXP > 0 && (
-              <div className="mx-2 flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-100">
-                <TrendingUp size={12} />
-                +{runXP}
-              </div>
+              <>
+                <ArrowRight size={12} className="text-slate-300" />
+                <span className={`text-sm font-black ${isActualUpgrade ? 'text-emerald-600' : 'text-slate-800'}`}>
+                  {actualAfterRun}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                  +{runXP}
+                </span>
+              </>
             )}
-            <div className="flex-1 h-0.5 bg-slate-200" />
-          </div>
-          
-          <div className="text-center">
-            <div className="text-xs font-bold text-slate-400 uppercase mb-1">After Run</div>
-            <div className={`text-2xl font-black ${isUpgrade ? 'text-emerald-600' : 'text-slate-800'}`}>
-              {projectedXP}
-            </div>
-            <div className={`text-xs font-bold ${projectedTheme.accent}`}>{projectedStatus}</div>
           </div>
         </div>
-
-        {/* Progress Bar to Next Level */}
-        {projectedStatus !== 'Platinum' && (
-          <div className="mb-4">
-            <div className="flex justify-between items-center text-xs mb-2">
-              <span className="font-bold text-slate-500">Progress to {nextTarget.level}</span>
-              <span className="font-bold text-slate-700">{Math.min(projectedXP, nextTarget.xp)} / {nextTarget.xp} XP</span>
+        
+        {/* Projected XP Row (only show if different from actual) */}
+        {hasScheduledFlights && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+              <span className="text-xs font-semibold text-slate-600">Projected XP</span>
+              <Tooltip text="Including scheduled/future flights" />
             </div>
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden relative">
-              {/* Current progress (darker) */}
-              <div 
-                className={`absolute inset-y-0 left-0 bg-gradient-to-r ${currentTheme.gradient} rounded-full transition-all duration-500`}
-                style={{ width: `${Math.min(100, currentProgress)}%` }}
-              />
-              {/* Projected progress (lighter overlay) */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-800">{projectedXP}</span>
+              <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">
+                +{scheduledXP} scheduled
+              </span>
               {runXP > 0 && (
-                <div 
-                  className={`absolute inset-y-0 left-0 bg-gradient-to-r ${projectedTheme.gradient} opacity-50 rounded-full transition-all duration-500`}
-                  style={{ width: `${Math.min(100, projectedProgress)}%` }}
-                />
+                <>
+                  <ArrowRight size={12} className="text-slate-300" />
+                  <span className={`text-sm font-black ${isProjectedUpgrade ? 'text-emerald-600' : 'text-slate-800'}`}>
+                    {projectedAfterRun}
+                  </span>
+                </>
               )}
             </div>
           </div>
         )}
+        
+        {/* Progress Bar */}
+        {actualStatusAfterRun !== 'Platinum' && (
+          <div className="pt-2">
+            <div className="flex justify-between items-center text-[10px] mb-1.5">
+              <span className="font-bold text-slate-400 uppercase">To {actualNextTarget.level}</span>
+              <span className="font-bold text-slate-600">{xpToNextActual > 0 ? `${xpToNextActual} XP needed` : 'Achieved!'}</span>
+            </div>
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
+              <div 
+                className={`absolute inset-y-0 left-0 bg-gradient-to-r ${actualTheme.gradient} rounded-full transition-all duration-500`}
+                style={{ width: `${Math.min(100, (actualAfterRun / actualNextTarget.xp) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
 
-        {/* Status Insight */}
-        <div className={`p-4 rounded-xl ${isUpgrade ? 'bg-emerald-50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
-          {isUpgrade ? (
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
-                <Sparkles size={16} />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-emerald-800">
-                  This run upgrades you to {projectedStatus}!
+        {/* Smart Tips */}
+        {tips.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            {tips.map((tip, i) => (
+              <div 
+                key={i}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-xs ${
+                  tip.type === 'success' ? 'bg-emerald-50 text-emerald-700' :
+                  tip.type === 'info' ? 'bg-blue-50 text-blue-700' :
+                  'bg-amber-50 text-amber-700'
+                }`}
+              >
+                <div className={`p-1 rounded-lg ${
+                  tip.type === 'success' ? 'bg-emerald-100' :
+                  tip.type === 'info' ? 'bg-blue-100' :
+                  'bg-amber-100'
+                }`}>
+                  {tip.icon}
                 </div>
-                <div className="text-xs text-emerald-600">
-                  {xpToNextAfterRun > 0 
-                    ? `${xpToNextAfterRun} XP more to ${projectedNextTarget.level}` 
-                    : 'Maximum status achieved'}
-                </div>
+                <span className="font-medium">{tip.text}</span>
               </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Empty state */}
+        {runXP === 0 && tips.length === 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="p-2 rounded-lg bg-slate-200 text-slate-500">
+              <Clock size={14} />
             </div>
-          ) : runXP > 0 ? (
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                <Target size={16} />
+            <div>
+              <div className="text-xs font-bold text-slate-700">
+                {getNextThreshold(actualXP).xp - actualXP} XP needed for {getNextThreshold(actualXP).level}
               </div>
-              <div>
-                <div className="text-sm font-bold text-slate-800">
-                  {xpToNext - runXP > 0 
-                    ? `${xpToNext - runXP} XP more needed for ${nextTarget.level}`
-                    : `You'll reach ${nextTarget.level}!`}
-                </div>
-                <div className="text-xs text-slate-500">
-                  This run covers {Math.min(100, Math.round((runXP / xpToNext) * 100))}% of the gap
-                </div>
-              </div>
+              <div className="text-[10px] text-slate-500">Enter a route to see projection</div>
             </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-slate-200 text-slate-500">
-                <Clock size={16} />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-700">
-                  {xpToNext} XP needed for {nextTarget.level}
-                </div>
-                <div className="text-xs text-slate-500">
-                  Enter a route to see projection
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -457,7 +523,13 @@ const RunSummary: React.FC<{
 
 // --- Main Component ---
 
-export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
+export const MileageRun: React.FC<MileageRunProps> = ({ 
+  xpData, 
+  rollover, 
+  flights, 
+  manualLedger, 
+  qualificationSettings 
+}) => {
   const { symbol: currencySymbol } = useCurrency();
   const [routeString, setRouteString] = useState('');
   const [defaultCabin, setDefaultCabin] = useState<CabinClass>('Business');
@@ -484,16 +556,21 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
   const [reportSending, setReportSending] = useState(false);
   const [reportSent, setReportSent] = useState(false);
 
-  // Calculate Status
-  const currentStatusData = useMemo(() => {
-    const stats = calculateMultiYearStats(xpData, rollover);
-    const now = new Date();
-    const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-    return stats[currentQYear] || { totalXP: rollover, achievedStatus: 'Explorer' };
-  }, [xpData, rollover]);
-
-  const currentXP = currentStatusData.totalXP;
-  const currentStatus = getStatusFromXP(currentXP);
+  // Calculate Status - use same logic as Dashboard/XPEngine
+  const { cycles } = useMemo(
+    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, qualificationSettings),
+    [xpData, rollover, flights, manualLedger, qualificationSettings]
+  );
+  
+  const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
+  const actualXP = activeCycle?.actualXP ?? 0;
+  const projectedXP = activeCycle?.projectedXP ?? actualXP;
+  const actualStatus = getStatusFromXP(actualXP);
+  const projectedStatus = getStatusFromXP(projectedXP);
+  
+  // For backwards compatibility
+  const currentXP = actualXP;
+  const currentStatus = actualStatus;
   
   // Route Parsing
   useEffect(() => {
@@ -572,10 +649,6 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
   } else {
     costPerXP = runXP > 0 && totalCost > 0 ? totalCost / runXP : 0;
   }
-  
-  // Projections
-  const projectedTotalXP = currentXP + runXP;
-  const projectedStatus = getStatusFromXP(projectedTotalXP);
 
   // Verdict Logic
   const getVerdict = (cpx: number) => {
@@ -864,10 +937,12 @@ export const MileageRun: React.FC<MileageRunProps> = ({ xpData, rollover }) => {
           
           {/* Status Projection Card */}
           <StatusProjectionCard
-            currentXP={currentXP}
+            actualXP={actualXP}
+            projectedXP={projectedXP}
             runXP={runXP}
-            currentStatus={currentStatus}
+            actualStatus={actualStatus}
             projectedStatus={projectedStatus}
+            segments={segments}
           />
           
           {/* Input Card */}
