@@ -6,7 +6,7 @@ interface LegalPageProps {
 }
 
 export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
-  const lastUpdated = '11 December 2024';
+  const lastUpdated = '13 December 2024';
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -68,7 +68,37 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">3. How We Use Your Data</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">3. PDF Import &amp; Processing</h2>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
+              <p className="text-emerald-800 font-medium">
+                🔒 Your Flying Blue PDFs are processed entirely in your browser. The PDF file is never uploaded to our servers.
+              </p>
+            </div>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              When you import a Flying Blue PDF:
+            </p>
+            <ul className="space-y-2 text-slate-600">
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Client-side processing:</strong> The PDF is parsed entirely in your browser using JavaScript (PDF.js). No server is involved.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Data extraction:</strong> We extract only flight data: dates, routes, cabin class, XP earned, and miles. Personal details like your name or Flying Blue number are not stored.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>No file storage:</strong> The original PDF is never saved — not on our servers, not in your browser. Only the extracted flight records are kept.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Your choice:</strong> Extracted data is stored locally (Local Mode) or synced to your account (Cloud Mode), depending on your preference.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">4. How We Use Your Data</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
               We use your data exclusively to:
             </p>
@@ -93,7 +123,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">4. Data Storage & Security</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">5. Data Storage &amp; Security</h2>
             <p className="text-slate-600 leading-relaxed">
               Your data is stored securely using Supabase, a trusted cloud database provider with enterprise-grade security. 
               All data transmission is encrypted using TLS/SSL. We implement row-level security to ensure you can only 
@@ -102,7 +132,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">5. Local Mode</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">6. Local Mode</h2>
             <p className="text-slate-600 leading-relaxed">
               SkyStatus offers a "Local Mode" where your data is stored only in your browser's local storage and is never 
               sent to our servers. In this mode, we have no access to your data whatsoever. Note that local data is 
@@ -111,7 +141,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">6. Your Rights (GDPR)</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">7. Your Rights (GDPR)</h2>
             <p className="text-slate-600 leading-relaxed mb-4">
               Under the General Data Protection Regulation (GDPR), you have the right to:
             </p>
@@ -136,7 +166,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">7. Cookies</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">8. Cookies</h2>
             <p className="text-slate-600 leading-relaxed">
               SkyStatus uses only essential cookies required for authentication and session management. 
               We do not use tracking cookies or third-party advertising cookies. If we add optional analytics 
@@ -145,7 +175,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">8. Third-Party Services</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">9. Third-Party Services</h2>
             <p className="text-slate-600 leading-relaxed">
               We use the following third-party services:
             </p>
@@ -166,7 +196,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">9. Data Retention</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">10. Data Retention</h2>
             <p className="text-slate-600 leading-relaxed">
               We retain your data for as long as your account is active. If you delete your account, all your data 
               will be permanently removed from our servers within 30 days. Backup copies may persist for up to 90 days 
@@ -175,7 +205,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">10. Changes to This Policy</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">11. Changes to This Policy</h2>
             <p className="text-slate-600 leading-relaxed">
               We may update this privacy policy from time to time. We will notify you of any significant changes 
               by posting the new policy on this page and updating the "Last updated" date. We encourage you to 
@@ -184,7 +214,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">11. Contact Us</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">12. Contact Us</h2>
             <p className="text-slate-600 leading-relaxed">
               If you have any questions about this privacy policy or our data practices, please contact us at:
             </p>

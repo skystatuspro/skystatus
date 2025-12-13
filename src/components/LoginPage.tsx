@@ -168,6 +168,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, o
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 placeholder="you@example.com"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
@@ -186,6 +187,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, o
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   placeholder="••••••••"
                   minLength={6}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
