@@ -111,6 +111,7 @@ interface DetectedSegment {
     band: DistanceBand;
     allocatedPrice: number;
     allocatedMiles: number;
+    cabin: CabinClass;
 }
 
 export const FlightIntake: React.FC<FlightIntakeProps> = ({ 
@@ -263,7 +264,8 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         return {
             ...seg,
             allocatedPrice: form.ticketPrice * weight,
-            allocatedMiles: milesForCalc > 0 ? Math.round(milesForCalc * weight) : Math.round(seg.distance) 
+            allocatedMiles: milesForCalc > 0 ? Math.round(milesForCalc * weight) : Math.round(seg.distance),
+            cabin: form.cabin
         };
     });
 
@@ -284,6 +286,15 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
       return { label: 'Standard', color: 'text-slate-500 bg-slate-50 border-slate-100' };
   };
   const yieldBadge = getYieldLabel(cpx);
+
+  // Update cabin for a specific segment and recalculate XP
+  const updateSegmentCabin = (index: number, newCabin: CabinClass) => {
+    setSegments(prev => prev.map((seg, i) => {
+      if (i !== index) return seg;
+      const { xp, band } = calculateXPForRoute(seg.from, seg.to, newCabin);
+      return { ...seg, cabin: newCabin, xp, band };
+    }));
+  };
 
   // Airline selection
   const selectAirline = (code: string) => {
@@ -316,7 +327,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         date: form.date,
         route: `${seg.from}-${seg.to}`,
         airline: form.airline,
-        cabin: form.cabin,
+        cabin: seg.cabin,
         ticketPrice: seg.allocatedPrice,
         earnedMiles: form.earnedMiles > 0 ? seg.allocatedMiles : 0, 
         earnedXP: seg.xp,
@@ -768,12 +779,30 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
                       <div className="text-slate-400 font-mono">{Math.round(seg.distance)}mi</div>
                       <div className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] text-slate-500">{seg.band}</div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      {/* Per-segment cabin selector */}
+                      {isMultiSegment && (
+                        <select
+                          value={seg.cabin}
+                          onChange={(e) => updateSegmentCabin(idx, e.target.value as CabinClass)}
+                          className="text-[10px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1 cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          {cabinOptions.map(cabin => (
+                            <option key={cabin} value={cabin}>{cabin}</option>
+                          ))}
+                        </select>
+                      )}
                       <div className="font-mono text-slate-500">{formatCurrency(seg.allocatedPrice)}</div>
                       <div className="font-bold text-emerald-600 w-12 text-right">+{seg.xp} XP</div>
                     </div>
                   </div>
                 ))}
+                {isMultiSegment && (
+                  <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                    <Layers size={12} />
+                    Tip: Adjust cabin per segment if aircraft types differ (e.g. no Premium Economy on short-haul feeders)
+                  </p>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center py-6 text-slate-400">
