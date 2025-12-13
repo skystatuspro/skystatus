@@ -26,7 +26,7 @@ import {
   INITIAL_REDEMPTIONS,
   INITIAL_FLIGHTS,
   INITIAL_MANUAL_LEDGER,
-} from '../constants';
+} from '../demoData';
 import {
   rebuildLedgersFromFlights,
   FlightIntakePayload,
