@@ -678,6 +678,21 @@ export function useUserData(): UseUserDataReturn {
     setOnboardingCompletedInternal(false);
   }, []);
 
+  const handleEmailConsentChange = useCallback(async (consent: boolean) => {
+    setEmailConsentInternal(consent);
+    
+    // Save to database if logged in
+    if (user && !isDemoMode) {
+      try {
+        await updateProfile(user.id, {
+          email_consent: consent,
+        });
+      } catch (error) {
+        console.error('Error updating email consent:', error);
+      }
+    }
+  }, [user, isDemoMode]);
+
   // -------------------------------------------------------------------------
   // UTILITY
   // -------------------------------------------------------------------------
@@ -748,6 +763,7 @@ export function useUserData(): UseUserDataReturn {
       calculateGlobalCPM,
       handleOnboardingComplete,
       handleRerunOnboarding,
+      handleEmailConsentChange,
     },
     meta: {
       isLoading: dataLoading,

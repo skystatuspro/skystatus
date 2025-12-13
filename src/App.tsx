@@ -518,6 +518,8 @@ export default function App() {
         onLoadDemo={actions.handleLoadDemo}
         onStartOver={actions.handleStartOver}
         onRerunOnboarding={actions.handleRerunOnboarding}
+        emailConsent={meta.emailConsent}
+        onEmailConsentChange={actions.handleEmailConsentChange}
         isDemoMode={meta.isDemoMode || meta.isLocalMode}
         isLocalMode={meta.isLocalMode}
         onExitDemo={actions.handleExitDemoMode}

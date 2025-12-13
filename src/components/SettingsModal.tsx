@@ -13,6 +13,7 @@ import {
   UserX,
   Globe,
   Sparkles,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import PdfImportModal from './PdfImportModal';
@@ -58,6 +59,8 @@ interface SettingsModalProps {
   onLoadDemo: () => void;
   onStartOver?: () => void;
   onRerunOnboarding?: () => void;
+  emailConsent?: boolean;
+  onEmailConsentChange?: (consent: boolean) => void;
   isDemoMode?: boolean;
   isLocalMode?: boolean;
   onExitDemo?: () => void;
@@ -75,6 +78,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLoadDemo,
   onStartOver,
   onRerunOnboarding,
+  emailConsent = false,
+  onEmailConsentChange,
   isDemoMode = false,
   isLocalMode = false,
   onExitDemo,
@@ -586,6 +591,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="px-3 py-2 text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-colors"
                   >
                     Re-run
+                  </button>
+                </div>
+              )}
+
+              {/* Email Updates - only show for logged-in users */}
+              {isLoggedIn && onEmailConsentChange && (
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100">
+                      <Mail className="text-violet-600" size={16} />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800">Email Updates</p>
+                      <p className="text-[11px] text-slate-500">Receive product news and tips</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onEmailConsentChange(!emailConsent);
+                      showToast?.(
+                        emailConsent ? 'Unsubscribed from email updates' : 'Subscribed to email updates',
+                        'success'
+                      );
+                    }}
+                    className={`px-3 py-2 text-xs font-semibold rounded-xl transition-colors ${
+                      emailConsent
+                        ? 'text-violet-600 border border-violet-200 bg-violet-50 hover:bg-violet-100'
+                        : 'text-slate-500 border border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    {emailConsent ? 'Subscribed ✓' : 'Subscribe'}
                   </button>
                 </div>
               )}
