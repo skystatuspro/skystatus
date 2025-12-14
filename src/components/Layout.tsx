@@ -106,9 +106,9 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans flex">
       
-      {/* --- Sidebar (Desktop) --- */}
+      {/* --- Sidebar (Desktop & Mobile) --- */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-slate-900 text-white p-6 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed lg:static inset-y-0 left-0 z-[80] w-72 bg-slate-900 text-white p-6 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } flex flex-col`}
       >
@@ -243,7 +243,7 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* --- Mobile Overlay --- */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/50 z-[79] lg:hidden backdrop-blur-sm"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}

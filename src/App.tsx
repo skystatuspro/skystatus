@@ -477,11 +477,14 @@ export default function App() {
         {renderContent()}
       </Layout>
 
+      {/* WelcomeModal disabled - landing page and demo mode selector handle this now */}
+      {/* 
       <WelcomeModal
         isOpen={meta.showWelcome && !user}
         onLoadDemo={actions.handleLoadDemo}
         onStartEmpty={actions.handleStartEmpty}
       />
+      */}
 
       {/* Onboarding Flow for logged-in users */}
       {user && !meta.onboardingCompleted && !meta.isDemoMode && !meta.isLocalMode && (

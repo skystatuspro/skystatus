@@ -1,14 +1,21 @@
-# Mobile-First Simple Mode
+# Mobile-First Simple Mode + Bug Fixes
 
-Makes Simple Mode the default for mobile users and improves mobile responsiveness.
+Makes Simple Mode the default for mobile users and fixes several bugs.
 
-## What's Changed
+## Bug Fixes
+
+### 1. WelcomeModal Disabled
+The "Welcome Aboard / Load Demo Data / Start Fresh" modal was showing when clicking "Explore Demo" on the landing page. This modal is now disabled - the landing page and demo mode selector handle everything.
+
+### 2. Mobile Logout Button Fixed
+The logout button in the mobile sidebar wasn't responding because the DemoBar overlay had a higher z-index (z-60+) than the sidebar (z-50). Fixed by increasing sidebar z-index to z-[80] when open.
+
+## Mobile-First Changes
 
 ### 1. Mobile Default (useViewMode.ts)
 - Mobile devices (< 768px) now default to Simple Mode
 - Desktop users still get Full Mode by default
 - User preference is saved in localStorage and persists
-- Users can always switch between modes via the toggle
 
 ### 2. SimpleXPPlanner Mobile Improvements
 - Cabin class buttons: 2 columns on mobile, 4 on desktop
@@ -23,14 +30,16 @@ Makes Simple Mode the default for mobile users and improves mobile responsivenes
 
 ```
 src/
+├── App.tsx                       # WelcomeModal disabled
 ├── hooks/
-│   └── useViewMode.ts          # Mobile-first default logic
+│   └── useViewMode.ts            # Mobile-first default logic
 └── components/
+    ├── Layout.tsx                # Higher z-index for mobile sidebar
     ├── MileageRun/
-    │   ├── index.tsx           # View mode switch wrapper
-    │   └── SimpleXPPlanner.tsx # Responsive cabin grid
+    │   ├── index.tsx             # View mode switch wrapper
+    │   └── SimpleXPPlanner.tsx   # Responsive cabin grid
     └── XPEngine/
-        └── SimpleXPEngine.tsx  # Responsive XP breakdown
+        └── SimpleXPEngine.tsx    # Responsive XP breakdown
 ```
 
 ## Installation
@@ -41,33 +50,12 @@ unzip -o skystatus-mobile-simple-mode.zip
 npm run build
 ```
 
-## How Mobile Detection Works
+## Z-Index Changes
 
-```typescript
-const MOBILE_BREAKPOINT = 768; // Same as Tailwind's md breakpoint
+| Component | Before | After |
+|-----------|--------|-------|
+| Mobile Sidebar | z-50 | z-[80] |
+| Mobile Overlay | z-40 | z-[79] |
+| DemoBar | z-[60] | z-[60] (unchanged) |
 
-function isMobileDevice(): boolean {
-  return window.innerWidth < MOBILE_BREAKPOINT;
-}
-
-function getDefaultMode(): ViewMode {
-  return isMobileDevice() ? 'simple' : 'full';
-}
-```
-
-## Behavior
-
-| Device | First Visit | After Preference Set |
-|--------|-------------|---------------------|
-| Mobile (< 768px) | Simple Mode | User's choice |
-| Desktop (≥ 768px) | Full Mode | User's choice |
-
-Once a user clicks "Full View" or "Simple" toggle, their preference is saved and used on future visits regardless of device type.
-
-## Responsive Changes Summary
-
-| Component | Mobile | Desktop |
-|-----------|--------|---------|
-| XP Planner cabin buttons | 2×2 grid | 4×1 row |
-| XP Engine breakdown | Smaller text/gap | Normal text/gap |
-| All Simple components | Single column focus | Wider layouts |
+This ensures the sidebar is always on top when open on mobile.
