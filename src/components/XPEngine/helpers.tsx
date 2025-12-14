@@ -18,6 +18,8 @@ export interface StatusTheme {
   gaugeEnd: string;
   icon: React.ReactNode;
   badge: string;
+  progressBar: string;
+  accentColor: string;
 }
 
 export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false): StatusTheme => {
@@ -33,6 +35,8 @@ export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false)
       gaugeEnd: '#64748b',
       icon: <Crown size={20} strokeWidth={2.5} />,
       badge: 'bg-slate-800 text-white border-slate-700',
+      progressBar: 'from-slate-500 to-slate-400',
+      accentColor: 'text-slate-700',
     };
   }
 
@@ -48,6 +52,8 @@ export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false)
         gaugeEnd: '#6366f1',
         icon: <Plane size={20} strokeWidth={2.5} />,
         badge: 'bg-slate-800 text-white border-slate-700',
+        progressBar: 'from-blue-600 to-indigo-600',
+        accentColor: 'text-blue-600',
       };
     case 'Gold':
       return {
@@ -60,6 +66,8 @@ export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false)
         gaugeEnd: '#eab308',
         icon: <Star size={20} strokeWidth={2.5} />,
         badge: 'bg-amber-100 text-amber-800 border-amber-200',
+        progressBar: 'from-amber-500 to-orange-500',
+        accentColor: 'text-amber-600',
       };
     case 'Silver':
       return {
@@ -72,6 +80,8 @@ export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false)
         gaugeEnd: '#94a3b8',
         icon: <CheckCircle2 size={20} strokeWidth={2.5} />,
         badge: 'bg-slate-100 text-slate-700 border-slate-200',
+        progressBar: 'from-slate-500 to-gray-500',
+        accentColor: 'text-slate-600',
       };
     default:
       return {
@@ -84,6 +94,8 @@ export const getStatusTheme = (status: StatusLevel, isUltimate: boolean = false)
         gaugeEnd: '#14b8a6',
         icon: <Compass size={20} strokeWidth={2.5} />,
         badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        progressBar: 'from-emerald-500 to-teal-500',
+        accentColor: 'text-emerald-600',
       };
   }
 };
