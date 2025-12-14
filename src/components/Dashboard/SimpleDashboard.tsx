@@ -95,6 +95,15 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
   const targetXP = getTargetXP(actualStatus);
   const theme = getStatusTheme(actualStatus, isUltimate);
   
+  // Calculate projected XP (rollover + all month XP including booked flights)
+  const projectedXP = useMemo(() => {
+    if (!activeCycle) return actualXP;
+    const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
+    return activeCycle.rolloverIn + totalMonthXP;
+  }, [activeCycle, actualXP]);
+  
+  const hasProjectedXP = projectedXP > actualXP;
+  
   // Calculate progress
   const progressPercent = Math.min(100, Math.round((actualXP / targetXP) * 100));
   const xpRemaining = Math.max(0, targetXP - actualXP);
@@ -226,9 +235,16 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
               <span className={`text-sm font-semibold ${isUltimate ? 'text-slate-300' : 'text-slate-600'}`}>
                 Your progress
               </span>
-              <span className={`text-sm font-bold ${theme.accentColor}`}>
-                {actualXP} / {targetXP} XP
-              </span>
+              <div className="text-right">
+                <span className={`text-sm font-bold ${theme.accentColor}`}>
+                  {actualXP} / {targetXP} XP
+                </span>
+                {hasProjectedXP && (
+                  <span className={`text-xs ml-1.5 ${isUltimate ? 'text-slate-400' : 'text-blue-500'}`}>
+                    ({projectedXP} projected)
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Progress Bar */}
@@ -255,13 +271,15 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
                   <CheckCircle2 size={18} />
                   <span className="font-semibold">
                     On track — {xpRemaining} XP to go
+                    <span className={`font-normal ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}> • {monthsRemaining} months left</span>
                   </span>
                 </div>
               ) : (
                 <div className={`flex items-center gap-2 ${isUltimate ? 'text-amber-400' : 'text-amber-600'}`}>
                   <AlertCircle size={18} />
                   <span className="font-semibold">
-                    {xpRemaining} XP needed — {monthsRemaining} months left
+                    {xpRemaining} XP needed
+                    <span className={`font-normal ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}> • {monthsRemaining} months left</span>
                   </span>
                 </div>
               )}
@@ -284,13 +302,19 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
         </div>
       </div>
 
-      {/* Miles Card */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-blue-50 rounded-xl">
-            <Wallet className="text-blue-600" size={22} />
+      {/* Miles Card - Clickable */}
+      <button
+        onClick={() => navigateTo('miles')}
+        className="w-full text-left bg-white rounded-2xl border border-slate-100 shadow-sm p-6 hover:border-slate-200 hover:shadow-md transition-all group"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-50 rounded-xl group-hover:bg-blue-100 transition-colors">
+              <Wallet className="text-blue-600" size={22} />
+            </div>
+            <h3 className="font-bold text-slate-900">Your Miles</h3>
           </div>
-          <h3 className="font-bold text-slate-900">Your Miles</h3>
+          <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -307,7 +331,7 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
             <p className="text-sm text-slate-500 font-medium">Estimated value</p>
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
