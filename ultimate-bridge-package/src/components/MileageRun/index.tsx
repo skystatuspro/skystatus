@@ -42,7 +42,8 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   rollover, 
   flights, 
   manualLedger, 
-  qualificationSettings 
+  qualificationSettings,
+  demoStatus
 }) => {
   const { symbol: currencySymbol } = useCurrency();
   const [routeString, setRouteString] = useState('');
@@ -88,12 +89,13 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   const actualUXP = activeCycle?.actualUXP ?? 0;
   const projectedUXP = activeCycle?.projectedUXP ?? actualUXP;
   
-  // Ultimate flag from cycle
-  const isUltimate = activeCycle?.isUltimate ?? false;
+  // Ultimate flag from cycle - also check demoStatus
+  const cycleIsUltimate = activeCycle?.isUltimate ?? false;
+  const isUltimate = demoStatus === 'Ultimate' || cycleIsUltimate;
   
-  // User's current status - use bridge to get correct display status
+  // User's current status - use demoStatus override or bridge
   const rawStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 'Platinum';
-  const currentStatus: StatusLevel = getDisplayStatus(rawStatus, isUltimate);
+  const currentStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawStatus, cycleIsUltimate);
   
   // For backwards compatibility
   const currentXP = actualXP;

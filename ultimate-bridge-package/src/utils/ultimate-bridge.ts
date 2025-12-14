@@ -3,6 +3,9 @@
 
 import { StatusLevel, QualificationSettings } from '../types';
 
+// Platinum threshold for reference
+const PLATINUM_THRESHOLD = 300;
+
 /**
  * Normalizes qualification settings for the core XP logic.
  * 
@@ -49,15 +52,39 @@ export function getDisplayStatus(
 
 /**
  * Determines the display status for projected status.
- * Similar to getDisplayStatus but for projections.
+ * 
+ * This is more complex because:
+ * 1. If projectedUltimate is true and projectedStatus is Platinum → Ultimate
+ * 2. If user is already Ultimate (isUltimate=true) and projected XP >= 300 → Ultimate
+ *    (They will maintain Ultimate if they maintain Platinum)
+ * 
+ * The second case handles the scenario where the core logic might return
+ * a lower status due to calculation issues with 'Ultimate' as input.
  */
 export function getDisplayProjectedStatus(
   projectedStatus: StatusLevel,
-  projectedUltimate: boolean
+  projectedUltimate: boolean,
+  isCurrentlyUltimate: boolean = false,
+  projectedXP: number = 0
 ): StatusLevel {
+  // Case 1: Core logic correctly identified projected Ultimate
   if (projectedUltimate && projectedStatus === 'Platinum') {
     return 'Ultimate';
   }
+  
+  // Case 2: User is currently Ultimate and will maintain Platinum-level XP
+  // They should project as Ultimate (maintaining status)
+  if (isCurrentlyUltimate && projectedXP >= PLATINUM_THRESHOLD) {
+    return 'Ultimate';
+  }
+  
+  // Case 3: User is currently Ultimate but projected status seems wrong
+  // If they have enough XP for Platinum, show Platinum (soft landing from Ultimate)
+  if (isCurrentlyUltimate && projectedXP >= PLATINUM_THRESHOLD && 
+      (projectedStatus === 'Explorer' || projectedStatus === 'Silver' || projectedStatus === 'Gold')) {
+    return 'Platinum';
+  }
+  
   return projectedStatus;
 }
 
