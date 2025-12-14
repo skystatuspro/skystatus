@@ -29,6 +29,7 @@ import { normalizeQualificationSettings, getDisplayStatus } from '../../utils/ul
 import { findActiveCycle } from '../Dashboard/helpers';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
+import { useViewMode } from '../../hooks/useViewMode';
 import { submitFeedback } from '../../lib/feedbackService';
 import { Tooltip } from '../Tooltip';
 
@@ -36,6 +37,7 @@ import { MileageRunProps, EditableSegment, StatusLevel, RunMode, ReportFormData 
 import { INPUT_BASE_CLASS, NO_SPINNER_CLASS, POPULAR_ROUTES } from './constants';
 import { getDistanceInsight } from './helpers';
 import { KPI, StatusProjectionCard, QuickRouteCard, RunSummary } from './components';
+import { SimpleXPPlanner } from './SimpleXPPlanner';
 
 export const MileageRun: React.FC<MileageRunProps> = ({ 
   xpData, 
@@ -46,6 +48,8 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   demoStatus
 }) => {
   const { symbol: currencySymbol } = useCurrency();
+  const { isSimpleMode } = useViewMode();
+  
   const [routeString, setRouteString] = useState('');
   const [defaultCabin, setDefaultCabin] = useState<CabinClass>('Business');
   const [isReturn, setIsReturn] = useState(true);
@@ -96,6 +100,20 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   // User's current status - use demoStatus override or bridge
   const rawStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 'Platinum';
   const currentStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawStatus, cycleIsUltimate);
+
+  // Simple Mode: render simplified XP Planner (after hooks are defined)
+  if (isSimpleMode) {
+    return (
+      <SimpleXPPlanner
+        xpData={xpData}
+        rollover={rollover}
+        flights={flights}
+        manualLedger={manualLedger}
+        qualificationSettings={qualificationSettings}
+        demoStatus={demoStatus}
+      />
+    );
+  }
   
   // For backwards compatibility
   const currentXP = actualXP;

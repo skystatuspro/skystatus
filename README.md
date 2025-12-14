@@ -1,103 +1,68 @@
-# Filip's XP Calculation Bug Fix
+# Simple Mode: XP Planner
 
-## Problem
+The final Simple Mode component - a streamlined XP calculator.
 
-When a user upgrades status mid-month (e.g., from Silver to Gold on **6 August 2025**), 
-the XP calculation was incorrectly including flights from the **entire month** 
-(1 August onwards) instead of only flights **on or after the upgrade date**.
+## What's New
 
-### Example (Filip's case):
-- Status upgrade: Silver → Gold on **6 August 2025**
-- Flights 1-6 August: 65 XP (should NOT count for Gold cycle)
-- Flights 7 August onwards: counted correctly
-- Rollover XP: 3 XP
+**SimpleXPPlanner** provides:
+- Current status card with progress bar
+- Quick XP calculator with route input
+- Popular routes from AMS (one-click)
+- Return/one-way toggle
+- Cabin class selector
+- "After this flight" preview showing new XP total
+- Visual feedback when target would be reached
 
-**Before fix:** 223 XP (included the 65 XP before upgrade)
-**After fix:** 223 - 65 + 3 = 161 XP (correct)
+## Files
 
-## Root Cause
-
-The system stored `cycleStartMonth` (e.g., "2025-08") but not the exact date.
-All flights in that month were included, even those before the actual upgrade.
-
-## Solution
-
-Added `cycleStartDate` (full date: "2025-08-06") to filter flights precisely.
-
-**Key safety feature:** The filter only applies to flights **within the start month**.
-Flights in other months (including historical cycles) are not affected.
-
-```typescript
-// Only filter flights in the start month itself
-if (excludeBeforeDate && monthKey === excludeMonth && flight.date < excludeBeforeDate) {
-  continue;  // Skip this flight
-}
-```
-
-This ensures:
-- Filip's Aug 1-5 flights are correctly excluded from his Gold cycle
-- Historical flights in previous cycles remain untouched
-- Users with multiple cycles see correct data for all cycles
-
-## Files Changed
-
-1. **src/types.ts** - Added `cycleStartDate?: string` to QualificationSettings
-2. **src/hooks/useUserData.ts** - Load/save cycleStartDate, pass to import
-3. **src/utils/xp-logic.ts** - Filter flights by exact date in aggregateFlightsByMonth
-4. **src/lib/dataService.ts** - Add qualification_start_date to profile save/load
-5. **src/components/PdfImportModal.tsx** - Extract full date from requalification events
-6. **src/components/SettingsModal.tsx** - NEW: UI to manually set cycle start date
-
-## Database Migration
-
-Run this SQL in Supabase:
-
-```sql
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS qualification_start_date DATE;
-```
+- `src/components/MileageRun/SimpleXPPlanner.tsx` - New simplified component
+- `src/components/MileageRun/index.tsx` - Updated with view mode switch
 
 ## Installation
 
 ```bash
 cd skystatus-main
-
-# Unzip (preserves directory structure)
-unzip -o skystatus-filip-xp-fix.zip
-
-# Build
+unzip -o skystatus-simple-xpplanner.zip
 npm run build
 ```
 
-## Database Migration (IMPORTANT!)
+## Simple Mode Features
 
-Run this SQL in Supabase SQL Editor:
+The SimpleXPPlanner focuses on the core use case: "How much XP will this flight earn?"
 
-```sql
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS qualification_start_date DATE;
+**Removed from Simple view:**
+- Cost/efficiency analysis
+- Marginal yield calculations
+- Segment-by-segment breakdown
+- Report discrepancy form
+- Distance band insights
+
+**Kept in Simple view:**
+- Route input with validation
+- Cabin class selection
+- Return trip toggle
+- XP result with progress preview
+- Link to Full View for advanced features
+
+## Component Structure
+
+```
+MileageRun/
+├── index.tsx          # Wrapper with view mode switch
+├── SimpleXPPlanner.tsx # New simple component
+├── components.tsx     # Full view components
+├── constants.ts       # Shared constants
+├── helpers.ts         # Shared helpers
+└── types.ts           # Shared types
 ```
 
-## For Existing Users
+## Design Decisions
 
-Users who already imported their PDF have two options:
+**Why show progress preview?**
+Users want to know if a flight gets them to their goal. The "After this flight" section answers this immediately.
 
-### Option 1: Re-import PDF (Recommended)
-1. Go to Data Settings
-2. Import Flying Blue PDF again
-3. The system will now correctly extract the full date from the requalification event
+**Why popular routes?**
+Quick access to common mileage runs from AMS. One tap populates the route.
 
-### Option 2: Set date manually
-1. Go to Data Settings
-2. Find the "Qualification Cycle" section
-3. Set your "Starting Status" (e.g., Gold)
-4. Set your "Cycle Start Date" to the exact date you achieved that status
-5. The note will confirm which flights are excluded
-
-## Testing
-
-1. Clear data
-2. Log out
-3. Log in
-4. Import PDF with mid-month status upgrade
-5. Check XP - should now be correct on first try
+**Why keep cabin selector?**
+XP varies significantly by cabin. Business class earns more than Economy.
