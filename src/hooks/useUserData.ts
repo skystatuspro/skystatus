@@ -188,6 +188,9 @@ export function useUserData(): UseUserDataReturn {
   const [isSaving, setIsSaving] = useState(false);
   const [dataVersion, setDataVersion] = useState(0);
   const debouncedDataVersion = useDebounce(dataVersion, 2000);
+  
+  // Track if we've attempted to load data (prevents flash of empty state)
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   // Mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -282,8 +285,10 @@ export function useUserData(): UseUserDataReturn {
 
       hasInitiallyLoaded.current = true;
       loadedForUserId.current = user.id;
+      setHasAttemptedLoad(true);
     } catch (error) {
       console.error('Error loading user data:', error);
+      setHasAttemptedLoad(true); // Still mark as attempted even on error
     } finally {
       setDataLoading(false);
     }
@@ -587,17 +592,20 @@ export function useUserData(): UseUserDataReturn {
 
     hasInitiallyLoaded.current = false;
     loadedForUserId.current = null;
+    setHasAttemptedLoad(true); // Data is "loaded" (empty)
     setShowWelcome(true);
   }, [user]);
 
   const handleEnterDemoMode = useCallback(() => {
     setIsDemoMode(true);
     setDemoStatus('Platinum'); // Default to Platinum
+    setHasAttemptedLoad(true); // No server load needed for demo
     loadDemoDataForStatus('Platinum');
   }, [loadDemoDataForStatus]);
 
   const handleEnterLocalMode = useCallback(() => {
     setIsLocalMode(true);
+    setHasAttemptedLoad(true); // No server load needed for local mode
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
     setRedemptionsInternal([]);
@@ -611,6 +619,7 @@ export function useUserData(): UseUserDataReturn {
     setIsLocalMode(false);
     hasInitiallyLoaded.current = false;
     loadedForUserId.current = null;
+    setHasAttemptedLoad(false);
 
     if (user) {
       loadUserData();
@@ -792,7 +801,8 @@ export function useUserData(): UseUserDataReturn {
       handleEmailConsentChange,
     },
     meta: {
-      isLoading: dataLoading,
+      // Show loading if actively loading OR if we have a user but haven't attempted load yet
+      isLoading: dataLoading || (!!user && !isDemoMode && !isLocalMode && !hasAttemptedLoad),
       isSaving,
       isDemoMode,
       isLocalMode,
