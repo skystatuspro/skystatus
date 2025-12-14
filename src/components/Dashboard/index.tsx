@@ -6,6 +6,7 @@ import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } f
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
+import { useViewModeOptional } from '../../lib/ViewModeContext';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { calculateQualificationCycles } from '../../utils/xp-logic';
 import { getValuationStatus } from '../../utils/valuation';
@@ -38,6 +39,7 @@ import { shouldShowDashboardFeedback, incrementSessionCount } from '../../lib/fe
 import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveCycle, calculateUltimateChance } from './helpers';
 import { KPICard } from './KPICard';
 import { RiskMonitor } from './RiskMonitor';
+import { SimpleDashboard } from './SimpleDashboard';
 
 interface DashboardState {
   milesData: { month: string; totalMiles: number }[];
@@ -67,11 +69,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   demoStatus,
 }) => {
   const { format: formatCurrency, symbol: currencySymbol, formatPrecise } = useCurrency();
+  const viewModeContext = useViewModeOptional();
+  const isSimpleMode = viewModeContext?.isSimpleMode ?? false;
   const [showPdfImport, setShowPdfImport] = useState(false);
   // Skip welcome screen if user already has flights (returning user)
   const [skipWelcome, setSkipWelcome] = useState(state.flights.length > 0);
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showFeedbackCard, setShowFeedbackCard] = useState(false);
+
+  // Simple Mode: render simplified dashboard
+  if (isSimpleMode) {
+    return (
+      <SimpleDashboard
+        state={state}
+        navigateTo={navigateTo}
+        onPdfImport={onPdfImport}
+        demoStatus={demoStatus}
+      />
+    );
+  }
 
   // Auto-skip welcome when flights are loaded (handles async data loading)
   useEffect(() => {

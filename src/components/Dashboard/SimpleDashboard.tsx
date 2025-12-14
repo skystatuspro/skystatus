@@ -6,7 +6,7 @@ import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } f
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
-import { useViewMode } from '../../lib/ViewModeContext';
+import { useViewModeOptional } from '../../lib/ViewModeContext';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { calculateQualificationCycles } from '../../utils/xp-logic';
 import { normalizeQualificationSettings, getDisplayStatus } from '../../utils/ultimate-bridge';
@@ -53,7 +53,8 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
   demoStatus,
 }) => {
   const { format: formatCurrency } = useCurrency();
-  const { setViewMode } = useViewMode();
+  const viewModeContext = useViewModeOptional();
+  const setViewMode = viewModeContext?.setViewMode ?? (() => {});
   const [showPdfImport, setShowPdfImport] = useState(false);
 
   // Calculate miles stats
