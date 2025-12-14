@@ -1,17 +1,29 @@
 // src/hooks/useViewMode.ts
 // View mode toggle using useSyncExternalStore for reliable cross-component sync
+// Mobile devices default to Simple mode
 
-import { useSyncExternalStore, useCallback } from 'react';
+import { useSyncExternalStore, useCallback, useEffect } from 'react';
 
 export type ViewMode = 'simple' | 'full';
 
 const STORAGE_KEY = 'skystatus_view_mode';
-const DEFAULT_MODE: ViewMode = 'full';
+const MOBILE_BREAKPOINT = 768; // px - same as Tailwind's md breakpoint
+
+// Check if device is mobile
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < MOBILE_BREAKPOINT;
+}
+
+// Get default mode based on device
+function getDefaultMode(): ViewMode {
+  return isMobileDevice() ? 'simple' : 'full';
+}
 
 // Subscribers for the store
 let listeners: Array<() => void> = [];
 
-// Get current value from localStorage
+// Get current value from localStorage, with mobile-aware default
 function getSnapshot(): ViewMode {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -21,12 +33,12 @@ function getSnapshot(): ViewMode {
   } catch {
     // localStorage not available
   }
-  return DEFAULT_MODE;
+  return getDefaultMode();
 }
 
 // Server snapshot (for SSR, not used but required)
 function getServerSnapshot(): ViewMode {
-  return DEFAULT_MODE;
+  return 'simple'; // Safe default for SSR
 }
 
 // Subscribe to changes
@@ -64,9 +76,25 @@ export function useViewMode() {
     setMode(current === 'simple' ? 'full' : 'simple');
   }, []);
 
+  // On first load, if no preference is stored, set default based on device
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) {
+        // No preference stored yet - set based on device type
+        const defaultMode = getDefaultMode();
+        localStorage.setItem(STORAGE_KEY, defaultMode);
+        emitChange();
+      }
+    } catch {
+      // localStorage not available
+    }
+  }, []);
+
   return {
     viewMode,
     isSimpleMode: viewMode === 'simple',
+    isMobile: isMobileDevice(),
     setViewMode,
     toggleViewMode,
   };

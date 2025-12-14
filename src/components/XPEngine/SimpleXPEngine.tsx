@@ -306,30 +306,30 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
           </div>
 
           {/* XP Breakdown Summary */}
-          <div className={`grid grid-cols-3 gap-4 p-4 rounded-xl ${
+          <div className={`grid grid-cols-3 gap-2 sm:gap-4 p-4 rounded-xl ${
             isUltimate ? 'bg-slate-700/50' : 'bg-slate-50'
           }`}>
             <div className="text-center">
-              <p className={`text-2xl font-bold ${theme.accentColor}`}>
+              <p className={`text-xl sm:text-2xl font-bold ${theme.accentColor}`}>
                 {activeCycle.rolloverIn}
               </p>
-              <p className={`text-xs font-medium ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] sm:text-xs font-medium ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
                 Rollover XP
               </p>
             </div>
             <div className="text-center">
-              <p className={`text-2xl font-bold ${theme.accentColor}`}>
+              <p className={`text-xl sm:text-2xl font-bold ${theme.accentColor}`}>
                 {actualXP - activeCycle.rolloverIn}
               </p>
-              <p className={`text-xs font-medium ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] sm:text-xs font-medium ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
                 Earned this cycle
               </p>
             </div>
             <div className="text-center">
-              <p className={`text-2xl font-bold ${theme.accentColor}`}>
+              <p className={`text-xl sm:text-2xl font-bold ${theme.accentColor}`}>
                 {Math.min(300, activeCycle.rolloverOut ?? 0)}
               </p>
-              <p className={`text-xs font-medium ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] sm:text-xs font-medium ${isUltimate ? 'text-slate-400' : 'text-slate-500'}`}>
                 Next rollover
               </p>
             </div>

@@ -217,7 +217,7 @@ export const SimpleXPPlanner: React.FC<MileageRunProps> = ({
             <label className="block text-xs font-semibold text-slate-600 mb-2">
               Cabin Class
             </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(Object.keys(CABIN_INFO) as CabinClass[]).map((c) => {
                 const info = CABIN_INFO[c];
                 const isSelected = cabin === c;

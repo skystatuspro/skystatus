@@ -1,74 +1,73 @@
-# Simple Mode: XP Planner
+# Mobile-First Simple Mode
 
-The final Simple Mode component - a streamlined XP calculator with real-time feedback.
+Makes Simple Mode the default for mobile users and improves mobile responsiveness.
 
-## What's New
+## What's Changed
 
-**SimpleXPPlanner** provides:
-- Compact status bar with progress
-- Real-time XP calculation (no button needed!)
-- Cabin class as visual pills with multiplier info
-- Return/one-way toggle in results panel
-- "After this trip" preview showing new XP total
-- Visual feedback when target would be reached
+### 1. Mobile Default (useViewMode.ts)
+- Mobile devices (< 768px) now default to Simple Mode
+- Desktop users still get Full Mode by default
+- User preference is saved in localStorage and persists
+- Users can always switch between modes via the toggle
 
-## Bugfixes Included
+### 2. SimpleXPPlanner Mobile Improvements
+- Cabin class buttons: 2 columns on mobile, 4 on desktop
+- Fixed NaN bug with Premium Economy
+- Fixed "to Ultimate" text (now says "to requalify" for Platinum)
 
-- Fixed `NaN` error when selecting Premium Economy (was using `'PremiumEconomy'` instead of `'Premium Economy'`)
-- Fixed same issue in Full View's report form
+### 3. SimpleXPEngine Mobile Improvements
+- XP breakdown grid: smaller gap and text on mobile
+- Better readability on small screens
 
-## Files
+## Files Included
 
-- `src/components/MileageRun/SimpleXPPlanner.tsx` - New simplified component
-- `src/components/MileageRun/index.tsx` - Updated with view mode switch
+```
+src/
+├── hooks/
+│   └── useViewMode.ts          # Mobile-first default logic
+└── components/
+    ├── MileageRun/
+    │   ├── index.tsx           # View mode switch wrapper
+    │   └── SimpleXPPlanner.tsx # Responsive cabin grid
+    └── XPEngine/
+        └── SimpleXPEngine.tsx  # Responsive XP breakdown
+```
 
 ## Installation
 
 ```bash
 cd skystatus-main
-unzip -o skystatus-simple-xpplanner.zip
+unzip -o skystatus-mobile-simple-mode.zip
 npm run build
 ```
 
-## Simple Mode Features
+## How Mobile Detection Works
 
-The SimpleXPPlanner focuses on the core use case: "How much XP will this flight earn?"
+```typescript
+const MOBILE_BREAKPOINT = 768; // Same as Tailwind's md breakpoint
 
-**Removed from Simple view:**
-- Calculate button (now real-time)
-- Popular routes section
-- Cost/efficiency analysis
-- Marginal yield calculations
-- Segment-by-segment breakdown
-- Report discrepancy form
-- Distance band insights
+function isMobileDevice(): boolean {
+  return window.innerWidth < MOBILE_BREAKPOINT;
+}
 
-**Kept in Simple view:**
-- Route input with validation
-- Cabin class selection (as visual pills)
-- Return trip toggle
-- Real-time XP result with progress preview
-- Link to Full View for advanced features
-
-## Component Structure
-
-```
-MileageRun/
-├── index.tsx          # Wrapper with view mode switch
-├── SimpleXPPlanner.tsx # New simple component
-├── components.tsx     # Full view components
-├── constants.ts       # Shared constants
-├── helpers.ts         # Shared helpers
-└── types.ts           # Shared types
+function getDefaultMode(): ViewMode {
+  return isMobileDevice() ? 'simple' : 'full';
+}
 ```
 
-## Design Decisions
+## Behavior
 
-**Why show progress preview?**
-Users want to know if a flight gets them to their goal. The "After this flight" section answers this immediately.
+| Device | First Visit | After Preference Set |
+|--------|-------------|---------------------|
+| Mobile (< 768px) | Simple Mode | User's choice |
+| Desktop (≥ 768px) | Full Mode | User's choice |
 
-**Why popular routes?**
-Quick access to common mileage runs from AMS. One tap populates the route.
+Once a user clicks "Full View" or "Simple" toggle, their preference is saved and used on future visits regardless of device type.
 
-**Why keep cabin selector?**
-XP varies significantly by cabin. Business class earns more than Economy.
+## Responsive Changes Summary
+
+| Component | Mobile | Desktop |
+|-----------|--------|---------|
+| XP Planner cabin buttons | 2×2 grid | 4×1 row |
+| XP Engine breakdown | Smaller text/gap | Normal text/gap |
+| All Simple components | Single column focus | Wider layouts |
