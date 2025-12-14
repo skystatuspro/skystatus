@@ -13,7 +13,7 @@ import { Analytics } from './components/Analytics';
 import { FlightLedger } from './components/FlightLedger';
 import { FlightIntake } from './components/FlightIntake';
 import { MilesIntake } from './components/MilesIntake';
-import { MileageRun } from './components/MileageRun';
+import { MileageRun } from './components/MileageRun/index';
 import { Profile } from './components/Profile';
 import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
