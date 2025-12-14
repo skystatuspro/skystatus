@@ -23,6 +23,9 @@ import {
   Crown,
   Calendar,
   TrendingUp,
+  Target,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { getStatusTheme } from './helpers';
 
@@ -50,6 +53,17 @@ const getTargetXP = (status: StatusLevel): number => {
     case 'Platinum': return 300;
     case 'Ultimate': return 300;
     default: return 100;
+  }
+};
+
+// Helper to get next status
+const getNextStatus = (status: StatusLevel): StatusLevel | null => {
+  switch (status) {
+    case 'Explorer': return 'Silver';
+    case 'Silver': return 'Gold';
+    case 'Gold': return 'Platinum';
+    case 'Platinum': return 'Ultimate';
+    default: return null;
   }
 };
 
@@ -110,6 +124,7 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
   const actualXP = activeCycle.actualXP ?? 0;
   const targetXP = getTargetXP(actualStatus);
   const theme = getStatusTheme(actualStatus, isUltimate);
+  const nextStatus = getNextStatus(actualStatus);
 
   // Calculate projected XP
   const projectedXP = useMemo(() => {
@@ -138,13 +153,24 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
     year: 'numeric'
   });
 
-  // Get recent flights (last 10, sorted by date desc)
+  // Get recent flights (all flights, sorted by date desc, limit 8)
   const recentFlights = useMemo(() => {
     return [...flights]
-      .filter(f => f.status === 'flown')
       .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 10);
+      .slice(0, 8);
   }, [flights]);
+
+  // Get monthly XP from ledger (recent months with XP)
+  const monthlyXP = useMemo(() => {
+    return activeCycle.ledger
+      .filter(row => (row.xpMonth ?? 0) > 0)
+      .slice(-6) // Last 6 months with activity
+      .map(row => ({
+        month: row.month,
+        xp: row.xpMonth ?? 0,
+        flights: row.flightsCount ?? 0,
+      }));
+  }, [activeCycle]);
 
   // Status icon helper
   const getStatusIcon = () => {
@@ -156,6 +182,9 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
       default: return <Plane className="text-emerald-500 rotate-45" size={28} />;
     }
   };
+
+  // Calculate XP per month needed
+  const xpPerMonthNeeded = monthsRemaining > 0 ? Math.ceil(xpRemaining / monthsRemaining) : 0;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-3xl mx-auto pb-12">
@@ -300,6 +329,68 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
         </div>
       </div>
 
+      {/* Action Card - What to do next */}
+      {!isQualified && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-blue-100 rounded-xl">
+              <Target className="text-blue-600" size={20} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-slate-900 mb-1">
+                {xpPerMonthNeeded > 0 
+                  ? `Earn ~${xpPerMonthNeeded} XP per month to requalify`
+                  : 'Plan your next flights'}
+              </h3>
+              <p className="text-sm text-slate-600 mb-3">
+                {nextStatus 
+                  ? `Reach ${targetXP} XP to keep ${actualStatus}, or ${getTargetXP(nextStatus)} XP to upgrade to ${nextStatus}.`
+                  : `You need ${xpRemaining} more XP in ${monthsRemaining} months.`}
+              </p>
+              <button
+                onClick={() => {
+                  setViewMode('full');
+                  // Navigate happens via menu
+                }}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Use XP Planner to find flights
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly Activity */}
+      {monthlyXP.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles size={18} className="text-amber-500" />
+              Monthly Activity
+            </h3>
+          </div>
+          
+          <div className="p-4">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              {monthlyXP.map((month, index) => (
+                <div 
+                  key={month.month} 
+                  className="text-center p-3 bg-slate-50 rounded-xl"
+                >
+                  <p className="text-xs text-slate-500 font-medium mb-1">
+                    {new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'short' })}
+                  </p>
+                  <p className="text-lg font-bold text-slate-900">+{month.xp}</p>
+                  <p className="text-[10px] text-slate-400">XP</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Recent Flights */}
       {recentFlights.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -309,7 +400,7 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
                 <TrendingUp size={18} className="text-blue-500" />
                 Recent Flights
               </h3>
-              <span className="text-xs text-slate-400">{recentFlights.length} of {flights.filter(f => f.status === 'flown').length} flights</span>
+              <span className="text-xs text-slate-400">{recentFlights.length} of {flights.length} flights</span>
             </div>
           </div>
           
@@ -317,11 +408,20 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
             {recentFlights.map((flight, index) => (
               <div key={flight.id || index} className="px-6 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-100 rounded-lg">
-                    <Plane size={16} className="text-slate-600 rotate-45" />
+                  <div className={`p-2 rounded-lg ${
+                    flight.status === 'booked' ? 'bg-blue-50' : 'bg-slate-100'
+                  }`}>
+                    <Plane size={16} className={`rotate-45 ${
+                      flight.status === 'booked' ? 'text-blue-500' : 'text-slate-600'
+                    }`} />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">{flight.route}</p>
+                    <p className="font-semibold text-slate-900">
+                      {flight.route}
+                      {flight.status === 'booked' && (
+                        <span className="ml-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">BOOKED</span>
+                      )}
+                    </p>
                     <p className="text-xs text-slate-500">
                       {new Date(flight.date).toLocaleDateString('en-US', { 
                         month: 'short', 
@@ -333,7 +433,7 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-slate-900">+{flight.xp} XP</p>
+                  <p className="font-bold text-slate-900">+{flight.xp || 0} XP</p>
                   {flight.class && (
                     <p className="text-xs text-slate-400">{flight.class}</p>
                   )}
@@ -341,6 +441,15 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Empty state if no flights */}
+      {recentFlights.length === 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
+          <Plane size={40} className="text-slate-300 mx-auto mb-3 rotate-45" />
+          <h3 className="font-bold text-slate-900 mb-1">No flights yet</h3>
+          <p className="text-sm text-slate-500 mb-4">Import your Flying Blue PDF or add flights manually</p>
         </div>
       )}
 
