@@ -78,8 +78,14 @@ export const Profile: React.FC<ProfileProps> = ({
     [flights, qualificationSettings?.cycleStartMonth]
   );
 
-  // Show UXP card for Platinum and Ultimate only
-  const showUXPCard = currentStatus === 'Platinum' || currentStatus === 'Ultimate';
+  // Show UXP card logic:
+  // - Explorer/Silver/Gold: Never show (they focus on XP for next status)
+  // - Platinum: Show only if they have ≥600 total XP this cycle (300 qualify + 300 rollover max)
+  //   This means they've secured requalification and can now chase Ultimate
+  // - Ultimate: Always show (they need 900 UXP to requalify)
+  const totalCycleXP = lifetimeStats.totalXP; // This is already cycle-based from flights
+  const showUXPCard = currentStatus === 'Ultimate' || 
+    (currentStatus === 'Platinum' && totalCycleXP >= 600);
 
   // Empty state
   if (flights.length === 0) {

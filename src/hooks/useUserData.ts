@@ -208,13 +208,18 @@ export function useUserData(): UseUserDataReturn {
     [baseMilesData, baseXpData, flights]
   );
 
+  // In demo mode, use the selected demo status directly
+  // Otherwise, calculate from XP stats
   const currentStatus = useMemo((): StatusLevel => {
+    if (isDemoMode) {
+      return demoStatus;
+    }
     const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
     const now = new Date();
     const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
     const cycle = stats[currentQYear];
     return (cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer') as StatusLevel;
-  }, [xpData, xpRollover, flights, manualLedger]);
+  }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
   // -------------------------------------------------------------------------
   // DATA PERSISTENCE

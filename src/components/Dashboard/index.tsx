@@ -55,6 +55,7 @@ interface DashboardProps {
   navigateTo: (view: any) => void;
   onUpdateCurrentMonth: (month: string) => void;
   onPdfImport?: (flights: FlightRecord[], miles: MilesRecord[]) => void;
+  demoStatus?: StatusLevel; // Override status in demo mode
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -62,6 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   navigateTo,
   onUpdateCurrentMonth,
   onPdfImport,
+  demoStatus,
 }) => {
   const { format: formatCurrency, symbol: currencySymbol, formatPrecise } = useCurrency();
   const [showPdfImport, setShowPdfImport] = useState(false);
@@ -109,18 +111,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
 
   // Extract data from active cycle
-  const actualStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 'Explorer';
-  const projectedStatus: StatusLevel = (activeCycle?.projectedStatus as StatusLevel) ?? actualStatus;
+  // In demo mode, use demoStatus override if provided
+  const actualStatus: StatusLevel = demoStatus ?? (activeCycle?.actualStatus as StatusLevel) ?? 'Explorer';
+  const projectedStatus: StatusLevel = demoStatus ?? (activeCycle?.projectedStatus as StatusLevel) ?? actualStatus;
   const actualXP: number = activeCycle?.actualXP ?? 0;
   const rolloverIn: number = activeCycle?.rolloverIn ?? 0;
   const rolloverOut: number = activeCycle?.rolloverOut ?? 0;
 
   // Ultimate status data
-  const isUltimate: boolean = activeCycle?.isUltimate ?? false;
-  const projectedUltimate: boolean = activeCycle?.projectedUltimate ?? false;
+  // In demo mode, determine Ultimate from demoStatus
+  const isUltimate: boolean = demoStatus === 'Ultimate' || (activeCycle?.isUltimate ?? false);
+  const projectedUltimate: boolean = demoStatus === 'Ultimate' || (activeCycle?.projectedUltimate ?? false);
   const actualUXP: number = activeCycle?.actualUXP ?? 0;
   const projectedUXP: number = activeCycle?.projectedUXP ?? 0;
-  const showUltimateProgress = actualStatus === 'Platinum' || isUltimate;
+  
+  // Show Ultimate progress bar only for:
+  // - Ultimate status (always)
+  // - Platinum with >= 600 XP (secured requalification, chasing Ultimate)
+  // Silver/Gold should focus on XP progress toward next status
+  const showUltimateProgress = isUltimate || (actualStatus === 'Platinum' && actualXP >= 600);
 
   // Calculate months remaining in cycle
   const monthsRemaining = useMemo(() => {

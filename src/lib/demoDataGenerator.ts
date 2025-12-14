@@ -535,11 +535,12 @@ function generateQualificationSettings(config: DemoStatusConfig): QualificationS
   // Cycle starts in November
   const cycleYear = currentMonth >= 11 ? currentYear : currentYear - 1;
   
+  // For demo purposes, we set the startingStatus to the ACTUAL demo status
+  // This ensures the Dashboard shows the correct status level
+  // The XP in the flights will be additional to maintain/progress
   return {
     cycleStartMonth: `${cycleYear}-11`,
-    startingStatus: config.status === 'Ultimate' ? 'Platinum' : 
-                   config.status === 'Platinum' ? 'Gold' : 
-                   config.status === 'Gold' ? 'Silver' : 'Explorer',
+    startingStatus: config.status, // Set to actual demo status, not previous
     startingXP: config.xpRollover,
     startingUXP: config.uxpRollover,
     ultimateCycleType: config.status === 'Ultimate' ? 'calendar' : 'qualification',
