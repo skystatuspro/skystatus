@@ -342,6 +342,29 @@ export function useUserData(): UseUserDataReturn {
     }
   }, [user, isDemoMode, loadUserData]);
 
+  // CRITICAL: Reset state when user logs out or changes
+  // This prevents stale data from mixing with new user data
+  useEffect(() => {
+    if (!user && !isDemoMode && !isLocalMode) {
+      // User logged out - clear all state
+      setBaseMilesDataInternal([]);
+      setBaseXpDataInternal([]);
+      setRedemptionsInternal([]);
+      setFlightsInternal([]);
+      setXpRolloverInternal(0);
+      setManualLedgerInternal({});
+      setQualificationSettingsInternal(null);
+      setHomeAirportInternal(null);
+      setMilesBalanceInternal(0);
+      setCurrentUXPInternal(0);
+      setTargetCPMInternal(0.012);
+      hasInitiallyLoaded.current = false;
+      loadedForUserId.current = null;
+      setHasAttemptedLoad(false);
+      setShowWelcome(true);
+    }
+  }, [user, isDemoMode, isLocalMode]);
+
   // Auto-save on debounced data change
   // CRITICAL: Only save if data has been loaded first to prevent wiping user data
   useEffect(() => {
@@ -467,6 +490,14 @@ export function useUserData(): UseUserDataReturn {
     xpCorrection?: { month: string; correctionXp: number; reason: string },
     cycleSettings?: { cycleStartMonth: string; startingStatus: StatusLevel }
   ) => {
+    // CRITICAL: Mark as loaded so autosave works for new users
+    // Without this, importing PDF before loadUserData completes would not save
+    if (user) {
+      hasInitiallyLoaded.current = true;
+      loadedForUserId.current = user.id;
+      setHasAttemptedLoad(true);
+    }
+
     // Merge flights (skip duplicates)
     setFlightsInternal((prevFlights) => {
       const existingFlightKeys = new Set(prevFlights.map((f) => `${f.date}-${f.route}`));
@@ -512,7 +543,7 @@ export function useUserData(): UseUserDataReturn {
     }
 
     markDataChanged();
-  }, [markDataChanged]);
+  }, [user, markDataChanged]);
 
   // -------------------------------------------------------------------------
   // DEMO / LOCAL MODE HANDLERS

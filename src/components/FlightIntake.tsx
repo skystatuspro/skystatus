@@ -6,6 +6,8 @@ import { useCurrency } from '../lib/CurrencyContext';
 import { getStatusMultiplier, isRevenueAirline } from '../utils/loyalty-logic';
 import { Tooltip } from './Tooltip';
 import { FlightRecord } from '../types';
+import { useViewMode } from '../hooks/useViewMode';
+import { SimpleFlightIntake } from './SimpleFlightIntake';
 
 // ============================================
 // SKYTEAM AIRLINES DATA
@@ -119,6 +121,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
   currentStatus,
   existingFlights = []
 }) => {
+  const { isSimpleMode } = useViewMode();
   const today = new Date().toISOString().slice(0, 10);
   const routeInputRef = useRef<HTMLInputElement>(null);
   const airlineDropdownRef = useRef<HTMLDivElement>(null);
@@ -273,6 +276,17 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     setSegments(calculatedSegments);
 
   }, [form.route, form.cabin, form.ticketPrice, form.airline, currentStatus, isReturn]); 
+
+  // Simple Mode: render simplified flight intake wizard
+  if (isSimpleMode) {
+    return (
+      <SimpleFlightIntake
+        onApply={onApply}
+        currentStatus={currentStatus}
+        existingFlights={existingFlights}
+      />
+    );
+  }
 
   const totalXP = segments.reduce((acc, s) => acc + s.xp, 0);
   const isMultiSegment = segments.length > 1;
