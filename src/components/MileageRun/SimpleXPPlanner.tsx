@@ -27,6 +27,8 @@ import { MileageRunProps, StatusLevel } from './types';
 const getNextStatus = (current: StatusLevel): StatusLevel | null => {
   const order: StatusLevel[] = ['Explorer', 'Silver', 'Gold', 'Platinum', 'Ultimate'];
   const idx = order.indexOf(current);
+  // Platinum and Ultimate don't have a "next" status via XP - they requalify
+  if (current === 'Platinum' || current === 'Ultimate') return null;
   return idx < order.length - 1 ? order[idx + 1] : null;
 };
 
