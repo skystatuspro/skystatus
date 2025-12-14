@@ -550,6 +550,7 @@ export function useUserData(): UseUserDataReturn {
     setFlightsInternal([]);
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
+    setQualificationSettingsInternal(null);
     setShowWelcome(false);
     markDataChanged();
   }, [markDataChanged]);
@@ -559,6 +560,7 @@ export function useUserData(): UseUserDataReturn {
       return;
     }
 
+    // Reset ALL data state
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
     setRedemptionsInternal([]);
@@ -566,6 +568,10 @@ export function useUserData(): UseUserDataReturn {
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
     setQualificationSettingsInternal(null);
+    setHomeAirportInternal(null);
+    setMilesBalanceInternal(0);
+    setCurrentUXPInternal(0);
+    setTargetCPMInternal(0.012); // Reset to default
     setIsDemoMode(false);
     setIsLocalMode(false);
 
@@ -583,6 +589,10 @@ export function useUserData(): UseUserDataReturn {
             starting_status: undefined,
             starting_xp: undefined,
             ultimate_cycle_type: undefined,
+            home_airport: undefined,
+            miles_balance: 0,
+            current_uxp: 0,
+            target_cpm: 0.012,
           }),
         ]);
       } catch (error) {
@@ -606,12 +616,17 @@ export function useUserData(): UseUserDataReturn {
   const handleEnterLocalMode = useCallback(() => {
     setIsLocalMode(true);
     setHasAttemptedLoad(true); // No server load needed for local mode
+    // Reset ALL data state for clean local mode start
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
     setRedemptionsInternal([]);
     setFlightsInternal([]);
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
+    setQualificationSettingsInternal(null);
+    setHomeAirportInternal(null);
+    setMilesBalanceInternal(0);
+    setCurrentUXPInternal(0);
   }, []);
 
   const handleExitDemoMode = useCallback(() => {
@@ -624,12 +639,18 @@ export function useUserData(): UseUserDataReturn {
     if (user) {
       loadUserData();
     } else {
+      // Reset ALL state when exiting demo without user
       setBaseMilesDataInternal([]);
       setBaseXpDataInternal([]);
       setRedemptionsInternal([]);
       setFlightsInternal([]);
       setXpRolloverInternal(0);
       setManualLedgerInternal({});
+      setQualificationSettingsInternal(null);
+      setHomeAirportInternal(null);
+      setMilesBalanceInternal(0);
+      setCurrentUXPInternal(0);
+      setTargetCPMInternal(0.012);
     }
   }, [user, loadUserData]);
 
