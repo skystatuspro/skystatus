@@ -56,18 +56,22 @@ export const rebuildLedgersFromFlights = (
     const month = (f as any).month || f.date?.slice(0, 7);
     if (!month) return;
 
+    const flightMiles = f.earnedMiles || 0;
+    const flightCost = f.ticketPrice || 0;
+
     const existingMiles = milesByMonth.get(month);
     if (existingMiles) {
       milesByMonth.set(month, {
         ...existingMiles,
-        miles_flight: (existingMiles.miles_flight || 0) + (f.earnedMiles || 0),
+        miles_flight: (existingMiles.miles_flight || 0) + flightMiles,
+        cost_flight: (existingMiles.cost_flight || 0) + flightCost,
       });
     } else {
       milesByMonth.set(month, {
         id: getLedgerId('miles', month),
         month,
-        miles_subscription: 0, miles_amex: 0, miles_flight: f.earnedMiles || 0, miles_other: 0, miles_debit: 0,
-        cost_subscription: 0, cost_amex: 0, cost_flight: 0, cost_other: 0,
+        miles_subscription: 0, miles_amex: 0, miles_flight: flightMiles, miles_other: 0, miles_debit: 0,
+        cost_subscription: 0, cost_amex: 0, cost_flight: flightCost, cost_other: 0,
       });
     }
 

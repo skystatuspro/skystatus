@@ -53,10 +53,25 @@ Now works for:
 - Swiss Francs (CHF)
 - Any other currency
 
+## Bug 3: Flight Costs Not Summed
+
+Flight ticket prices were not being included in the total cost calculation. Users would enter ticket prices on flights, but the dashboard would show incorrect (lower) totals.
+
+**Root cause:** In `rebuildLedgersFromFlights`, the `ticketPrice` from flights was never aggregated into `cost_flight`:
+
+```typescript
+// OLD - cost_flight always 0:
+cost_subscription: 0, cost_amex: 0, cost_flight: 0, cost_other: 0,
+
+// NEW - aggregates ticketPrice:
+cost_flight: (existingMiles.cost_flight || 0) + flightCost,
+```
+
 ## Files Changed
 
 ```
-src/utils/parseFlyingBluePdf.ts
+src/utils/parseFlyingBluePdf.ts   # Date extraction + multi-currency
+src/utils/flight-intake.ts        # Cost aggregation fix
 ```
 
 ## Installation
