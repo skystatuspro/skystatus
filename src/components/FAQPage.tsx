@@ -122,6 +122,12 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           question: 'How do I import my Flying Blue PDF?',
           answer: (
             <>
+              <div className="p-3 bg-emerald-50 rounded-lg text-sm border border-emerald-200 mb-4">
+                <strong className="text-emerald-800">🔒 Privacy First:</strong>
+                <p className="text-emerald-700 mt-1">
+                  Your PDF is processed <strong>entirely in your browser</strong>. We never receive, upload, or store your PDF file. All parsing happens locally on your device.
+                </p>
+              </div>
               <p><strong>Step 1: Download your PDF from Flying Blue</strong></p>
               <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
                 <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
@@ -170,6 +176,43 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
               </div>
             </>
           )
+        },
+        {
+          question: 'How do I use Demo Mode?',
+          answer: (
+            <>
+              <p>Demo Mode lets you explore all SkyStatus features with sample data before entering your own.</p>
+              
+              <div className="mt-3">
+                <strong>To enter Demo Mode:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
+                  <li>On the login screen, click <strong>"Try Demo"</strong></li>
+                  <li>You'll see sample data for a fictional Flying Blue member</li>
+                  <li>Explore all features freely — nothing you do affects real data</li>
+                </ol>
+              </div>
+              
+              <div className="mt-4 p-3 bg-violet-50 rounded-lg text-sm border border-violet-200">
+                <strong className="text-violet-800">🎭 Switch between status levels:</strong>
+                <p className="text-violet-700 mt-1">
+                  In Demo Mode, a purple bar appears at the bottom of the screen. Click <strong>Silver</strong>, <strong>Gold</strong>, <strong>Platinum</strong>, or <strong>Ultimate</strong> to instantly see how SkyStatus looks for each status level!
+                </p>
+              </div>
+              
+              <div className="mt-3">
+                <strong>To exit Demo Mode:</strong>
+                <ul className="list-disc list-inside mt-1 text-sm space-y-1">
+                  <li>Click <strong>"Create Account"</strong> in the demo bar to sign up</li>
+                  <li>Or go to <strong>Data Settings</strong> → <strong>"Start Over"</strong> to start fresh</li>
+                  <li>Or simply close the browser — demo data is not saved</li>
+                </ul>
+              </div>
+              
+              <p className="mt-3 text-sm text-slate-500">
+                Demo Mode is perfect for understanding the app before importing your own Flying Blue data.
+              </p>
+            </>
+          )
         }
       ]
     },
@@ -204,9 +247,19 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <div><strong>Cycle Start Month:</strong> When your qualification year began</div>
                 <div><strong>Ultimate Cycle Type:</strong> Whether your Ultimate qualification follows your XP cycle or calendar year</div>
               </div>
-              <p className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
-                <strong>Where to find this info:</strong> On flyingblue.com, go to My Account → XP Overview. Your cycle end date minus 12 months = your start date.
-              </p>
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                <strong>How to find your qualification cycle dates:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
+                  <li>Click <strong>"View your Flying Blue space"</strong> or go to your profile</li>
+                  <li>Look for <strong>"Reach before [date]"</strong> or <strong>"Maintain [status], 300 XP — Reach before [date]"</strong></li>
+                  <li>This date is the <strong>end</strong> of your qualification period</li>
+                  <li>Your cycle <strong>start month</strong> = 12 months before this date</li>
+                </ol>
+                <p className="mt-2 text-slate-600">
+                  <strong>Example:</strong> If it says "Reach before 31 Oct 2026", your cycle started November 2025.
+                </p>
+              </div>
             </>
           )
         },
@@ -849,6 +902,34 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                   <span className="text-amber-500 font-bold">!</span>
                   <span>No sync between devices</span>
                 </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
+                <strong className="text-blue-800">💡 Protect your data with Export/Import:</strong>
+                <p className="mt-2 text-blue-700">
+                  You can always save your data as a JSON file and restore it later:
+                </p>
+                <div className="mt-2 space-y-2">
+                  <div>
+                    <strong>To Export (backup your data):</strong>
+                    <ol className="list-decimal list-inside mt-1 ml-2">
+                      <li>Go to <strong>Data Settings</strong></li>
+                      <li>Click <strong>"Export Data"</strong></li>
+                      <li>Save the JSON file to your computer</li>
+                    </ol>
+                  </div>
+                  <div>
+                    <strong>To Import (restore your data):</strong>
+                    <ol className="list-decimal list-inside mt-1 ml-2">
+                      <li>Go to <strong>Data Settings</strong></li>
+                      <li>Click <strong>"Import JSON"</strong></li>
+                      <li>Select your previously exported JSON file</li>
+                    </ol>
+                  </div>
+                </div>
+                <p className="mt-2 text-blue-600 font-medium">
+                  We recommend exporting regularly, especially before clearing your browser cache!
+                </p>
               </div>
             </>
           )
