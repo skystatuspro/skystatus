@@ -7,7 +7,6 @@ Technical documentation for developers working on SkyStatus.
 
 ## Project Structure
 
-```
 src/
 ├── components/               # React components
 │   ├── Dashboard/            # Command Center (modular)
