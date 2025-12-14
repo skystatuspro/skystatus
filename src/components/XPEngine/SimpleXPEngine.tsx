@@ -155,9 +155,17 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
 
   // Get recent flights (all flights, sorted by date desc, limit 8)
   const recentFlights = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
     return [...flights]
       .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 8);
+      .slice(0, 8)
+      .map(f => ({
+        ...f,
+        // Normalize XP field (some have xp, some have earnedXP)
+        displayXP: f.xp ?? f.earnedXP ?? 0,
+        // Detect booked: either explicit status or future date
+        isBooked: f.status === 'booked' || f.date > today,
+      }));
   }, [flights]);
 
   // Get monthly XP from ledger (recent months with XP)
@@ -409,16 +417,16 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
               <div key={flight.id || index} className="px-6 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${
-                    flight.status === 'booked' ? 'bg-blue-50' : 'bg-slate-100'
+                    flight.isBooked ? 'bg-blue-50' : 'bg-slate-100'
                   }`}>
                     <Plane size={16} className={`rotate-45 ${
-                      flight.status === 'booked' ? 'text-blue-500' : 'text-slate-600'
+                      flight.isBooked ? 'text-blue-500' : 'text-slate-600'
                     }`} />
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">
                       {flight.route}
-                      {flight.status === 'booked' && (
+                      {flight.isBooked && (
                         <span className="ml-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">BOOKED</span>
                       )}
                     </p>
@@ -433,9 +441,11 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-slate-900">+{flight.xp || 0} XP</p>
-                  {flight.class && (
-                    <p className="text-xs text-slate-400">{flight.class}</p>
+                  <p className={`font-bold ${flight.isBooked ? 'text-blue-500' : 'text-slate-900'}`}>
+                    {flight.isBooked ? `~${flight.displayXP}` : `+${flight.displayXP}`} XP
+                  </p>
+                  {flight.cabin && (
+                    <p className="text-xs text-slate-400">{flight.cabin}</p>
                   )}
                 </div>
               </div>
