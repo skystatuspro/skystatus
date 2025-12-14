@@ -16,6 +16,7 @@ import {
   QualificationCycleStats,
 } from '../../utils/xp-logic';
 import { normalizeQualificationSettings, getDisplayStatus, getDisplayProjectedStatus } from '../../utils/ultimate-bridge';
+import { useViewMode } from '../../hooks/useViewMode';
 import {
   ChevronRight,
   ChevronLeft,
@@ -35,6 +36,7 @@ import { CycleSetupForm, CycleSetupFormValues } from './CycleSetupForm';
 import { StatusCard } from './StatusCard';
 import { ProgressionChart } from './ProgressionChart';
 import { LedgerTable } from './LedgerTable';
+import { SimpleXPEngine } from './SimpleXPEngine';
 
 interface QualificationSettingsType {
   cycleStartMonth: string;
@@ -75,6 +77,8 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   onUpdateQualificationSettings,
   demoStatus,
 }) => {
+  const { isSimpleMode } = useViewMode();
+
   // Normalize qualification settings for core logic (Ultimate → Platinum + UXP)
   const normalizedSettings = useMemo(
     () => normalizeQualificationSettings(qualificationSettings),
@@ -143,6 +147,20 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     const newIndex = findActiveCycleIndex(cycles);
     setSelectedIndex(newIndex);
   }, [cyclesFingerprint]);
+
+  // Simple Mode: render simplified XP Engine
+  if (isSimpleMode) {
+    return (
+      <SimpleXPEngine
+        data={_legacyData}
+        rollover={rollover}
+        flights={flights}
+        manualLedger={manualLedger}
+        qualificationSettings={qualificationSettings}
+        demoStatus={demoStatus}
+      />
+    );
+  }
 
   if (cycles.length === 0) {
     return null;
