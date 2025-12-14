@@ -42,6 +42,15 @@ export const calculateRouteXP = (
  */
 export const getStatusTheme = (status: StatusLevel): StatusTheme => {
   switch (status) {
+    case 'Ultimate':
+      return {
+        gradient: 'from-violet-600 to-purple-700',
+        lightGradient: 'from-violet-50 to-purple-50',
+        border: 'border-violet-200',
+        text: 'text-violet-700',
+        bg: 'bg-violet-500',
+        accent: 'text-violet-600',
+      };
     case 'Platinum': 
       return {
         gradient: 'from-blue-600 to-indigo-700',

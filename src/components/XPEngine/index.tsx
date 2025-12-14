@@ -460,10 +460,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
           hasProjectedXPDifference={hasProjectedXPDifference}
           actualProgress={actualProgress}
           projectedProgress={projectedProgress}
-          isUltimate={currentCycle.isUltimate}
-          projectedUltimate={currentCycle.projectedUltimate}
-          actualUXP={currentCycle.actualUXP}
-          projectedUXP={currentCycle.projectedUXP}
+          isUltimate={isUltimate}
+          projectedUltimate={projectedUltimate}
+          actualUXP={isDemoUltimate ? Math.max(currentCycle.actualUXP ?? 0, 950) : (currentCycle.actualUXP ?? 0)}
+          projectedUXP={isDemoUltimate ? Math.max(currentCycle.projectedUXP ?? 0, 1000) : (currentCycle.projectedUXP ?? 0)}
         />
 
         {/* Right column */}
