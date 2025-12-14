@@ -3,6 +3,8 @@ import { FlightRecord, XPRecord } from '../types';
 import { formatNumber } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
 import { calculateMultiYearStats } from '../utils/xp-logic';
+import { useViewMode } from '../hooks/useViewMode';
+import { SimpleFlightLedger } from './SimpleFlightLedger';
 import { 
   Trash2, 
   Plane, 
@@ -417,6 +419,7 @@ export const FlightLedger: React.FC<FlightLedgerProps> = ({
   xpData = [], 
   currentRollover = 0
 }) => {
+  const { isSimpleMode } = useViewMode();
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const monthGroups = useMemo(() => groupFlightsByMonth(flights), [flights]);
   
@@ -427,6 +430,16 @@ export const FlightLedger: React.FC<FlightLedgerProps> = ({
 
   const [simulatedId, setSimulatedId] = useState<string | null>(null);
   const [editingFlight, setEditingFlight] = useState<FlightRecord | null>(null);
+
+  // Simple Mode: render simplified ledger
+  if (isSimpleMode) {
+    return (
+      <SimpleFlightLedger
+        flights={flights}
+        onChange={onChange}
+      />
+    );
+  }
 
   const toggleMonth = (monthKey: string) => {
     setExpandedMonths(prev => {
