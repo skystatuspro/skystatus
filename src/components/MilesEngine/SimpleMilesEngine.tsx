@@ -62,7 +62,7 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
   // Recent redemptions
   const recentRedemptions = useMemo(() => {
     return [...redemptions]
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => b.month.localeCompare(a.month))
       .slice(0, 3);
   }, [redemptions]);
 
@@ -144,7 +144,7 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
             </div>
             <span className="text-xs font-medium text-slate-500">Total Earned</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.totalEarned)}</p>
+          <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.earnedAll || 0)}</p>
           <p className="text-xs text-slate-400 mt-1">All time</p>
         </div>
 
@@ -155,7 +155,7 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
             </div>
             <span className="text-xs font-medium text-slate-500">Total Redeemed</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.totalRedeemed)}</p>
+          <p className="text-2xl font-bold text-slate-900">{formatNumber(stats.redeemedMiles || 0)}</p>
           <p className="text-xs text-slate-400 mt-1">All time</p>
         </div>
       </div>
@@ -237,18 +237,17 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
                 <div>
                   <p className="font-semibold text-slate-900">{redemption.description}</p>
                   <p className="text-xs text-slate-500">
-                    {new Date(redemption.date).toLocaleDateString('en-US', {
+                    {new Date(redemption.month + '-01').toLocaleDateString('en-US', {
                       month: 'short',
-                      day: 'numeric',
                       year: 'numeric',
                     })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-red-500">-{formatNumber(redemption.miles)}</p>
-                  {redemption.cashValue && (
+                  <p className="font-bold text-red-500">-{formatNumber(redemption.miles_redeemed || 0)}</p>
+                  {redemption.estimated_value && redemption.estimated_value > 0 && (
                     <p className="text-xs text-slate-400">
-                      {formatCurrency(redemption.cashValue)} value
+                      {formatCurrency(redemption.estimated_value)} value
                     </p>
                   )}
                 </div>
