@@ -1,17 +1,21 @@
 # Simple Mode: XP Planner
 
-The final Simple Mode component - a streamlined XP calculator.
+The final Simple Mode component - a streamlined XP calculator with real-time feedback.
 
 ## What's New
 
 **SimpleXPPlanner** provides:
-- Current status card with progress bar
-- Quick XP calculator with route input
-- Popular routes from AMS (one-click)
-- Return/one-way toggle
-- Cabin class selector
-- "After this flight" preview showing new XP total
+- Compact status bar with progress
+- Real-time XP calculation (no button needed!)
+- Cabin class as visual pills with multiplier info
+- Return/one-way toggle in results panel
+- "After this trip" preview showing new XP total
 - Visual feedback when target would be reached
+
+## Bugfixes Included
+
+- Fixed `NaN` error when selecting Premium Economy (was using `'PremiumEconomy'` instead of `'Premium Economy'`)
+- Fixed same issue in Full View's report form
 
 ## Files
 
@@ -31,6 +35,8 @@ npm run build
 The SimpleXPPlanner focuses on the core use case: "How much XP will this flight earn?"
 
 **Removed from Simple view:**
+- Calculate button (now real-time)
+- Popular routes section
 - Cost/efficiency analysis
 - Marginal yield calculations
 - Segment-by-segment breakdown
@@ -39,9 +45,9 @@ The SimpleXPPlanner focuses on the core use case: "How much XP will this flight 
 
 **Kept in Simple view:**
 - Route input with validation
-- Cabin class selection
+- Cabin class selection (as visual pills)
 - Return trip toggle
-- XP result with progress preview
+- Real-time XP result with progress preview
 - Link to Full View for advanced features
 
 ## Component Structure

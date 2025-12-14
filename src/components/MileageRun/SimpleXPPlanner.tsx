@@ -44,7 +44,7 @@ const getTargetXP = (status: StatusLevel): number => {
 // Cabin class display info
 const CABIN_INFO: Record<CabinClass, { label: string; multiplier: string; color: string }> = {
   'Economy': { label: 'Economy', multiplier: '1×', color: 'bg-slate-100 text-slate-700 border-slate-200' },
-  'PremiumEconomy': { label: 'Premium', multiplier: '1.5×', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  'Premium Economy': { label: 'Premium', multiplier: '1.5×', color: 'bg-blue-50 text-blue-700 border-blue-200' },
   'Business': { label: 'Business', multiplier: '2×', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   'First': { label: 'First', multiplier: '3×', color: 'bg-amber-50 text-amber-700 border-amber-200' },
 };

@@ -416,7 +416,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({
                       className={INPUT_BASE_CLASS}
                     >
                       <option value="Economy">Economy</option>
-                      <option value="PremiumEconomy">Premium Eco</option>
+                      <option value="Premium Economy">Premium Eco</option>
                       <option value="Business">Business</option>
                       <option value="First">First</option>
                     </select>
