@@ -47,6 +47,64 @@ const getThresholdForStatus = (status: StatusLevel): number => {
   }
 };
 
+/**
+ * Calculate the rollover XP when a status threshold was reached.
+ * This processes flights chronologically to determine exactly how much XP
+ * was "left over" after reaching a threshold.
+ * 
+ * @param flights All flights to consider
+ * @param requalificationDate The date when the new status was achieved (YYYY-MM-DD)
+ * @param previousStatus The status BEFORE requalification (e.g., 'Silver' if upgrading to 'Gold')
+ * @param startingXP XP balance at the start of the cycle (usually 0)
+ * @returns The rollover XP that should start the new cycle
+ */
+export const calculateRolloverXP = (
+  flights: FlightRecord[],
+  requalificationDate: string,
+  previousStatus: StatusLevel,
+  startingXP: number = 0
+): number => {
+  // Get the threshold that was reached
+  const nextStatus = getNextStatus(previousStatus);
+  if (!nextStatus) return 0; // Platinum can't level up further
+  
+  const threshold = getThresholdForStatus(nextStatus);
+  
+  // Sort flights by date
+  const sortedFlights = [...flights]
+    .filter(f => f.date <= requalificationDate)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  
+  // Calculate cumulative XP
+  let cumulativeXP = startingXP;
+  
+  for (const flight of sortedFlights) {
+    const flightXP = (flight.earnedXP ?? 0) + (flight.safXp ?? 0);
+    cumulativeXP += flightXP;
+    
+    // Check if we crossed the threshold
+    if (cumulativeXP >= threshold) {
+      // The rollover is everything above the threshold
+      return cumulativeXP - threshold;
+    }
+  }
+  
+  // Threshold not reached - no rollover
+  return 0;
+};
+
+/**
+ * Determine the previous status based on the new status after requalification.
+ */
+export const getPreviousStatus = (newStatus: StatusLevel): StatusLevel => {
+  switch (newStatus) {
+    case 'Silver': return 'Explorer';
+    case 'Gold': return 'Silver';
+    case 'Platinum': return 'Gold';
+    default: return 'Explorer';
+  }
+};
+
 /** Volgende status na de huidige */
 const getNextStatus = (status: StatusLevel): StatusLevel | null => {
   switch (status) {

@@ -31,6 +31,10 @@ import {
   extractBonusXp,
   ParseResult 
 } from '../utils/parseFlyingBluePdf';
+import { 
+  calculateRolloverXP, 
+  getPreviousStatus 
+} from '../utils/xp-logic';
 import { FlightRecord, MilesRecord } from '../types';
 import {
   submitFeedback,
@@ -53,6 +57,7 @@ interface CycleSettings {
   cycleStartMonth: string;
   cycleStartDate?: string;  // Full date for precise XP filtering
   startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+  startingXP?: number;  // Rollover XP from previous cycle
 }
 
 interface PdfImportModalProps {
@@ -317,10 +322,22 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     // Prepare cycle settings if detected and user opted in
     let cycleSettings: CycleSettings | undefined;
     if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus) {
+      // Calculate rollover XP: how much XP was "left over" after reaching the threshold
+      const previousStatus = getPreviousStatus(summary.suggestedStatus);
+      const rolloverXP = summary.suggestedCycleStartDate 
+        ? calculateRolloverXP(
+            summary.flights,  // All flights from PDF
+            summary.suggestedCycleStartDate,  // Date when new status was achieved
+            previousStatus,  // Status before the upgrade
+            0  // Starting XP (beginning of that cycle)
+          )
+        : 0;
+      
       cycleSettings = {
         cycleStartMonth: summary.suggestedCycleStart,
         cycleStartDate: summary.suggestedCycleStartDate || undefined,  // Full date for precise XP filtering
         startingStatus: summary.suggestedStatus,
+        startingXP: rolloverXP,  // Rollover from the level-up
       };
     }
 

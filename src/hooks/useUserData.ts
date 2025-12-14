@@ -98,7 +98,12 @@ export interface UserDataActions {
     flights: FlightRecord[],
     miles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; startingStatus: StatusLevel },
+    cycleSettings?: { 
+      cycleStartMonth: string; 
+      cycleStartDate?: string;
+      startingStatus: StatusLevel;
+      startingXP?: number;
+    },
     bonusXpByMonth?: Record<string, number>
   ) => void;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
@@ -503,54 +508,30 @@ export function useUserData(): UseUserDataReturn {
       setHasAttemptedLoad(true);
     }
 
-    // Merge flights (skip duplicates)
-    setFlightsInternal((prevFlights) => {
-      const existingFlightKeys = new Set(prevFlights.map((f) => `${f.date}-${f.route}`));
-      const newFlights = importedFlights.filter((f) => !existingFlightKeys.has(`${f.date}-${f.route}`));
-      return [...prevFlights, ...newFlights];
-    });
+    // REPLACE MODE: Instead of merging, we replace all flight data
+    // This ensures XP calculations are always correct by starting fresh
+    // User's manual corrections are cleared since they'll be recalculated from the PDF
+    
+    // Replace all flights with imported flights
+    setFlightsInternal(importedFlights);
 
-    // Merge miles
-    setBaseMilesDataInternal((prevMiles) => {
-      const updatedMiles = [...prevMiles];
-      for (const incoming of importedMiles) {
-        const existingIndex = updatedMiles.findIndex((m) => m.month === incoming.month);
-        if (existingIndex >= 0) {
-          updatedMiles[existingIndex] = incoming;
-        } else {
-          updatedMiles.push(incoming);
-        }
-      }
-      return updatedMiles;
-    });
+    // Replace all miles data
+    setBaseMilesDataInternal(importedMiles);
 
-    // Handle XP correction
-    if (xpCorrection && xpCorrection.correctionXp !== 0) {
-      setManualLedgerInternal((prev) => {
-        const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-        return {
-          ...prev,
-          [xpCorrection.month]: {
-            ...existing,
-            correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
-          },
-        };
-      });
-    }
-
-    // Handle bonus XP from PDF (first flight bonuses, hotel stay XP, etc.)
+    // REPLACE MODE: Clear manual ledger and rebuild from PDF data only
+    // XP corrections are no longer needed since we recalculate everything from scratch
+    // Only keep bonus XP from the PDF (first flight bonuses, hotel XP, etc.)
+    
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      setManualLedgerInternal((prev) => {
-        const updated = { ...prev };
-        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-          const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-          updated[month] = {
-            ...existing,
-            miscXp: (existing.miscXp || 0) + xp,
-          };
-        }
-        return updated;
-      });
+      // Start fresh with only bonus XP from PDF
+      const freshLedger: ManualLedger = {};
+      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+        freshLedger[month] = { amexXp: 0, bonusSafXp: 0, miscXp: xp, correctionXp: 0 };
+      }
+      setManualLedgerInternal(freshLedger);
+    } else {
+      // No bonus XP - clear the manual ledger entirely
+      setManualLedgerInternal({});
     }
 
     // Handle cycle settings (including precise start date for XP filtering)
@@ -559,7 +540,7 @@ export function useUserData(): UseUserDataReturn {
         cycleStartMonth: cycleSettings.cycleStartMonth,
         cycleStartDate: cycleSettings.cycleStartDate,  // Full date for precise XP calculation
         startingStatus: cycleSettings.startingStatus,
-        startingXP: 0,
+        startingXP: cycleSettings.startingXP ?? 0,  // Use calculated rollover or 0
       });
     }
 
