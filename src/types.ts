@@ -111,6 +111,7 @@ export interface AppState {
 
 export interface QualificationSettings {
   cycleStartMonth: string;
+  cycleStartDate?: string;    // Full date (YYYY-MM-DD) for precise cycle start
   startingStatus: StatusLevel;
   startingXP: number;
   startingUXP?: number;     // UXP carried over from previous cycle

@@ -50,6 +50,7 @@ interface XPCorrection {
 
 interface CycleSettings {
   cycleStartMonth: string;
+  cycleStartDate?: string;  // Full date for precise XP filtering
   startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
 }
 
@@ -136,9 +137,12 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     const mostRecentRequalification = sortedRequalifications[0] || null;
     
     let suggestedCycleStart: string | null = null;
+    let suggestedCycleStartDate: string | null = null;  // Full date for precise filtering
     let suggestedStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null = null;
     
     if (mostRecentRequalification) {
+      // Keep the full date for precise XP calculation
+      suggestedCycleStartDate = mostRecentRequalification.date; // Full date YYYY-MM-DD
       // Convert date (YYYY-MM-DD) to month (YYYY-MM)
       suggestedCycleStart = mostRecentRequalification.date.substring(0, 7);
       // Map status
@@ -178,6 +182,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       requalifications,
       // Suggested cycle settings
       suggestedCycleStart,
+      suggestedCycleStartDate,  // Full date for precise filtering
       suggestedStatus,
     };
   }, [parseResult, existingFlights, existingMiles]);
@@ -307,6 +312,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus) {
       cycleSettings = {
         cycleStartMonth: summary.suggestedCycleStart,
+        cycleStartDate: summary.suggestedCycleStartDate || undefined,  // Full date for precise XP filtering
         startingStatus: summary.suggestedStatus,
       };
     }

@@ -42,6 +42,7 @@ import { CurrencyCode } from '../utils/format';
 
 export interface QualificationSettings {
   cycleStartMonth: string;
+  cycleStartDate?: string;  // Full date (YYYY-MM-DD) for precise cycle start
   startingStatus: StatusLevel;
   startingXP: number;
   startingUXP?: number;     // UXP carried over from previous cycle
@@ -273,6 +274,7 @@ export function useUserData(): UseUserDataReturn {
         if (data.profile.qualificationStartMonth) {
           setQualificationSettingsInternal({
             cycleStartMonth: data.profile.qualificationStartMonth,
+            cycleStartDate: data.profile.qualificationStartDate || undefined,  // Full date for precise XP filtering
             startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
             startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
             ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
@@ -320,6 +322,7 @@ export function useUserData(): UseUserDataReturn {
           xp_rollover: xpRollover,
           currency: currency,
           qualification_start_month: qualificationSettings?.cycleStartMonth,
+          qualification_start_date: qualificationSettings?.cycleStartDate,  // Full date for precise XP filtering
           starting_status: qualificationSettings?.startingStatus,
           starting_xp: qualificationSettings?.startingXP,
           ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
@@ -488,7 +491,7 @@ export function useUserData(): UseUserDataReturn {
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; startingStatus: StatusLevel }
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel }
   ) => {
     // CRITICAL: Mark as loaded so autosave works for new users
     // Without this, importing PDF before loadUserData completes would not save
@@ -533,10 +536,11 @@ export function useUserData(): UseUserDataReturn {
       });
     }
 
-    // Handle cycle settings
+    // Handle cycle settings (including precise start date for XP filtering)
     if (cycleSettings) {
       setQualificationSettingsInternal({
         cycleStartMonth: cycleSettings.cycleStartMonth,
+        cycleStartDate: cycleSettings.cycleStartDate,  // Full date for precise XP calculation
         startingStatus: cycleSettings.startingStatus,
         startingXP: 0,
       });

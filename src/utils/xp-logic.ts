@@ -342,12 +342,18 @@ interface MonthData {
 // ============================================================================
 
 const aggregateFlightsByMonth = (
-  flights: FlightRecord[]
+  flights: FlightRecord[],
+  excludeBeforeDate?: string  // Exclude flights before this date (YYYY-MM-DD)
 ): Map<string, FlightMonthAggregate> => {
   const map = new Map<string, FlightMonthAggregate>();
   const today = getTodayISO();
 
   for (const flight of flights) {
+    // Skip flights before the cycle start date
+    if (excludeBeforeDate && flight.date < excludeBeforeDate) {
+      continue;
+    }
+    
     const monthKey = flight.date.slice(0, 7);
     const flightIsFlown = flight.date < today;
 
@@ -393,9 +399,10 @@ const aggregateFlightsByMonth = (
 const buildMonthDataList = (
   flights: FlightRecord[],
   manualLedger: ManualLedger,
-  legacyData: XPRecord[]
+  legacyData: XPRecord[],
+  excludeBeforeDate?: string  // Exclude flights before this date (YYYY-MM-DD)
 ): MonthData[] => {
-  const flightAgg = aggregateFlightsByMonth(flights);
+  const flightAgg = aggregateFlightsByMonth(flights, excludeBeforeDate);
   const monthKeys = new Set<string>();
 
   flightAgg.forEach((_, k) => monthKeys.add(k));
@@ -1046,16 +1053,21 @@ export const calculateQualificationCycles = (
   flights?: FlightRecord[],
   manualLedger?: ManualLedger,
   qualificationSettings?: { 
-    cycleStartMonth: string; 
+    cycleStartMonth: string;
+    cycleStartDate?: string;  // Full date (YYYY-MM-DD) for precise filtering
     startingStatus: StatusLevel; 
     startingXP: number;
     ultimateCycleType?: 'qualification' | 'calendar';
   } | null
 ): MultiCycleStats => {
+  // If cycleStartDate is provided, use it; otherwise flights from entire month are included
+  const excludeBeforeDate = qualificationSettings?.cycleStartDate;
+  
   const monthDataList = buildMonthDataList(
     flights ?? [],
     manualLedger ?? {},
-    legacyData
+    legacyData,
+    excludeBeforeDate
   );
 
   const currentMonth = getCurrentMonth();
