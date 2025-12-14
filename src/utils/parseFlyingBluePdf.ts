@@ -455,15 +455,32 @@ export function parseFlyingBlueText(text: string): ParseResult {
             const airlineCode = flightNum.substring(0, 2);
             const airline = AIRLINE_MAP[airlineCode] || airlineCode;
             
-            const isRevenue = /bestede euro|spent euro|euros dépensés/i.test(rest);
+            // Check if this is a revenue flight (paid with money, not award)
+            // Match on "bestede" (NL), "spent" (EN), "dépensés" (FR), "ausgegeben" (DE)
+            // Works for all currencies: euros, kroner, dollars, pounds, etc.
+            const isRevenue = /bestede|spent|dépensés|ausgegeben/i.test(rest);
             
             // Look for actual flight date in next lines
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
+            // Must be at start of line to avoid matching "op basis van"
             let flightDate = transDate;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const opMatch = lines[k].match(/(?:op|on|le|am)\s+(.+)/i);
+              const line = lines[k];
+              // Primary: Match "op/on/le/am" at start of line, followed by a date
+              const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
+                if (parsed) {
+                  flightDate = parsed;
+                  break;
+                }
+              }
+              // Fallback: Look for "op [day] [month] [year]" pattern anywhere
+              // This handles cases where text isn't cleanly split into lines
+              const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
+              if (datePattern) {
+                const [, day, month, year] = datePattern;
+                const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
                   flightDate = parsed;
                   break;
@@ -517,11 +534,24 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for flight date
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
+            // Must be at start of line to avoid matching "op basis van"
             let flightDate = transDate;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const opMatch = lines[k].match(/(?:op|on|le|am)\s+(.+)/i);
+              const line = lines[k];
+              // Primary: Match "op/on/le/am" at start of line
+              const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
+                if (parsed) {
+                  flightDate = parsed;
+                  break;
+                }
+              }
+              // Fallback: Look for "op [day] [month] [year]" pattern anywhere
+              const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
+              if (datePattern) {
+                const [, day, month, year] = datePattern;
+                const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
                   flightDate = parsed;
                   break;

@@ -1,61 +1,82 @@
-# Mobile-First Simple Mode + Bug Fixes
+# PDF Flight Date Parser Fix + Multi-Currency Support
 
-Makes Simple Mode the default for mobile users and fixes several bugs.
+Fixes incorrect flight dates and adds support for all currencies when importing Flying Blue PDF statements.
 
-## Bug Fixes
+## Bug 1: Wrong Flight Dates
 
-### 1. WelcomeModal Disabled
-The "Welcome Aboard / Load Demo Data / Start Fresh" modal was showing when clicking "Explore Demo" on the landing page. This modal is now disabled - the landing page and demo mode selector handle everything.
-
-### 2. Mobile Logout Button Fixed
-The logout button in the mobile sidebar wasn't responding because the DemoBar overlay had a higher z-index (z-60+) than the sidebar (z-50). Fixed by increasing sidebar z-index to z-[80] when open.
-
-## Mobile-First Changes
-
-### 1. Mobile Default (useViewMode.ts)
-- Mobile devices (< 768px) now default to Simple Mode
-- Desktop users still get Full Mode by default
-- User preference is saved in localStorage and persists
-
-### 2. SimpleXPPlanner Mobile Improvements
-- Cabin class buttons: 2 columns on mobile, 4 on desktop
-- Fixed NaN bug with Premium Economy
-- Fixed "to Ultimate" text (now says "to requalify" for Platinum)
-
-### 3. SimpleXPEngine Mobile Improvements
-- XP breakdown grid: smaller gap and text on mobile
-- Better readability on small screens
-
-## Files Included
+The PDF parser was using the wrong date for flights. For example:
 
 ```
-src/
-├── App.tsx                       # WelcomeModal disabled
-├── hooks/
-│   └── useViewMode.ts            # Mobile-first default logic
-└── components/
-    ├── Layout.tsx                # Higher z-index for mobile sidebar
-    ├── MileageRun/
-    │   ├── index.tsx             # View mode switch wrapper
-    │   └── SimpleXPPlanner.tsx   # Responsive cabin grid
-    └── XPEngine/
-        └── SimpleXPEngine.tsx    # Responsive XP breakdown
+30 nov 2025    Mijn reis naar Berlijn
+               AMS - BER KL1775 gespaarde Miles op basis
+               van bestede euro's
+               op 29 nov 2025    ← This is the actual flight date
+```
+
+The parser was incorrectly using "30 nov 2025" (posting date) instead of "29 nov 2025" (flight date).
+
+### Root Cause
+
+The regex `/(?:op|on|le|am)\s+(.+)/i` was matching "op basis van" instead of "op 29 nov 2025" because:
+1. It matched anywhere in the string, not just at the start of a line
+2. "op basis van bestede euro's" appears before "op 29 nov 2025"
+
+### The Fix
+
+1. **Primary fix:** Changed regex to `^(?:op|on|le|am)\s+(.+)` with the `^` anchor to match only at the start of a line
+
+2. **Fallback:** Added a secondary pattern that specifically looks for "op [day] [month] [year]" pattern anywhere in the text
+
+## Bug 2: Only Euro Currency Supported
+
+The `isRevenue` check only worked for euros:
+```typescript
+// OLD - only euros:
+const isRevenue = /bestede euro|spent euro|euros dépensés/i.test(rest);
+```
+
+This didn't work for users paying in other currencies (kroner, dollars, pounds, etc.).
+
+### The Fix
+
+Match on the spending verb only, not the currency:
+```typescript
+// NEW - all currencies:
+const isRevenue = /bestede|spent|dépensés|ausgegeben/i.test(rest);
+```
+
+Now works for:
+- Euros (EUR)
+- Kroner (NOK, SEK, DKK)
+- Pounds (GBP)
+- Dollars (USD, CAD, AUD)
+- Swiss Francs (CHF)
+- Any other currency
+
+## Files Changed
+
+```
+src/utils/parseFlyingBluePdf.ts
 ```
 
 ## Installation
 
 ```bash
 cd skystatus-main
-unzip -o skystatus-mobile-simple-mode.zip
+unzip -o skystatus-pdf-date-fix.zip
 npm run build
 ```
 
-## Z-Index Changes
+## Testing
 
-| Component | Before | After |
-|-----------|--------|-------|
-| Mobile Sidebar | z-50 | z-[80] |
-| Mobile Overlay | z-40 | z-[79] |
-| DemoBar | z-[60] | z-[60] (unchanged) |
+After applying this fix, re-import a Flying Blue PDF and verify:
+1. Flight dates match the "op [date]" shown in the PDF
+2. Flights are correctly assigned to their actual flight dates, not posting dates
 
-This ensures the sidebar is always on top when open on mobile.
+## Languages Supported
+
+The fix works for all supported languages:
+- Dutch: "op 29 nov 2025"
+- English: "on 29 Nov 2025"  
+- French: "le 29 nov 2025"
+- German: "am 29. Nov 2025"
