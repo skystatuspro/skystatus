@@ -1,17 +1,18 @@
 // src/hooks/useViewMode.ts
-// Simple hook for view mode toggle - uses localStorage directly, no Context needed
-// Uses custom event to sync state across components
+// View mode toggle using useSyncExternalStore for reliable cross-component sync
 
-import { useState, useEffect, useCallback } from 'react';
+import { useSyncExternalStore, useCallback } from 'react';
 
 export type ViewMode = 'simple' | 'full';
 
 const STORAGE_KEY = 'skystatus_view_mode';
 const DEFAULT_MODE: ViewMode = 'full';
-const CHANGE_EVENT = 'skystatus_view_mode_change';
 
-// Read from localStorage (safe, returns default on error)
-function getStoredMode(): ViewMode {
+// Subscribers for the store
+let listeners: Array<() => void> = [];
+
+// Get current value from localStorage
+function getSnapshot(): ViewMode {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'simple' || stored === 'full') {
@@ -23,42 +24,45 @@ function getStoredMode(): ViewMode {
   return DEFAULT_MODE;
 }
 
-// Write to localStorage and broadcast change
-function setStoredMode(mode: ViewMode): void {
+// Server snapshot (for SSR, not used but required)
+function getServerSnapshot(): ViewMode {
+  return DEFAULT_MODE;
+}
+
+// Subscribe to changes
+function subscribe(listener: () => void): () => void {
+  listeners.push(listener);
+  return () => {
+    listeners = listeners.filter(l => l !== listener);
+  };
+}
+
+// Notify all subscribers
+function emitChange(): void {
+  listeners.forEach(listener => listener());
+}
+
+// Update the store
+function setMode(mode: ViewMode): void {
   try {
     localStorage.setItem(STORAGE_KEY, mode);
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: mode }));
   } catch {
     // localStorage not available
   }
+  emitChange();
 }
 
 export function useViewMode() {
-  const [viewMode, setViewModeState] = useState<ViewMode>(getStoredMode);
-
-  // Listen for changes from other components
-  useEffect(() => {
-    const handleChange = (event: CustomEvent<ViewMode>) => {
-      setViewModeState(event.detail);
-    };
-
-    window.addEventListener(CHANGE_EVENT, handleChange as EventListener);
-    return () => {
-      window.removeEventListener(CHANGE_EVENT, handleChange as EventListener);
-    };
-  }, []);
+  const viewMode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const setViewMode = useCallback((mode: ViewMode) => {
-    setViewModeState(mode);
-    setStoredMode(mode);
+    setMode(mode);
   }, []);
 
   const toggleViewMode = useCallback(() => {
-    const newMode = viewMode === 'simple' ? 'full' : 'simple';
-    setViewModeState(newMode);
-    setStoredMode(newMode);
-  }, [viewMode]);
+    const current = getSnapshot();
+    setMode(current === 'simple' ? 'full' : 'simple');
+  }, []);
 
   return {
     viewMode,
