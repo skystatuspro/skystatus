@@ -10,6 +10,9 @@ import {
   calculateEfficiencyScore,
   extractMilestones,
   generateFunFacts,
+  calculateUXPStats,
+  getAirlineMixThisCycle,
+  getAirlineMixPast12Months,
 } from './helpers';
 import {
   ProfileHeader,
@@ -21,6 +24,7 @@ import {
   FunFactsCard,
   QuickSettingsCard,
   EmptyState,
+  UXPProgressCard,
 } from './components';
 
 export const Profile: React.FC<ProfileProps> = ({
@@ -43,8 +47,13 @@ export const Profile: React.FC<ProfileProps> = ({
     [flights]
   );
 
-  const airlineMix = useMemo(
-    () => calculateAirlineMix(flights),
+  const airlineMixCycle = useMemo(
+    () => getAirlineMixThisCycle(flights, qualificationSettings?.cycleStartMonth),
+    [flights, qualificationSettings?.cycleStartMonth]
+  );
+
+  const airlineMixPast12 = useMemo(
+    () => getAirlineMixPast12Months(flights),
     [flights]
   );
 
@@ -62,6 +71,15 @@ export const Profile: React.FC<ProfileProps> = ({
     () => generateFunFacts(flights),
     [flights]
   );
+
+  // UXP stats (for Platinum/Ultimate)
+  const uxpStats = useMemo(
+    () => calculateUXPStats(flights, qualificationSettings?.cycleStartMonth),
+    [flights, qualificationSettings?.cycleStartMonth]
+  );
+
+  // Show UXP card for Platinum and Ultimate only
+  const showUXPCard = currentStatus === 'Platinum' || currentStatus === 'Ultimate';
 
   // Empty state
   if (flights.length === 0) {
@@ -88,6 +106,11 @@ export const Profile: React.FC<ProfileProps> = ({
       {/* Lifetime Stats Grid */}
       <LifetimeStatsGrid stats={lifetimeStats} />
 
+      {/* UXP Progress Card - Platinum/Ultimate only */}
+      {showUXPCard && (
+        <UXPProgressCard uxpStats={uxpStats} currentStatus={currentStatus} />
+      )}
+
       {/* Two-column layout for efficiency + breakdown */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* XP Efficiency Score */}
@@ -102,7 +125,10 @@ export const Profile: React.FC<ProfileProps> = ({
       {/* Breakdown Cards */}
       <div className="grid lg:grid-cols-2 gap-6">
         <CabinClassCard cabinMix={cabinMix} />
-        <AirlineMixCard airlineMix={airlineMix} />
+        <AirlineMixCard 
+          airlineMixCycle={airlineMixCycle} 
+          airlineMixPast12={airlineMixPast12} 
+        />
       </div>
 
       {/* Milestones Timeline */}

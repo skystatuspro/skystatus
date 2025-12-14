@@ -27,6 +27,7 @@ import {
   EfficiencyResult,
   StatusMilestones,
   FunFact,
+  UXPStats,
 } from './types';
 import { formatDate, formatNumber } from './helpers';
 
@@ -193,9 +194,9 @@ export const LifetimeStatsGrid: React.FC<LifetimeStatsGridProps> = ({ stats }) =
       />
       <StatCard
         icon={<Target size={20} className="text-white" />}
-        label="KL/AF Ratio"
-        value={`${stats.klAfRatio}%`}
-        sublabel="UXP eligible"
+        label="Avg XP/Flight"
+        value={stats.avgXpPerFlight}
+        sublabel="per segment"
         color="violet"
       />
     </div>
@@ -340,33 +341,65 @@ export const CabinClassCard: React.FC<CabinClassCardProps> = ({ cabinMix }) => {
 };
 
 // ============================================================================
-// AIRLINE MIX CARD
+// AIRLINE MIX CARD (with tabs)
 // ============================================================================
 
 interface AirlineMixCardProps {
-  airlineMix: AirlineMix;
+  airlineMixCycle: AirlineMix;
+  airlineMixPast12: AirlineMix;
 }
 
-export const AirlineMixCard: React.FC<AirlineMixCardProps> = ({ airlineMix }) => {
+export const AirlineMixCard: React.FC<AirlineMixCardProps> = ({ 
+  airlineMixCycle, 
+  airlineMixPast12 
+}) => {
+  const [activeTab, setActiveTab] = React.useState<'cycle' | 'past12'>('cycle');
+  
+  const airlineMix = activeTab === 'cycle' ? airlineMixCycle : airlineMixPast12;
   const klAfTotal = airlineMix.kl + airlineMix.af;
   
+  // Neutral messaging
   let insight = '';
-  let icon = '✓';
   if (klAfTotal >= 80) {
-    insight = `${klAfTotal}% KL/AF — excellent for Ultimate UXP!`;
-  } else if (klAfTotal >= 60) {
-    insight = `${klAfTotal}% KL/AF — good for UXP, but room to improve.`;
-    icon = '📊';
+    insight = `${klAfTotal}% of your flights are on KLM/Air France.`;
+  } else if (klAfTotal >= 40) {
+    insight = `${klAfTotal}% KLM/AF, ${100 - klAfTotal}% partner airlines.`;
+  } else if (klAfTotal > 0) {
+    insight = `Mostly partner airlines (${100 - klAfTotal}%), with some KLM/AF.`;
   } else {
-    insight = `Only ${klAfTotal}% KL/AF. Partner flights don't earn UXP!`;
-    icon = '⚠️';
+    insight = `All flights on SkyTeam partner airlines.`;
   }
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">
-        Airline Mix
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+          Airline Mix
+        </h3>
+        {/* Tab Toggle */}
+        <div className="flex bg-slate-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setActiveTab('cycle')}
+            className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${
+              activeTab === 'cycle'
+                ? 'bg-white text-slate-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            This Cycle
+          </button>
+          <button
+            onClick={() => setActiveTab('past12')}
+            className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${
+              activeTab === 'past12'
+                ? 'bg-white text-slate-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Past 12 Mo
+          </button>
+        </div>
+      </div>
 
       <div className="space-y-3">
         {airlineMix.kl > 0 && (
@@ -378,11 +411,111 @@ export const AirlineMixCard: React.FC<AirlineMixCardProps> = ({ airlineMix }) =>
         {airlineMix.partners > 0 && (
           <BreakdownBar label="Partners" percentage={airlineMix.partners} color="bg-slate-400" />
         )}
+        {airlineMix.kl === 0 && airlineMix.af === 0 && airlineMix.partners === 0 && (
+          <p className="text-sm text-slate-400 italic">No flights in this period</p>
+        )}
       </div>
 
-      <p className="text-sm text-slate-600 mt-4 pt-4 border-t border-slate-100">
-        {icon} {insight}
+      <p className="text-sm text-slate-500 mt-4 pt-4 border-t border-slate-100">
+        {insight}
       </p>
+    </div>
+  );
+};
+
+// ============================================================================
+// UXP PROGRESS CARD (Platinum/Ultimate only)
+// ============================================================================
+
+interface UXPProgressCardProps {
+  uxpStats: UXPStats;
+  currentStatus: StatusLevel;
+}
+
+export const UXPProgressCard: React.FC<UXPProgressCardProps> = ({ uxpStats, currentStatus }) => {
+  const isUltimate = currentStatus === 'Ultimate';
+  const targetLabel = isUltimate ? 'to maintain Ultimate' : 'to reach Ultimate';
+  
+  // Calculate what's needed
+  const uxpNeeded = Math.max(0, uxpStats.targetUXP - uxpStats.uxpThisCycle);
+  const avgUxpPerKLAFFlight = uxpStats.klAfFlightCount > 0 
+    ? Math.round(uxpStats.totalUXP / uxpStats.klAfFlightCount)
+    : 25; // Default estimate
+  const flightsNeeded = avgUxpPerKLAFFlight > 0 
+    ? Math.ceil(uxpNeeded / avgUxpPerKLAFFlight)
+    : 0;
+
+  // Determine sentiment
+  let statusMessage = '';
+  let statusColor = 'text-slate-600';
+  
+  if (uxpStats.progressPercentage >= 100) {
+    statusMessage = isUltimate ? '✓ Ultimate status secured!' : '✓ Ultimate unlocked!';
+    statusColor = 'text-emerald-600';
+  } else if (uxpStats.progressPercentage >= 70) {
+    statusMessage = `Almost there! ${uxpNeeded} UXP to go.`;
+    statusColor = 'text-blue-600';
+  } else if (uxpStats.progressPercentage >= 40) {
+    statusMessage = `On track — ~${flightsNeeded} more KLM/AF flights needed.`;
+    statusColor = 'text-amber-600';
+  } else {
+    statusMessage = `${flightsNeeded} KLM/AF flights needed ${targetLabel}.`;
+    statusColor = 'text-slate-500';
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border border-violet-100 shadow-sm p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Crown size={18} className="text-violet-600" />
+          <h3 className="text-xs font-bold text-violet-600 uppercase tracking-wide">
+            Ultimate Progress
+          </h3>
+        </div>
+        <span className="text-xs text-violet-500 font-medium">
+          This cycle
+        </span>
+      </div>
+
+      {/* Big number */}
+      <div className="flex items-baseline gap-2 mb-3">
+        <span className="text-4xl font-black text-violet-700">
+          {uxpStats.uxpThisCycle.toLocaleString()}
+        </span>
+        <span className="text-lg text-violet-400 font-medium">
+          / {uxpStats.targetUXP.toLocaleString()} UXP
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-3 bg-violet-100 rounded-full overflow-hidden mb-4">
+        <div 
+          className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-500"
+          style={{ width: `${Math.min(100, uxpStats.progressPercentage)}%` }}
+        />
+      </div>
+
+      {/* Status message */}
+      <p className={`text-sm font-medium ${statusColor}`}>
+        {statusMessage}
+      </p>
+
+      {/* Flight breakdown */}
+      <div className="mt-4 pt-4 border-t border-violet-100 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-4">
+          <span className="text-violet-600">
+            <strong>{uxpStats.klAfFlightCount}</strong> KLM/AF flights
+          </span>
+          <span className="text-slate-400">
+            {uxpStats.partnerFlightCount} partner flights
+          </span>
+        </div>
+        {avgUxpPerKLAFFlight > 0 && uxpStats.klAfFlightCount > 0 && (
+          <span className="text-violet-500">
+            ~{avgUxpPerKLAFFlight} UXP/flight avg
+          </span>
+        )}
+      </div>
     </div>
   );
 };

@@ -40,19 +40,61 @@ export function calculateLifetimeStats(
   // Total flights
   const totalFlights = flights.length;
 
-  // KL/AF ratio
-  const klAfFlights = flights.filter(f => 
-    f.airline === 'KL' || f.airline === 'AF'
-  ).length;
-  const klAfRatio = totalFlights > 0 
-    ? Math.round((klAfFlights / totalFlights) * 100) 
+  // Average XP per flight
+  const avgXpPerFlight = totalFlights > 0 
+    ? Math.round((flightXP / totalFlights) * 10) / 10
     : 0;
 
   return {
     totalXP,
     totalMilesEarned,
     totalFlights,
-    klAfRatio,
+    avgXpPerFlight,
+  };
+}
+
+// ============================================================================
+// UXP STATS (for Platinum/Ultimate tracking)
+// ============================================================================
+
+import { UXPStats } from './types';
+
+export function calculateUXPStats(
+  flights: FlightRecord[],
+  cycleStartMonth?: string
+): UXPStats {
+  // Count KL/AF vs partner flights
+  const klAfFlights = flights.filter(f => isKLorAF(f.airline));
+  const partnerFlights = flights.filter(f => !isKLorAF(f.airline));
+
+  // Total UXP from all KL/AF flights (using uxp field if available, otherwise earnedXP)
+  const totalUXP = klAfFlights.reduce((sum, f) => sum + (f.uxp || f.earnedXP || 0), 0);
+
+  // UXP this cycle (if cycle start is defined)
+  let uxpThisCycle = totalUXP;
+  let klAfThisCycle = klAfFlights.length;
+  let partnersThisCycle = partnerFlights.length;
+  
+  if (cycleStartMonth) {
+    const cycleStart = cycleStartMonth + '-01';
+    const cycleFlightsKLAF = klAfFlights.filter(f => f.date >= cycleStart);
+    const cycleFlightsPartner = partnerFlights.filter(f => f.date >= cycleStart);
+    uxpThisCycle = cycleFlightsKLAF.reduce((sum, f) => sum + (f.uxp || f.earnedXP || 0), 0);
+    klAfThisCycle = cycleFlightsKLAF.length;
+    partnersThisCycle = cycleFlightsPartner.length;
+  }
+
+  const targetUXP = 900;
+  const progressPercentage = Math.min(100, Math.round((uxpThisCycle / targetUXP) * 100));
+
+  return {
+    totalUXP,
+    uxpThisCycle,
+    targetUXP,
+    uxpFromFlights: totalUXP,
+    klAfFlightCount: klAfThisCycle,
+    partnerFlightCount: partnersThisCycle,
+    progressPercentage,
   };
 }
 
@@ -92,6 +134,23 @@ export function calculateCabinMix(flights: FlightRecord[]): CabinMix {
 // AIRLINE MIX
 // ============================================================================
 
+// Helper to check if airline is KLM
+function isKLM(airline: string): boolean {
+  const a = airline.toUpperCase();
+  return a === 'KL' || a === 'KLM';
+}
+
+// Helper to check if airline is Air France
+function isAirFrance(airline: string): boolean {
+  const a = airline.toUpperCase();
+  return a === 'AF' || a === 'AIR FRANCE' || a === 'AIRFRANCE';
+}
+
+// Helper to check if KL or AF
+function isKLorAF(airline: string): boolean {
+  return isKLM(airline) || isAirFrance(airline);
+}
+
 export function calculateAirlineMix(flights: FlightRecord[]): AirlineMix {
   if (flights.length === 0) {
     return { kl: 0, af: 0, partners: 0 };
@@ -102,9 +161,9 @@ export function calculateAirlineMix(flights: FlightRecord[]): AirlineMix {
   let partnerCount = 0;
 
   flights.forEach(f => {
-    if (f.airline === 'KL') {
+    if (isKLM(f.airline)) {
       klCount++;
-    } else if (f.airline === 'AF') {
+    } else if (isAirFrance(f.airline)) {
       afCount++;
     } else {
       partnerCount++;
@@ -118,6 +177,53 @@ export function calculateAirlineMix(flights: FlightRecord[]): AirlineMix {
     af: Math.round((afCount / total) * 100),
     partners: Math.round((partnerCount / total) * 100),
   };
+}
+
+// Calculate airline mix for a specific time period
+export function calculateAirlineMixForPeriod(
+  flights: FlightRecord[],
+  startDate: string,
+  endDate: string
+): AirlineMix {
+  const filteredFlights = flights.filter(f => 
+    f.date >= startDate && f.date <= endDate
+  );
+  return calculateAirlineMix(filteredFlights);
+}
+
+// Get airline mix for current cycle
+export function getAirlineMixThisCycle(
+  flights: FlightRecord[],
+  cycleStartMonth?: string
+): AirlineMix {
+  if (!cycleStartMonth) {
+    // Default to calendar year
+    const currentYear = new Date().getFullYear();
+    const startDate = `${currentYear}-01-01`;
+    const endDate = `${currentYear}-12-31`;
+    return calculateAirlineMixForPeriod(flights, startDate, endDate);
+  }
+  
+  const cycleStart = cycleStartMonth + '-01';
+  // Cycle end is 12 months later
+  const [year, month] = cycleStartMonth.split('-').map(Number);
+  const endYear = month === 1 ? year : year + 1;
+  const endMonth = month === 1 ? 12 : month - 1;
+  const cycleEnd = `${endYear}-${String(endMonth).padStart(2, '0')}-31`;
+  
+  return calculateAirlineMixForPeriod(flights, cycleStart, cycleEnd);
+}
+
+// Get airline mix for past 12 months
+export function getAirlineMixPast12Months(flights: FlightRecord[]): AirlineMix {
+  const today = new Date();
+  const endDate = today.toISOString().slice(0, 10);
+  
+  const startDate = new Date(today);
+  startDate.setFullYear(startDate.getFullYear() - 1);
+  const startDateStr = startDate.toISOString().slice(0, 10);
+  
+  return calculateAirlineMixForPeriod(flights, startDateStr, endDate);
 }
 
 // ============================================================================
@@ -180,7 +286,7 @@ export function calculateEfficiencyScore(flights: FlightRecord[]): EfficiencyRes
     if (cabinEfficiency < airlineScore && cabinEfficiency < routeScore) {
       insight = 'Good efficiency! Consider flying Business class more often for a boost.';
     } else if (airlineScore < cabinEfficiency && airlineScore < routeScore) {
-      insight = 'Solid score! Flying more KLM/AF instead of partners would help your UXP.';
+      insight = 'Solid score! Flying more KLM/AF instead of partners would improve UXP earnings.';
     } else {
       insight = 'Good efficiency! Longer routes could help maximize your XP earnings.';
     }
@@ -188,7 +294,7 @@ export function calculateEfficiencyScore(flights: FlightRecord[]): EfficiencyRes
     if (cabinEfficiency < 50) {
       insight = 'Your cabin class mix has room for improvement. Business class earns 2x XP!';
     } else if (airlineScore < 50) {
-      insight = 'You fly a lot of partner airlines. KLM/AF flights earn valuable UXP.';
+      insight = 'Many partner airline flights. KLM/AF flights earn valuable UXP toward Ultimate.';
     } else {
       insight = 'Consider longer routes or premium cabins to boost your XP efficiency.';
     }

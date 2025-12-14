@@ -25,7 +25,21 @@ export interface LifetimeStats {
   totalXP: number;
   totalMilesEarned: number;
   totalFlights: number;
-  klAfRatio: number; // percentage (0-100)
+  avgXpPerFlight: number;
+}
+
+// ============================================================================
+// UXP STATS (for Platinum/Ultimate)
+// ============================================================================
+
+export interface UXPStats {
+  totalUXP: number;
+  uxpThisCycle: number;
+  targetUXP: number;           // 900 for Ultimate
+  uxpFromFlights: number;
+  klAfFlightCount: number;
+  partnerFlightCount: number;
+  progressPercentage: number;  // 0-100
 }
 
 // ============================================================================
