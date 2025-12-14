@@ -15,10 +15,13 @@ import {
   LogOut,
   Bug,
   Download,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  Gauge
 } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../lib/AuthContext';
+import { useViewMode } from '../hooks/useViewMode';
 import { BugReportModal } from './BugReportModal';
 import { CookieSettingsLink } from './CookieConsent';
 
@@ -73,18 +76,31 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isBugReportOpen, setIsBugReportOpen] = React.useState(false);
   const { user, signOut } = useAuth();
+  const { viewMode, isSimpleMode, setViewMode } = useViewMode();
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'addFlight', label: 'Add Flight', icon: Plane },
-    { id: 'addMiles', label: 'Add Miles', icon: Coins },
-    { id: 'miles', label: 'Miles Engine', icon: Wallet },
-    { id: 'xp', label: 'XP Qualification', icon: Award },
-    { id: 'redemption', label: 'Redemptions', icon: Flame },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'mileageRun', label: 'XP Run Simulator', icon: Route },
-  ];
+  // Menu items differ based on view mode
+  const menuItems = isSimpleMode 
+    ? [
+        // Simple mode: Fewer items, friendlier names
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'addFlight', label: 'Add Flight', icon: Plane },
+        { id: 'xp', label: 'Status Progress', icon: Award },
+        { id: 'miles', label: 'Miles Balance', icon: Wallet },
+        { id: 'mileageRun', label: 'XP Planner', icon: Route },
+      ]
+    : [
+        // Full mode: All items
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'profile', label: 'Profile', icon: User },
+        { id: 'addFlight', label: 'Add Flight', icon: Plane },
+        { id: 'addMiles', label: 'Add Miles', icon: Coins },
+        { id: 'miles', label: 'Miles Engine', icon: Wallet },
+        { id: 'xp', label: 'XP Qualification', icon: Award },
+        { id: 'redemption', label: 'Redemptions', icon: Flame },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'mileageRun', label: 'XP Run Simulator', icon: Route },
+      ];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans flex">
@@ -141,6 +157,35 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Footer Info */}
         <div className="mt-auto pt-6 flex-shrink-0 space-y-3">
+          {/* View Mode Toggle */}
+          <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2">View Mode</p>
+            <div className="flex bg-slate-800 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('simple')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
+                  viewMode === 'simple'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Sparkles size={14} />
+                Simple
+              </button>
+              <button
+                onClick={() => setViewMode('full')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
+                  viewMode === 'full'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Gauge size={14} />
+                Full
+              </button>
+            </div>
+          </div>
+
           {/* User Account Section */}
           {user && !isDemoMode && (
             <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
