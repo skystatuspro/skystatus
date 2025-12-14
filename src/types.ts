@@ -11,7 +11,7 @@
 export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
 
 // View states for the app
-export type ViewState = 'xp' | 'miles' | 'analytics' | 'calculator' | 'faq' | 'redemption' | 'mileagerun';
+export type ViewState = 'xp' | 'miles' | 'analytics' | 'calculator' | 'faq' | 'redemption' | 'mileagerun' | 'profile';
 
 // ============================================================================
 // FLIGHT RECORDS

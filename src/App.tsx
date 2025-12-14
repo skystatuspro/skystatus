@@ -14,6 +14,7 @@ import { FlightLedger } from './components/FlightLedger';
 import { FlightIntake } from './components/FlightIntake';
 import { MilesIntake } from './components/MilesIntake';
 import { MileageRun } from './components/MileageRun';
+import { Profile } from './components/Profile';
 import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { OnboardingFlow, OnboardingData } from './components/OnboardingFlow';
@@ -408,6 +409,19 @@ export default function App() {
             flights={state.flights}
             manualLedger={state.manualLedger}
             qualificationSettings={state.qualificationSettings}
+          />
+        );
+
+      case 'profile':
+        return (
+          <Profile
+            flights={state.flights}
+            xpData={state.xpData}
+            milesData={state.milesData}
+            currentStatus={state.currentStatus}
+            qualificationSettings={state.qualificationSettings}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            userEmail={user?.email}
           />
         );
 
