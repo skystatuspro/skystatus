@@ -3,7 +3,6 @@ import { useAuth } from './lib/AuthContext';
 import { useUserData } from './hooks/useUserData';
 import { CurrencyProvider } from './lib/CurrencyContext';
 import { CookieConsentProvider } from './lib/CookieContext';
-import { ViewModeProvider } from './lib/ViewModeContext';
 import { CookieConsentUI } from './components/CookieConsent';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -459,7 +458,6 @@ export default function App() {
 
   return (
     <CookieConsentProvider>
-    <ViewModeProvider>
     <CurrencyProvider currency={state.currency}>
       <Layout
         currentView={view}
@@ -624,7 +622,6 @@ export default function App() {
         onCreateAccount={() => setShowLoginPage(true)}
       />
     </CurrencyProvider>
-    </ViewModeProvider>
     </CookieConsentProvider>
   );
 }
