@@ -2,6 +2,8 @@
 
 Technical documentation for developers working on SkyStatus.
 
+**Version:** 2.2.0
+
 ## Project Structure
 
 ```
@@ -21,20 +23,33 @@ src/
 │   │   ├── ProgressionChart.tsx # Monthly XP bar chart
 │   │   └── LedgerTable.tsx # XP ledger with editable cells
 │   │
+│   ├── MileageRun/       # XP Run Simulator (modular) ← v2.2
+│   │   ├── index.tsx     # Main MileageRun component
+│   │   ├── components.tsx # StatusProjectionCard, RouteCard, etc.
+│   │   ├── helpers.ts    # Route calculations, status themes
+│   │   ├── types.ts      # Component-specific types
+│   │   └── constants.ts  # Distance bands, thresholds
+│   │
 │   ├── MilesEngine/      # Miles tracking (modular)
 │   │   ├── index.tsx     # Main MilesEngine component
 │   │   ├── helpers.tsx   # formatCPM, utilities
 │   │   └── components.tsx # KPICard, charts, SourceEfficiencyCard
+│   │
+│   ├── Profile/          # User profile (modular)
+│   │   ├── index.tsx     # Main Profile component
+│   │   ├── components.tsx # Profile cards
+│   │   ├── helpers.ts    # Profile utilities
+│   │   └── types.ts      # Profile types
 │   │
 │   ├── OnboardingFlow.tsx # 6-step new user wizard
 │   ├── Analytics.tsx     # Analytics dashboard
 │   ├── FlightIntake.tsx  # Add flight form
 │   ├── FlightLedger.tsx  # Flight list/management
 │   ├── RedemptionCalc.tsx # Redemption analyzer
-│   ├── MileageRun.tsx    # XP run simulator
 │   ├── PdfImportModal.tsx # Flying Blue PDF import
 │   ├── SettingsModal.tsx # Data settings & preferences
 │   ├── SharedLedger.tsx  # Reusable ledger table
+│   ├── DemoBar.tsx       # Demo mode status selector
 │   └── ...
 │
 ├── hooks/
@@ -44,18 +59,20 @@ src/
 │   ├── supabase.ts       # Supabase client initialization
 │   ├── AuthContext.tsx   # Authentication context provider
 │   ├── CurrencyContext.tsx # Multi-currency context provider
+│   ├── DemoContext.tsx   # Demo mode state management
 │   ├── dataService.ts    # Cloud data operations
+│   ├── demoDataGenerator.ts # Dynamic demo data generation
 │   └── feedbackService.ts # Feedback card logic
 │
 ├── utils/
-│   ├── xp-logic.ts       # XP calculations, cycle processing
+│   ├── xp-logic.ts       # XP calculations, cycle processing (CORE - DO NOT MODIFY)
+│   ├── ultimate-bridge.ts # Ultimate status UI↔Logic bridge ← v2.2
 │   ├── loyalty-logic.ts  # Miles calculations, CPM
-│   ├── flight-xp.ts      # Flight XP calculation rules
 │   ├── parseFlyingBluePdf.ts # PDF parsing logic
 │   ├── airports.ts       # Airport database (500+ airports)
 │   ├── format.ts         # Number/currency formatters + SUPPORTED_CURRENCIES
 │   ├── valuation.ts      # Redemption value analysis
-│   └── dataService.ts    # localStorage operations
+│   └── flight-intake.ts  # Flight intake utilities
 │
 ├── types.ts              # TypeScript interfaces
 ├── constants.ts          # App constants (thresholds, etc.)
@@ -219,6 +236,40 @@ The system automatically detects qualification cycles:
 Ultimate members can choose between two cycle tracking modes:
 - **Qualification cycle** (default): UXP tracks alongside your status qualification year
 - **Calendar year** (legacy): For members who earned Ultimate before 2024, UXP may still be calculated per calendar year
+
+### Ultimate Bridge Pattern (v2.2)
+
+The Ultimate status presents a unique challenge: users want to select "Ultimate" in the UI, but the core XP logic (`xp-logic.ts`) expects `startingStatus: 'Platinum'` + `UXP ≥ 900` to trigger the `isUltimate` flag.
+
+**Solution:** A bridge layer (`src/utils/ultimate-bridge.ts`) translates between UI and logic:
+
+```
+UI Layer                    Bridge                      Core Logic
+─────────────────────────────────────────────────────────────────────
+User selects:          normalizeSettings()         Receives:
+"Ultimate"        →    startingStatus: 'Platinum'  →  statusOrder works
+                       startingUXP: 900+              isUltimate = true
+
+Core returns:          getDisplayStatus()          UI shows:
+actualStatus: 'Platinum' →  if isUltimate          →  "Ultimate"
+isUltimate: true            return 'Ultimate'
+```
+
+**Key functions:**
+- `normalizeQualificationSettings()` - Translates Ultimate → Platinum + UXP for core logic
+- `getDisplayStatus()` - Combines actualStatus + isUltimate flag for display
+- `getDisplayProjectedStatus()` - Same for projected status with edge case handling
+
+**Why not modify xp-logic.ts?**
+- Core logic is thoroughly tested and correct
+- Ultimate IS Platinum + UXP (not a separate level in the XP ladder)
+- Matches Flying Blue's actual status model
+- Allows future rule changes without touching core calculations
+
+**Files using the bridge:**
+- `Dashboard/index.tsx`
+- `XPEngine/index.tsx`
+- `MileageRun/index.tsx`
 
 ## Component Patterns
 

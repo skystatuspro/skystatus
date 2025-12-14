@@ -2,11 +2,24 @@
 
 A comprehensive analytics dashboard for tracking your Flying Blue loyalty program portfolio. Track XP qualification, miles balance, and optimize your loyalty strategy.
 
-![Version](https://img.shields.io/badge/Version-2.1.0-blue)
+![Version](https://img.shields.io/badge/Version-2.2.0-blue)
 ![React](https://img.shields.io/badge/React-18.3-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth-3ecf8e)
+
+## What's New in v2.2.0
+
+### 🎖️ Ultimate Status Bridge
+- **Select "Ultimate" directly** in Qualification Settings - no more workarounds
+- Proper Ultimate display across all components (Dashboard, XP Engine, XP Run Simulator)
+- Demo mode now fully supports Ultimate status preview
+- Bridge layer translates UI selection to core logic seamlessly
+
+### 🧹 Codebase Cleanup
+- Removed duplicate/legacy files for cleaner architecture
+- Modular MileageRun component structure
+- Improved code organization
 
 ## Features
 
@@ -38,7 +51,7 @@ A comprehensive analytics dashboard for tracking your Flying Blue loyalty progra
 - Manual ledger for AMEX, SAF bonus, misc XP
 - Level-up cycle detection and chaining
 - Rollover calculations (max 300 XP, max 900 UXP)
-- **Full Ultimate status support**
+- **Full Ultimate status support with direct selection**
 
 ### 🎖️ Ultimate Status Tracking
 - UXP automatically calculated from KLM/AF flights
@@ -47,6 +60,7 @@ A comprehensive analytics dashboard for tracking your Flying Blue loyalty progra
 - UXP Rollover Forecast with 900 UXP cap
 - UXP Waste indicator based on 1800 total cap
 - Cycle type toggle (Qualification vs Calendar year)
+- **NEW: Select Ultimate as starting status directly**
 
 ### 💰 Miles Engine
 - Track miles from all sources (Subscriptions, Amex, Flights, Other)
@@ -78,6 +92,7 @@ A comprehensive analytics dashboard for tracking your Flying Blue loyalty progra
 - Plan mileage runs for status qualification
 - Route suggestions with XP/cost analysis
 - Quick route calculator
+- **Ultimate status projection support**
 
 ## Getting Started
 
