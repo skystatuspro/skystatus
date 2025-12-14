@@ -46,6 +46,7 @@ This ensures:
 3. **src/utils/xp-logic.ts** - Filter flights by exact date in aggregateFlightsByMonth
 4. **src/lib/dataService.ts** - Add qualification_start_date to profile save/load
 5. **src/components/PdfImportModal.tsx** - Extract full date from requalification events
+6. **src/components/SettingsModal.tsx** - NEW: UI to manually set cycle start date
 
 ## Database Migration
 
@@ -79,9 +80,19 @@ ADD COLUMN IF NOT EXISTS qualification_start_date DATE;
 
 ## For Existing Users
 
-Users who already imported their PDF will need to either:
-1. Re-import their PDF (the system will now correctly extract the full date)
-2. Or manually set their cycle start date in Profile settings
+Users who already imported their PDF have two options:
+
+### Option 1: Re-import PDF (Recommended)
+1. Go to Data Settings
+2. Import Flying Blue PDF again
+3. The system will now correctly extract the full date from the requalification event
+
+### Option 2: Set date manually
+1. Go to Data Settings
+2. Find the "Qualification Cycle" section
+3. Set your "Starting Status" (e.g., Gold)
+4. Set your "Cycle Start Date" to the exact date you achieved that status
+5. The note will confirm which flights are excluded
 
 ## Testing
 

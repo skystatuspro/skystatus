@@ -14,6 +14,8 @@ import {
   Globe,
   Sparkles,
   Mail,
+  Calendar,
+  Award,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import PdfImportModal from './PdfImportModal';
@@ -25,6 +27,7 @@ import {
   RedemptionRecord,
   FlightRecord,
   ManualLedger,
+  StatusLevel,
 } from '../types';
 import { QualificationSettings } from '../hooks/useUserData';
 
@@ -623,6 +626,91 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   >
                     {emailConsent ? 'Subscribed ✓' : 'Subscribe'}
                   </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Qualification Cycle Settings */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Qualification Cycle
+            </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
+              {/* Starting Status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100">
+                    <Award className="text-blue-600" size={16} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">Starting Status</p>
+                    <p className="text-[11px] text-slate-500">Your status when the cycle began</p>
+                  </div>
+                </div>
+                <select
+                  value={data.qualificationSettings?.startingStatus ?? 'Explorer'}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as StatusLevel;
+                    setters.setQualificationSettings((prev) => ({
+                      cycleStartMonth: prev?.cycleStartMonth ?? new Date().toISOString().slice(0, 7),
+                      cycleStartDate: prev?.cycleStartDate,
+                      startingStatus: newStatus,
+                      startingXP: prev?.startingXP ?? 0,
+                      startingUXP: prev?.startingUXP,
+                      ultimateCycleType: prev?.ultimateCycleType,
+                    }));
+                    markDataChanged?.();
+                  }}
+                  className="px-3 py-2 text-sm font-medium border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                >
+                  <option value="Explorer">Explorer</option>
+                  <option value="Silver">Silver</option>
+                  <option value="Gold">Gold</option>
+                  <option value="Platinum">Platinum</option>
+                  <option value="Ultimate">Ultimate</option>
+                </select>
+              </div>
+
+              {/* Cycle Start Date */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100">
+                    <Calendar className="text-indigo-600" size={16} />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">Cycle Start Date</p>
+                    <p className="text-[11px] text-slate-500">
+                      {data.qualificationSettings?.cycleStartDate 
+                        ? 'Flights before this date are excluded from XP'
+                        : 'Set the exact date you achieved your status'}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="date"
+                  value={data.qualificationSettings?.cycleStartDate ?? ''}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    const newMonth = newDate ? newDate.slice(0, 7) : data.qualificationSettings?.cycleStartMonth;
+                    setters.setQualificationSettings((prev) => ({
+                      cycleStartMonth: newMonth ?? prev?.cycleStartMonth ?? new Date().toISOString().slice(0, 7),
+                      cycleStartDate: newDate || undefined,
+                      startingStatus: prev?.startingStatus ?? 'Explorer',
+                      startingXP: prev?.startingXP ?? 0,
+                      startingUXP: prev?.startingUXP,
+                      ultimateCycleType: prev?.ultimateCycleType,
+                    }));
+                    markDataChanged?.();
+                  }}
+                  className="px-3 py-2 text-sm font-medium border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer"
+                />
+              </div>
+
+              {/* Info about cycle date */}
+              {data.qualificationSettings?.cycleStartDate && (
+                <div className="bg-blue-50 rounded-xl px-3 py-2 text-xs text-blue-700">
+                  <strong>Note:</strong> Flights before {new Date(data.qualificationSettings.cycleStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} will not count toward your current cycle's XP.
                 </div>
               )}
             </div>
