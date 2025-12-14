@@ -1,83 +1,105 @@
+```markdown
 # SkyStatus Architecture
 
 Technical documentation for developers working on SkyStatus.
 
-**Version:** 2.2.0
+**Version:** 2.3.0
 
 ## Project Structure
 
 ```
 src/
-├── components/           # React components
-│   ├── Dashboard/        # Command Center (modular)
-│   │   ├── index.tsx     # Main Dashboard component
-│   │   ├── helpers.tsx   # Status themes, helpers, types
-│   │   ├── KPICard.tsx   # KPI card component
-│   │   └── RiskMonitor.tsx # Risk analysis sidebar
+├── components/               # React components
+│   ├── Dashboard/            # Command Center (modular)
+│   │   ├── index.tsx         # Main Dashboard component
+│   │   ├── SimpleDashboard.tsx # Simplified mobile-friendly dashboard
+│   │   ├── helpers.tsx       # Status themes, helpers, types
+│   │   ├── KPICard.tsx       # KPI card component
+│   │   └── RiskMonitor.tsx   # Risk analysis sidebar
 │   │
-│   ├── XPEngine/         # XP Qualification (modular)
-│   │   ├── index.tsx     # Main XPEngine component
-│   │   ├── helpers.tsx   # Themes, formatters, StatusPill, InputCell
+│   ├── XPEngine/             # XP Qualification (modular)
+│   │   ├── index.tsx         # Main XPEngine component
+│   │   ├── SimpleXPEngine.tsx # Simplified XP view for mobile
+│   │   ├── helpers.tsx       # Themes, formatters, StatusPill, InputCell
 │   │   ├── CycleSetupForm.tsx # Qualification settings form
-│   │   ├── StatusCard.tsx # Status gauge card
+│   │   ├── StatusCard.tsx    # Status gauge card
 │   │   ├── ProgressionChart.tsx # Monthly XP bar chart
-│   │   └── LedgerTable.tsx # XP ledger with editable cells
+│   │   └── LedgerTable.tsx   # XP ledger with editable cells
 │   │
-│   ├── MileageRun/       # XP Run Simulator (modular) ← v2.2
-│   │   ├── index.tsx     # Main MileageRun component
-│   │   ├── components.tsx # StatusProjectionCard, RouteCard, etc.
-│   │   ├── helpers.ts    # Route calculations, status themes
-│   │   ├── types.ts      # Component-specific types
-│   │   └── constants.ts  # Distance bands, thresholds
+│   ├── MileageRun/           # XP Run Simulator (modular)
+│   │   ├── index.tsx         # Main MileageRun component
+│   │   ├── SimpleXPPlanner.tsx # Mobile-optimized XP planner
+│   │   ├── components.tsx    # StatusProjectionCard, RouteCard, etc.
+│   │   ├── helpers.ts        # Route calculations, status themes
+│   │   ├── types.ts          # Component-specific types
+│   │   └── constants.ts      # Distance bands, thresholds
 │   │
-│   ├── MilesEngine/      # Miles tracking (modular)
-│   │   ├── index.tsx     # Main MilesEngine component
-│   │   ├── helpers.tsx   # formatCPM, utilities
-│   │   └── components.tsx # KPICard, charts, SourceEfficiencyCard
+│   ├── MilesEngine/          # Miles tracking (modular)
+│   │   ├── index.tsx         # Main MilesEngine component
+│   │   ├── SimpleMilesEngine.tsx # Simplified miles view
+│   │   ├── helpers.tsx       # formatCPM, utilities
+│   │   └── components.tsx    # KPICard, charts, SourceEfficiencyCard
 │   │
-│   ├── Profile/          # User profile (modular)
-│   │   ├── index.tsx     # Main Profile component
-│   │   ├── components.tsx # Profile cards
-│   │   ├── helpers.ts    # Profile utilities
-│   │   └── types.ts      # Profile types
+│   ├── Profile/              # User profile (modular)
+│   │   ├── index.tsx         # Main Profile component
+│   │   ├── components.tsx    # Profile cards
+│   │   ├── helpers.ts        # Profile utilities
+│   │   └── types.ts          # Profile types
 │   │
-│   ├── OnboardingFlow.tsx # 6-step new user wizard
-│   ├── Analytics.tsx     # Analytics dashboard
-│   ├── FlightIntake.tsx  # Add flight form
-│   ├── FlightLedger.tsx  # Flight list/management
-│   ├── RedemptionCalc.tsx # Redemption analyzer
-│   ├── PdfImportModal.tsx # Flying Blue PDF import
-│   ├── SettingsModal.tsx # Data settings & preferences
-│   ├── SharedLedger.tsx  # Reusable ledger table
-│   ├── DemoBar.tsx       # Demo mode status selector
+│   ├── OnboardingFlow.tsx    # 6-step new user wizard
+│   ├── Analytics.tsx         # Analytics dashboard
+│   ├── FlightIntake.tsx      # Add flight form (Full mode)
+│   ├── SimpleFlightIntake.tsx # Add flight form (Simple mode)
+│   ├── FlightLedger.tsx      # Flight list/management (Full mode)
+│   ├── SimpleFlightLedger.tsx # Flight list (Simple mode)
+│   ├── MilesIntake.tsx       # Miles entry (Full mode)
+│   ├── SimpleMilesIntake.tsx # Miles entry (Simple mode)
+│   ├── RedemptionCalc.tsx    # Redemption analyzer
+│   ├── PdfImportModal.tsx    # Flying Blue PDF import
+│   ├── SettingsModal.tsx     # Data settings & preferences
+│   ├── SharedLedger.tsx      # Reusable ledger table
+│   ├── DemoBar.tsx           # Demo mode status selector
+│   ├── Layout.tsx            # Main app layout with sidebar
+│   ├── LandingPage.tsx       # Public landing page
+│   ├── LoginPage.tsx         # Authentication page
+│   ├── FeedbackCard.tsx      # In-app feedback collection
+│   ├── PostImportFeedback.tsx # Post-PDF import feedback
+│   ├── BugReportModal.tsx    # Bug reporting modal
+│   ├── FAQModal.tsx          # Help documentation
+│   ├── FAQPage.tsx           # Full FAQ page
+│   ├── Toast.tsx             # Toast notifications
+│   ├── Tooltip.tsx           # Info tooltips
 │   └── ...
 │
 ├── hooks/
-│   └── useUserData.ts    # Central state management hook
+│   ├── useUserData.ts        # Central state management hook
+│   └── useViewMode.ts        # Simple/Full mode toggle with mobile detection
 │
 ├── lib/
-│   ├── supabase.ts       # Supabase client initialization
-│   ├── AuthContext.tsx   # Authentication context provider
-│   ├── CurrencyContext.tsx # Multi-currency context provider
-│   ├── DemoContext.tsx   # Demo mode state management
-│   ├── dataService.ts    # Cloud data operations
-│   ├── demoDataGenerator.ts # Dynamic demo data generation
-│   └── feedbackService.ts # Feedback card logic
+│   ├── supabase.ts           # Supabase client initialization
+│   ├── AuthContext.tsx       # Authentication context provider
+│   ├── CurrencyContext.tsx   # Multi-currency context provider
+│   ├── DemoContext.tsx       # Demo mode state management
+│   ├── ViewModeContext.tsx   # View mode context (legacy)
+│   ├── CookieContext.tsx     # Cookie consent management
+│   ├── dataService.ts        # Cloud data operations (Supabase)
+│   ├── demoDataGenerator.ts  # Dynamic demo data generation
+│   └── feedbackService.ts    # Feedback collection logic
 │
 ├── utils/
-│   ├── xp-logic.ts       # XP calculations, cycle processing (CORE - DO NOT MODIFY)
-│   ├── ultimate-bridge.ts # Ultimate status UI↔Logic bridge ← v2.2
-│   ├── loyalty-logic.ts  # Miles calculations, CPM
-│   ├── parseFlyingBluePdf.ts # PDF parsing logic
-│   ├── airports.ts       # Airport database (500+ airports)
-│   ├── format.ts         # Number/currency formatters + SUPPORTED_CURRENCIES
-│   ├── valuation.ts      # Redemption value analysis
-│   └── flight-intake.ts  # Flight intake utilities
+│   ├── xp-logic.ts           # XP calculations, cycle processing (CORE)
+│   ├── ultimate-bridge.ts    # Ultimate status UI↔Logic bridge
+│   ├── loyalty-logic.ts      # Miles calculations, CPM
+│   ├── parseFlyingBluePdf.ts # Multi-language PDF parsing
+│   ├── flight-intake.ts      # Flight intake utilities, cost aggregation
+│   ├── airports.ts           # Airport database (500+ airports)
+│   ├── format.ts             # Number/currency formatters + SUPPORTED_CURRENCIES
+│   └── valuation.ts          # Redemption value analysis
 │
-├── types.ts              # TypeScript interfaces
-├── constants.ts          # App constants (thresholds, etc.)
-├── demoData.ts           # Demo mode sample data
-└── App.tsx               # Root component, routing
+├── types.ts                  # TypeScript interfaces
+├── constants.ts              # App constants (thresholds, etc.)
+├── demoData.ts               # Demo mode sample data
+└── App.tsx                   # Root component, routing
 ```
 
 ## Data Flow
@@ -87,22 +109,51 @@ src/
 All user data flows through the `useUserData` hook (`src/hooks/useUserData.ts`):
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    useUserData Hook                      │
-├─────────────────────────────────────────────────────────┤
-│  State:                                                  │
-│  - flights, milesData, xpData, redemptions              │
-│  - qualificationSettings, manualLedger                  │
-│  - currentMonth, targetCPM, xpRollover, uxpRollover    │
-│  - currency, homeAirport                                │
-│  - onboardingCompleted, emailConsent                    │
-│  - authState (user, session, isDemo, isLocalMode)       │
-├─────────────────────────────────────────────────────────┤
-│  Persistence:                                            │
-│  - Authenticated → Supabase (lib/dataService.ts)        │
-│  - Local Mode → localStorage (utils/dataService.ts)     │
-│  - Demo Mode → in-memory only                           │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      useUserData Hook                        │
+├─────────────────────────────────────────────────────────────┤
+│  Core State:                                                 │
+│  - flights, milesData, xpData, redemptions                  │
+│  - qualificationSettings, manualLedger                      │
+│  - currentMonth, targetCPM, xpRollover                      │
+│                                                              │
+│  User Preferences:                                           │
+│  - currency, homeAirport                                    │
+│  - onboardingCompleted, emailConsent                        │
+│                                                              │
+│  Auth State:                                                 │
+│  - user, session, isDemo, isLocalMode                       │
+├─────────────────────────────────────────────────────────────┤
+│  Persistence:                                                │
+│  - Authenticated → Supabase (lib/dataService.ts)            │
+│  - Local Mode → localStorage                                │
+│  - Demo Mode → in-memory only                               │
+├─────────────────────────────────────────────────────────────┤
+│  Auto-save:                                                  │
+│  - 2-second debounce on data changes                        │
+│  - Upsert-based for safety (no delete-then-insert)          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### View Mode System
+
+The app supports two view modes managed by `useViewMode` hook:
+
+```typescript
+// src/hooks/useViewMode.ts
+export function useViewMode() {
+  return {
+    viewMode,           // 'simple' | 'full'
+    isSimpleMode,       // boolean shorthand
+    isMobile,           // window.innerWidth < 768
+    setViewMode,        // (mode) => void
+    toggleViewMode,     // () => void
+  };
+}
+
+// Mobile devices (< 768px) default to Simple mode
+// Desktop devices default to Full mode
+// User preference is persisted in localStorage
 ```
 
 ### Currency System
@@ -132,11 +183,11 @@ formatPrecise(0.012);   // "€0.012" or "$0.012"
 
 ### Authentication Modes
 
-| Mode | Storage | Trigger |
-|------|---------|---------|
-| **Authenticated** | Supabase | User logged in |
-| **Local Mode** | localStorage | "Continue without account" |
-| **Demo Mode** | Memory only | "Try Demo" button |
+| Mode | Storage | Trigger | Data Persistence |
+|------|---------|---------|------------------|
+| **Authenticated** | Supabase | User logged in | Cloud sync |
+| **Local Mode** | localStorage | "Continue without account" | Browser only |
+| **Demo Mode** | Memory only | "Try Demo" button | None |
 
 ### XP Calculation Flow
 
@@ -165,6 +216,62 @@ Flights + ManualLedger + QualificationSettings
 ```
 
 **Level-up cycles**: When a user earns enough XP mid-cycle to level up, the cycle splits and a new cycle begins from that month.
+
+### XP Rollover Calculation
+
+When a user reaches a status threshold, XP is split between cycles:
+
+```typescript
+// src/utils/xp-logic.ts
+export const calculateRolloverXP = (
+  flights: FlightRecord[],
+  requalificationDate: string,
+  previousStatus: StatusLevel,
+  startingXP: number = 0
+): number => {
+  // Get threshold for next status
+  const threshold = getThresholdForStatus(getNextStatus(previousStatus));
+  
+  // Sum all XP from flights up to and including requalification date
+  const totalXP = flights
+    .filter(f => f.date <= requalificationDate)
+    .reduce((sum, f) => sum + (f.earnedXP ?? 0) + (f.safXp ?? 0), startingXP);
+  
+  // Rollover = everything above the threshold
+  return Math.max(0, totalXP - threshold);
+};
+```
+
+**Example:**
+- User earns 200 XP by August 6th
+- Gold threshold is 180 XP
+- Rollover = 200 - 180 = 20 XP starts the new cycle
+
+### PDF Import Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PDF Import Process                        │
+├─────────────────────────────────────────────────────────────┤
+│  1. User uploads Flying Blue PDF                            │
+│                      ↓                                       │
+│  2. PDF.js extracts text                                    │
+│                      ↓                                       │
+│  3. parseFlyingBluePdf() processes:                         │
+│     - Flights (date, route, XP, miles, UXP)                 │
+│     - Miles transactions (subscription, AMEX, etc.)         │
+│     - Bonus XP items (first flight, hotel stays)            │
+│     - Requalification events                                 │
+│                      ↓                                       │
+│  4. Calculate rollover XP from requalification date         │
+│                      ↓                                       │
+│  5. REPLACE MODE: All existing data replaced (not merged)   │
+│                      ↓                                       │
+│  6. Auto-set qualification settings from requalification    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Supported Languages:** EN, NL, FR, DE, ES, PT, IT
 
 ### Miles Calculation Flow
 
@@ -214,6 +321,7 @@ ULTIMATE_TOTAL_CAP = 1800     // 900 requalification + 900 rollover
 2. **AMEX XP** - Manual entry (credit card spending)
 3. **SAF Bonus** - Sustainable Aviation Fuel bonus
 4. **Misc XP** - Promotions, corrections, other sources
+5. **Bonus XP** - First flight bonus, hotel stays (auto-detected from PDF)
 
 ### UXP Sources (Ultimate XP)
 
@@ -224,27 +332,11 @@ UXP is a subset of XP, earned only from:
 
 Partner flights (Delta, Kenya Airways, etc.) earn XP but NOT UXP.
 
-### Cycle Detection
+### Ultimate Status Bridge
 
-The system automatically detects qualification cycles:
-- Standard cycle: 12 months from user's status start date
-- Level-up cycle: Ends early when user achieves next status level
-- Chained cycles: New cycle starts immediately after level-up
-
-### Ultimate Cycle Type
-
-Ultimate members can choose between two cycle tracking modes:
-- **Qualification cycle** (default): UXP tracks alongside your status qualification year
-- **Calendar year** (legacy): For members who earned Ultimate before 2024, UXP may still be calculated per calendar year
-
-### Ultimate Bridge Pattern (v2.2)
-
-The Ultimate status presents a unique challenge: users want to select "Ultimate" in the UI, but the core XP logic (`xp-logic.ts`) expects `startingStatus: 'Platinum'` + `UXP ≥ 900` to trigger the `isUltimate` flag.
-
-**Solution:** A bridge layer (`src/utils/ultimate-bridge.ts`) translates between UI and logic:
+The core XP logic treats Ultimate as "Platinum + 900 UXP". A bridge layer handles UI translation:
 
 ```
-UI Layer                    Bridge                      Core Logic
 ─────────────────────────────────────────────────────────────────────
 User selects:          normalizeSettings()         Receives:
 "Ultimate"        →    startingStatus: 'Platinum'  →  statusOrder works
@@ -255,7 +347,7 @@ actualStatus: 'Platinum' →  if isUltimate          →  "Ultimate"
 isUltimate: true            return 'Ultimate'
 ```
 
-**Key functions:**
+**Key functions (src/utils/ultimate-bridge.ts):**
 - `normalizeQualificationSettings()` - Translates Ultimate → Platinum + UXP for core logic
 - `getDisplayStatus()` - Combines actualStatus + isUltimate flag for display
 - `getDisplayProjectedStatus()` - Same for projected status with edge case handling
@@ -266,16 +358,119 @@ isUltimate: true            return 'Ultimate'
 - Matches Flying Blue's actual status model
 - Allows future rule changes without touching core calculations
 
-**Files using the bridge:**
-- `Dashboard/index.tsx`
-- `XPEngine/index.tsx`
-- `MileageRun/index.tsx`
+## Database Schema (Supabase)
+
+```sql
+-- Profiles table (per user preferences)
+profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users,
+  target_cpm NUMERIC,
+  qualification_start_month VARCHAR(7),
+  qualification_start_date DATE,           -- Full date for precise XP filtering
+  home_airport VARCHAR(3),
+  xp_rollover INTEGER,
+  starting_status VARCHAR(20),
+  starting_xp INTEGER DEFAULT 0,
+  ultimate_cycle_type VARCHAR(20) DEFAULT 'qualification',
+  currency VARCHAR(3) DEFAULT 'EUR',
+  onboarding_completed BOOLEAN DEFAULT FALSE,
+  email_consent BOOLEAN DEFAULT FALSE,
+  miles_balance INTEGER DEFAULT 0,
+  current_uxp INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+)
+
+-- Flights table
+flights (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users,
+  date DATE NOT NULL,
+  origin VARCHAR(3),
+  destination VARCHAR(3),
+  airline VARCHAR(10),
+  cabin_class VARCHAR(20),
+  ticket_price NUMERIC,
+  miles_earned INTEGER,
+  xp_earned INTEGER,
+  saf_xp INTEGER DEFAULT 0,
+  uxp INTEGER DEFAULT 0,
+  is_scheduled BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)
+
+-- Miles transactions
+miles_records (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users,
+  month VARCHAR(7),          -- YYYY-MM format
+  miles_subscription INTEGER DEFAULT 0,
+  miles_amex INTEGER DEFAULT 0,
+  miles_other INTEGER DEFAULT 0,
+  miles_debit INTEGER DEFAULT 0,
+  cost_subscription NUMERIC DEFAULT 0,
+  cost_amex NUMERIC DEFAULT 0,
+  cost_other NUMERIC DEFAULT 0,
+  cost_flight NUMERIC DEFAULT 0
+)
+
+-- XP ledger (manual entries)
+xp_ledger (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users,
+  month VARCHAR(7),
+  amex_xp INTEGER DEFAULT 0,
+  bonus_saf_xp INTEGER DEFAULT 0,
+  misc_xp INTEGER DEFAULT 0,
+  correction_xp INTEGER DEFAULT 0
+)
+
+-- Redemptions
+redemptions (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users,
+  date DATE,
+  description TEXT,
+  miles_used INTEGER,
+  cash_value NUMERIC,
+  category VARCHAR(50)
+)
+
+-- Feedback
+feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users,
+  user_email TEXT,
+  trigger TEXT NOT NULL,      -- 'post_import', '7_days', '5_sessions', etc.
+  rating TEXT,                -- 'easy', 'okay', 'confusing'
+  message TEXT,
+  page TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)
+```
 
 ## Component Patterns
 
-### Modular Components (Dashboard, XPEngine, MilesEngine)
+### Simple vs Full Mode Components
 
-These large features are split into folders:
+Many features have two versions:
+- `ComponentName.tsx` - Full mode (detailed, power users)
+- `SimpleComponentName.tsx` - Simple mode (clean, mobile-friendly)
+
+```typescript
+// Usage pattern
+const { isSimpleMode } = useViewMode();
+
+return isSimpleMode ? (
+  <SimpleDashboard {...props} />
+) : (
+  <Dashboard {...props} />
+);
+```
+
+### Modular Components
+
+Large features are split into folders:
 - `index.tsx` - Main component, state, layout
 - `helpers.tsx` - Shared utilities, types, small components
 - Feature-specific files for major sub-components
@@ -290,107 +485,69 @@ import { XPEngine } from './components/XPEngine';
 
 - `SharedLedger` - Reusable data table with editing
 - `Tooltip` - Info tooltips throughout the app
+- `Toast` - Notification system
 - `FAQModal` - Help documentation modal
 - `OnboardingFlow` - Multi-step wizard with conditional steps
 
 ### Context Providers
 
-The app uses two main context providers:
-
 ```tsx
 // App.tsx structure
 <AuthProvider>
-  <CurrencyProvider currency={state.currency}>
-    <App />
-  </CurrencyProvider>
+  <CookieConsentProvider>
+    <CurrencyProvider currency={state.currency}>
+      <App />
+    </CurrencyProvider>
+  </CookieConsentProvider>
 </AuthProvider>
 ```
 
 - **AuthContext** - User authentication state, sign in/out
 - **CurrencyContext** - Currency formatting throughout app
+- **CookieContext** - GDPR cookie consent
 
-## Database Schema (Supabase)
+## Feedback System
 
-```sql
--- Profiles table (per user preferences)
-profiles (
-  id: uuid (primary key, references auth.users)
-  target_cpm: numeric
-  qualification_start_month: varchar
-  home_airport: varchar(3)
-  xp_rollover: integer
-  starting_status: varchar
-  starting_xp: integer
-  ultimate_cycle_type: varchar ('qualification' | 'calendar')
-  currency: varchar(3) default 'EUR'
-  onboarding_completed: boolean default false
-  email_consent: boolean default false
-  miles_balance: integer default 0
-  current_uxp: integer default 0
-  created_at: timestamp
-  updated_at: timestamp
-)
+The app collects feedback through multiple triggers:
 
--- Flights table
-flights (
-  id: uuid (primary key)
-  user_id: uuid (references auth.users)
-  date: date
-  origin: varchar(3)
-  destination: varchar(3)
-  airline: varchar
-  cabin: varchar
-  status_at_flight: varchar
-  xp: integer
-  uxp: integer
-  miles: integer
-  cost: numeric
-  ...
-)
-
--- Miles transactions, redemptions, xp_ledger tables follow similar pattern
+```typescript
+// src/lib/feedbackService.ts
+type FeedbackTrigger = 
+  | 'post_import'     // After PDF import
+  | '7_days'          // 7 days since first import
+  | '5_sessions'      // 5+ app sessions
+  | 'manual'          // User-initiated
+  | 'bug_report'      // Bug report form
+  | 'xp_discrepancy'; // XP mismatch detected
 ```
 
-## Onboarding Flow
+## Data Safety
 
-The `OnboardingFlow` component (`src/components/OnboardingFlow.tsx`) guides new users through setup:
+### Upsert-Based Saving
 
+Database operations use upsert to prevent data loss:
+
+```typescript
+// lib/dataService.ts
+export async function saveFlights(userId: string, flights: FlightRecord[]) {
+  // 1. Upsert all flights (safe - updates existing, inserts new)
+  await supabase.from('flights').upsert(records, { onConflict: 'id' });
+  
+  // 2. Delete removed flights (only after upsert succeeds)
+  await supabase.from('flights')
+    .delete()
+    .eq('user_id', userId)
+    .not('id', 'in', currentIds);
+}
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    Onboarding Wizard                      │
-├──────────────────────────────────────────────────────────┤
-│  Step 1: Welcome                                          │
-│  - Currency selection (10 options)                        │
-│  - Home airport (searchable, 500+ airports)              │
-├──────────────────────────────────────────────────────────┤
-│  Step 2: Import (skippable)                               │
-│  - PDF upload from Flying Blue                           │
-│  - Shows import summary if successful                    │
-├──────────────────────────────────────────────────────────┤
-│  Step 3: Status (conditional - if PDF skipped)           │
-│  - Current status selector                               │
-│  - XP, UXP, rollover inputs                              │
-│  - Ultimate cycle type toggle                            │
-├──────────────────────────────────────────────────────────┤
-│  Step 4: Valuation (skippable)                           │
-│  - CPM presets (Conservative/Average/Aspirational)       │
-│  - Custom CPM input                                      │
-├──────────────────────────────────────────────────────────┤
-│  Step 5: Email (skippable)                               │
-│  - Email consent checkbox                                │
-│  - Privacy messaging                                     │
-├──────────────────────────────────────────────────────────┤
-│  Step 6: Done                                             │
-│  - Settings summary                                       │
-│  - "Start Exploring" button                              │
-└──────────────────────────────────────────────────────────┘
 
-Returning users (isReturningUser=true):
-- See "Welcome Back!" instead of "Welcome to SkyStatus Pro!"
-- All fields prefilled with existing data
-- XP/status settings NOT overwritten (calculated from flights)
-- Only preferences saved (currency, home airport, CPM, email)
-```
+### PDF Import Replace Mode
+
+PDF imports use replace mode to ensure accuracy:
+- All existing flights replaced with PDF flights
+- Manual XP corrections cleared
+- Bonus XP from PDF preserved
+- Prevents merge conflicts and duplicate entries
 
 ## Environment Variables
 
@@ -412,13 +569,10 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 Always use the setter functions from `useUserData`:
 ```typescript
-const { flights, setFlights, updateFlight } = useUserData();
+const { flights, handleFlightsUpdate } = useUserData();
 
-// Add flight
-setFlights([...flights, newFlight]);
-
-// Update specific flight
-updateFlight(flightId, updatedData);
+// Update flights
+handleFlightsUpdate(newFlights);
 ```
 
 ### Adding New Features
@@ -426,7 +580,8 @@ updateFlight(flightId, updatedData);
 1. Add types to `types.ts`
 2. Add state to `useUserData` hook if needed
 3. Create component in `src/components/`
-4. Add route in `App.tsx`
+4. Consider Simple/Full mode variants
+5. Add route in `App.tsx`
 
 ## Performance Considerations
 
@@ -434,6 +589,7 @@ updateFlight(flightId, updatedData);
 - Demo data is lazy-loaded from `demoData.ts`
 - PDF parsing runs in a web worker via PDF.js
 - Charts use Recharts with ResponsiveContainer
+- 2-second debounce on auto-save prevents excessive API calls
 
 ## Testing Locally
 
@@ -456,7 +612,7 @@ npm run preview  # Preview production build
 3. Update `helpers.tsx` theme mappings
 
 ### Adding new flight airlines
-1. Update `flight-xp.ts` with earning rules
+1. Update airline maps in `parseFlyingBluePdf.ts`
 2. Add to airline dropdown in `FlightIntake.tsx`
 
 ### Adding a new currency
@@ -476,3 +632,9 @@ npm run preview  # Preview production build
 3. Add state variable in `useUserData.ts`
 4. Include in `fetchAllUserData()` and `saveAllUserData()`
 5. Add to onboarding if user-facing
+
+### Adding Simple mode variant
+1. Create `SimpleComponentName.tsx` alongside `ComponentName.tsx`
+2. Use `useViewMode()` hook to detect mode
+3. Render appropriate component based on `isSimpleMode`
+```
