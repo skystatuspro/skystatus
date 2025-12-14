@@ -6,6 +6,7 @@ import { MilesRecord, RedemptionRecord } from '../../types';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { formatNumber, generateId } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
+import { useViewMode } from '../../hooks/useViewMode';
 import {
   Download,
   Upload,
@@ -36,6 +37,7 @@ import { SharedLedger } from '../SharedLedger';
 // Subcomponents
 import { noSpinnerClass } from './helpers';
 import { CpmSparkline, RoiBar, SourceEfficiencyCard, KPICard } from './components';
+import { SimpleMilesEngine } from './SimpleMilesEngine';
 
 interface MilesEngineProps {
   data: MilesRecord[];
@@ -56,6 +58,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   onUpdateTargetCPM,
   redemptions,
 }) => {
+  const { isSimpleMode } = useViewMode();
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const safeTargetCPM = Number.isFinite(targetCPM) ? targetCPM : 0;
 
@@ -185,6 +188,18 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   const projectedValue = stats.netProjected * targetCPM;
   const chartValue = stats.totalBurnValue > 0 ? stats.totalBurnValue : projectedValue;
   const acquisitionCostEuro = stats.globalCPM / 100;
+
+  // Simple Mode: render simplified miles engine
+  if (isSimpleMode) {
+    return (
+      <SimpleMilesEngine
+        data={data}
+        currentMonth={currentMonth}
+        redemptions={redemptions}
+        targetCPM={targetCPM}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
