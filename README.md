@@ -289,7 +289,3 @@ This is an unofficial tool and is not affiliated with Air France-KLM or the Flyi
 
 Built with ❤️ for Flying Blue enthusiasts | [skystatus.pro](https://skystatus.pro)
 ```
-
----
-
-Wil je nu de ARCHITECTURE.md?
