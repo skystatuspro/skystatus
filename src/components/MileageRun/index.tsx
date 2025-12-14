@@ -25,6 +25,7 @@ import {
 import { CabinClass } from '../../types';
 import { AIRPORTS, calculateXPForRoute } from '../../utils/airports';
 import { calculateQualificationCycles } from '../../utils/xp-logic';
+import { normalizeQualificationSettings, getDisplayStatus } from '../../utils/ultimate-bridge';
 import { findActiveCycle } from '../Dashboard/helpers';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -41,7 +42,8 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   rollover, 
   flights, 
   manualLedger, 
-  qualificationSettings 
+  qualificationSettings,
+  demoStatus
 }) => {
   const { symbol: currencySymbol } = useCurrency();
   const [routeString, setRouteString] = useState('');
@@ -69,10 +71,16 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   const [reportSending, setReportSending] = useState(false);
   const [reportSent, setReportSent] = useState(false);
 
+  // Normalize qualification settings for core logic (Ultimate → Platinum + UXP)
+  const normalizedSettings = useMemo(
+    () => normalizeQualificationSettings(qualificationSettings),
+    [qualificationSettings]
+  );
+
   // Calculate Status - use same logic as Dashboard/XPEngine
   const { cycles } = useMemo(
-    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, qualificationSettings),
-    [xpData, rollover, flights, manualLedger, qualificationSettings]
+    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, normalizedSettings),
+    [xpData, rollover, flights, manualLedger, normalizedSettings]
   );
   
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
@@ -81,10 +89,13 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   const actualUXP = activeCycle?.actualUXP ?? 0;
   const projectedUXP = activeCycle?.projectedUXP ?? actualUXP;
   
-  // User's current status (what they need to requalify for)
-  const currentStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 
-    (qualificationSettings?.startingStatus as StatusLevel) ?? 
-    'Explorer';
+  // Ultimate flag from cycle - also check demoStatus
+  const cycleIsUltimate = activeCycle?.isUltimate ?? false;
+  const isUltimate = demoStatus === 'Ultimate' || cycleIsUltimate;
+  
+  // User's current status - use demoStatus override or bridge
+  const rawStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 'Platinum';
+  const currentStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawStatus, cycleIsUltimate);
   
   // For backwards compatibility
   const currentXP = actualXP;
@@ -462,6 +473,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({
             runXP={runXP}
             runUXP={runUXP}
             currentStatus={currentStatus}
+            isUltimate={isUltimate}
           />
           
           {/* Input Card */}

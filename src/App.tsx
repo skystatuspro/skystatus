@@ -378,6 +378,7 @@ export default function App() {
             onUpdateManualLedger={actions.handleManualXPLedgerUpdate}
             qualificationSettings={state.qualificationSettings}
             onUpdateQualificationSettings={actions.handleQualificationSettingsUpdate}
+            demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
           />
         );
 
@@ -411,6 +412,7 @@ export default function App() {
             flights={state.flights}
             manualLedger={state.manualLedger}
             qualificationSettings={state.qualificationSettings}
+            demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
           />
         );
 

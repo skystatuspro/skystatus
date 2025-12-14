@@ -17,9 +17,10 @@ export interface MileageRunProps {
   flights: FlightRecord[];
   manualLedger: ManualXPLedger;
   qualificationSettings: QualificationSettings;
+  demoStatus?: StatusLevel; // Override status display in demo mode
 }
 
-export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
 export type RunMode = 'classic' | 'optimizer';
 
 export interface PopularRoute {

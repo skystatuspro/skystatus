@@ -9,6 +9,7 @@ import { useCurrency } from '../../lib/CurrencyContext';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { calculateQualificationCycles } from '../../utils/xp-logic';
 import { getValuationStatus } from '../../utils/valuation';
+import { normalizeQualificationSettings, getDisplayStatus, getDisplayProjectedStatus } from '../../utils/ultimate-bridge';
 import {
   Award,
   Wallet,
@@ -96,6 +97,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     [state.milesData, state.currentMonth, state.redemptions, state.targetCPM]
   );
 
+  // Normalize qualification settings for core logic (Ultimate → Platinum + UXP)
+  const normalizedSettings = useMemo(
+    () => normalizeQualificationSettings(state.qualificationSettings ?? null),
+    [state.qualificationSettings]
+  );
+
   const { cycles } = useMemo(
     () =>
       calculateQualificationCycles(
@@ -103,25 +110,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
         state.xpRollover,
         state.flights,
         state.manualLedger,
-        state.qualificationSettings
+        normalizedSettings
       ),
-    [state.xpData, state.xpRollover, state.flights, state.manualLedger, state.qualificationSettings]
+    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
 
+  // Ultimate status data from cycle
+  // In demo mode, determine Ultimate from demoStatus
+  const cycleIsUltimate: boolean = activeCycle?.isUltimate ?? false;
+  const cycleProjectedUltimate: boolean = activeCycle?.projectedUltimate ?? false;
+  const isUltimate: boolean = demoStatus === 'Ultimate' || cycleIsUltimate;
+  const projectedUltimate: boolean = demoStatus === 'Ultimate' || cycleProjectedUltimate;
+
   // Extract data from active cycle
-  // In demo mode, use demoStatus override if provided
-  const actualStatus: StatusLevel = demoStatus ?? (activeCycle?.actualStatus as StatusLevel) ?? 'Explorer';
-  const projectedStatus: StatusLevel = demoStatus ?? (activeCycle?.projectedStatus as StatusLevel) ?? actualStatus;
+  // Use bridge functions to get correct display status
+  // For demo mode: use demoStatus directly
+  // For real users: combine actualStatus with isUltimate flag
+  const rawActualStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 'Explorer';
+  const rawProjectedStatus: StatusLevel = (activeCycle?.projectedStatus as StatusLevel) ?? rawActualStatus;
+  
+  const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
+  const projectedStatus: StatusLevel = demoStatus ?? getDisplayProjectedStatus(rawProjectedStatus, cycleProjectedUltimate);
+  
   const actualXP: number = activeCycle?.actualXP ?? 0;
   const rolloverIn: number = activeCycle?.rolloverIn ?? 0;
   const rolloverOut: number = activeCycle?.rolloverOut ?? 0;
 
-  // Ultimate status data
-  // In demo mode, determine Ultimate from demoStatus
-  const isUltimate: boolean = demoStatus === 'Ultimate' || (activeCycle?.isUltimate ?? false);
-  const projectedUltimate: boolean = demoStatus === 'Ultimate' || (activeCycle?.projectedUltimate ?? false);
+  // UXP data
   const actualUXP: number = activeCycle?.actualUXP ?? 0;
   const projectedUXP: number = activeCycle?.projectedUXP ?? 0;
   

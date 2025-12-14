@@ -138,10 +138,10 @@ const STATUS_CONFIGS: Record<StatusLevel, DemoStatusConfig> = {
     statusStreak: 6,
     currentXP: 720,
     projectedXP: 945,
-    currentUXP: 870,
-    projectedUXP: 920,
+    currentUXP: 950,      // Above 900 threshold
+    projectedUXP: 1020,   // With scheduled flights
     xpRollover: 300,
-    uxpRollover: 450,
+    uxpRollover: 900,     // Start at Ultimate threshold for demo
     milesBalance: 687200,
     lifetimeMiles: 2850000,
     cabinMix: { economy: 22, premiumEconomy: 12, business: 54, first: 12 },

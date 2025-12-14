@@ -94,6 +94,7 @@ interface StatusProjectionCardProps {
   runXP: number;
   runUXP: number;
   currentStatus: StatusLevel;
+  isUltimate?: boolean;  // Ultimate flag from cycle data
 }
 
 type GoalMode = 'upgrade' | 'requalify' | 'ultimate';
@@ -105,10 +106,15 @@ export const StatusProjectionCard: React.FC<StatusProjectionCardProps> = ({
   projectedUXP, 
   runXP, 
   runUXP, 
-  currentStatus 
+  currentStatus,
+  isUltimate = false
 }) => {
   // Determine the goal mode
   const getGoalMode = (): GoalMode => {
+    // If already Ultimate (via flag or status), show ultimate mode
+    if (isUltimate || currentStatus === 'Ultimate') {
+      return 'ultimate';
+    }
     if (currentStatus === 'Platinum') {
       // Platinum with 600+ XP → focus on Ultimate
       if (actualXP >= 600) return 'ultimate';

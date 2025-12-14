@@ -15,6 +15,7 @@ import {
   XPLedgerRow,
   QualificationCycleStats,
 } from '../../utils/xp-logic';
+import { normalizeQualificationSettings, getDisplayStatus, getDisplayProjectedStatus } from '../../utils/ultimate-bridge';
 import {
   ChevronRight,
   ChevronLeft,
@@ -55,6 +56,7 @@ interface XPEngineProps {
   onUpdateManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
   qualificationSettings: QualificationSettingsType | null;
   onUpdateQualificationSettings: (settings: QualificationSettingsType | null) => void;
+  demoStatus?: StatusLevel; // Override status display in demo mode
 }
 
 export const XPEngine: React.FC<XPEngineProps> = ({
@@ -71,8 +73,15 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   onUpdateManualLedger,
   qualificationSettings,
   onUpdateQualificationSettings,
+  demoStatus,
 }) => {
-  // Calculate cycles
+  // Normalize qualification settings for core logic (Ultimate → Platinum + UXP)
+  const normalizedSettings = useMemo(
+    () => normalizeQualificationSettings(qualificationSettings),
+    [qualificationSettings]
+  );
+
+  // Calculate cycles with normalized settings
   const { cycles } = useMemo(
     () =>
       calculateQualificationCycles(
@@ -80,9 +89,9 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         rollover,
         flights,
         manualLedger,
-        qualificationSettings
+        normalizedSettings
       ),
-    [_legacyData, rollover, flights, manualLedger, qualificationSettings]
+    [_legacyData, rollover, flights, manualLedger, normalizedSettings]
   );
 
   // Find active cycle
@@ -144,20 +153,34 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     selectedIndex < cycles.length ? selectedIndex : Math.max(0, cycles.length - 1);
   const currentCycle: QualificationCycleStats = cycles[safeSelectedIndex];
 
-  // ACTUAL status and XP
-  const actualStatus: StatusLevel = currentCycle.actualStatus ?? currentCycle.startStatus;
+  // Ultimate flags from cycle
+  // In demo mode, determine Ultimate from demoStatus
+  const cycleIsUltimate = currentCycle.isUltimate ?? false;
+  const cycleProjectedUltimate = currentCycle.projectedUltimate ?? false;
+  const isDemoUltimate = demoStatus === 'Ultimate';
+
+  // ACTUAL status and XP - use demoStatus override or bridge
+  const rawActualStatus: StatusLevel = currentCycle.actualStatus ?? currentCycle.startStatus;
+  const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
   const actualXP: number = currentCycle.actualXP ?? 0;
   const actualXPToNext: number = currentCycle.actualXPToNext ?? 0;
 
-  // PROJECTED status and XP
-  const projectedStatus: StatusLevel = currentCycle.projectedStatus ?? currentCycle.endStatus;
-  const projectedXPToNext: number = currentCycle.projectedXPToNext ?? 0;
-
-  // Calculate projected cumulative XP
+  // Calculate projected cumulative XP first (needed for projected status)
   const projectedCumulativeXP = useMemo(() => {
     const totalMonthXP = currentCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
     return currentCycle.rolloverIn + totalMonthXP;
   }, [currentCycle]);
+
+  // PROJECTED status and XP - use demoStatus override or bridge with additional context
+  const rawProjectedStatus: StatusLevel = currentCycle.projectedStatus ?? currentCycle.endStatus;
+  const isCurrentlyUltimate = isDemoUltimate || cycleIsUltimate || actualStatus === 'Ultimate';
+  const projectedStatus: StatusLevel = demoStatus ?? getDisplayProjectedStatus(
+    rawProjectedStatus, 
+    cycleProjectedUltimate,
+    isCurrentlyUltimate,
+    projectedCumulativeXP
+  );
+  const projectedXPToNext: number = currentCycle.projectedXPToNext ?? 0;
 
   const projectedXP = projectedCumulativeXP;
 
@@ -165,8 +188,10 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const hasProjectedUpgrade = projectedStatus !== actualStatus;
   const hasProjectedXPDifference = projectedCumulativeXP !== actualXP;
 
-  // Theme
-  const theme = getStatusTheme(actualStatus, currentCycle.isUltimate);
+  // Theme - use cycleIsUltimate for theming (or check if actualStatus is Ultimate)
+  const isUltimate = cycleIsUltimate || actualStatus === 'Ultimate';
+  const projectedUltimate = cycleProjectedUltimate || projectedStatus === 'Ultimate';
+  const theme = getStatusTheme(actualStatus, isUltimate);
   const nextStatus = getNextStatusFromCurrent(actualStatus);
 
   // Cycle info
