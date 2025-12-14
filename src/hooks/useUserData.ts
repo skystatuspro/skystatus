@@ -27,6 +27,7 @@ import {
   INITIAL_FLIGHTS,
   INITIAL_MANUAL_LEDGER,
 } from '../demoData';
+import { generateDemoDataForStatus } from '../lib/demoDataGenerator';
 import {
   rebuildLedgersFromFlights,
   FlightIntakePayload,
@@ -43,6 +44,7 @@ export interface QualificationSettings {
   cycleStartMonth: string;
   startingStatus: StatusLevel;
   startingXP: number;
+  startingUXP?: number;     // UXP carried over from previous cycle
   ultimateCycleType?: 'qualification' | 'calendar'; // 'calendar' for legacy Ultimate members
 }
 
@@ -106,6 +108,7 @@ export interface UserDataActions {
   handleEnterDemoMode: () => void;
   handleEnterLocalMode: () => void;
   handleExitDemoMode: () => void;
+  handleSetDemoStatus: (status: StatusLevel) => void;
   
   // Utility
   markDataChanged: () => void;
@@ -117,6 +120,7 @@ export interface UserDataMeta {
   isSaving: boolean;
   isDemoMode: boolean;
   isLocalMode: boolean;
+  demoStatus: StatusLevel;
   showWelcome: boolean;
   setShowWelcome: (show: boolean) => void;
 }
@@ -188,6 +192,7 @@ export function useUserData(): UseUserDataReturn {
   // Mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
+  const [demoStatus, setDemoStatus] = useState<StatusLevel>('Platinum');
   const [showWelcome, setShowWelcome] = useState(false);
 
   // Refs for tracking load state
@@ -503,16 +508,30 @@ export function useUserData(): UseUserDataReturn {
   // DEMO / LOCAL MODE HANDLERS
   // -------------------------------------------------------------------------
 
+  const loadDemoDataForStatus = useCallback((status: StatusLevel) => {
+    const demoData = generateDemoDataForStatus(status);
+    setBaseMilesDataInternal(demoData.milesData);
+    setBaseXpDataInternal(demoData.xpData);
+    setRedemptionsInternal(demoData.redemptions);
+    setFlightsInternal(demoData.flights);
+    setXpRolloverInternal(demoData.xpRollover);
+    setManualLedgerInternal(demoData.manualLedger);
+    setQualificationSettingsInternal(demoData.qualificationSettings);
+    setDemoStatus(status);
+  }, []);
+
   const handleLoadDemo = useCallback(() => {
-    setBaseMilesDataInternal(INITIAL_MILES_DATA);
-    setBaseXpDataInternal(INITIAL_XP_DATA);
-    setRedemptionsInternal(INITIAL_REDEMPTIONS);
-    setFlightsInternal(INITIAL_FLIGHTS);
-    setXpRolloverInternal(103);
-    setManualLedgerInternal(INITIAL_MANUAL_LEDGER);
+    // Use the current demo status (default Platinum)
+    loadDemoDataForStatus(demoStatus);
     setIsDemoMode(true);
     setShowWelcome(false);
-  }, []);
+  }, [demoStatus, loadDemoDataForStatus]);
+
+  const handleSetDemoStatus = useCallback((status: StatusLevel) => {
+    if (!isDemoMode) return;
+    setDemoStatus(status);
+    loadDemoDataForStatus(status);
+  }, [isDemoMode, loadDemoDataForStatus]);
 
   const handleStartEmpty = useCallback(() => {
     setBaseMilesDataInternal([]);
@@ -568,8 +587,9 @@ export function useUserData(): UseUserDataReturn {
 
   const handleEnterDemoMode = useCallback(() => {
     setIsDemoMode(true);
-    handleLoadDemo();
-  }, [handleLoadDemo]);
+    setDemoStatus('Platinum'); // Default to Platinum
+    loadDemoDataForStatus('Platinum');
+  }, [loadDemoDataForStatus]);
 
   const handleEnterLocalMode = useCallback(() => {
     setIsLocalMode(true);
@@ -759,6 +779,7 @@ export function useUserData(): UseUserDataReturn {
       handleEnterDemoMode,
       handleEnterLocalMode,
       handleExitDemoMode,
+      handleSetDemoStatus,
       markDataChanged,
       calculateGlobalCPM,
       handleOnboardingComplete,
@@ -770,6 +791,7 @@ export function useUserData(): UseUserDataReturn {
       isSaving,
       isDemoMode,
       isLocalMode,
+      demoStatus,
       showWelcome,
       setShowWelcome,
       onboardingCompleted,

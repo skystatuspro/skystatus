@@ -24,6 +24,7 @@ import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage, CookiePolicy } f
 import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
+import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel } from './types';
@@ -607,6 +608,15 @@ export default function App() {
 
       <ToastContainer />
       <CookieConsentUI />
+      
+      {/* Demo Mode Bar */}
+      <DemoBar
+        isDemoMode={meta.isDemoMode}
+        demoStatus={meta.demoStatus}
+        onSetDemoStatus={actions.handleSetDemoStatus}
+        onExitDemo={actions.handleExitDemoMode}
+        onCreateAccount={() => setShowLoginPage(true)}
+      />
     </CurrencyProvider>
     </CookieConsentProvider>
   );
