@@ -14,6 +14,8 @@ import { generateId } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
 import { Tooltip } from './Tooltip';
 import { SharedLedger } from './SharedLedger';
+import { useViewMode } from '../hooks/useViewMode';
+import { SimpleMilesIntake } from './SimpleMilesIntake';
 
 interface MilesIntakeProps {
   milesData: MilesRecord[];
@@ -58,6 +60,7 @@ const inputBase =
   '[color-scheme:light] ' + noSpinnerClass;
 
 export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, currentMonth }) => {
+  const { isSimpleMode } = useViewMode();
   const { symbol: currencySymbol } = useCurrency();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -70,6 +73,16 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, c
 
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Simple Mode: render simplified miles intake wizard
+  if (isSimpleMode) {
+    return (
+      <SimpleMilesIntake
+        milesData={milesData}
+        onUpdate={onUpdate}
+      />
+    );
+  }
 
   const canSubmit = form.date && form.amount > 0 && form.cost >= 0;
 

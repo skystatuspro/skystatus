@@ -85,6 +85,7 @@ export const Layout: React.FC<LayoutProps> = ({
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'profile', label: 'Profile', icon: User },
         { id: 'addFlight', label: 'Add Flight', icon: Plane },
+        { id: 'addMiles', label: 'Add Miles', icon: Coins },
         { id: 'xp', label: 'Status Progress', icon: Award },
         { id: 'miles', label: 'Miles Balance', icon: Wallet },
         { id: 'mileageRun', label: 'XP Planner', icon: Route },
