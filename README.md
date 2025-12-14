@@ -24,6 +24,21 @@ All flights in that month were included, even those before the actual upgrade.
 
 Added `cycleStartDate` (full date: "2025-08-06") to filter flights precisely.
 
+**Key safety feature:** The filter only applies to flights **within the start month**.
+Flights in other months (including historical cycles) are not affected.
+
+```typescript
+// Only filter flights in the start month itself
+if (excludeBeforeDate && monthKey === excludeMonth && flight.date < excludeBeforeDate) {
+  continue;  // Skip this flight
+}
+```
+
+This ensures:
+- Filip's Aug 1-5 flights are correctly excluded from his Gold cycle
+- Historical flights in previous cycles remain untouched
+- Users with multiple cycles see correct data for all cycles
+
 ## Files Changed
 
 1. **src/types.ts** - Added `cycleStartDate?: string` to QualificationSettings

@@ -343,18 +343,23 @@ interface MonthData {
 
 const aggregateFlightsByMonth = (
   flights: FlightRecord[],
-  excludeBeforeDate?: string  // Exclude flights before this date (YYYY-MM-DD)
+  excludeBeforeDate?: string  // Exclude flights before this date (YYYY-MM-DD) - only in that month
 ): Map<string, FlightMonthAggregate> => {
   const map = new Map<string, FlightMonthAggregate>();
   const today = getTodayISO();
+  
+  // Only filter flights in the start month itself
+  const excludeMonth = excludeBeforeDate?.slice(0, 7);
 
   for (const flight of flights) {
-    // Skip flights before the cycle start date
-    if (excludeBeforeDate && flight.date < excludeBeforeDate) {
+    const monthKey = flight.date.slice(0, 7);
+    
+    // Skip flights before the cycle start date, but ONLY within the start month
+    // This ensures historical cycles are not affected
+    if (excludeBeforeDate && monthKey === excludeMonth && flight.date < excludeBeforeDate) {
       continue;
     }
     
-    const monthKey = flight.date.slice(0, 7);
     const flightIsFlown = flight.date < today;
 
     const prev = map.get(monthKey) ?? {
