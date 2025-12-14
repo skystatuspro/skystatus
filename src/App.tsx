@@ -100,18 +100,21 @@ export default function App() {
     importedFlights: typeof state.flights,
     importedMiles: typeof state.milesData,
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' }
+    cycleSettings?: { cycleStartMonth: string; startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' },
+    bonusXpByMonth?: Record<string, number>
   ) => {
     // Count new flights before import
     const existingFlightKeys = new Set(state.flights.map(f => `${f.date}-${f.route}`));
     const newFlightCount = importedFlights.filter(f => !existingFlightKeys.has(`${f.date}-${f.route}`)).length;
 
-    actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings);
+    actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
 
     // Show success toast
     const correctionMsg = xpCorrection?.correctionXp ? ` (+${xpCorrection.correctionXp} XP correction)` : '';
     const cycleMsg = cycleSettings ? ` · Cycle set to ${cycleSettings.cycleStartMonth}` : '';
-    showToast(`Imported ${newFlightCount} flights and ${importedMiles.length} months of miles data${correctionMsg}${cycleMsg}`, 'success');
+    const bonusXpTotal = bonusXpByMonth ? Object.values(bonusXpByMonth).reduce((a, b) => a + b, 0) : 0;
+    const bonusMsg = bonusXpTotal > 0 ? ` (+${bonusXpTotal} bonus XP)` : '';
+    showToast(`Imported ${newFlightCount} flights and ${importedMiles.length} months of miles data${correctionMsg}${bonusMsg}${cycleMsg}`, 'success');
   };
 
   // -------------------------------------------------------------------------

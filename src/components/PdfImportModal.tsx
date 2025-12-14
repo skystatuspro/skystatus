@@ -28,6 +28,7 @@ import {
   parseFlyingBlueText, 
   toFlightRecords, 
   toMilesRecords,
+  extractBonusXp,
   ParseResult 
 } from '../utils/parseFlyingBluePdf';
 import { FlightRecord, MilesRecord } from '../types';
@@ -57,7 +58,13 @@ interface CycleSettings {
 interface PdfImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (flights: FlightRecord[], miles: MilesRecord[], xpCorrection?: XPCorrection, cycleSettings?: CycleSettings) => void;
+  onImport: (
+    flights: FlightRecord[], 
+    miles: MilesRecord[], 
+    xpCorrection?: XPCorrection, 
+    cycleSettings?: CycleSettings,
+    bonusXpByMonth?: Record<string, number>
+  ) => void;
   existingFlights: FlightRecord[];
   existingMiles: MilesRecord[];
 }
@@ -292,7 +299,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
   const handleConfirmImport = () => {
     const summary = getImportSummary();
-    if (!summary) return;
+    if (!summary || !parseResult) return;
 
     // Prepare XP correction if needed
     let xpCorrection: XPCorrection | undefined;
@@ -317,8 +324,11 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       };
     }
 
+    // Extract bonus XP from PDF (first flight bonus, hotel XP, etc.)
+    const bonusXpByMonth = extractBonusXp(parseResult.miles);
+
     // Import new flights and all miles (miles will be merged)
-    onImport(summary.newFlights, summary.miles, xpCorrection, cycleSettings);
+    onImport(summary.newFlights, summary.miles, xpCorrection, cycleSettings, bonusXpByMonth);
     
     // Record first import for feedback triggers
     recordFirstImport();

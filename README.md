@@ -1,77 +1,52 @@
-# PDF Flight Date Parser Fix + Multi-Currency Support
+# PDF Parser + Data Fixes
 
-Fixes incorrect flight dates and adds support for all currencies when importing Flying Blue PDF statements.
+Comprehensive fixes for PDF parsing and data handling issues.
 
-## Bug 1: Wrong Flight Dates
+## Bug Fixes
 
-The PDF parser was using the wrong date for flights. For example:
+### 1. Wrong Flight Dates
+Flight dates from PDF imports were using the posting date instead of actual flight date.
 
-```
-30 nov 2025    Mijn reis naar Berlijn
-               AMS - BER KL1775 gespaarde Miles op basis
-               van bestede euro's
-               op 29 nov 2025    ← This is the actual flight date
-```
+**Fix:** Added `^` anchor to regex and fallback pattern for date extraction.
 
-The parser was incorrectly using "30 nov 2025" (posting date) instead of "29 nov 2025" (flight date).
+### 2. Multi-Currency Support  
+The `isRevenue` check only worked for euros.
 
-### Root Cause
+**Fix:** Now matches "bestede|spent|dépensés|ausgegeben" for all currencies.
 
-The regex `/(?:op|on|le|am)\s+(.+)/i` was matching "op basis van" instead of "op 29 nov 2025" because:
-1. It matched anywhere in the string, not just at the start of a line
-2. "op basis van bestede euro's" appears before "op 29 nov 2025"
+### 3. Flight Costs Not Summed
+Ticket prices weren't being aggregated in total cost calculations.
 
-### The Fix
+**Fix:** Now properly adds `ticketPrice` to `cost_flight` in ledger rebuild.
 
-1. **Primary fix:** Changed regex to `^(?:op|on|le|am)\s+(.+)` with the `^` anchor to match only at the start of a line
+### 4. Transavia Partner Flights
+Partner flights like "AMS – PDL TRANSAVIA HOLLAND" weren't recognized from English PDFs.
 
-2. **Fallback:** Added a secondary pattern that specifically looks for "op [day] [month] [year]" pattern anywhere in the text
+**Fix:** Regex now matches "gespaarde|earned|Miles|acquis|gesammelt".
 
-## Bug 2: Only Euro Currency Supported
+### 5. Bonus XP Items
+Items like "Miles+Points first flight bonus" (0 Miles, 5 XP) were ignored.
 
-The `isRevenue` check only worked for euros:
-```typescript
-// OLD - only euros:
-const isRevenue = /bestede euro|spent euro|euros dépensés/i.test(rest);
-```
+**Fix:** Added detection for bonus XP items, stored in manual ledger as `miscXp`.
 
-This didn't work for users paying in other currencies (kroner, dollars, pounds, etc.).
+### 6. JSON Restore Autosave
+After clearing data and restoring from JSON, changes weren't saved.
 
-### The Fix
+**Fix:** Always triggers `markDataChanged` after JSON import.
 
-Match on the spending verb only, not the currency:
-```typescript
-// NEW - all currencies:
-const isRevenue = /bestede|spent|dépensés|ausgegeben/i.test(rest);
-```
-
-Now works for:
-- Euros (EUR)
-- Kroner (NOK, SEK, DKK)
-- Pounds (GBP)
-- Dollars (USD, CAD, AUD)
-- Swiss Francs (CHF)
-- Any other currency
-
-## Bug 3: Flight Costs Not Summed
-
-Flight ticket prices were not being included in the total cost calculation. Users would enter ticket prices on flights, but the dashboard would show incorrect (lower) totals.
-
-**Root cause:** In `rebuildLedgersFromFlights`, the `ticketPrice` from flights was never aggregated into `cost_flight`:
-
-```typescript
-// OLD - cost_flight always 0:
-cost_subscription: 0, cost_amex: 0, cost_flight: 0, cost_other: 0,
-
-// NEW - aggregates ticketPrice:
-cost_flight: (existingMiles.cost_flight || 0) + flightCost,
-```
-
-## Files Changed
+## Files Included
 
 ```
-src/utils/parseFlyingBluePdf.ts   # Date extraction + multi-currency
-src/utils/flight-intake.ts        # Cost aggregation fix
+src/
+├── App.tsx                    # Updated PDF import handler
+├── hooks/
+│   └── useUserData.ts         # BonusXP handling in PDF import
+├── utils/
+│   ├── parseFlyingBluePdf.ts  # All parsing fixes
+│   └── flight-intake.ts       # Cost aggregation fix
+└── components/
+    ├── SettingsModal.tsx      # JSON restore autosave
+    └── PdfImportModal.tsx     # Extract and pass bonus XP
 ```
 
 ## Installation

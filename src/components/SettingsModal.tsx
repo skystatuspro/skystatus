@@ -257,10 +257,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       const hasChanges = additions.length > 0 || updates.length > 0;
       
+      // Always trigger auto-save after import, even if no "new" items detected
+      // This ensures database sync when restoring from backup after clear
+      if (markDataChanged) markDataChanged();
+      
       if (hasChanges) {
-        // Trigger auto-save
-        if (markDataChanged) markDataChanged();
-        
         let message = `Import completed! Added: ${additions.join(', ')}`;
         if (updates.length > 0) message += `. Updated: ${updates.join(', ')}`;
         message += '. Existing data was preserved.';
@@ -271,9 +272,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         onClose(); // Auto-close modal after successful import
       } else {
         if (showToast) {
-          showToast('Import completed. No new data to add — all entries already exist.', 'info');
+          showToast('Import completed. Data restored successfully.', 'success');
         }
-        onClose(); // Also close when no new data
+        onClose(); // Also close when restoring existing data
       }
     } catch (e) {
       console.error('Import failed', e);

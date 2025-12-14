@@ -141,6 +141,7 @@ export interface ParsedMilesMonth {
   partner: number;
   other: number;
   debit: number;
+  bonusXp: number;  // XP from bonuses like first flight, hotel stays, etc.
 }
 
 export interface RequalificationEvent {
@@ -347,7 +348,8 @@ export function parseFlyingBlueText(text: string): ParseResult {
         shopping: 0,
         partner: 0,
         other: 0,
-        debit: 0
+        debit: 0,
+        bonusXp: 0
       });
     }
     return milesData.get(month)!;
@@ -505,7 +507,8 @@ export function parseFlyingBlueText(text: string): ParseResult {
           }
           
           // Flight segment pattern 2: "KEF – AMS TRANSAVIA HOLLAND" (partner without flight number)
-          const partnerMatch = subline.match(/^([A-Z]{3})\s*[-–]\s*([A-Z]{3})\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–])?\s*gespaarde/i);
+          // Support multiple languages: gespaarde (NL), earned (EN), acquis (FR), gesammelt (DE)
+          const partnerMatch = subline.match(/^([A-Z]{3})\s*[-–]\s*([A-Z]{3})\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–])?\s*(?:gespaarde|earned|Miles|acquis|gesammelt)/i);
           if (partnerMatch) {
             const [, origin, dest, airlineName] = partnerMatch;
             
@@ -596,12 +599,30 @@ export function parseFlyingBlueText(text: string): ParseResult {
         }
       }
       
+      // === BONUS XP ITEMS ===
+      // Items that give XP but 0 Miles (first flight bonus, hotel stay bonuses, etc.)
+      // These patterns: "Miles+Points first flight bonus", "ALL- Accor Live Limitless MILES+POINTS"
+      else if (/first flight bonus|MILES\+POINTS|bonus.*XP|XP.*bonus/i.test(content)) {
+        const { miles, xp } = extractNumbers(content);
+        if (xp > 0) {
+          getOrCreateMonth(month).bonusXp += xp;
+        }
+        // Also add any miles if present
+        if (miles > 0) {
+          getOrCreateMonth(month).other += miles;
+        }
+      }
+      
       // === HOTELS ===
       // Specific hotel brands and booking platforms
       else if (/Hotel|BOOKING\.COM|Accor|ALL-|Marriott|Hilton|IHG|Hyatt|Radisson/i.test(content)) {
-        const { miles } = extractNumbers(content);
+        const { miles, xp } = extractNumbers(content);
         if (miles > 0) {
           getOrCreateMonth(month).hotel += miles;
+        }
+        // Some hotel stays give bonus XP even with 0 miles
+        if (xp > 0 && miles === 0) {
+          getOrCreateMonth(month).bonusXp += xp;
         }
       }
       
@@ -752,4 +773,18 @@ export function toMilesRecords(parsed: ParsedMilesMonth[]): MilesRecord[] {
       cost_flight: 0,
       cost_other: 0
     }));
+}
+
+/**
+ * Extract bonus XP entries for manual ledger
+ * Returns a map of month -> bonusXp for items that give XP but 0 miles
+ */
+export function extractBonusXp(parsed: ParsedMilesMonth[]): Record<string, number> {
+  const bonusXpByMonth: Record<string, number> = {};
+  for (const m of parsed) {
+    if (m.bonusXp > 0) {
+      bonusXpByMonth[m.month] = (bonusXpByMonth[m.month] || 0) + m.bonusXp;
+    }
+  }
+  return bonusXpByMonth;
 }

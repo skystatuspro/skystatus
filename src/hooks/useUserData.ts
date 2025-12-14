@@ -98,7 +98,8 @@ export interface UserDataActions {
     flights: FlightRecord[],
     miles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; startingStatus: StatusLevel }
+    cycleSettings?: { cycleStartMonth: string; startingStatus: StatusLevel },
+    bonusXpByMonth?: Record<string, number>
   ) => void;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
   
@@ -491,7 +492,8 @@ export function useUserData(): UseUserDataReturn {
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel }
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
+    bonusXpByMonth?: Record<string, number>
   ) => {
     // CRITICAL: Mark as loaded so autosave works for new users
     // Without this, importing PDF before loadUserData completes would not save
@@ -533,6 +535,21 @@ export function useUserData(): UseUserDataReturn {
             correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
           },
         };
+      });
+    }
+
+    // Handle bonus XP from PDF (first flight bonuses, hotel stay XP, etc.)
+    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
+      setManualLedgerInternal((prev) => {
+        const updated = { ...prev };
+        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+          const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+          updated[month] = {
+            ...existing,
+            miscXp: (existing.miscXp || 0) + xp,
+          };
+        }
+        return updated;
       });
     }
 
