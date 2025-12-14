@@ -19,6 +19,8 @@ import {
   Check,
   ChevronDown,
   Sparkles,
+  Pencil,
+  X,
 } from 'lucide-react';
 
 interface SimpleMilesIntakeProps {
@@ -52,6 +54,160 @@ const sourceOptions: { id: MileSource; label: string; description: string; icon:
   },
 ];
 
+// Edit Modal Component
+interface EditMilesModalProps {
+  record: MilesRecord;
+  onSave: (updated: MilesRecord) => void;
+  onClose: () => void;
+  currencySymbol: string;
+}
+
+const EditMilesModal: React.FC<EditMilesModalProps> = ({ record, onSave, onClose, currencySymbol }) => {
+  const [formData, setFormData] = useState({
+    miles_subscription: record.miles_subscription,
+    miles_amex: record.miles_amex,
+    miles_other: record.miles_other,
+    cost_subscription: record.cost_subscription,
+    cost_amex: record.cost_amex,
+    cost_other: record.cost_other,
+  });
+
+  const formatMonth = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      ...record,
+      ...formData,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-900">Edit Miles</h3>
+            <p className="text-xs text-slate-500">{formatMonth(record.month)}</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg">
+            <X size={20} className="text-slate-400" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          {/* Subscription */}
+          <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-indigo-700 font-medium text-sm">
+              <RefreshCcw size={16} />
+              Subscription
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Miles</label>
+                <input
+                  type="number"
+                  value={formData.miles_subscription || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, miles_subscription: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Cost ({currencySymbol})</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.cost_subscription || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, cost_subscription: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Amex */}
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
+              <CreditCard size={16} />
+              Credit Card / Amex
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Miles</label>
+                <input
+                  type="number"
+                  value={formData.miles_amex || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, miles_amex: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Cost ({currencySymbol})</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.cost_amex || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, cost_amex: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Other */}
+          <div className="bg-amber-50 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-amber-700 font-medium text-sm">
+              <Gift size={16} />
+              Other / Bonus
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Miles</label>
+                <input
+                  type="number"
+                  value={formData.miles_other || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, miles_other: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Cost ({currencySymbol})</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.cost_other || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, cost_other: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
   milesData,
   onUpdate,
@@ -67,13 +223,15 @@ export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
   const [amount, setAmount] = useState<number>(0);
   const [cost, setCost] = useState<number>(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<MilesRecord | null>(null);
 
-  // Recent ledger entries
+  // Recent ledger entries with full record reference
   const recentEntries = useMemo(() => {
     return [...milesData]
       .sort((a, b) => b.month.localeCompare(a.month))
       .slice(0, 5)
       .map(record => ({
+        record,
         month: record.month,
         subscription: record.miles_subscription,
         amex: record.miles_amex,
@@ -82,6 +240,12 @@ export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
       }))
       .filter(r => r.total > 0);
   }, [milesData]);
+
+  // Handle save from edit modal
+  const handleEditSave = (updated: MilesRecord) => {
+    onUpdate(milesData.map(r => r.id === updated.id ? updated : r));
+    setEditingRecord(null);
+  };
 
   // Validation
   const step1Valid = source;
@@ -437,18 +601,26 @@ export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
       {/* Recent Entries */}
       {recentEntries.length > 0 && step === 1 && (
         <div className="mt-8 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-slate-900 flex items-center gap-2">
               <Sparkles size={18} className="text-amber-500" />
               Recent Activity
             </h3>
+            <span className="text-xs text-slate-400">Tap to edit</span>
           </div>
           <div className="divide-y divide-slate-100">
             {recentEntries.map((entry) => (
-              <div key={entry.month} className="px-5 py-3 flex items-center justify-between">
+              <button
+                key={entry.month}
+                onClick={() => setEditingRecord(entry.record)}
+                className="w-full px-5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors group"
+              >
                 <span className="text-sm text-slate-600">{formatMonth(entry.month)}</span>
-                <span className="font-bold text-emerald-600">+{formatNumber(entry.total)}</span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-emerald-600">+{formatNumber(entry.total)}</span>
+                  <Pencil size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
+                </div>
+              </button>
             ))}
           </div>
         </div>
@@ -460,9 +632,19 @@ export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
           onClick={() => setViewMode('full')}
           className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
         >
-          Need to edit entries or see detailed ledger? Switch to Full View →
+          Need detailed ledger or advanced options? Switch to Full View →
         </button>
       </div>
+
+      {/* Edit Modal */}
+      {editingRecord && (
+        <EditMilesModal
+          record={editingRecord}
+          onSave={handleEditSave}
+          onClose={() => setEditingRecord(null)}
+          currencySymbol={currencySymbol}
+        />
+      )}
     </div>
   );
 };
