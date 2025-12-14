@@ -61,30 +61,29 @@ export async function saveFlight(userId: string, flight: FlightRecord): Promise<
 }
 
 export async function saveFlights(userId: string, flights: FlightRecord[]): Promise<boolean> {
-  // FIXED: First delete all existing flights for this user
-  // This ensures deleted flights are actually removed from the database
-  const { error: deleteError } = await supabase
-    .from('flights')
-    .delete()
-    .eq('user_id', userId);
-
-  if (deleteError) {
-    console.error('Error deleting flights:', deleteError);
-    return false;
+  // If no flights to save, just delete all existing
+  if (flights.length === 0) {
+    const { error: deleteError } = await supabase
+      .from('flights')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (deleteError) {
+      console.error('Error deleting flights:', deleteError);
+      return false;
+    }
+    return true;
   }
 
-  // If no flights to save, we're done
-  if (flights.length === 0) return true;
-
-  // Then insert all current flights
+  // Prepare records for insert
   const records = flights.map(flight => {
-    const [origin, destination] = flight.route.split('-');
+    const [origin, destination] = flight.route?.split('-') || ['???', '???'];
     return {
       id: flight.id,
       user_id: userId,
       date: flight.date,
-      origin,
-      destination,
+      origin: origin || '???',
+      destination: destination || '???',
       airline: flight.airline,
       cabin_class: flight.cabin,
       ticket_price: flight.ticketPrice,
@@ -96,14 +95,30 @@ export async function saveFlights(userId: string, flights: FlightRecord[]): Prom
     };
   });
 
-  const { error: insertError } = await supabase
+  // Use upsert instead of delete-then-insert to be safer
+  // This updates existing flights and inserts new ones
+  const { error: upsertError } = await supabase
     .from('flights')
-    .insert(records);
+    .upsert(records, { onConflict: 'id' });
 
-  if (insertError) {
-    console.error('Error saving flights:', insertError);
+  if (upsertError) {
+    console.error('Error upserting flights:', upsertError);
     return false;
   }
+
+  // Now delete any flights that are no longer in the list
+  const currentIds = flights.map(f => f.id);
+  const { error: deleteError } = await supabase
+    .from('flights')
+    .delete()
+    .eq('user_id', userId)
+    .not('id', 'in', `(${currentIds.join(',')})`);
+
+  if (deleteError) {
+    console.error('Error cleaning up old flights:', deleteError);
+    // Don't fail completely - the upsert worked
+  }
+
   return true;
 }
 
