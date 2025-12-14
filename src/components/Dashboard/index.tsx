@@ -76,18 +76,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showFeedbackCard, setShowFeedbackCard] = useState(false);
 
-  // Simple Mode: render simplified dashboard
-  if (isSimpleMode) {
-    return (
-      <SimpleDashboard
-        state={state}
-        navigateTo={navigateTo}
-        onPdfImport={onPdfImport}
-        demoStatus={demoStatus}
-      />
-    );
-  }
-
   // Auto-skip welcome when flights are loaded (handles async data loading)
   useEffect(() => {
     if (state.flights.length > 0 && !skipWelcome) {
@@ -206,6 +194,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const projectedProgress = Math.min(100, (projectedTotalXP / targetXP) * 100);
 
   const hasNoFlights = state.flights.length === 0;
+
+  // Simple Mode: render simplified dashboard (after all hooks!)
+  if (isSimpleMode) {
+    return (
+      <SimpleDashboard
+        state={state}
+        navigateTo={navigateTo}
+        onPdfImport={onPdfImport}
+        demoStatus={demoStatus}
+      />
+    );
+  }
 
   // Welcome screen for new users
   if ((hasNoFlights || showPdfImport) && onPdfImport && !skipWelcome) {
