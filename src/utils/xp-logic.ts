@@ -52,6 +52,9 @@ const getThresholdForStatus = (status: StatusLevel): number => {
  * This processes flights chronologically to determine exactly how much XP
  * was "left over" after reaching a threshold.
  * 
+ * Since we exclude all flights on/before the requalification date from the new cycle,
+ * the rollover must include ALL XP earned on that date that exceeds the threshold.
+ * 
  * @param flights All flights to consider
  * @param requalificationDate The date when the new status was achieved (YYYY-MM-DD)
  * @param previousStatus The status BEFORE requalification (e.g., 'Silver' if upgrading to 'Gold')
@@ -70,27 +73,22 @@ export const calculateRolloverXP = (
   
   const threshold = getThresholdForStatus(nextStatus);
   
-  // Sort flights by date
+  // Sort flights by date and include all flights up to and including requalification date
   const sortedFlights = [...flights]
     .filter(f => f.date <= requalificationDate)
     .sort((a, b) => a.date.localeCompare(b.date));
   
-  // Calculate cumulative XP
-  let cumulativeXP = startingXP;
+  // Calculate total XP from all these flights
+  let totalXP = startingXP;
   
   for (const flight of sortedFlights) {
     const flightXP = (flight.earnedXP ?? 0) + (flight.safXp ?? 0);
-    cumulativeXP += flightXP;
-    
-    // Check if we crossed the threshold
-    if (cumulativeXP >= threshold) {
-      // The rollover is everything above the threshold
-      return cumulativeXP - threshold;
-    }
+    totalXP += flightXP;
   }
   
-  // Threshold not reached - no rollover
-  return 0;
+  // The rollover is everything above the threshold
+  // If threshold wasn't reached, return 0
+  return Math.max(0, totalXP - threshold);
 };
 
 /**
@@ -401,7 +399,7 @@ interface MonthData {
 
 const aggregateFlightsByMonth = (
   flights: FlightRecord[],
-  excludeBeforeDate?: string  // Exclude flights before this date (YYYY-MM-DD) - only in that month
+  excludeBeforeDate?: string  // Exclude flights on or before this date (YYYY-MM-DD) - only in that month
 ): Map<string, FlightMonthAggregate> => {
   const map = new Map<string, FlightMonthAggregate>();
   const today = getTodayISO();
@@ -412,9 +410,10 @@ const aggregateFlightsByMonth = (
   for (const flight of flights) {
     const monthKey = flight.date.slice(0, 7);
     
-    // Skip flights before the cycle start date, but ONLY within the start month
-    // This ensures historical cycles are not affected
-    if (excludeBeforeDate && monthKey === excludeMonth && flight.date < excludeBeforeDate) {
+    // Skip flights on or before the cycle start date, but ONLY within the start month
+    // The XP from these flights is already accounted for in startingXP (rollover)
+    // Changed from < to <= because requalification date flights belong to the OLD cycle
+    if (excludeBeforeDate && monthKey === excludeMonth && flight.date <= excludeBeforeDate) {
       continue;
     }
     
