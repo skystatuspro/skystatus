@@ -24,6 +24,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useViewMode } from '../hooks/useViewMode';
 import { BugReportModal } from './BugReportModal';
 import { CookieSettingsLink } from './CookieConsent';
+import { APP_VERSION } from '../config/version';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -217,7 +218,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                Flying Blue v2.3 <span className="ml-1 px-1.5 py-0.5 text-[8px] bg-amber-500/20 text-amber-400 rounded font-bold">BETA</span>
+                Flying Blue v{APP_VERSION} <span className="ml-1 px-1.5 py-0.5 text-[8px] bg-amber-500/20 text-amber-400 rounded font-bold">BETA</span>
                 </p>
             </div>
 
@@ -345,7 +346,7 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">Beta v2.3</span>
+                  <span className="text-sm font-bold text-white">Beta v{APP_VERSION}</span>
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>

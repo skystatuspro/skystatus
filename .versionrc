@@ -1,0 +1,19 @@
+{
+  "types": [
+    {"type": "feat", "section": "✨ New Features"},
+    {"type": "fix", "section": "🐛 Bug Fixes"},
+    {"type": "perf", "section": "⚡ Performance"},
+    {"type": "refactor", "section": "♻️ Refactoring", "hidden": true},
+    {"type": "docs", "section": "📚 Documentation", "hidden": true},
+    {"type": "style", "section": "💅 Styling", "hidden": true},
+    {"type": "test", "section": "🧪 Tests", "hidden": true},
+    {"type": "build", "section": "🏗️ Build", "hidden": true},
+    {"type": "ci", "section": "🤖 CI", "hidden": true},
+    {"type": "chore", "hidden": true}
+  ],
+  "commitUrlFormat": "https://github.com/yourusername/skystatus-pro/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/yourusername/skystatus-pro/compare/{{previousTag}}...{{currentTag}}",
+  "scripts": {
+    "postbump": "node scripts/sync-version.js"
+  }
+}
