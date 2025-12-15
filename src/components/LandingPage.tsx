@@ -5,13 +5,13 @@ import {
   Target, 
   Calculator, 
   Shield, 
-  Zap,
-  ChevronRight,
-  CheckCircle,
-  BarChart3,
-  Upload,
-  Award,
-  BookOpen,
+  Zap, 
+  ChevronRight, 
+  CheckCircle, 
+  BarChart3, 
+  Upload, 
+  Award, 
+  BookOpen, 
   ArrowRight
 } from 'lucide-react';
 
@@ -87,8 +87,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             </h1>
             
             <p className="text-xl text-slate-600 leading-relaxed mb-8 max-w-2xl">
-              Track your XP, analyze miles value, plan mileage runs, and optimize your path to 
-              Platinum status. Full Ultimate tracking included for those chasing the top tier.
+              Track your XP and analyze miles value. Plan mileage runs and optimize your path to Platinum status. Includes full Ultimate tracking for the top tier.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -327,7 +326,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
                 What Are Miles Worth?
               </h3>
               <p className="text-slate-600 text-sm mb-3">
-                €0.01–0.02 per mile depending on redemption. Complete valuation guide by cabin class.
+                €0.01-0.02 per mile depending on redemption. Complete valuation guide by cabin class.
               </p>
               <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
                 Read Guide <ArrowRight size={14} />
@@ -340,7 +339,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
                 Subscribe to Miles Worth It?
               </h3>
               <p className="text-slate-600 text-sm mb-3">
-                At €0.008/mile plus bonus XP, the subscription is great value for most active members.
+                Costs €0.008/mile plus bonus XP. Great value for most active members.
               </p>
               <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
                 Read Guide <ArrowRight size={14} />
