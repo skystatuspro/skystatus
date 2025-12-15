@@ -60,7 +60,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Try local scope first (more reliable)
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.warn('SignOut API call failed, clearing local state anyway:', error);
+    }
+    // Always clear local state, even if API call fails
+    setUser(null);
+    setSession(null);
+    // Clear any cached data
+    localStorage.removeItem('supabase.auth.token');
+    // Force reload to clean state
+    window.location.href = '/';
   };
 
   const signInWithGoogle = async () => {
