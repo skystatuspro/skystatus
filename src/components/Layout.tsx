@@ -319,6 +319,8 @@ export const Layout: React.FC<LayoutProps> = ({
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
               <p>© {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.</p>
               <div className="flex items-center gap-3">
+                <a href="/guide" className="hover:text-slate-600 transition-colors">Guides</a>
+                <span className="text-slate-300">·</span>
                 <a href="/faq" className="hover:text-slate-600 transition-colors">Help & FAQ</a>
                 <span className="text-slate-300">·</span>
                 <a href="/about" className="hover:text-slate-600 transition-colors">About</a>

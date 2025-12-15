@@ -10,7 +10,9 @@ import {
   CheckCircle,
   BarChart3,
   Upload,
-  Award
+  Award,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -31,6 +33,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             <span className="font-bold text-xl text-slate-900">SkyStatus</span>
           </div>
           <div className="flex items-center gap-3">
+            <a
+              href="/guide"
+              className="hidden sm:block px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+            >
+              Guides
+            </a>
             <a
               href="/faq"
               className="hidden sm:block px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
@@ -244,6 +252,114 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
         </div>
       </section>
 
+      {/* Guides Section */}
+      <section className="py-20 px-4 sm:px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+              <BookOpen size={16} />
+              Flying Blue Knowledge Hub
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">
+              Learn Before You Fly
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Master Flying Blue with our comprehensive guides covering XP, status levels, miles value, and mileage run strategies.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            {/* Guide Card 1 */}
+            <a href="/guide/what-is-flying-blue-xp" className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                What is Flying Blue XP?
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                Everything you need to know about Experience Points and how they determine your status level.
+              </p>
+              <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Read Guide <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Guide Card 2 */}
+            <a href="/guide/flying-blue-status-levels" className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                Status Levels Compared
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                Silver, Gold, Platinum, Ultimate: requirements, benefits, and which level to target.
+              </p>
+              <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Read Guide <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Guide Card 3 */}
+            <a href="/guide/flying-blue-gold-status" className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                How to Reach Gold Status
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                Gold (180 XP) is the sweet spot for most travelers. Strategies and cost analysis inside.
+              </p>
+              <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Read Guide <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Guide Card 4 */}
+            <a href="/guide/what-is-a-mileage-run" className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                What is a Mileage Run?
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                Flights taken for status points. Learn when they make sense and when to skip them.
+              </p>
+              <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Read Guide <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Guide Card 5 */}
+            <a href="/guide/flying-blue-miles-value" className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                What Are Miles Worth?
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                €0.01–0.02 per mile depending on redemption. Complete valuation guide by cabin class.
+              </p>
+              <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Read Guide <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Guide Card 6 */}
+            <a href="/guide/flying-blue-subscription" className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all">
+              <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                Subscribe to Miles Worth It?
+              </h3>
+              <p className="text-slate-600 text-sm mb-3">
+                At €0.008/mile plus bonus XP, the subscription is great value for most active members.
+              </p>
+              <span className="text-blue-600 text-sm font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                Read Guide <ArrowRight size={14} />
+              </span>
+            </a>
+          </div>
+
+          <div className="text-center">
+            <a 
+              href="/guide"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+            >
+              View All Guides
+              <ChevronRight size={18} />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Status Levels */}
       <section className="py-20 px-4 sm:px-6 bg-gradient-to-br from-slate-900 to-slate-800">
         <div className="max-w-6xl mx-auto">
@@ -317,11 +433,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             </div>
             
             <div className="flex items-center gap-6 text-sm text-slate-500">
+              <a href="/guide" className="hover:text-slate-700 transition-colors">Guides</a>
               <a href="/faq" className="hover:text-slate-700 transition-colors">Help & FAQ</a>
               <a href="/about" className="hover:text-slate-700 transition-colors">About</a>
               <a href="/contact" className="hover:text-slate-700 transition-colors">Contact</a>
               <a href="/privacy" className="hover:text-slate-700 transition-colors">Privacy</a>
               <a href="/terms" className="hover:text-slate-700 transition-colors">Terms</a>
+              <a href="/ai-info.html" className="hover:text-slate-700 transition-colors">AI Info</a>
             </div>
           </div>
           
