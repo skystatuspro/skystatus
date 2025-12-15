@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import {
-  Cookie,
-  X,
-  Shield,
-  Settings,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  Info,
+import { 
+  Cookie, 
+  X, 
+  Shield, 
+  Settings, 
+  Check, 
+  ChevronDown, 
+  ChevronUp, 
+  ExternalLink, 
+  Info, 
 } from 'lucide-react';
 import { useCookieConsent, CookieConsent } from '../lib/CookieContext';
 
@@ -17,28 +17,28 @@ const COOKIE_CATEGORIES = [
   {
     id: 'necessary' as const,
     name: 'Strictly Necessary',
-    description: 'Essential for the website to function. These cookies enable core functionality such as security, authentication, and accessibility. Cannot be disabled.',
+    description: 'Essential for the website. These cookies enable core functionality like security, authentication, and accessibility. They cannot be disabled.',
     required: true,
     examples: ['Session management', 'Authentication tokens', 'Security preferences'],
   },
   {
     id: 'functional' as const,
     name: 'Functional',
-    description: 'Remember your preferences and settings to enhance your experience. Without these, some features may not work optimally.',
+    description: 'Remembers your preferences and settings. Without these, some features may not work optimally.',
     required: false,
     examples: ['Currency preference', 'Home airport setting', 'Display preferences'],
   },
   {
     id: 'analytics' as const,
     name: 'Analytics',
-    description: 'Help us understand how visitors interact with our website. This data is anonymized and used to improve SkyStatus.',
+    description: 'Helps us understand visitor interaction. This data is anonymized and used to improve SkyStatus.',
     required: false,
     examples: ['Page views', 'Feature usage', 'Error tracking'],
   },
   {
     id: 'marketing' as const,
     name: 'Marketing',
-    description: 'Used to track visitors across websites for advertising purposes. We currently do not use marketing cookies.',
+    description: 'Tracks visitors across websites for advertising. We currently do not use marketing cookies.',
     required: false,
     examples: ['Currently not used'],
     disabled: true,
@@ -70,16 +70,14 @@ export const CookieBanner: React.FC = () => {
         {/* Content */}
         <div className="p-5">
           <p className="text-slate-600 text-sm leading-relaxed mb-4">
-            SkyStatus uses cookies to ensure the website functions properly and to improve your experience. 
-            You can choose which cookies you want to allow. Your preferences will be saved and you can 
-            change them at any time via the cookie settings in the footer.
+            SkyStatus uses cookies to ensure the website functions properly. You can choose which cookies to allow. We save your preferences. You can change them anytime via the settings in the footer.
           </p>
 
           <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 mb-5">
             <Shield size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-800">
-              <strong>Your privacy matters.</strong> We only use essential cookies by default. 
-              Analytics help us improve SkyStatus but are entirely optional. We never sell your data.
+              <strong>Your privacy matters.</strong> We use only essential cookies by default. 
+              Analytics help us improve SkyStatus but are optional. We never sell your data.
             </p>
           </div>
 
