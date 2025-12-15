@@ -37,7 +37,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-3">1. Introduction</h2>
             <p className="text-slate-600 leading-relaxed">
-              SkyStatus ("we", "our", or "us") respects your privacy and is committed to protecting your personal data. 
+              SkyStatus ("we", "our", or "us") respects your privacy. We are committed to protecting your personal data. 
               This privacy policy explains how we collect, use, and safeguard your information when you use our 
               Flying Blue loyalty tracking application at skystatus.pro.
             </p>
@@ -69,7 +69,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">3. PDF Import &amp; Processing</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">3. PDF Import & Processing</h2>
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
               <p className="text-emerald-800 font-medium">
                 🔒 Your Flying Blue PDFs are processed entirely in your browser. The PDF file is never uploaded to our servers.
@@ -89,11 +89,11 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
               </li>
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
-                <span><strong>No file storage:</strong> The original PDF is never saved — not on our servers, not in your browser. Only the extracted flight records are kept.</span>
+                <span><strong>No file storage:</strong> The original PDF is never saved. Not on our servers, not in your browser. Only the extracted flight records are kept.</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
-                <span><strong>Your choice:</strong> Extracted data is stored locally (Local Mode) or synced to your account (Cloud Mode), depending on your preference.</span>
+                <span><strong>Your choice:</strong> Extracted data is stored locally (Local Mode) or synced to your account (Cloud Mode). This depends on your preference.</span>
               </li>
             </ul>
           </section>
@@ -124,9 +124,9 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">5. Data Storage &amp; Security</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-3">5. Data Storage & Security</h2>
             <p className="text-slate-600 leading-relaxed">
-              Your data is stored securely using Supabase, a trusted cloud database provider with enterprise-grade security. 
+              Your data is stored securely using Supabase. This is a trusted cloud database provider with enterprise-grade security. 
               All data transmission is encrypted using TLS/SSL. We implement row-level security to ensure you can only 
               access your own data. We do not sell, share, or provide your personal data to third parties.
             </p>
@@ -135,8 +135,8 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-3">6. Local Mode</h2>
             <p className="text-slate-600 leading-relaxed">
-              SkyStatus offers a "Local Mode" where your data is stored only in your browser's local storage and is never 
-              sent to our servers. In this mode, we have no access to your data whatsoever. Note that local data is 
+              SkyStatus offers a "Local Mode". In this mode, your data is stored only in your browser's local storage. It is never 
+              sent to our servers. We have no access to your data whatsoever. Note that local data is 
               lost if you clear your browser data or switch devices.
             </p>
           </section>
@@ -169,7 +169,7 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-3">8. Cookies</h2>
             <p className="text-slate-600 leading-relaxed">
-              SkyStatus uses only essential cookies required for authentication and session management. 
+              SkyStatus uses only essential cookies. These are required for authentication and session management. 
               We do not use tracking cookies or third-party advertising cookies. If we add optional analytics 
               in the future, we will update this policy and request your consent.
             </p>
@@ -268,7 +268,7 @@ export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
             <p className="text-slate-600 leading-relaxed">
               By accessing or using SkyStatus ("the Service"), you agree to be bound by these Terms of Service. 
               If you do not agree to these terms, please do not use the Service. We reserve the right to modify 
-              these terms at any time, and your continued use constitutes acceptance of any changes.
+              these terms at any time. Your continued use constitutes acceptance of any changes.
             </p>
           </section>
 
@@ -277,7 +277,7 @@ export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
             <p className="text-slate-600 leading-relaxed">
               SkyStatus is a personal tool for tracking Flying Blue loyalty program status, miles, and XP. 
               The Service allows you to import and manage flight data, calculate status progress, and analyze 
-              your loyalty program performance. SkyStatus is an independent tool and is not affiliated with, 
+              your loyalty program performance. SkyStatus is an independent tool. It is not affiliated with, 
               endorsed by, or connected to Air France-KLM, Flying Blue, or any airline.
             </p>
           </section>
@@ -535,8 +535,8 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
               <h3 className="font-bold text-slate-900">Trusted by the Community</h3>
             </div>
             <p className="text-slate-600">
-              200+ Flying Blue members use SkyStatus to track their status qualification, 
-              from casual travelers reaching for Silver to frequent flyers maintaining Ultimate.
+              200+ Flying Blue members use SkyStatus to track their status qualification. 
+              This ranges from casual travelers reaching for Silver to frequent flyers maintaining Ultimate.
             </p>
           </div>
 
@@ -583,7 +583,7 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
               <h3 className="font-bold text-slate-900">Privacy First</h3>
             </div>
             <p className="text-slate-600 text-sm">
-              Your PDF files are processed entirely in your browser - they never leave your device. 
+              Your PDF files are processed entirely in your browser. They never leave your device. 
               Use Local Mode for complete privacy, or sign in with Google to sync across devices. 
               Your data, your choice.
             </p>
