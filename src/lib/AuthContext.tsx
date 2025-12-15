@@ -66,11 +66,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn('SignOut API call failed, clearing local state anyway:', error);
     }
-    // Always clear local state, even if API call fails
+    
+    // Always clear local state
     setUser(null);
     setSession(null);
-    // Clear any cached data
-    localStorage.removeItem('supabase.auth.token');
+    
+    // Clear ALL Supabase related items from localStorage
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Also clear sessionStorage
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+        sessionStorage.removeItem(key);
+      }
+    }
+    
     // Force reload to clean state
     window.location.href = '/';
   };

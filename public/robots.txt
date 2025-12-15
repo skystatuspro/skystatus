@@ -3,46 +3,36 @@
 
 User-agent: *
 Allow: /
-
-# Main pages
-Allow: /faq
-Allow: /about
-Allow: /contact
-Allow: /privacy
-Allow: /terms
-Allow: /cookies
-Allow: /calculator
-
-# AI/LLM info page
-Allow: /ai-info.html
-
-# Sitemap
 Sitemap: https://skystatus.pro/sitemap.xml
 
-# Crawl-delay (be nice to bots)
-Crawl-delay: 1
-
-# Specific bot allowances for AI/LLM crawlers
+# OpenAI
 User-agent: GPTBot
 Allow: /
 
-User-agent: ChatGPT-User
+# Anthropic (official bot names)
+User-agent: ClaudeBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Claude-SearchBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Claude-User
 Allow: /
 
+# Google AI
 User-agent: Google-Extended
 Allow: /
 
-User-agent: CCBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Claude-Web
-Allow: /
-
+# Perplexity
 User-agent: PerplexityBot
 Allow: /
 
+# Common Crawl
+User-agent: CCBot
+Allow: /
+
+# Apple
 User-agent: Applebot-Extended
 Allow: /
