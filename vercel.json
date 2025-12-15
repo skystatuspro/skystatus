@@ -1,4 +1,6 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "redirects": [
     {
       "source": "/guide/what-is-uxp-ultimate-xp",
@@ -39,20 +41,6 @@
       "source": "/guide/cost-per-mile-explained",
       "destination": "/guide/flying-blue-cost-per-mile",
       "permanent": true
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/guide",
-      "destination": "/guide/index.html"
-    },
-    {
-      "source": "/guide/:slug",
-      "destination": "/guide/:slug.html"
-    },
-    {
-      "source": "/((?!api|_next|static|guide|favicon\\.svg|robots\\.txt|sitemap\\.xml|ai-info\\.html|ai-info\\.md|llms\\.txt|og-image\\.png).*)",
-      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -101,7 +89,7 @@
       ]
     },
     {
-      "source": "/guide/:path*",
+      "source": "/guide/(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -109,7 +97,7 @@
         },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=86400"
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
         }
       ]
     },

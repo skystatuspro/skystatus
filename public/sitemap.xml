@@ -25,6 +25,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://skystatus.pro/about</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://skystatus.pro/privacy</loc>
     <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
