@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowLeft, Shield, FileText, Mail, Cookie } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, Mail, Cookie, TrendingUp, BarChart3, Sparkles, Zap, Plane, Crown, Users, Heart } from 'lucide-react';
+import { APP_VERSION } from '../config/version';
 
 interface LegalPageProps {
   onBack: () => void;
@@ -428,6 +429,59 @@ export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
 // ============================================
 
 export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
+  const features = [
+    {
+      icon: TrendingUp,
+      title: 'XP Engine',
+      description: 'Track your XP across qualification cycles. See your progress toward the next status level with actual vs projected calculations.',
+      color: 'sky',
+    },
+    {
+      icon: BarChart3,
+      title: 'Miles Tracker',
+      description: 'Monitor your miles balance, acquisition costs, and CPM metrics. Know exactly what your miles are worth.',
+      color: 'amber',
+    },
+    {
+      icon: Sparkles,
+      title: 'Redemption Calculator',
+      description: 'Evaluate award bookings by comparing CPM values. Maximize the value of every mile you spend.',
+      color: 'emerald',
+    },
+    {
+      icon: Zap,
+      title: 'PDF Import',
+      description: 'Import your flight history directly from Flying Blue statements in 7 languages. No manual data entry required.',
+      color: 'purple',
+    },
+    {
+      icon: Plane,
+      title: 'Mileage Run Simulator',
+      description: 'Plan strategic flights to reach your status goals. Find the best cost-per-XP routes from your home airport.',
+      color: 'blue',
+    },
+    {
+      icon: Crown,
+      title: 'Ultimate Status Tracking',
+      description: 'Dedicated UXP tracking for Platinum members pursuing Ultimate. Monitor both XP and UXP progress separately.',
+      color: 'yellow',
+    },
+  ];
+
+  const techStack = ['React', 'TypeScript', 'Tailwind CSS', 'Supabase', 'Vite', 'Vercel'];
+
+  const getColorClasses = (color: string) => {
+    const colors: Record<string, { bg: string; text: string }> = {
+      sky: { bg: 'bg-sky-50', text: 'text-sky-600' },
+      amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+      emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+      purple: { bg: 'bg-purple-50', text: 'text-purple-600' },
+      blue: { bg: 'bg-blue-50', text: 'text-blue-600' },
+      yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600' },
+    };
+    return colors[color] || colors.sky;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-3xl mx-auto px-4 py-12">
@@ -453,88 +507,65 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
 
         {/* Content */}
         <div className="space-y-6">
-          {/* Hero Section */}
+          {/* Why SkyStatus */}
           <div className="bg-white rounded-2xl border border-slate-200 p-8">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Why SkyStatus?</h2>
-            <p className="text-slate-600 leading-relaxed mb-4">
-              Flying Blue is great, but tracking your status progress shouldn't require a spreadsheet. 
-              SkyStatus was built by a frequent flyer who wanted a better way to visualize XP progress, 
-              understand mile valuations, and plan award redemptions.
-            </p>
-            <p className="text-slate-600 leading-relaxed">
-              Whether you're chasing Silver or maintaining Platinum, SkyStatus helps you stay on top 
-              of your qualification cycle with real-time tracking and smart projections.
+            <div className="space-y-4 text-slate-600">
+              <p className="leading-relaxed">
+                Flying Blue is great, but tracking your status progress shouldn't require a spreadsheet. 
+                SkyStatus was built by a frequent flyer who wanted a better way to visualize XP progress, 
+                understand mile valuations, and plan award redemptions.
+              </p>
+              <p className="leading-relaxed">
+                Whether you're chasing Silver or maintaining Platinum, SkyStatus helps you stay on top 
+                of your qualification cycle with real-time tracking and smart projections.
+              </p>
+              <p className="leading-relaxed">
+                What started as a personal tool has grown into something used by <strong className="text-slate-900">200+ Flying Blue 
+                members</strong> across Europe and beyond. Every feature has been shaped by real user 
+                feedback from people who care about their status as much as you do.
+              </p>
+            </div>
+          </div>
+
+          {/* Social proof */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+            <div className="flex items-center gap-3 mb-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              <h3 className="font-bold text-slate-900">Trusted by the Community</h3>
+            </div>
+            <p className="text-slate-600">
+              200+ Flying Blue members use SkyStatus to track their status qualification, 
+              from casual travelers reaching for Silver to frequent flyers maintaining Ultimate.
             </p>
           </div>
 
           {/* Features Grid */}
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-sky-50 rounded-lg">
-                  <svg className="text-sky-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
+            {features.map((feature) => {
+              const colors = getColorClasses(feature.color);
+              return (
+                <div 
+                  key={feature.title}
+                  className="bg-white rounded-xl border border-slate-200 p-6"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`p-2 ${colors.bg} rounded-lg`}>
+                      <feature.icon className={`w-5 h-5 ${colors.text}`} />
+                    </div>
+                    <h3 className="font-bold text-slate-900">{feature.title}</h3>
+                  </div>
+                  <p className="text-sm text-slate-600">{feature.description}</p>
                 </div>
-                <h3 className="font-bold text-slate-900">XP Engine</h3>
-              </div>
-              <p className="text-sm text-slate-600">
-                Track your XP across qualification cycles. See your progress toward the next status 
-                level with actual vs projected calculations.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-amber-50 rounded-lg">
-                  <svg className="text-amber-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="font-bold text-slate-900">Miles Tracker</h3>
-              </div>
-              <p className="text-sm text-slate-600">
-                Monitor your miles balance, acquisition costs, and CPM metrics. Know exactly 
-                what your miles are worth.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-emerald-50 rounded-lg">
-                  <svg className="text-emerald-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                  </svg>
-                </div>
-                <h3 className="font-bold text-slate-900">Redemption Calculator</h3>
-              </div>
-              <p className="text-sm text-slate-600">
-                Evaluate award bookings by comparing CPM values. Maximize the value 
-                of every mile you spend.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <svg className="text-purple-600 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="font-bold text-slate-900">PDF Import</h3>
-              </div>
-              <p className="text-sm text-slate-600">
-                Import your flight history directly from Flying Blue statements. 
-                No manual data entry required.
-              </p>
-            </div>
+              );
+            })}
           </div>
 
           {/* Tech Stack */}
           <div className="bg-white rounded-2xl border border-slate-200 p-8">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Built With</h2>
             <div className="flex flex-wrap gap-2">
-              {['React', 'TypeScript', 'Tailwind CSS', 'Supabase', 'Vite', 'Vercel'].map((tech) => (
+              {techStack.map((tech) => (
                 <span 
                   key={tech}
                   className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium"
@@ -545,13 +576,24 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
             </div>
           </div>
 
+          {/* Privacy note */}
+          <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-green-600">🔒</span>
+              <h3 className="font-bold text-slate-900">Privacy First</h3>
+            </div>
+            <p className="text-slate-600 text-sm">
+              Your PDF files are processed entirely in your browser - they never leave your device. 
+              Use Local Mode for complete privacy, or sign in with Google to sync across devices. 
+              Your data, your choice.
+            </p>
+          </div>
+
           {/* Disclaimer */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
             <div className="flex items-start gap-3">
               <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
-                <svg className="text-amber-600 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                </svg>
+                <span className="text-amber-600">💛</span>
               </div>
               <div>
                 <h3 className="font-bold text-amber-900 mb-1">Independent Project</h3>
@@ -564,9 +606,22 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
             </div>
           </div>
 
+          {/* Feedback */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <div className="flex items-center gap-3 mb-2">
+              <Heart className="w-5 h-5 text-red-500" />
+              <h3 className="font-bold text-slate-900">Feedback & Suggestions</h3>
+            </div>
+            <p className="text-slate-600 text-sm">
+              SkyStatus is actively developed based on user feedback. Found a bug? Have an idea? 
+              Use the feedback button in the app or reach out directly. Every suggestion helps 
+              make SkyStatus better for everyone.
+            </p>
+          </div>
+
           {/* Version Info */}
           <div className="text-center text-sm text-slate-400">
-            <p>SkyStatus Pro v1.0</p>
+            <p>SkyStatus Pro v{APP_VERSION}</p>
             <p className="mt-1">Made with ☕ in Amsterdam</p>
           </div>
         </div>
