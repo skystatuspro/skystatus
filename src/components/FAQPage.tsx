@@ -3,16 +3,16 @@ import {
   ArrowLeft, 
   HelpCircle, 
   ChevronDown, 
-  ChevronRight,
-  Plane,
-  Award,
-  Calculator,
-  Shield,
-  Target,
-  ExternalLink,
-  Route,
-  Settings,
-  Coins,
+  ChevronRight, 
+  Plane, 
+  Award, 
+  Calculator, 
+  Shield, 
+  Target, 
+  ExternalLink, 
+  Route, 
+  Settings, 
+  Coins, 
   FileText,
 } from 'lucide-react';
 
@@ -83,9 +83,9 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
             <>
               <p>When you first open SkyStatus, the <strong>onboarding wizard</strong> guides you through setup:</p>
               <ol className="list-decimal list-inside mt-2 space-y-2">
-                <li><strong>Choose your home airport</strong> — Used for popular route suggestions</li>
-                <li><strong>Select your currency</strong> — EUR, USD, GBP, or CHF for all cost displays</li>
-                <li><strong>Import your Flying Blue data</strong> — Upload your PDF or enter manually</li>
+                <li><strong>Choose your home airport</strong> - Used for popular route suggestions</li>
+                <li><strong>Select your currency</strong> - EUR, USD, GBP, or CHF for all cost displays</li>
+                <li><strong>Import your Flying Blue data</strong> - Upload your PDF or enter manually</li>
               </ol>
               <p className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
                 <strong>Tip:</strong> You can always re-run the onboarding wizard from Data Settings if you want to change these preferences.
@@ -140,7 +140,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
               <div className="mt-3 p-3 bg-amber-50 rounded-lg text-sm border border-amber-200">
                 <strong className="text-amber-800">Why click "More" repeatedly?</strong>
                 <p className="text-amber-700 mt-1">
-                  Flying Blue uses "lazy loading" — it only shows recent activities at first. If you don't click "More" to load everything, your PDF will only contain a few months of data!
+                  Flying Blue uses "lazy loading". It only shows recent activities at first. If you don't click "More" to load everything, your PDF will only contain a few months of data!
                 </p>
               </div>
               <p className="mt-3"><strong>Step 2: Import in SkyStatus</strong></p>
@@ -188,7 +188,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
                   <li>On the login screen, click <strong>"Try Demo"</strong></li>
                   <li>You'll see sample data for a fictional Flying Blue member</li>
-                  <li>Explore all features freely — nothing you do affects real data</li>
+                  <li>Explore all features freely. Nothing you do affects real data</li>
                 </ol>
               </div>
               
@@ -204,7 +204,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <ul className="list-disc list-inside mt-1 text-sm space-y-1">
                   <li>Click <strong>"Create Account"</strong> in the demo bar to sign up</li>
                   <li>Or go to <strong>Data Settings</strong> → <strong>"Start Over"</strong> to start fresh</li>
-                  <li>Or simply close the browser — demo data is not saved</li>
+                  <li>Or simply close the browser. Demo data is not saved</li>
                 </ul>
               </div>
               
@@ -227,10 +227,10 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
             <>
               <p>The <strong>XP Engine</strong> is the heart of SkyStatus. It tracks your qualification cycle and shows:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li><strong>Actual XP</strong> — XP from flights you've already taken</li>
-                <li><strong>Projected XP</strong> — Including scheduled/future flights</li>
-                <li><strong>Status progression</strong> — Visual timeline of your status journey</li>
-                <li><strong>Ultimate tracking</strong> — UXP progress for Platinum members</li>
+                <li><strong>Actual XP</strong> - XP from flights you've already taken</li>
+                <li><strong>Projected XP</strong> - Including scheduled/future flights</li>
+                <li><strong>Status progression</strong> - Visual timeline of your status journey</li>
+                <li><strong>Ultimate tracking</strong> - UXP progress for Platinum members</li>
               </ul>
             </>
           )
@@ -252,7 +252,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <ol className="list-decimal list-inside mt-2 space-y-1">
                   <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
                   <li>Click <strong>"View your Flying Blue space"</strong> or go to your profile</li>
-                  <li>Look for <strong>"Reach before [date]"</strong> or <strong>"Maintain [status], 300 XP — Reach before [date]"</strong></li>
+                  <li>Look for <strong>"Reach before [date]"</strong> or <strong>"Maintain [status], 300 XP - Reach before [date]"</strong></li>
                   <li>This date is the <strong>end</strong> of your qualification period</li>
                   <li>Your cycle <strong>start month</strong> = 12 months before this date</li>
                 </ol>
@@ -278,7 +278,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 </div>
               </div>
               <p className="mt-3 text-sm">
-                The dashboard ring shows both: the solid part is actual, the lighter part is projected.
+                The dashboard ring shows both. The solid part is actual, the lighter part is projected.
               </p>
             </>
           )
@@ -346,7 +346,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           question: 'What is soft landing?',
           answer: (
             <>
-              <p>Flying Blue has a "soft landing" rule: <strong>you can only drop one status level per year</strong>.</p>
+              <p>Flying Blue has a "soft landing" rule. <strong>You can only drop one status level per year</strong>.</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Platinum → Gold (if you don't requalify for Platinum)</li>
                 <li>Gold → Silver</li>
@@ -354,7 +354,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <li>Ultimate always drops to Platinum first, not lower</li>
               </ul>
               <p className="mt-2 text-sm text-slate-500">
-                This gives you a safety net — even if you don't fly much one year, you won't lose all your benefits immediately.
+                This gives you a safety net. Even if you don't fly much one year, you won't lose all your benefits immediately.
               </p>
             </>
           )
@@ -426,7 +426,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 </div>
                 <div className="p-3 bg-indigo-50 rounded-lg">
                   <div className="font-semibold text-indigo-800">Optimizer Mode</div>
-                  <p className="text-sm mt-1">Calculates <strong>marginal cost ÷ marginal XP</strong>. Shows the cost of upgrading from Economy — useful for deciding whether to pay for a higher cabin.</p>
+                  <p className="text-sm mt-1">Calculates <strong>marginal cost ÷ marginal XP</strong>. Shows the cost of upgrading from Economy. This is useful for deciding whether to pay for a higher cabin.</p>
                 </div>
               </div>
               <p className="mt-3 text-sm">
@@ -444,15 +444,15 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex gap-2 p-2 bg-slate-50 rounded">
                   <span className="font-semibold w-32">Explorer-Gold:</span>
-                  <span>Shows <strong>Status Upgrade</strong> — XP needed to reach the next level</span>
+                  <span>Shows <strong>Status Upgrade</strong> - XP needed to reach the next level</span>
                 </div>
                 <div className="flex gap-2 p-2 bg-slate-50 rounded">
                   <span className="font-semibold w-32">Platinum (0-599 XP):</span>
-                  <span>Shows <strong>Requalification</strong> — XP needed to keep Platinum (300 XP)</span>
+                  <span>Shows <strong>Requalification</strong> - XP needed to keep Platinum (300 XP)</span>
                 </div>
                 <div className="flex gap-2 p-2 bg-violet-50 rounded">
                   <span className="font-semibold w-32">Platinum (600+ XP):</span>
-                  <span>Shows <strong>Ultimate Goal</strong> — UXP needed for Ultimate (900 UXP)</span>
+                  <span>Shows <strong>Ultimate Goal</strong> - UXP needed for Ultimate (900 UXP)</span>
                 </div>
               </div>
             </>
@@ -481,11 +481,11 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
               <p>XP is based on flight distance, grouped into bands:</p>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div className="p-2 bg-slate-50 rounded">Short: 0-500 mi</div>
-                <div className="p-2 bg-slate-50 rounded">Medium: 501-1,500 mi</div>
-                <div className="p-2 bg-slate-50 rounded">Long 1: 1,501-2,500 mi</div>
-                <div className="p-2 bg-slate-50 rounded">Long 2: 2,501-3,500 mi</div>
-                <div className="p-2 bg-slate-50 rounded">Long 3: 3,501-4,500 mi</div>
-                <div className="p-2 bg-slate-50 rounded">Long 4: 4,501+ mi</div>
+                <div className="p-2 bg-slate-50 rounded">Medium: 501-1500 mi</div>
+                <div className="p-2 bg-slate-50 rounded">Long 1: 1501-2500 mi</div>
+                <div className="p-2 bg-slate-50 rounded">Long 2: 2501-3500 mi</div>
+                <div className="p-2 bg-slate-50 rounded">Long 3: 3501-4500 mi</div>
+                <div className="p-2 bg-slate-50 rounded">Long 4: 4501+ mi</div>
               </div>
               <p className="mt-3 text-sm">
                 XP varies by cabin: Economy earns base XP, Business earns 3x, First earns 4x (approximately).
@@ -631,10 +631,10 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <strong>What's a good CPM?</strong>
               </p>
               <ul className="list-disc list-inside mt-1 space-y-1 text-sm">
-                <li>{"<"}0.8¢ — Excellent (you're getting miles cheaply)</li>
-                <li>0.8-1.2¢ — Good</li>
-                <li>1.2-1.5¢ — Average</li>
-                <li>{">"}1.5¢ — Consider if the miles are worth it</li>
+                <li>{"<"}0.8¢ - Excellent (you're getting miles cheaply)</li>
+                <li>0.8-1.2¢ - Good</li>
+                <li>1.2-1.5¢ - Average</li>
+                <li>{">"}1.5¢ - Consider if the miles are worth it</li>
               </ul>
             </>
           )
@@ -673,7 +673,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <li>All costs throughout the app will update</li>
               </ol>
               <p className="mt-2 text-sm text-slate-500">
-                Note: This only changes the display currency. It doesn't convert existing data — you'll need to re-enter costs in the new currency.
+                Note: This only changes the display currency. It doesn't convert existing data. You'll need to re-enter costs in the new currency.
               </p>
             </>
           )
@@ -701,10 +701,10 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
               <ol className="list-decimal list-inside mt-2 space-y-1">
                 <li>Click <strong>"Import JSON"</strong></li>
                 <li>Select your backup file</li>
-                <li>Data is <strong>merged</strong> — existing entries are preserved, new entries are added</li>
+                <li>Data is <strong>merged</strong>. Existing entries are preserved, new entries are added.</li>
               </ol>
               <p className="mt-2 text-sm text-slate-500">
-                Safe to import the same file multiple times — duplicates are detected automatically.
+                Safe to import the same file multiple times. Duplicates are detected automatically.
               </p>
             </>
           )
@@ -1046,7 +1046,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <li>Describe what happened</li>
                 <li>Describe what you expected</li>
                 <li>Include any error messages you saw</li>
-                <li>Submit — we'll investigate!</li>
+                <li>Submit. We will investigate!</li>
               </ol>
               <p className="mt-2 text-sm text-slate-500">
                 You can also email us at <a href="mailto:support@skystatus.pro" className="text-brand-600 hover:underline">support@skystatus.pro</a>
