@@ -1,2 +1,7 @@
-// App version - update this when releasing new versions
+/**
+ * App Version
+ * 
+ * ⚠️  UPDATE THIS when releasing a new version!
+ *     Also update "version" in package.json to match.
+ */
 export const APP_VERSION = '2.4.0';
