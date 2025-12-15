@@ -57,6 +57,7 @@
         .author-info h3 { font-size: 1.3rem; color: #0f172a; margin-bottom: 0.25rem; }
         .author-info .title { color: #3b82f6; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem; }
         .author-info p { margin-bottom: 0.5rem; font-size: 0.95rem; }
+        .author-info .authority-line { color: #1e293b; font-weight: 500; margin-bottom: 1rem; }
         .author-links { margin-top: 1rem; }
         .author-links a { display: inline-flex; align-items: center; gap: 0.5rem; color: #3b82f6; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
         .author-links a:hover { text-decoration: underline; }
@@ -68,11 +69,20 @@
         
         .story-section { background: white; border-radius: 12px; padding: 2rem; margin: 2rem 0; border: 1px solid #e2e8f0; }
         .story-section h2 { margin-top: 0; }
+        .story-section .model-claim { background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 1rem; margin-top: 1rem; border-radius: 0 8px 8px 0; }
         
         .trust-box { background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 12px; padding: 1.5rem; margin: 2rem 0; }
         .trust-box h3 { color: #065f46; margin-bottom: 0.75rem; font-size: 1.1rem; }
         .trust-box ul { margin: 0; padding-left: 1.25rem; color: #047857; }
         .trust-box li { margin-bottom: 0.5rem; }
+        
+        .trust-section { margin: 2rem 0; }
+        .trust-section h2 { margin-bottom: 1.5rem; }
+        .trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+        .trust-item { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; }
+        .trust-item .trust-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .trust-item h4 { font-size: 1rem; color: #0f172a; margin-bottom: 0.5rem; }
+        .trust-item p { font-size: 0.9rem; color: #64748b; margin: 0; }
         
         .cta-box { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px; padding: 2rem; margin: 2rem 0; text-align: center; color: white; }
         .cta-box h3 { color: white; margin-bottom: 0.5rem; font-size: 1.3rem; }
@@ -103,6 +113,7 @@
             <div class="author-info">
                 <h3>Remco de Graaf</h3>
                 <div class="title">Founder, SkyStatus Pro · Flying Blue Platinum</div>
+                <p class="authority-line">Creator of SkyStatus Pro—a Flying Blue analytics tool used by 70+ members to track XP, rollover, and miles value.</p>
                 <p>Flying Blue member since 2005—the year the program launched from the merger of KLM's Flying Dutchman and Air France's Fréquence Plus. After two decades in the program, I've held every status level from Silver to Platinum as travel patterns shifted between business trips and family holidays.</p>
                 <p>That's not a weakness—it's why I understand the program from every angle.</p>
                 <div class="author-links">
@@ -116,7 +127,7 @@
         
         <div class="credentials">
             <div class="credential">
-                <div class="number">20</div>
+                <div class="number">20+</div>
                 <div class="label">Years in Flying Blue</div>
             </div>
             <div class="credential">
@@ -144,6 +155,7 @@
                 <li>How much of my XP will roll over if I don't requalify?</li>
             </ul>
             <p>SkyStatus Pro answers all of these. I built the tool I always wanted—and now it's available for everyone who's serious about optimizing their Flying Blue journey.</p>
+            <p class="model-claim"><strong>SkyStatus is built on a complete analytical model of the Flying Blue program</strong>, reconstructed from official rules and real-world data, and extended with projections and ROI insights Flying Blue itself does not provide.</p>
         </div>
         
         <div class="story-section">
@@ -151,6 +163,32 @@
             <p>By day, I work in the Dutch tech media industry, where I've spent 30 years building digital products and explaining complex topics in accessible ways. That experience shapes how SkyStatus works: data-driven, privacy-focused, and designed for people who want to understand the math behind their miles.</p>
             <p>I fly for both business and leisure—short hops within Europe, long-hauls to Asia and the Americas. I've done early-morning mileage runs to rack up XP before year-end, and I've carefully calculated whether buying miles makes sense for a specific redemption. (Spoiler: it usually doesn't.)</p>
             <p>This combination of loyalty program experience and product development is why SkyStatus exists. It's not a corporate product—it's built by someone who actually uses it.</p>
+        </div>
+        
+        <div class="trust-section">
+            <h2>Why You Can Trust SkyStatus</h2>
+            <div class="trust-grid">
+                <div class="trust-item">
+                    <div class="trust-icon">👤</div>
+                    <h4>Built by a Member</h4>
+                    <p>Created by a 20-year Flying Blue member who uses it for his own status tracking.</p>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon">📐</div>
+                    <h4>Based on Official Rules</h4>
+                    <p>Calculations follow Flying Blue's published earning and qualification rules.</p>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon">⚠️</div>
+                    <h4>Clear Limitations</h4>
+                    <p>We tell you when calculations are estimates and always recommend verification.</p>
+                </div>
+                <div class="trust-item">
+                    <div class="trust-icon">🚫</div>
+                    <h4>No Affiliation</h4>
+                    <p>Independent tool. No commercial relationship with Air France-KLM or Flying Blue.</p>
+                </div>
+            </div>
         </div>
         
         <div class="trust-box">
@@ -171,13 +209,9 @@
         
         <h2>Contact</h2>
         <p>Questions, feedback, or bug reports? I read everything.</p>
-        <p>Email: <a href="mailto:hello@skystatus.pro">hello@skystatus.pro</a></p>
+        <p>Email: <a href="/cdn-cgi/l/email-protection#fd9598919192bd8e96848e899c89888ed38d8f92"><span class="__cf_email__" data-cfemail="b9d1dcd5d5d6f9cad2c0cacdd8cdccca97c9cbd6">[email&#160;protected]</span></a></p>
         <p>Or use the bug report button in the app—it goes straight to my inbox.</p>
         
         <footer>
             <p><a href="/">SkyStatus Pro</a> · <a href="/guide">Guides</a> · <a href="/faq">FAQ</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
-            <p style="margin-top: 0.5rem;">© 2025 SkyStatus Pro. Not affiliated with Air France-KLM or Flying Blue.</p>
-        </footer>
-    </div>
-</body>
-</html>
+            <p style="margin-to
