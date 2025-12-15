@@ -1,15 +1,16 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/faq", "destination": "/index.html" },
-    { "source": "/privacy", "destination": "/index.html" },
-    { "source": "/terms", "destination": "/index.html" },
-    { "source": "/cookies", "destination": "/index.html" },
-    { "source": "/contact", "destination": "/index.html" },
-    { "source": "/calculator", "destination": "/index.html" },
-    { "source": "/reset-password", "destination": "/index.html" },
-    { "source": "/help", "destination": "/index.html" }
+    { "source": "/faq", "destination": "/" },
+    { "source": "/privacy", "destination": "/" },
+    { "source": "/terms", "destination": "/" },
+    { "source": "/cookies", "destination": "/" },
+    { "source": "/contact", "destination": "/" },
+    { "source": "/calculator", "destination": "/" },
+    { "source": "/reset-password", "destination": "/" },
+    { "source": "/help", "destination": "/" }
   ],
   "redirects": [
     {
