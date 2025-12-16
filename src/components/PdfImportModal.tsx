@@ -991,10 +991,11 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
               {/* Contact */}
               <section className="pt-4 border-t border-slate-200">
                 <p className="text-slate-500 text-xs">
-                  Questions? Contact us at{' '}
-                  <a href="mailto:privacy@skystatus.pro" className="text-blue-600 hover:underline">privacy@skystatus.pro</a>
-                  {' '}or read the{' '}
-                  <a href="/privacy" className="text-blue-600 hover:underline" onClick={() => setShowPrivacyOverlay(false)}>full Privacy Policy</a>.
+                  Questions? Read the{' '}
+                  <a href="/privacy" className="text-blue-600 hover:underline" onClick={() => setShowPrivacyOverlay(false)}>full Privacy Policy</a>
+                  {' '}or visit our{' '}
+                  <a href="/faq" className="text-blue-600 hover:underline" onClick={() => setShowPrivacyOverlay(false)}>FAQ page</a>
+                  {' '}to contact us.
                 </p>
               </section>
             </div>

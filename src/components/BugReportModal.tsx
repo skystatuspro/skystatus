@@ -148,10 +148,7 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">Something went wrong</h3>
               <p className="text-sm text-slate-500 mb-4">
-                Please try again or email us directly at{' '}
-                <a href="mailto:support@skystatus.pro" className="text-amber-600 hover:underline">
-                  support@skystatus.pro
-                </a>
+                Please try again. If the problem persists, try using the Contact form in the FAQ page.
               </p>
               <button
                 onClick={() => setSubmitStatus('idle')}

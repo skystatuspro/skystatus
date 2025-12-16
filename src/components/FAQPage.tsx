@@ -15,6 +15,7 @@ import {
   Coins, 
   FileText,
 } from 'lucide-react';
+import { ContactModal } from './ContactModal';
 
 interface FAQPageProps {
   onBack: () => void;
@@ -60,6 +61,7 @@ const FAQAccordion: React.FC<{ item: FAQItem; isOpen: boolean; onToggle: () => v
 
 export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const toggleItem = (id: string) => {
     const newOpen = new Set(openItems);
@@ -769,7 +771,7 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
             <>
               <p>Click the <strong>Bug Report</strong> button in the sidebar (or footer on mobile). Describe what happened, what you expected, and include any error messages.</p>
               <p className="mt-2 text-sm text-slate-500">
-                You can also email us at <a href="mailto:support@skystatus.pro" className="text-brand-600 hover:underline">support@skystatus.pro</a>
+                You can also <button onClick={() => setShowContactModal(true)} className="text-brand-600 hover:underline font-medium">contact support</button> directly.
               </p>
             </>
           )
@@ -851,13 +853,19 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           <p className="text-white/80 mb-6">
             Get in touch and we'll be happy to help.
           </p>
-          <a
-            href="mailto:support@skystatus.pro"
+          <button
+            onClick={() => setShowContactModal(true)}
             className="inline-flex items-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
           >
             Contact Support
-          </a>
+          </button>
         </div>
+
+        {/* Contact Modal */}
+        <ContactModal 
+          isOpen={showContactModal} 
+          onClose={() => setShowContactModal(false)} 
+        />
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-slate-400">

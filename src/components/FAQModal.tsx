@@ -11,6 +11,7 @@ import {
   Target,
   ExternalLink
 } from 'lucide-react';
+import { ContactModal } from './ContactModal';
 
 interface FAQModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ const FAQAccordion: React.FC<{ item: FAQItem; isOpen: boolean; onToggle: () => v
 export const FAQModal: React.FC<FAQModalProps> = ({ isOpen, onClose }) => {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
   const [activeSection, setActiveSection] = useState(0);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const toggleItem = (id: string) => {
     const newOpen = new Set(openItems);
@@ -292,13 +294,19 @@ export const FAQModal: React.FC<FAQModalProps> = ({ isOpen, onClose }) => {
           >
             View full FAQ page <ExternalLink size={14} />
           </a>
-          <a
-            href="mailto:support@skystatus.pro"
+          <button
+            onClick={() => setShowContactModal(true)}
             className="text-sm text-slate-500 hover:text-slate-700"
           >
             Contact support
-          </a>
+          </button>
         </div>
+
+        {/* Contact Modal */}
+        <ContactModal 
+          isOpen={showContactModal} 
+          onClose={() => setShowContactModal(false)} 
+        />
       </div>
     </div>
   );

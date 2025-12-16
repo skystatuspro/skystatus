@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Shield, FileText, Mail, Cookie, TrendingUp, BarChart3, Sparkles, Zap, Plane, Crown, Users, Heart } from 'lucide-react';
 import { APP_VERSION } from '../config/version';
+import { ContactModal } from './ContactModal';
 
 interface LegalPageProps {
   onBack: () => void;
@@ -8,6 +9,7 @@ interface LegalPageProps {
 
 export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
   const lastUpdated = '16 December 2024';
+  const [showContactModal, setShowContactModal] = React.useState(false);
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -240,11 +242,16 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-3">12. Contact Us</h2>
             <p className="text-slate-600 leading-relaxed">
-              If you have any questions about this privacy policy or our data practices, please contact us at:
+              If you have any questions about this privacy policy or our data practices, please contact us:
             </p>
-            <div className="mt-4 flex items-center gap-2 text-brand-600">
-              <Mail size={18} />
-              <a href="mailto:privacy@skystatus.pro" className="hover:underline">privacy@skystatus.pro</a>
+            <div className="mt-4">
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-medium"
+              >
+                <Mail size={18} />
+                Contact Support
+              </button>
             </div>
           </section>
         </div>
@@ -254,12 +261,16 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           © {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.
         </div>
       </div>
+
+      {/* Contact Modal */}
+      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
     </div>
   );
 };
 
 export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
   const lastUpdated = '11 December 2024';
+  const [showContactModal, setShowContactModal] = React.useState(false);
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -429,11 +440,16 @@ export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-3">12. Contact Us</h2>
             <p className="text-slate-600 leading-relaxed">
-              If you have any questions about these Terms of Service, please contact us at:
+              If you have any questions about these Terms of Service, please contact us:
             </p>
-            <div className="mt-4 flex items-center gap-2 text-brand-600">
-              <Mail size={18} />
-              <a href="mailto:support@skystatus.pro" className="hover:underline">support@skystatus.pro</a>
+            <div className="mt-4">
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-medium"
+              >
+                <Mail size={18} />
+                Contact Support
+              </button>
             </div>
           </section>
         </div>
@@ -443,6 +459,9 @@ export const TermsOfService: React.FC<LegalPageProps> = ({ onBack }) => {
           © {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.
         </div>
       </div>
+
+      {/* Contact Modal */}
+      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
     </div>
   );
 };
@@ -662,6 +681,9 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
 // CONTACT PAGE
 // ============================================
 
+import { submitFeedback } from '../lib/feedbackService';
+import { Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+
 export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
   const [formData, setFormData] = React.useState({
     type: 'feedback',
@@ -669,26 +691,44 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
     subject: '',
     message: '',
   });
-  const [submitted, setSubmitted] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitStatus, setSubmitStatus] = React.useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setSubmitStatus('submitting');
     
-    // Create a mailto link as the submission method
-    const mailtoLink = `mailto:support@skystatus.pro?subject=${encodeURIComponent(
-      `[${formData.type.toUpperCase()}] ${formData.subject}`
-    )}&body=${encodeURIComponent(
-      `From: ${formData.email}\n\n${formData.message}`
-    )}`;
-    
-    window.location.href = mailtoLink;
-    
-    setTimeout(() => {
-      setSubmitted(true);
-      setIsSubmitting(false);
-    }, 500);
+    try {
+      // Format message with all details
+      const fullMessage = [
+        `**Contact Form - ${formData.type.toUpperCase()}**`,
+        ``,
+        `**Subject:** ${formData.subject}`,
+        `**Email:** ${formData.email}`,
+        ``,
+        `**Message:**`,
+        formData.message,
+      ].join('\n');
+
+      const success = await submitFeedback({
+        trigger: 'contact_form',
+        message: fullMessage,
+        page: '/contact',
+      });
+
+      if (success) {
+        setSubmitStatus('success');
+      } else {
+        setSubmitStatus('error');
+      }
+    } catch (err) {
+      console.error('Error submitting contact form:', err);
+      setSubmitStatus('error');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({ type: 'feedback', email: '', subject: '', message: '' });
+    setSubmitStatus('idle');
   };
 
   return (
@@ -714,24 +754,18 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {submitted ? (
+        {submitStatus === 'success' ? (
           /* Success State */
           <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="text-emerald-600" size={28} />
+              <CheckCircle2 className="text-emerald-600" size={32} />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Opening Email Client...</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Message Sent!</h2>
             <p className="text-slate-600 mb-6">
-              Your default email client should open. If it doesn't, please email us directly at{' '}
-              <a href="mailto:support@skystatus.pro" className="text-brand-600 hover:underline">
-                support@skystatus.pro
-              </a>
+              Thanks for reaching out. We'll get back to you as soon as possible.
             </p>
             <button
-              onClick={() => {
-                setSubmitted(false);
-                setFormData({ type: 'feedback', email: '', subject: '', message: '' });
-              }}
+              onClick={resetForm}
               className="text-brand-600 hover:text-brand-700 font-medium"
             >
               Send another message
@@ -794,7 +828,7 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
             <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-8 space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                  Your Email
+                  Your Email <span className="text-slate-400">(for reply)</span>
                 </label>
                 <input
                   type="email"
@@ -804,6 +838,7 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   placeholder="your@email.com"
+                  disabled={submitStatus === 'submitting'}
                 />
               </div>
 
@@ -825,6 +860,7 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
                       ? 'What would you like to know?'
                       : "What's on your mind?"
                   }
+                  disabled={submitStatus === 'submitting'}
                 />
               </div>
 
@@ -844,40 +880,40 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
                       ? 'Please describe the issue in detail. Include steps to reproduce if possible.'
                       : 'Your message...'
                   }
+                  disabled={submitStatus === 'submitting'}
                 />
               </div>
 
+              {/* Error message */}
+              {submitStatus === 'error' && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                  <AlertCircle size={18} />
+                  <span>Something went wrong. Please try again.</span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={submitStatus === 'submitting'}
                 className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isSubmitting ? (
+                {submitStatus === 'submitting' ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Opening email client...
+                    <Loader2 size={18} className="animate-spin" />
+                    Sending...
                   </>
                 ) : (
                   <>
-                    <Mail size={18} />
+                    <Send size={18} />
                     Send Message
                   </>
                 )}
               </button>
             </form>
 
-            {/* Direct Contact */}
-            <div className="bg-slate-100 rounded-xl p-6 text-center">
-              <p className="text-slate-600 mb-2">
-                Or email us directly at
-              </p>
-              <a 
-                href="mailto:support@skystatus.pro" 
-                className="text-brand-600 hover:text-brand-700 font-medium text-lg"
-              >
-                support@skystatus.pro
-              </a>
-            </div>
+            <p className="text-center text-sm text-slate-400">
+              We typically respond within 24 hours.
+            </p>
           </div>
         )}
 
@@ -893,6 +929,7 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
 // Cookie Policy Page
 export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
   const lastUpdated = '16 December 2024';
+  const [showContactModal, setShowContactModal] = React.useState(false);
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1153,13 +1190,17 @@ export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-3">8. Contact Us</h2>
             <p className="text-slate-600 leading-relaxed">
-              If you have any questions about our use of cookies or this Cookie Policy, please contact us at:
+              If you have any questions about our use of cookies or this Cookie Policy, please contact us:
             </p>
-            <p className="mt-3">
-              <a href="mailto:support@skystatus.pro" className="text-brand-600 hover:underline font-medium">
-                support@skystatus.pro
-              </a>
-            </p>
+            <div className="mt-4">
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-medium"
+              >
+                <Mail size={18} />
+                Contact Support
+              </button>
+            </div>
           </section>
         </div>
 
@@ -1168,6 +1209,9 @@ export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           © {new Date().getFullYear()} SkyStatus. Not affiliated with Air France-KLM or Flying Blue.
         </div>
       </div>
+
+      {/* Contact Modal */}
+      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
     </div>
   );
 };
