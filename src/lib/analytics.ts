@@ -174,26 +174,202 @@ export function trackEvent(
 // PRE-DEFINED EVENTS FOR SKYSTATUS
 // ============================================================================
 
+// --- ACCESS & AUTHENTICATION ---
+
 /**
- * Track when user imports a PDF
+ * Track when user starts using the app (login/demo/local mode)
  */
-export function trackPdfImport(flightCount: number, language: string): void {
-  trackEvent('pdf_import', {
-    flight_count: flightCount,
-    pdf_language: language,
-    event_category: 'engagement',
+export function trackAccessModeStart(mode: 'google' | 'demo' | 'local'): void {
+  trackEvent('access_mode_start', {
+    method: mode,
+    event_category: 'authentication',
   });
 }
 
 /**
- * Track user login
+ * Track user login (alias for backwards compatibility)
  */
 export function trackLogin(method: 'google' | 'demo' | 'local'): void {
-  trackEvent('login', {
-    method: method,
+  trackAccessModeStart(method);
+}
+
+/**
+ * Track user sign out
+ */
+export function trackSignOut(): void {
+  trackEvent('sign_out', {
     event_category: 'authentication',
   });
 }
+
+// --- DEMO MODE ---
+
+/**
+ * Track demo status level change
+ */
+export function trackDemoStatusChange(fromStatus: string, toStatus: string): void {
+  trackEvent('demo_status_change', {
+    from_status: fromStatus,
+    to_status: toStatus,
+    event_category: 'demo',
+  });
+}
+
+/**
+ * Track when user exits demo mode
+ */
+export function trackDemoExit(action: 'create_account' | 'exit'): void {
+  trackEvent('demo_exit', {
+    action: action,
+    event_category: 'demo',
+  });
+}
+
+// --- VIEW MODE ---
+
+/**
+ * Track view mode toggle (Simple vs Full)
+ */
+export function trackViewModeChange(mode: 'simple' | 'full'): void {
+  trackEvent('view_mode_change', {
+    mode: mode,
+    event_category: 'preferences',
+  });
+}
+
+// --- NAVIGATION ---
+
+/**
+ * Track navigation between app sections
+ */
+export function trackNavigation(fromView: string, toView: string): void {
+  trackEvent('navigation', {
+    from_view: fromView,
+    to_view: toView,
+    event_category: 'navigation',
+  });
+}
+
+// --- PDF IMPORT ---
+
+/**
+ * Track when user imports a PDF
+ */
+export function trackPdfImport(flightCount: number, milesMonths: number, language?: string): void {
+  trackEvent('pdf_import', {
+    flight_count: flightCount,
+    miles_months: milesMonths,
+    pdf_language: language || 'unknown',
+    event_category: 'data_import',
+  });
+}
+
+/**
+ * Track PDF import errors
+ */
+export function trackPdfImportError(errorType: string): void {
+  trackEvent('pdf_import_error', {
+    error_type: errorType,
+    event_category: 'data_import',
+  });
+}
+
+// --- FLIGHT MANAGEMENT ---
+
+/**
+ * Track when a flight is added manually
+ */
+export function trackFlightAdd(cabinClass: string, isAfKlm: boolean): void {
+  trackEvent('flight_add', {
+    cabin_class: cabinClass,
+    is_af_klm: isAfKlm,
+    event_category: 'data_entry',
+  });
+}
+
+/**
+ * Track when flights are deleted
+ */
+export function trackFlightDelete(count: number): void {
+  trackEvent('flight_delete', {
+    count: count,
+    event_category: 'data_entry',
+  });
+}
+
+// --- MILES MANAGEMENT ---
+
+/**
+ * Track when miles are added
+ */
+export function trackMilesAdd(source: 'subscription' | 'amex' | 'flight' | 'other'): void {
+  trackEvent('miles_entry_add', {
+    source: source,
+    event_category: 'data_entry',
+  });
+}
+
+// --- REDEMPTION MANAGEMENT ---
+
+/**
+ * Track when a redemption is added
+ */
+export function trackRedemptionAdd(milesUsed: number, cpmCategory: 'excellent' | 'good' | 'fair' | 'poor'): void {
+  trackEvent('redemption_add', {
+    miles_used: milesUsed,
+    cpm_category: cpmCategory,
+    event_category: 'data_entry',
+  });
+}
+
+/**
+ * Track when redemptions are deleted
+ */
+export function trackRedemptionDelete(count: number): void {
+  trackEvent('redemption_delete', {
+    count: count,
+    event_category: 'data_entry',
+  });
+}
+
+// --- DATA EXPORT/IMPORT ---
+
+/**
+ * Track JSON data export
+ */
+export function trackDataExport(): void {
+  trackEvent('data_export', {
+    format: 'json',
+    event_category: 'data_management',
+  });
+}
+
+/**
+ * Track JSON data import
+ */
+export function trackDataImport(flightsCount: number, redemptionsCount: number, milesMonths: number): void {
+  trackEvent('data_import', {
+    flights_count: flightsCount,
+    redemptions_count: redemptionsCount,
+    miles_months: milesMonths,
+    format: 'json',
+    event_category: 'data_management',
+  });
+}
+
+// --- ANALYTICS PAGE ---
+
+/**
+ * Track which analytics section is viewed
+ */
+export function trackAnalyticsSectionView(section: 'overview' | 'miles' | 'xp' | 'redemptions'): void {
+  trackEvent('analytics_section_view', {
+    section: section,
+    event_category: 'analytics',
+  });
+}
+
+// --- CALCULATORS ---
 
 /**
  * Track calculator usage
@@ -206,14 +382,17 @@ export function trackCalculatorUsage(calculatorType: 'mileage_run' | 'redemption
 }
 
 /**
- * Track guide page view (for cross-referencing with static pages)
+ * Track mileage run simulation
  */
-export function trackGuideView(guideSlug: string): void {
-  trackEvent('guide_view', {
-    guide_slug: guideSlug,
-    event_category: 'content',
+export function trackMileageRunSimulation(targetStatus: string, currentXp: number): void {
+  trackEvent('mileage_run_simulation', {
+    target_status: targetStatus,
+    current_xp: currentXp,
+    event_category: 'engagement',
   });
 }
+
+// --- ONBOARDING ---
 
 /**
  * Track onboarding completion
@@ -227,6 +406,44 @@ export function trackOnboardingComplete(hasPdf: boolean, hasFlights: boolean): v
 }
 
 /**
+ * Track onboarding step completion
+ */
+export function trackOnboardingStep(step: number, stepName: string): void {
+  trackEvent('onboarding_step', {
+    step_number: step,
+    step_name: stepName,
+    event_category: 'engagement',
+  });
+}
+
+// --- SETTINGS ---
+
+/**
+ * Track settings changes
+ */
+export function trackSettingsChange(setting: string, value: string | number | boolean): void {
+  trackEvent('settings_change', {
+    setting_name: setting,
+    setting_value: String(value),
+    event_category: 'preferences',
+  });
+}
+
+// --- CONTENT ---
+
+/**
+ * Track guide page view (for cross-referencing with static pages)
+ */
+export function trackGuideView(guideSlug: string): void {
+  trackEvent('guide_view', {
+    guide_slug: guideSlug,
+    event_category: 'content',
+  });
+}
+
+// --- FEATURE USAGE ---
+
+/**
  * Track feature usage
  */
 export function trackFeatureUsage(feature: string): void {
@@ -235,6 +452,30 @@ export function trackFeatureUsage(feature: string): void {
     event_category: 'engagement',
   });
 }
+
+// --- FEEDBACK ---
+
+/**
+ * Track bug report submission
+ */
+export function trackBugReport(category: string): void {
+  trackEvent('bug_report_submit', {
+    category: category,
+    event_category: 'feedback',
+  });
+}
+
+/**
+ * Track contact form submission
+ */
+export function trackContactForm(subject: string): void {
+  trackEvent('contact_form_submit', {
+    subject: subject,
+    event_category: 'feedback',
+  });
+}
+
+// --- ERRORS ---
 
 /**
  * Track errors for debugging

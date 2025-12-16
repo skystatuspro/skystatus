@@ -7,6 +7,7 @@ import { getStatusMultiplier, isRevenueAirline } from '../utils/loyalty-logic';
 import { Tooltip } from './Tooltip';
 import { FlightRecord } from '../types';
 import { useViewMode } from '../hooks/useViewMode';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { SimpleFlightIntake } from './SimpleFlightIntake';
 
 // ============================================
@@ -122,6 +123,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
   existingFlights = []
 }) => {
   const { isSimpleMode } = useViewMode();
+  const { trackFlight } = useAnalytics();
   const today = new Date().toISOString().slice(0, 10);
   const routeInputRef = useRef<HTMLInputElement>(null);
   const airlineDropdownRef = useRef<HTMLDivElement>(null);
@@ -350,6 +352,12 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         // flightNumber only for single-segment flights (multi-segment has multiple flight numbers)
         flightNumber: segments.length === 1 ? form.flightNumber : undefined,
     }));
+
+    // Track each flight added
+    const isAfKlm = ['AF', 'KLM', 'KL'].includes(form.airline.toUpperCase());
+    payloads.forEach(p => {
+      trackFlight(p.cabin, isAfKlm);
+    });
 
     onApply(payloads);
 

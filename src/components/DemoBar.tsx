@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Sparkles, X, User, ChevronRight, ChevronUp, Award, Crown } from 'lucide-react';
 import { StatusLevel } from '../types';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 // ============================================================================
 // STATUS OPTIONS
@@ -75,6 +76,7 @@ export const DemoBar: React.FC<DemoBarProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [showMobileSelector, setShowMobileSelector] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const { trackDemoStatus, trackExitDemo } = useAnalytics();
 
   if (!isDemoMode) return null;
 
@@ -82,11 +84,24 @@ export const DemoBar: React.FC<DemoBarProps> = ({
 
   const handleSetStatus = (status: StatusLevel) => {
     if (status === demoStatus) return;
+    // Track the status change
+    trackDemoStatus(demoStatus, status);
     setIsTransitioning(true);
     setTimeout(() => {
       onSetDemoStatus(status);
       setTimeout(() => setIsTransitioning(false), 150);
     }, 150);
+  };
+
+  const handleExitDemo = () => {
+    trackExitDemo('exit');
+    onExitDemo();
+  };
+
+  const handleCreateAccount = () => {
+    trackExitDemo('create_account');
+    onExitDemo();
+    if (onCreateAccount) onCreateAccount();
   };
 
   // Minimized state - compact button
@@ -234,10 +249,7 @@ export const DemoBar: React.FC<DemoBarProps> = ({
                 Track your own status
               </p>
               <button
-                onClick={() => {
-                  onExitDemo();
-                  if (onCreateAccount) onCreateAccount();
-                }}
+                onClick={handleCreateAccount}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/25"
               >
                 <User size={14} />

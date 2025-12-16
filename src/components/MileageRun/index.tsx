@@ -30,6 +30,7 @@ import { findActiveCycle } from '../Dashboard/helpers';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
 import { useViewMode } from '../../hooks/useViewMode';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import { submitFeedback } from '../../lib/feedbackService';
 import { Tooltip } from '../Tooltip';
 
@@ -49,6 +50,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({
 }) => {
   const { symbol: currencySymbol } = useCurrency();
   const { isSimpleMode } = useViewMode();
+  const { trackCalculator, trackMileageRun } = useAnalytics();
   
   const [routeString, setRouteString] = useState('');
   const [defaultCabin, setDefaultCabin] = useState<CabinClass>('Business');
@@ -142,6 +144,11 @@ export const MileageRun: React.FC<MileageRunProps> = ({
       for (let i = 0; i < returnCodes.length - 1; i++) { newSegments.push(createSeg(returnCodes[i], returnCodes[i + 1], i, 'in')); }
     }
     setSegments(newSegments);
+    
+    // Track calculator usage when valid route is entered
+    if (newSegments.length > 0) {
+      trackCalculator('mileage_run');
+    }
   }, [routeString, isReturn, defaultCabin]);
 
   const updateSegmentCabin = (id: string, newCabin: CabinClass) => {

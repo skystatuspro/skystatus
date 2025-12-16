@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Bug, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { submitFeedback } from '../lib/feedbackService';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface BugReportModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { trackBugReportSubmit } = useAnalytics();
 
   // Auto-detect browser/device info
   const getBrowserInfo = () => {
@@ -80,6 +82,8 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
     setSubmitStatus(success ? 'success' : 'error');
 
     if (success) {
+      // Track successful bug report
+      trackBugReportSubmit('bug');
       // Reset form after short delay
       setTimeout(() => {
         setDescription('');

@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { XPRecord, RedemptionRecord, MilesRecord } from '../types';
 import { calculateMultiYearStats } from '../utils/xp-logic';
 import { formatNumber } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import {
   BarChart,
   Bar,
@@ -130,7 +131,19 @@ export const Analytics: React.FC<AnalyticsProps> = ({
   targetCPM,
 }) => {
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
+  const { trackAnalyticsSection } = useAnalytics();
   const [activeSection, setActiveSection] = useState<'overview' | 'miles' | 'xp' | 'redemptions'>('overview');
+
+  // Track section changes
+  const handleSectionChange = (section: 'overview' | 'miles' | 'xp' | 'redemptions') => {
+    trackAnalyticsSection(section);
+    setActiveSection(section);
+  };
+
+  // Track initial view
+  useEffect(() => {
+    trackAnalyticsSection('overview');
+  }, []);
 
   // Local formatting helper using currency context
   const formatCPM = (cpm: number): string => {
@@ -429,25 +442,25 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           <div className="flex gap-2 flex-wrap">
             <SectionTab 
               active={activeSection === 'overview'} 
-              onClick={() => setActiveSection('overview')} 
+              onClick={() => handleSectionChange('overview')} 
               icon={BarChart3} 
               label="Overview" 
             />
             <SectionTab 
               active={activeSection === 'miles'} 
-              onClick={() => setActiveSection('miles')} 
+              onClick={() => handleSectionChange('miles')} 
               icon={Wallet} 
               label="Miles" 
             />
             <SectionTab 
               active={activeSection === 'xp'} 
-              onClick={() => setActiveSection('xp')} 
+              onClick={() => handleSectionChange('xp')} 
               icon={Zap} 
               label="XP" 
             />
             <SectionTab 
               active={activeSection === 'redemptions'} 
-              onClick={() => setActiveSection('redemptions')} 
+              onClick={() => handleSectionChange('redemptions')} 
               icon={Award} 
               label="Redemptions" 
             />

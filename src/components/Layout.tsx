@@ -22,6 +22,7 @@ import {
 import { ViewState } from '../types';
 import { useAuth } from '../lib/AuthContext';
 import { useViewMode } from '../hooks/useViewMode';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { BugReportModal } from './BugReportModal';
 import { CookieSettingsLink } from './CookieConsent';
 import { APP_VERSION } from '../config/version';
@@ -78,6 +79,26 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isBugReportOpen, setIsBugReportOpen] = React.useState(false);
   const { user, signOut } = useAuth();
   const { viewMode, isSimpleMode, setViewMode } = useViewMode();
+  const { trackViewMode, trackNav, trackUserSignOut } = useAnalytics();
+
+  // Track navigation with analytics
+  const handleNavigate = (view: ViewState) => {
+    trackNav(view);
+    onNavigate(view);
+  };
+
+  // Track view mode toggle with analytics
+  const handleViewModeToggle = () => {
+    const newMode = isSimpleMode ? 'full' : 'simple';
+    trackViewMode(newMode);
+    setViewMode(newMode);
+  };
+
+  // Track sign out
+  const handleSignOut = () => {
+    trackUserSignOut();
+    signOut();
+  };
 
   // Menu items differ based on view mode
   const menuItems = isSimpleMode 
@@ -138,7 +159,7 @@ export const Layout: React.FC<LayoutProps> = ({
               icon={item.icon}
               isActive={currentView === item.id}
               onClick={() => {
-                onNavigate(item.id as ViewState);
+                handleNavigate(item.id as ViewState);
                 setIsMobileMenuOpen(false);
               }}
             />
@@ -164,7 +185,12 @@ export const Layout: React.FC<LayoutProps> = ({
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2">View Mode</p>
             <div className="flex bg-slate-800 rounded-lg p-1">
               <button
-                onClick={() => setViewMode('simple')}
+                onClick={() => {
+                  if (viewMode !== 'simple') {
+                    trackViewMode('simple');
+                    setViewMode('simple');
+                  }
+                }}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
                   viewMode === 'simple'
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg'
@@ -175,7 +201,12 @@ export const Layout: React.FC<LayoutProps> = ({
                 Simple
               </button>
               <button
-                onClick={() => setViewMode('full')}
+                onClick={() => {
+                  if (viewMode !== 'full') {
+                    trackViewMode('full');
+                    setViewMode('full');
+                  }
+                }}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
                   viewMode === 'full'
                     ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
@@ -200,7 +231,7 @@ export const Layout: React.FC<LayoutProps> = ({
                   <p className="text-xs text-slate-300 font-medium truncate">{user.email}</p>
                 </div>
                 <button
-                  onClick={() => signOut()}
+                  onClick={handleSignOut}
                   className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-700 rounded-lg transition-all"
                   title="Sign out"
                 >

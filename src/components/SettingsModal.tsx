@@ -18,6 +18,7 @@ import {
   Award,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import PdfImportModal from './PdfImportModal';
 import { CurrencyCode, SUPPORTED_CURRENCIES } from '../utils/format';
 
@@ -92,6 +93,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { signOut, user, deleteAccount } = useAuth();
+  const { trackExport, trackImport, trackSettings } = useAnalytics();
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -113,6 +115,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      // Track successful export
+      trackExport();
     } catch (e) {
       console.error('Export failed', e);
       if (showToast) {
@@ -260,6 +264,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       // Always trigger auto-save after import, even if no "new" items detected
       // This ensures database sync when restoring from backup after clear
       if (markDataChanged) markDataChanged();
+      
+      // Track the import
+      trackImport(
+        addedCount.flights > 0 ? addedCount.flights : 0,
+        addedCount.redemptions > 0 ? addedCount.redemptions : 0,
+        addedCount.miles > 0 ? addedCount.miles : (addedCount.miles < 0 ? Math.abs(addedCount.miles) : 0)
+      );
       
       if (hasChanges) {
         let message = `Import completed! Added: ${additions.join(', ')}`;

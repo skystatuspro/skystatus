@@ -22,6 +22,7 @@ import {
 import { AIRPORTS } from '../utils/airports';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '../utils/format';
 import { StatusLevel } from '../types';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 // ============================================================================
 // TYPES
@@ -231,6 +232,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   isReturningUser = false,
   existingData,
 }) => {
+  // Analytics
+  const { trackOnboarding, trackOnboardingStepComplete } = useAnalytics();
+  
   // Step management
   const [currentStep, setCurrentStep] = useState(0);
   const [skippedPdf, setSkippedPdf] = useState(false);
@@ -285,6 +289,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   // Navigation
   const goNext = () => {
     if (currentStep < totalSteps - 1) {
+      // Track step completion
+      const completedStep = steps[currentStep];
+      if (completedStep) {
+        trackOnboardingStepComplete(currentStep + 1, completedStep.id);
+      }
       setCurrentStep(currentStep + 1);
     }
   };
@@ -301,6 +310,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   };
 
   const handleComplete = () => {
+    // Track onboarding completion
+    trackOnboarding(!!pdfImportResult, (pdfImportResult?.flightsCount || 0) > 0);
+    
     onComplete({
       currency,
       homeAirport,

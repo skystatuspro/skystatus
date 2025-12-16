@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { X, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { submitFeedback } from '../lib/feedbackService';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { trackContactFormSubmit } = useAnalytics();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +47,8 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
 
       if (success) {
         setSubmitStatus('success');
+        // Track successful contact form submission
+        trackContactFormSubmit('contact');
         // Reset form after short delay
         setTimeout(() => {
           setName('');

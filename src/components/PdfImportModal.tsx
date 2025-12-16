@@ -43,6 +43,7 @@ import {
   markPostImportFeedbackGiven,
   FeedbackRating
 } from '../lib/feedbackService';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 // Set up PDF.js worker - use unpkg which has all npm versions
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -90,6 +91,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const [showFlightDetails, setShowFlightDetails] = useState(false);
   const [showMilesDetails, setShowMilesDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { trackPdf, trackPdfError } = useAnalytics();
   
   // Feedback state
   const [feedbackRating, setFeedbackRating] = useState<FeedbackRating>(null);
@@ -254,6 +256,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       setError('Please select a PDF file.');
       setStep('error');
+      trackPdfError('invalid_file_type');
       return;
     }
 
@@ -267,6 +270,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       if (result.flights.length === 0 && result.miles.length === 0) {
         setError('No Flying Blue data found in this PDF. Make sure you\'re uploading a Flying Blue transaction history export.');
         setStep('error');
+        trackPdfError('no_data_found');
         return;
       }
 
@@ -276,6 +280,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       console.error('PDF parsing error:', err);
       setError('Failed to parse PDF. Make sure it\'s a valid Flying Blue transaction history.');
       setStep('error');
+      trackPdfError('parse_failed');
     }
   };
 
@@ -346,6 +351,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
     // Import new flights and all miles (miles will be merged)
     onImport(summary.newFlights, summary.miles, xpCorrection, cycleSettings, bonusXpByMonth);
+    
+    // Track successful PDF import
+    trackPdf(summary.newFlights.length, summary.miles.length, parseResult.language);
     
     // Record first import for feedback triggers
     recordFirstImport();

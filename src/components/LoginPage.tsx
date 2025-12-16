@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { Plane, Mail, Lock, AlertCircle, CheckCircle, Loader2, Info, ArrowLeft } from 'lucide-react';
 
 interface LoginPageProps {
@@ -10,6 +11,7 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, onBack }) => {
   const { signIn, signUp, resetPassword, signInWithGoogle } = useAuth();
+  const { trackAccessMode } = useAnalytics();
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +32,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, o
         if (error) {
           setError(error.message);
         }
+        // Note: Google login is tracked separately, email login tracking would go here
+        // but we don't track email as a separate method since it's the default
       } else if (mode === 'signup') {
         const { error } = await signUp(email, password);
         if (error) {
@@ -62,11 +66,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, o
       const { error } = await signInWithGoogle();
       if (error) {
         setError(error.message);
+      } else {
+        // Track successful Google login
+        trackAccessMode('google');
       }
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleDemoMode = () => {
+    trackAccessMode('demo');
+    onDemoMode();
+  };
+
+  const handleLocalMode = () => {
+    if (onLocalMode) {
+      trackAccessMode('local');
+      onLocalMode();
     }
   };
 
@@ -270,7 +289,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, o
 
         {/* Demo Mode */}
         <button
-          onClick={onDemoMode}
+          onClick={handleDemoMode}
           className="w-full py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all border border-slate-200"
         >
           Explore Demo
@@ -283,7 +302,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onDemoMode, onLocalMode, o
         {onLocalMode && (
           <>
             <button
-              onClick={onLocalMode}
+              onClick={handleLocalMode}
               className="w-full mt-3 py-3 bg-white text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-all border border-dashed border-slate-300"
             >
               Use Locally

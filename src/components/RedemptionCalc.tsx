@@ -26,6 +26,7 @@ import { RedemptionRecord } from '../types';
 import { calculateBurnStats } from '../utils/loyalty-logic';
 import { formatNumber, generateId } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { getValuationStatus } from '../utils/valuation';
 import {
   ScatterChart,
@@ -106,6 +107,7 @@ const StatBadge = ({ icon: Icon, label, value, color = 'slate' }: any) => {
 
 export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onUpdate, baselineCpm, targetCpm }) => {
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
+  const { trackRedemption, trackRedemptionRemove, trackCalculator } = useAnalytics();
   const [form, setForm] = useState<Partial<RedemptionRecord>>({
     date: new Date().toISOString().slice(0, 10),
     description: '',
@@ -237,6 +239,16 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
       surcharges: Number(form.surcharges),
       override_cpm: undefined
     };
+
+    // Calculate CPM category for tracking
+    const cpm = Number(form.cash_price_estimate) / Number(form.award_miles);
+    let cpmCategory: 'excellent' | 'good' | 'fair' | 'poor' = 'poor';
+    if (cpm > 0.02) cpmCategory = 'excellent';
+    else if (cpm > 0.015) cpmCategory = 'good';
+    else if (cpm > 0.01) cpmCategory = 'fair';
+    
+    trackRedemption(Number(form.award_miles), cpmCategory);
+    trackCalculator('redemption');
 
     onUpdate([newRecord, ...redemptions]);
     setForm({ date: new Date().toISOString().slice(0, 10), description: '', award_miles: 0, cash_price_estimate: 0, surcharges: 0 });
@@ -920,7 +932,10 @@ export const RedemptionCalc: React.FC<RedemptionCalcProps> = ({ redemptions, onU
                               <Pencil size={14} />
                             </button>
                             <button 
-                              onClick={() => onUpdate(redemptions.filter((x) => x.id !== r.id))} 
+                              onClick={() => {
+                                trackRedemptionRemove(1);
+                                onUpdate(redemptions.filter((x) => x.id !== r.id));
+                              }} 
                               className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
                               title="Delete redemption"
                             >
