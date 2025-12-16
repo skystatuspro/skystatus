@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What is an XP Run? The Flying Blue Mileage Run Guide (2025)</title>
-    <meta name="description" content="In Flying Blue, a 'mileage run' is actually an XP run. Learn why adding connections doubles your status points and how to plan the perfect run.">
+    <meta name="description" content="In Flying Blue, a 'mileage run' is actually an XP run. Learn why adding connections doubles your status points, the Antwerp train hack, and how to plan the perfect run.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://skystatus.pro/guide/what-is-a-mileage-run">
     
@@ -29,7 +29,7 @@
         },
         "publisher": {"@type": "Organization", "name": "SkyStatus", "url": "https://skystatus.pro"},
         "datePublished": "2024-12-15",
-        "dateModified": "2025-01-15"
+        "dateModified": "2025-12-16"
     }
     </script>
     
@@ -51,7 +51,15 @@
                 "name": "Why do people choose connecting flights for XP runs?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Flying Blue awards XP per flight segment. A direct flight earns XP once. A flight with a connection (A to B, then B to C) earns XP twice. By adding a stopover, you can often double your XP earnings for the same ticket price."
+                    "text": "Flying Blue awards XP per flight segment. A direct flight earns XP once. A flight with a connection (A to B, then B to C) earns XP twice. By adding a stopover, you can often earn 50% more XP for the same ticket price."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What is the Antwerp train hack?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "The Antwerp hack exploits KLM's rail-fly service. When you book a flight starting from Antwerp (ZWE) or Brussels, the train to Amsterdam Schiphol counts as a flight segment and earns XP. In Business Class, this adds 15 XP per direction for the cost of a train ride."
                 }
             }
         ]
@@ -70,9 +78,22 @@
         .breadcrumb a { color: #3b82f6; text-decoration: none; }
         h1 { font-size: 2.2rem; margin-bottom: 1rem; color: #0f172a; }
         .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 2rem; }
+        
         .definition-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1.5rem; margin-bottom: 2rem; }
         .definition-box h2 { font-size: 1rem; color: #1e40af; margin-bottom: 0.5rem; font-weight: 600; }
         .definition-box p { color: #1e3a8a; margin: 0; font-size: 1.05rem; }
+        
+        .process-box { background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
+        .process-box h2 { font-size: 1.2rem; color: #3730a3; margin: 0 0 1rem 0; font-weight: 700; }
+        .process-box p { color: #312e81; margin-bottom: 0.75rem; }
+        .process-box ul { margin: 0 0 0 1.2rem; color: #312e81; }
+        .process-box li { margin-bottom: 0.75rem; font-weight: 500; }
+
+        .strategy-card { background: white; border: 2px solid #3b82f6; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
+        .strategy-card h3 { color: #1e40af; margin-top: 0; }
+        .strategy-card.gold { border-color: #fbbf24; }
+        .strategy-card.gold h3 { color: #92400e; }
+        
         h2 { font-size: 1.5rem; margin: 2rem 0 1rem 0; color: #0f172a; }
         h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem 0; color: #1e293b; }
         p { margin-bottom: 1rem; color: #475569; }
@@ -86,6 +107,7 @@
         .tip-box strong { color: #92400e; }
         .example-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
         .example-box strong { color: #166534; }
+        .example-box h4 { color: #166534; margin-bottom: 0.5rem; font-size: 1rem; }
         .warning-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
         .warning-box strong { color: #991b1b; }
         .cta-box { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px; padding: 2rem; margin: 2rem 0; text-align: center; color: white; }
@@ -107,6 +129,9 @@
         .author-byline .author-name a { color: #3b82f6; text-decoration: none; font-weight: 600; }
         .author-byline .author-name a:hover { text-decoration: underline; }
         .author-byline .author-cred { font-size: 0.8rem; color: #64748b; }
+
+        /* Comparison Table Styling */
+        .comparison-highlight { background: #f0fdf4; }
     </style>
 
     <script type="application/ld+json">
@@ -126,8 +151,8 @@
     <div class="container">
         <div class="breadcrumb"><a href="/">Home</a> → <a href="/guide">Guides</a> → XP Run Guide</div>
         <article>
-            <h1>What is an XP Run? (The Flying Blue Mileage Run)</h1>
-            <p class="meta">Last updated: December 2025 · 8 min read</p>
+            <h1>What is an XP Run? The Complete Flying Blue Guide</h1>
+            <p class="meta">Last updated: December 2025 · 14 min read · Based on official Flying Blue program rules</p>
             <div class="author-byline">
                 <div class="author-avatar">R</div>
                 <div class="author-info">
@@ -136,128 +161,413 @@
                 </div>
             </div>
 
-            
             <div class="definition-box">
                 <h2>The Flying Blue Difference</h2>
-                <p>In the aviation world, people talk about "Mileage Runs". But in Flying Blue, <strong>miles don't determine your status</strong>. XP (Experience Points) do. Therefore, a Flying Blue member does an <strong>XP Run</strong>. The goal isn't to fly far, but to earn the maximum number of XP for the lowest price. This often means flying <strong>shorter distances with more connections</strong> rather than one long direct flight.</p>
+                <p>In the aviation world, people talk about "Mileage Runs." But in Flying Blue, <strong>miles do not determine your status</strong>. <a href="/guide/what-is-flying-blue-xp">XP (Experience Points)</a> do. Therefore, a Flying Blue member does an <strong>XP Run</strong>. The goal is not to fly far, but to earn the maximum number of XP for the lowest price. This often means flying <strong>shorter distances with more connections</strong> rather than one long direct flight.</p>
             </div>
             
             <h2>The Golden Rule: More Legs = More XP</h2>
-            <p>This is the secret to a successful XP run. Flying Blue awards XP <strong>per flight segment (leg)</strong>. </p>
+            <p>This is the foundation of every successful XP run. Flying Blue awards XP <strong>per flight segment (leg)</strong>, not per trip or per mile.</p>
             
-            <p>If you fly direct from A to B, you get XP once. If you fly A to Hub to B, you get XP twice. Since connecting flights are often priced similarly (or cheaper) than direct flights, adding a stopover is the easiest way to boost your status.</p>
-            
-            <div class="example-box">
-                <strong>📊 The "Hub" Strategy Example:</strong><br><br>
-                <strong>Scenario A: Direct Flight</strong><br>
-                Amsterdam (AMS) → New York (JFK)<br>
-                • Class: Business<br>
-                • Legs: 1<br>
-                • Earning: <strong>30 XP</strong> (Long 1)<br><br>
-                
-                <strong>Scenario B: Connecting Flight</strong><br>
-                Amsterdam (AMS) → Paris (CDG) → New York (JFK)<br>
-                • Class: Business<br>
-                • Legs: 2<br>
-                • Earning: 15 XP (Short) + 30 XP (Long 1) = <strong>45 XP</strong><br><br>
-                
-                <strong>Result:</strong> By simply changing planes in Paris, you earn <strong>50% more XP</strong> for the same destination. On a round trip, this is a difference between 60 XP and 90 XP.
+            <div class="process-box">
+                <h2>Why Connections Beat Direct Flights</h2>
+                <ul>
+                    <li><strong>Direct flight:</strong> You earn XP once (for one leg).</li>
+                    <li><strong>Connected flight:</strong> You earn XP twice (for two legs).</li>
+                    <li><strong>Double connection:</strong> You earn XP three times (for three legs).</li>
+                </ul>
+                <p>Since connecting flights are often priced similarly (or even cheaper) than direct flights, adding a stopover is the easiest way to boost your status earnings by 50% or more.</p>
             </div>
-            
-            <h2>Why People Do XP Runs</h2>
-            <p>XP runs exist because elite status provides tangible benefits that can exceed the cost of the extra flights:</p>
+
+            <h2>XP Earning by Distance and Cabin</h2>
+            <p>Before planning your run, understand how XP is calculated. The earning rate depends on two factors: flight distance and cabin class.</p>
+
+            <table>
+                <tr>
+                    <th>Distance Band</th>
+                    <th>Economy</th>
+                    <th>Premium</th>
+                    <th>Business</th>
+                    <th>La Premiere</th>
+                </tr>
+                <tr>
+                    <td>Domestic (France)</td>
+                    <td>2 XP</td>
+                    <td>4 XP</td>
+                    <td>6 XP</td>
+                    <td>10 XP</td>
+                </tr>
+                <tr>
+                    <td>Medium haul (under 2000 mi)</td>
+                    <td>5 XP</td>
+                    <td>10 XP</td>
+                    <td>15 XP</td>
+                    <td>25 XP</td>
+                </tr>
+                <tr>
+                    <td>Long haul 1 (2000 to 3500 mi)</td>
+                    <td>8 XP</td>
+                    <td>16 XP</td>
+                    <td>24 XP</td>
+                    <td>40 XP</td>
+                </tr>
+                <tr>
+                    <td>Long haul 2 (3500 to 5000 mi)</td>
+                    <td>10 XP</td>
+                    <td>20 XP</td>
+                    <td>30 XP</td>
+                    <td>50 XP</td>
+                </tr>
+                <tr>
+                    <td>Long haul 3 (over 5000 mi)</td>
+                    <td>12 XP</td>
+                    <td>24 XP</td>
+                    <td>36 XP</td>
+                    <td>60 XP</td>
+                </tr>
+            </table>
+
+            <div class="tip-box">
+                <strong>💡 Key Insight:</strong> Business Class earns 3x more XP than Economy per leg. On short European flights, the price difference is often only 50 to 100 euros, but the XP difference is 10 XP (15 vs 5). This makes short haul Business the XP runner's best friend.
+            </div>
+
+            <h2>The Power of Connections: Real Examples</h2>
+
+            <div class="example-box">
+                <h4>📊 Example 1: Amsterdam to New York</h4>
+                <p><strong>Option A: Direct Flight (Business)</strong></p>
+                <ul>
+                    <li>AMS → JFK: 30 XP (Long haul 2)</li>
+                    <li>Return: 30 XP</li>
+                    <li><strong>Total: 60 XP</strong></li>
+                </ul>
+                <p><strong>Option B: Via Paris (Business)</strong></p>
+                <ul>
+                    <li>AMS → CDG: 15 XP (Medium haul)</li>
+                    <li>CDG → JFK: 30 XP (Long haul 2)</li>
+                    <li>Return legs: 15 + 30 = 45 XP</li>
+                    <li><strong>Total: 90 XP</strong></li>
+                </ul>
+                <p><strong>Result:</strong> By changing planes in Paris, you earn <strong>50% more XP</strong> for often the same price or less.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Example 2: Amsterdam to Singapore</h4>
+                <p><strong>Option A: Direct Flight (Business)</strong></p>
+                <ul>
+                    <li>AMS → SIN: 36 XP (Long haul 3)</li>
+                    <li>Return: 36 XP</li>
+                    <li><strong>Total: 72 XP</strong></li>
+                </ul>
+                <p><strong>Option B: Via Paris (Business)</strong></p>
+                <ul>
+                    <li>AMS → CDG: 15 XP</li>
+                    <li>CDG → SIN: 36 XP</li>
+                    <li>Return legs: 15 + 36 = 51 XP</li>
+                    <li><strong>Total: 102 XP</strong></li>
+                </ul>
+                <p><strong>Result:</strong> The Paris connection adds 30 XP to your trip. Three of these trips per year (306 XP) is enough for <a href="/guide/flying-blue-platinum-status">Platinum</a>.</p>
+            </div>
+
+            <h2>The Antwerp Hack: The Train That Earns XP</h2>
+            <p>This is one of the most powerful XP run strategies, and many members do not know about it.</p>
+
+            <div class="strategy-card gold">
+                <h3>🚄 The Antwerp Run Explained</h3>
+                <p>KLM operates a rail and fly service from Antwerp (station code: ZWE) and Brussels to Amsterdam Schiphol. When you book a flight that starts from Antwerp, the <strong>train ride counts as a flight segment</strong> and earns XP.</p>
+                <p><strong>The Magic:</strong></p>
+                <ul>
+                    <li>The train is classified as a "Medium haul" segment.</li>
+                    <li>In Economy: 5 XP per direction.</li>
+                    <li>In Business: 15 XP per direction.</li>
+                </ul>
+                <p><strong>The Double Benefit:</strong> Flights from Antwerp or Brussels are often significantly <em>cheaper</em> than direct flights from Amsterdam, while earning <em>more</em> XP due to the extra segment.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Example: The Antwerp Run to New York</h4>
+                <p><strong>Standard booking from Amsterdam (Business)</strong></p>
+                <ul>
+                    <li>AMS → JFK: 30 XP</li>
+                    <li>Return: 30 XP</li>
+                    <li><strong>Total: 60 XP</strong></li>
+                </ul>
+                <p><strong>Antwerp booking (Business)</strong></p>
+                <ul>
+                    <li>ZWE → AMS (train): 15 XP</li>
+                    <li>AMS → JFK: 30 XP</li>
+                    <li>Return: 30 + 15 = 45 XP</li>
+                    <li><strong>Total: 90 XP</strong></li>
+                </ul>
+                <p><strong>Result:</strong> Same destination, 50% more XP, often a lower price. The "cost" is arriving at Antwerp Central Station instead of Schiphol.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Example: Triple Stack (Antwerp + Paris Connection)</h4>
+                <p><strong>Antwerp to New York via Paris (Business)</strong></p>
+                <ul>
+                    <li>ZWE → AMS (train): 15 XP</li>
+                    <li>AMS → CDG: 15 XP</li>
+                    <li>CDG → JFK: 30 XP</li>
+                    <li>Return: 30 + 15 + 15 = 60 XP</li>
+                    <li><strong>Total: 120 XP</strong></li>
+                </ul>
+                <p><strong>Result:</strong> One round trip earns 120 XP. That is 40% of your entire <a href="/guide/flying-blue-platinum-status">Platinum requirement</a> (300 XP) in a single booking.</p>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong> The train segment only earns XP when booked as part of a KLM itinerary through klm.com or airfrance.com. Booking the train separately does not count.
+            </div>
+
+            <h2>Understanding When to Do an XP Run</h2>
+            <p>Timing is everything. Your <a href="/guide/flying-blue-xp-rollover">qualification year</a> determines when XP runs make strategic sense.</p>
+
+            <div class="process-box">
+                <h2>Your Qualification Year</h2>
+                <ul>
+                    <li><strong>Structure:</strong> Runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31).</li>
+                    <li><strong>Determined by:</strong> Your last level up to your current XP status.</li>
+                    <li><strong>XP Expires:</strong> Any XP not used for status or rollover is lost when your year ends.</li>
+                    <li><strong>Rollover Cap:</strong> Maximum 300 XP can carry over to the next year.</li>
+                </ul>
+            </div>
+
+            <h3>When an XP Run Makes Sense</h3>
             <ul>
-                <li><strong>Lounge access:</strong> Worth €30-50 per visit (Gold/Platinum)</li>
-                <li><strong>Complimentary upgrades:</strong> Better seats without the price tag (Platinum)</li>
-                <li><strong>Extra baggage:</strong> Avoid €30-60 bag fees per flight</li>
-                <li><strong>Priority services:</strong> SkyPriority check-in and boarding saves time</li>
-                <li><strong>Status for life:</strong> Building up 10 years of Platinum for lifetime status</li>
+                <li><strong>Close to a threshold:</strong> You have 250 XP and need 300 for Platinum. A targeted run closes the gap.</li>
+                <li><strong>Year ending soon:</strong> Your qualification year ends in 6 weeks and you will lose your progress without action.</li>
+                <li><strong>Strategic rollover:</strong> You want to hit 600 XP as Platinum so you roll over 300 XP and start next year already qualified.</li>
+                <li><strong>Soft landing prevention:</strong> You are Gold with 150 XP and your year ends next month. A run to 180 XP saves your status.</li>
             </ul>
-            
+
+            <h3>When to Skip the XP Run</h3>
+            <ul>
+                <li><strong>Far from next level:</strong> You have 50 XP toward Gold (180). The cost to close 130 XP is likely not worth it.</li>
+                <li><strong>Light travel year ahead:</strong> If you only fly twice next year, the benefits will not pay back the run cost.</li>
+                <li><strong>Above the rollover cap:</strong> You already have 550 XP as Platinum. More XP just gets wasted (cap is 600 effective: 300 for status + 300 rollover).</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⚠️ The 600 XP Sweet Spot:</strong> As a Platinum member, earning exactly 600 XP is optimal. You pay 300 XP for status renewal and roll over 300 XP. You start next year already qualified. Earning more than 600 XP means wasted points above the cap.
+            </div>
+
+            <h2>XP Runs for Ultimate Aspirants</h2>
+            <p>If you are pursuing <a href="/guide/flying-blue-ultimate-status">Ultimate status</a>, your XP run strategy must account for <a href="/guide/flying-blue-uxp-explained">UXP</a>.</p>
+
+            <div class="process-box">
+                <h2>UXP Rules for XP Runners</h2>
+                <ul>
+                    <li><strong>UXP Source:</strong> Only flights marketed by Air France (AF) or KLM (KL) earn UXP. The flight code on your ticket must start with AF or KL.</li>
+                    <li><strong>Partner Warning:</strong> Flights operated by KLM but sold with a Delta code (DL) earn zero UXP.</li>
+                    <li><strong>Requirement:</strong> Ultimate needs 900 UXP + 300 XP (Platinum) in one qualification year.</li>
+                    <li><strong>Payment:</strong> When you qualify, both 300 XP and 900 UXP are deducted from your balance.</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 Ultimate Strategy:</strong> If you need both XP and UXP, always book through klm.com or airfrance.com to ensure AF/KL flight codes. Avoid booking via partner sites (like delta.com) as the flight codes may be different.
+            </div>
+
             <h2>The Key Metric: Cost Per XP</h2>
-            <p>XP runners evaluate flights by cost per XP earned:</p>
+            <p>Experienced XP runners evaluate every booking by its cost efficiency.</p>
             
             <div class="formula-box">
-                Cost per XP = Flight Price (€) ÷ Total XP Earned
+                Cost per XP = Flight Price (EUR) ÷ Total XP Earned
             </div>
             
+            <table>
+                <tr>
+                    <th>Cost per XP</th>
+                    <th>Rating</th>
+                    <th>When to Book</th>
+                </tr>
+                <tr>
+                    <td>Under 10 EUR</td>
+                    <td>Excellent</td>
+                    <td>Book immediately</td>
+                </tr>
+                <tr>
+                    <td>10 to 15 EUR</td>
+                    <td>Good</td>
+                    <td>Worth considering</td>
+                </tr>
+                <tr>
+                    <td>15 to 20 EUR</td>
+                    <td>Average</td>
+                    <td>Only if you need the XP urgently</td>
+                </tr>
+                <tr>
+                    <td>Over 20 EUR</td>
+                    <td>Poor</td>
+                    <td>Look for alternatives</td>
+                </tr>
+            </table>
+
             <div class="example-box">
-                <strong>📊 Value Check:</strong><br>
-                • Flight A: €300 for 10 XP = €30/XP (Poor)<br>
-                • Flight B: €400 for 30 XP = €13.33/XP (Good)<br>
-                • Flight C: €600 for 60 XP = €10/XP (Excellent)<br><br>
-                Serious runners aim for <strong>€10-15 per XP</strong>.
+                <h4>📊 Cost Analysis Example</h4>
+                <p><strong>Option A:</strong> Direct AMS to JFK, Business, 2500 EUR, 60 XP return</p>
+                <ul><li>Cost per XP: 2500 / 60 = <strong>41.67 EUR</strong> (Poor)</li></ul>
+                <p><strong>Option B:</strong> ZWE to JFK via AMS and CDG, Business, 1800 EUR, 120 XP return</p>
+                <ul><li>Cost per XP: 1800 / 120 = <strong>15 EUR</strong> (Good)</li></ul>
+                <p><strong>Decision:</strong> Option B costs 700 EUR less AND earns twice the XP.</p>
             </div>
-            
-            <h2>Types of XP Runs</h2>
-            
-            <h3>1. The "Hop" (Short-Haul Business)</h3>
-            <p>Flying Business Class within Europe is often the most efficient method. A short flight (e.g. AMS-London) in Business earns 15 XP. A round trip is 30 XP. Do this via a hub (e.g. AMS-Paris-Nice) and a Business round trip yields 60 XP.</p>
-            
-            <h3>2. The "Long Weekend"</h3>
-            <p>Fly Friday evening, return Sunday. Choose a destination in the "Long 1" band (like Dubai or New York) but with a connection. Economy earns ~40 XP return (connected), Business earns ~90-120 XP return (connected).</p>
-            
-            <h3>3. Positioning Runs</h3>
-            <p>If flights from your home airport are expensive, fly to a secondary airport (e.g. Dusseldorf, Brussels, Billund) to start your main journey. This adds legs (XP) and often lowers the fare significantly.</p>
-            
-            <div class="tip-box">
-                <strong>💡 Pro Tip:</strong> Short-haul Business Class is the XP runner's best friend. The price premium over Economy is often small, but the XP earning is <strong>3x higher</strong> (15 XP vs 5 XP per leg).
+
+            <h2>XP Run Strategies by Goal</h2>
+
+            <div class="strategy-card">
+                <h3>Strategy 1: The Gold Sprint (180 XP)</h3>
+                <p><strong>Goal:</strong> Reach <a href="/guide/flying-blue-gold-status">Gold status</a> from Silver as efficiently as possible.</p>
+                <p><strong>Recommended Approach:</strong></p>
+                <ul>
+                    <li>3 connected round trips in Business (3 x 60 XP = 180 XP)</li>
+                    <li>Or: 2 triple stack runs using Antwerp hack (2 x 90 XP = 180 XP)</li>
+                    <li>Or: Mix of Business and Economy connected flights</li>
+                </ul>
+                <p><strong>Budget Estimate:</strong> 1500 to 3000 EUR depending on destinations and cabin class.</p>
             </div>
-            
-            <h2>When an XP Run Makes Sense</h2>
-            
-            <h3>✅ Do an XP Run If:</h3>
+
+            <div class="strategy-card">
+                <h3>Strategy 2: The Platinum Push (300 XP)</h3>
+                <p><strong>Goal:</strong> Reach <a href="/guide/flying-blue-platinum-status">Platinum status</a> from Gold.</p>
+                <p><strong>Recommended Approach:</strong></p>
+                <ul>
+                    <li>3 to 5 connected long haul Business trips</li>
+                    <li>Use Antwerp hack on every booking to maximize segments</li>
+                    <li>Target routes: US East Coast, Middle East, or Southeast Asia via CDG</li>
+                </ul>
+                <p><strong>Pro Tip:</strong> Aim for 600 XP if possible. You maintain Platinum AND start next year pre-qualified.</p>
+            </div>
+
+            <div class="strategy-card">
+                <h3>Strategy 3: The Maintenance Run</h3>
+                <p><strong>Goal:</strong> Keep your current status when your qualification year is ending.</p>
+                <p><strong>Scenario:</strong> You are Platinum with 220 XP and your year ends in 8 weeks.</p>
+                <p><strong>Action:</strong> You need 80 XP. One connected Business round trip to a medium haul destination (like Dubai via CDG) earns approximately 78 to 90 XP.</p>
+                <p><strong>Cost:</strong> Often 800 to 1200 EUR for a well timed booking.</p>
+            </div>
+
+            <div class="strategy-card gold">
+                <h3>Strategy 4: The Ultimate Accelerator</h3>
+                <p><strong>Goal:</strong> Maximize UXP toward <a href="/guide/flying-blue-ultimate-status">Ultimate status</a> (900 UXP required).</p>
+                <p><strong>Critical Rules:</strong></p>
+                <ul>
+                    <li>Book only AF/KL marketed flights (check flight code)</li>
+                    <li>Avoid partner codeshares (DL, KE, etc.)</li>
+                    <li>Every segment must be AF or KL to count as UXP</li>
+                </ul>
+                <p><strong>Target:</strong> 1800 UXP in one year. After paying 900 for Ultimate, you roll over 900 and start next year pre-qualified.</p>
+            </div>
+
+            <h2>Timing Your XP Run</h2>
+
+            <h3>Best Times to Book</h3>
             <ul>
-                <li>You are close to a threshold (e.g., 165 XP toward Gold's 180)</li>
-                <li>Your qualification year ends soon and you will lose progress</li>
-                <li>You value lounge access highly for your upcoming travel</li>
-                <li>You can find a "sweet spot" route (High XP, Low Cost)</li>
+                <li><strong>3 to 6 weeks before departure:</strong> Sweet spot for pricing on most routes.</li>
+                <li><strong>Tuesday to Thursday flights:</strong> Cheapest days, often emptier planes.</li>
+                <li><strong>January and September:</strong> Low season pricing on many routes.</li>
+                <li><strong>Sale periods:</strong> Watch for KLM Real Deal Days and Air France promotions.</li>
             </ul>
-            
-            <h3>❌ Skip the XP Run If:</h3>
-            <ul>
-                <li>You are far from the next level (e.g. 50 XP)</li>
-                <li>You only fly once or twice a year (benefits won't pay off)</li>
-                <li>You have to book expensive last-minute fares</li>
-                <li>The time cost outweighs the status benefits</li>
-            </ul>
-            
-            <h2>Finding Good Deals</h2>
-            
-            <h3>Timing</h3>
-            <ul>
-                <li><strong>Book 3-6 weeks out:</strong> Sweet spot for pricing</li>
-                <li><strong>Fly Tuesday-Thursday:</strong> Cheapest days, empty flights</li>
-                <li><strong>Watch for sales:</strong> Flying Blue and KLM Real Deal Days</li>
-            </ul>
-            
-            <h3>Route Selection</h3>
-            <ul>
-                <li><strong>Always Connect:</strong> Direct flights are XP killers. Connect via CDG (Air France) or AMS (KLM).</li>
-                <li><strong>Check Neighbors:</strong> Check flights from BRU, DUS, or LUX instead of AMS/CDG.</li>
-            </ul>
-            
+
+            <h3>Best Routes from Amsterdam</h3>
+            <table>
+                <tr>
+                    <th>Destination</th>
+                    <th>Via</th>
+                    <th>Business XP (Return)</th>
+                    <th>Typical Price Range</th>
+                </tr>
+                <tr>
+                    <td>New York (JFK)</td>
+                    <td>CDG</td>
+                    <td>90 XP</td>
+                    <td>1600 to 2400 EUR</td>
+                </tr>
+                <tr>
+                    <td>Dubai (DXB)</td>
+                    <td>CDG</td>
+                    <td>78 XP</td>
+                    <td>1400 to 2000 EUR</td>
+                </tr>
+                <tr>
+                    <td>Singapore (SIN)</td>
+                    <td>CDG</td>
+                    <td>102 XP</td>
+                    <td>2200 to 3200 EUR</td>
+                </tr>
+                <tr class="comparison-highlight">
+                    <td>New York (JFK)</td>
+                    <td>ZWE + CDG</td>
+                    <td>120 XP</td>
+                    <td>1400 to 2200 EUR</td>
+                </tr>
+            </table>
+
+            <h2>Common Mistakes to Avoid</h2>
+
             <div class="warning-box">
-                <strong>⚠️ Ultimate Check:</strong> If you are pursuing Ultimate status, make sure your operating carrier is Air France or KLM. Partner flights (Delta, etc.) earn XP but <strong>zero UXP</strong>.
+                <strong>⚠️ Mistake 1: Booking Direct Flights</strong><br>
+                Direct flights are XP killers. Always check if a connected routing is available at a similar price. The XP difference can be 50% or more.
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Mistake 2: Ignoring Your Qualification Year</strong><br>
+                XP earned after your qualification year ends counts toward the NEW year, not the current one. Check your exact end date before booking.
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Mistake 3: Earning Above the Cap</strong><br>
+                As Platinum, earning more than 600 XP means wasted points. The rollover cap is 300 XP. Plan your runs to hit the sweet spot, not exceed it.
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Mistake 4: Wrong Flight Codes for Ultimate</strong><br>
+                If you need UXP, double check that your flight codes are AF or KL. A KLM operated flight sold as DL9642 earns zero UXP.
+            </div>
+
+            <h2>Is an XP Run Worth It?</h2>
+            <p>Calculate the value of your target status against the cost of the run.</p>
+
+            <h3>Gold Status Value (Annual)</h3>
+            <ul>
+                <li>Lounge visits: 15 visits x 40 EUR = 600 EUR</li>
+                <li>Extra baggage: 4 trips x 50 EUR = 200 EUR</li>
+                <li>Priority services: Estimated 150 EUR in time saved</li>
+                <li><strong>Total: Approximately 950 EUR</strong></li>
+            </ul>
+
+            <h3>Platinum Status Value (Annual)</h3>
+            <ul>
+                <li>Lounge visits: 20 visits x 40 EUR = 800 EUR</li>
+                <li>Free seat selection: 6 trips x 80 EUR = 480 EUR</li>
+                <li>Extra baggage (2 bags on AF/KL): 6 trips x 100 EUR = 600 EUR</li>
+                <li>Platinum Service Line: Priceless during disruptions</li>
+                <li><strong>Total: Approximately 1900 EUR+</strong></li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 The Math:</strong> If an XP run costs 1500 EUR and delivers Platinum status worth 1900 EUR annually, the run pays for itself within the first year. Add the value of <a href="/guide/flying-blue-xp-rollover">rollover XP</a> giving you a head start on year two, and the ROI becomes even clearer.
             </div>
             
             <div class="cta-box">
                 <h3>Plan Your XP Run</h3>
-                <p>Use our calculator to see exactly how many XP you need and simulate routes.</p>
+                <p>See exactly how many XP you need, when your qualification year ends, and calculate your optimal strategy.</p>
                 <a href="/">Start Planning Free →</a>
             </div>
             
             <div class="related">
                 <h3>Related Guides</h3>
                 <ul>
-                    <li><a href="/guide/mileage-run-calculator">Mileage Run Calculator & Planner</a></li>
-                    <li><a href="/guide/flying-blue-gold-status">How to Reach Gold Status</a></li>
+                    <li><a href="/guide/mileage-run-calculator">Mileage Run Calculator and Planner</a></li>
                     <li><a href="/guide/what-is-flying-blue-xp">What is Flying Blue XP?</a></li>
-                    <li><a href="/guide/flying-blue-status-levels">Flying Blue Status Levels Compared</a></li>
+                    <li><a href="/guide/flying-blue-xp-rollover">How XP Rollover Works</a></li>
+                    <li><a href="/guide/flying-blue-gold-status">How to Reach Gold Status</a></li>
+                    <li><a href="/guide/flying-blue-platinum-status">How to Reach Platinum Status</a></li>
+                    <li><a href="/guide/flying-blue-ultimate-status">Ultimate Status Complete Guide</a></li>
+                    <li><a href="/guide/flying-blue-uxp-explained">What is UXP (Ultimate XP)?</a></li>
                 </ul>
             </div>
             
-            <p class="source-note">This guide reflects general XP running strategies. XP earning rates and prices vary. Always verify current earning rates on the official Flying Blue website. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
+            <p class="source-note">This guide reflects general XP running strategies. XP earning rates and prices vary by route and booking class. Always verify current earning rates on the official Flying Blue website. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
         </article>
         <footer>
             <p><a href="/">SkyStatus Pro</a> · <a href="/guide">Guides</a> · <a href="/faq">FAQ</a> · <a href="/about">About</a> · <a href="/privacy">Privacy</a></p>

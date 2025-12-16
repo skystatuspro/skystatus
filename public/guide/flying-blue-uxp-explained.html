@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>What is Flying Blue UXP? Ultimate XP Explained (2025)</title>
-    <meta name="description" content="UXP (Ultimate XP) is earned only on Air France and KLM flights. You need 900 UXP to reach Ultimate status. Learn which flights earn UXP and how to track your progress.">
+    <meta name="description" content="UXP (Ultimate XP) depends on the marketing carrier (AF/KL code). You need 900 UXP to reach Ultimate status. Master the dynamic qualification year, rollover math, and soft landing rules.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://skystatus.pro/guide/flying-blue-uxp-explained">
     
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://skystatus.pro/guide/flying-blue-uxp-explained">
     <meta property="og:title" content="What is Flying Blue UXP? Ultimate XP Explained">
-    <meta property="og:description" content="UXP is earned only on AF/KLM flights. Learn which flights earn UXP and how to reach Ultimate.">
+    <meta property="og:description" content="UXP depends on the flight code (AF/KL), not just the aircraft. Detailed guide on qualification years, rollover math, and the 900 UXP hurdle.">
     <meta property="og:image" content="https://skystatus.pro/og-image.png">
     
     <script type="application/ld+json">
@@ -19,7 +19,7 @@
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": "What is Flying Blue UXP? Ultimate XP Explained",
-        "description": "UXP (Ultimate XP) is a special type of XP only earned on Air France and KLM operated flights. Required for Ultimate status.",
+        "description": "UXP (Ultimate XP) is a special type of XP earned on flights marketed by Air France or KLM. Required for Ultimate status with specific rollover caps and qualification rules.",
         "author": {
             "@type": "Person",
             "name": "Remco de Graaf",
@@ -29,7 +29,7 @@
         },
         "publisher": {"@type": "Organization", "name": "SkyStatus", "url": "https://skystatus.pro"},
         "datePublished": "2024-12-15",
-        "dateModified": "2025-12-15"
+        "dateModified": "2025-12-16"
     }
     </script>
     
@@ -40,18 +40,26 @@
         "mainEntity": [
             {
                 "@type": "Question",
-                "name": "What is UXP in Flying Blue?",
+                "name": "What qualifies as UXP in Flying Blue?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "UXP (Ultimate XP) is a special type of experience points that only counts toward Flying Blue Ultimate status. Unlike regular XP which is earned on all SkyTeam flights, UXP is only earned on flights operated by Air France or KLM. You need 900 UXP (while maintaining Platinum with 300 XP) to reach Ultimate status."
+                    "text": "UXP counts towards Ultimate status. It is earned on flights marketed by Air France (AF code) or KLM (KL code), regardless of which airline operates the aircraft. Standard XP is earned on all SkyTeam partners."
                 }
             },
             {
                 "@type": "Question",
-                "name": "Do Delta flights earn UXP?",
+                "name": "Does a Delta flight earn UXP?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "No. Delta flights earn regular XP when credited to Flying Blue, but they do not earn UXP. Only flights operated by Air France (AF) or KLM (KL) earn UXP, regardless of how the ticket was booked or which airline code is on the ticket."
+                    "text": "It depends on the ticket. If you book a Delta flight with an AF or KL flight number (codeshare), you DO earn UXP. If you book it with a DL flight number, you earn regular XP but zero UXP."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Do I pay UXP for Ultimate status?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. When you qualify for Ultimate, 900 UXP is deducted from your balance. This follows the same payment logic as XP for other status levels. Any remaining UXP (up to 900) rolls over to your next qualification year."
                 }
             }
         ]
@@ -70,9 +78,33 @@
         .breadcrumb a { color: #3b82f6; text-decoration: none; }
         h1 { font-size: 2.2rem; margin-bottom: 1rem; color: #0f172a; }
         .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 2rem; }
-        .definition-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-left: 4px solid #fbbf24; padding: 1.5rem; margin-bottom: 2rem; color: white; border-radius: 0 8px 8px 0; }
-        .definition-box h2 { font-size: 1rem; color: #fbbf24; margin-bottom: 0.5rem; font-weight: 600; }
-        .definition-box p { color: #e2e8f0; margin: 0; font-size: 1.05rem; }
+        
+        /* Content Boxes */
+        .definition-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1.5rem; margin-bottom: 2rem; }
+        .definition-box h2 { font-size: 1rem; color: #1e40af; margin-bottom: 0.5rem; font-weight: 600; }
+        .definition-box p { color: #1e3a8a; margin: 0; font-size: 1.05rem; }
+        
+        .process-box { background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
+        .process-box h2 { font-size: 1.2rem; color: #3730a3; margin: 0 0 1rem 0; font-weight: 700; }
+        .process-box p { color: #312e81; margin-bottom: 0.75rem; }
+        .process-box ul { margin: 0 0 0 1.2rem; color: #312e81; }
+        .process-box li { margin-bottom: 0.75rem; font-weight: 500; }
+
+        .tip-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
+        .tip-box strong { color: #92400e; }
+        
+        .example-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
+        .example-box strong { color: #166534; }
+        
+        .warning-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
+        .warning-box strong { color: #991b1b; }
+
+        .strategy-card { background: white; border: 2px solid #fbbf24; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .strategy-card h3 { color: #92400e; margin-top: 0; }
+
+        .formula-box { background: #0f172a; color: white; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; text-align: center; font-family: monospace; font-size: 1.2rem; }
+
+        /* Tables & Typography */
         h2 { font-size: 1.5rem; margin: 2rem 0 1rem 0; color: #0f172a; }
         h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem 0; color: #1e293b; }
         p { margin-bottom: 1rem; color: #475569; }
@@ -81,24 +113,8 @@
         table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
         th, td { border: 1px solid #e2e8f0; padding: 0.75rem; text-align: left; }
         th { background: #f1f5f9; font-weight: 600; }
-        .warning-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
-        .warning-box strong { color: #991b1b; }
-        .tip-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
-        .tip-box strong { color: #92400e; }
-        .example-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 1rem; margin: 1.5rem 0; }
-        .example-box strong { color: #166534; }
-        .cta-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 12px; padding: 2rem; margin: 2rem 0; text-align: center; color: white; }
-        .cta-box h3 { color: #fbbf24; margin-bottom: 0.5rem; }
-        .cta-box p { color: #94a3b8; margin-bottom: 1rem; }
-        .cta-box a { display: inline-block; background: #fbbf24; color: #0f172a; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; }
-        .related { background: #f1f5f9; border-radius: 8px; padding: 1.5rem; margin-top: 2rem; }
-        .related h3 { margin-top: 0; }
-        .related ul { margin-bottom: 0; }
-        .related a { color: #3b82f6; }
-        .source-note { font-size: 0.85rem; color: #64748b; font-style: italic; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
-        footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.9rem; }
-        footer a { color: #3b82f6; text-decoration: none; }
-        
+
+        /* Footer & Meta */
         .author-byline { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
         .author-byline .author-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
         .author-byline .author-info { display: flex; flex-direction: column; }
@@ -106,6 +122,19 @@
         .author-byline .author-name a { color: #3b82f6; text-decoration: none; font-weight: 600; }
         .author-byline .author-name a:hover { text-decoration: underline; }
         .author-byline .author-cred { font-size: 0.8rem; color: #64748b; }
+
+        .cta-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 12px; padding: 2rem; margin: 2rem 0; text-align: center; color: white; }
+        .cta-box h3 { color: #fbbf24; margin-bottom: 0.5rem; }
+        .cta-box p { color: #94a3b8; margin-bottom: 1rem; }
+        .cta-box a { display: inline-block; background: #fbbf24; color: #0f172a; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; }
+        
+        .related { background: #f1f5f9; border-radius: 8px; padding: 1.5rem; margin-top: 2rem; }
+        .related h3 { margin-top: 0; }
+        .related ul { margin-bottom: 0; }
+        .related a { color: #3b82f6; }
+        .source-note { font-size: 0.85rem; color: #64748b; font-style: italic; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+        footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 0.9rem; }
+        footer a { color: #3b82f6; text-decoration: none; }
     </style>
 
     <script type="application/ld+json">
@@ -126,7 +155,7 @@
         <div class="breadcrumb"><a href="/">Home</a> → <a href="/guide">Guides</a> → What is UXP</div>
         <article>
             <h1>What is Flying Blue UXP? Ultimate XP Explained</h1>
-            <p class="meta">Last updated: December 2025 · 7 min read · Based on official Flying Blue program rules</p>
+            <p class="meta">Last updated: December 2025 · 12 min read · Based on official Flying Blue program rules</p>
             <div class="author-byline">
                 <div class="author-avatar">R</div>
                 <div class="author-info">
@@ -135,163 +164,254 @@
                 </div>
             </div>
 
-            
             <div class="definition-box">
-                <h2>Definition</h2>
-                <p><strong>UXP (Ultimate XP)</strong> is a special type of experience points that only counts toward Flying Blue Ultimate status. Unlike regular XP (earned on all SkyTeam flights and partners), UXP is <strong>only earned on flights operated by Air France or KLM</strong>. You need 900 UXP while maintaining Platinum status (300 XP) to reach Ultimate. Partner flights and credit cards earn XP but zero UXP.</p>
+                <h2>Definition: Marketing Carrier is Key</h2>
+                <p><strong>UXP (Ultimate XP)</strong> is the metric used exclusively to qualify for <a href="/guide/flying-blue-ultimate-status">Flying Blue Ultimate status</a>. The golden rule: UXP is earned on flights <strong>marketed by Air France (AF) or KLM (KL)</strong>. This means the two-letter code on your ticket must be AF or KL, regardless of which airline actually flies the plane (the operating carrier). Partner flights marketed by Delta, Kenya Airways, or others earn regular XP but zero UXP.</p>
             </div>
-            
-            <h2>UXP vs Regular XP: Critical Difference</h2>
-            <p>This is the most important distinction for anyone pursuing Ultimate status:</p>
+
+            <h2>The Two Point Systems: XP vs UXP</h2>
+            <p>Flying Blue operates two parallel point systems. Understanding the difference is critical for anyone pursuing Ultimate status.</p>
             
             <table>
                 <tr>
                     <th>Aspect</th>
-                    <th>Regular XP</th>
+                    <th>Regular <a href="/guide/what-is-flying-blue-xp">XP</a></th>
                     <th>UXP (Ultimate XP)</th>
                 </tr>
                 <tr>
                     <td><strong>Purpose</strong></td>
-                    <td>Determines Silver/Gold/Platinum</td>
-                    <td>Required for Ultimate status only</td>
+                    <td>Determines <a href="/guide/flying-blue-status-levels">Explorer to Platinum</a></td>
+                    <td>Required for Ultimate status</td>
                 </tr>
                 <tr>
-                    <td><strong>Earned on</strong></td>
-                    <td>All SkyTeam flights & Partners</td>
-                    <td>Only AF/KL operated flights</td>
+                    <td><strong>Sources</strong></td>
+                    <td>All <a href="/guide/flying-blue-partner-airlines">SkyTeam partners</a>, Transavia, AMEX cards</td>
+                    <td>Only AF/KL marketed flights + SAF on AF/KL</td>
                 </tr>
                 <tr>
-                    <td><strong>Partner flights (Delta, etc.)</strong></td>
-                    <td>✅ Yes</td>
-                    <td>❌ No</td>
+                    <td><strong>Relationship</strong></td>
+                    <td>Includes all UXP</td>
+                    <td>Every UXP is also XP</td>
                 </tr>
                 <tr>
-                    <td><strong>Transavia flights</strong></td>
-                    <td>✅ Yes</td>
-                    <td>❌ No</td>
+                    <td><strong>Threshold</strong></td>
+                    <td>100 / 180 / 300 for status levels</td>
+                    <td>900 UXP for Ultimate</td>
                 </tr>
                 <tr>
-                    <td><strong>Flying Blue AMEX Cards</strong></td>
-                    <td>✅ Yes</td>
-                    <td>❌ No</td>
+                    <td><strong>Payment</strong></td>
+                    <td>Deducted at status transition</td>
+                    <td>900 UXP deducted for Ultimate</td>
                 </tr>
                 <tr>
-                    <td><strong>Codeshares</strong></td>
-                    <td>✅ Yes</td>
-                    <td>Only if operated by AF or KL</td>
-                </tr>
-                <tr>
-                    <td><strong>Amount required</strong></td>
-                    <td>100-300 depending on status</td>
-                    <td>900 for Ultimate</td>
-                </tr>
-                <tr>
-                    <td><strong>Maximum rollover</strong></td>
-                    <td>300 XP</td>
-                    <td>900 UXP</td>
+                    <td><strong>Rollover Cap</strong></td>
+                    <td>300 XP maximum</td>
+                    <td>900 UXP maximum</td>
                 </tr>
             </table>
             
             <div class="warning-box">
-                <strong>⚠️ Critical Mistake to Avoid:</strong> Flying on Delta, Korean Air, or other SkyTeam partners earns you regular XP but <strong>zero UXP</strong>. Also, your annual Flying Blue AMEX bonus XP does <strong>not</strong> count as UXP. If you're pursuing Ultimate status, you must fly on Air France or KLM operated flights—not just AF or KL ticket codes.
+                <strong>⚠️ The "Marketing Carrier" Trap:</strong> Do not look at the aircraft livery; look at your ticket. A flight operated by KLM but booked with a Delta flight number (e.g., DL9600) earns <strong>zero UXP</strong>. Conversely, a flight operated by Delta but booked with a KLM flight number (e.g., KL6000) <strong>does earn UXP</strong>. The flight code on your ticket is the deciding factor.
             </div>
+
+            <h2>UXP Always Counts (Even Without Platinum)</h2>
+
+            <p>A common misconception is that UXP only starts counting once you reach Platinum. This is wrong.</p>
+
+            <div class="tip-box">
+                <strong>💡 Key Insight:</strong> Your UXP counter accumulates from the moment you join Flying Blue, regardless of your status level. Every AF/KL marketed flight adds to your UXP balance. However, UXP only becomes <em>relevant</em> for Ultimate qualification once you are Platinum.
+            </div>
+
+            <p>This has an important implication: if you level up to Platinum mid-year, your UXP counter resets (with rollover) just like your XP counter. Plan accordingly.</p>
             
             <h2>Which Flights Earn UXP?</h2>
             
             <h3>✅ Earns UXP</h3>
             <ul>
-                <li>Air France operated flights (aircraft says "Air France" on it)</li>
-                <li>KLM operated flights (aircraft says "KLM" on it)</li>
-                <li>Codeshare flights where AF or KL is the <strong>operating</strong> carrier</li>
-                <li>SAF (Sustainable Aviation Fuel) bonus XP also counts as UXP</li>
+                <li><strong>AF coded flights:</strong> E.g., AF1234 (even if operated by Delta, Virgin Atlantic, or partners)</li>
+                <li><strong>KL coded flights:</strong> E.g., KL5678 (even if operated by Delta, Kenya Airways, or partners)</li>
+                <li><strong>SAF purchases:</strong> Sustainable Aviation Fuel contributions on AF/KL tickets</li>
             </ul>
             
-            <h3>❌ Does NOT Earn UXP (XP Only)</h3>
+            <h3>❌ Does NOT Earn UXP (Regular XP Only)</h3>
             <ul>
-                <li>Delta flights (even when booked through Air France)</li>
-                <li>Korean Air, Vietnam Airlines, China Airlines, Garuda flights</li>
-                <li>Kenya Airways flights</li>
-                <li>Transavia flights</li>
-                <li><strong>Flying Blue AMEX card annual XP bonuses</strong></li>
-                <li>Any SkyTeam partner operated flights</li>
-                <li>Codeshares where another airline operates the flight</li>
+                <li>Delta coded flights (DL...)</li>
+                <li>Korean Air, Vietnam Airlines, China Airlines, Garuda coded flights</li>
+                <li>Transavia flights (even if booked via KLM)</li>
+                <li>Flying Blue AMEX card annual XP bonuses</li>
+                <li>Promotional XP (unless explicitly stated otherwise)</li>
             </ul>
-            
-            <h3>How to Verify the Operating Carrier</h3>
-            <p>When booking, always look for "Operated by" information. The flight number alone doesn't tell you who operates:</p>
             
             <div class="example-box">
-                <strong>📊 Examples:</strong><br>
-                • <strong>AF1234 operated by Air France</strong> → Earns UXP ✅<br>
-                • <strong>AF5678 operated by Delta</strong> → No UXP ❌<br>
-                • <strong>DL9012 operated by KLM</strong> → Earns UXP ✅ (surprisingly!)<br>
-                • <strong>KL3456 operated by Kenya Airways</strong> → No UXP ❌
+                <strong>📊 Scenario: The Codeshare Difference</strong><br>
+                You fly New York to Amsterdam on a KLM aircraft (blue livery).<br>
+                <ul>
+                    <li><strong>Ticket KL642:</strong> You earn XP + UXP ✅</li>
+                    <li><strong>Ticket DL9642:</strong> You earn regular XP only ❌</li>
+                </ul>
+                <em>Insider Tip: Always book the "Marketed by KLM/Air France" option on the website to ensure UXP earnings.</em>
             </div>
+
+            <h2>The UXP "Payment" Mechanic</h2>
+
+            <p>Just like XP, UXP follows a "payment" system. When you achieve or maintain Ultimate status, points are deducted from your balance.</p>
+
+            <div class="process-box">
+                <h2>How UXP Payment Works</h2>
+                <ul>
+                    <li><strong>Step 1:</strong> Check if you have at least 900 UXP AND are Platinum.</li>
+                    <li><strong>Step 2:</strong> When you qualify for Ultimate, 900 UXP is deducted from your balance.</li>
+                    <li><strong>Step 3:</strong> Calculate your UXP rollover from the remaining balance.</li>
+                    <li><strong>Step 4:</strong> Cap the rollover at 900 UXP maximum.</li>
+                </ul>
+                <p><em>This is the same "payment" logic that applies to XP for Silver (100), Gold (180), and Platinum (300).</em></p>
+            </div>
+
+            <div class="formula-box">
+                UXP Rollover = min(UXP Balance - 900, 900)
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 Double Payment for Ultimate:</strong> As an Ultimate member, you pay twice at the end of your qualification year: 300 XP for Platinum maintenance AND 900 UXP for Ultimate. These are calculated independently. You can roll over up to 300 XP AND up to 900 UXP simultaneously.
+            </div>
+
+            <h2>The Qualification Year and UXP</h2>
             
-            <h2>Ultimate Status Requirements</h2>
-            <p>To reach Ultimate status, you must meet both requirements simultaneously:</p>
-            
+            <p>UXP is tied to your personal qualification year. Understanding this connection is essential for planning your Ultimate qualification.</p>
+
+            <div class="process-box">
+                <h2>Qualification Year Structure</h2>
+                <ul>
+                    <li><strong>Format:</strong> Always runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31).</li>
+                    <li><strong>Determined by:</strong> Your last level-up to your current XP status.</li>
+                    <li><strong>UXP follows XP:</strong> Your UXP counter is tied to the same qualification year as your XP counter.</li>
+                </ul>
+            </div>
+
+            <h3>When Does Your UXP Counter Reset?</h3>
+            <p>Your UXP counter resets whenever a new qualification year starts. This happens in two scenarios:</p>
             <ol>
-                <li><strong>Be Platinum:</strong> Have earned 300 XP in your qualification year</li>
-                <li><strong>Earn 900 UXP:</strong> During the same qualification year, on AF/KL operated flights</li>
+                <li><strong>Requalification:</strong> Your year ends naturally and you maintain your status. UXP is "settled" (900 deducted for Ultimate, remainder rolls over).</li>
+                <li><strong>Level Up:</strong> You reach a higher XP status (e.g., Gold to Platinum). Your qualification year resets to the 1st of the next month, and your UXP counter resets with rollover.</li>
+            </ol>
+
+            <div class="warning-box">
+                <strong>⚠️ Critical: Level Up Resets UXP!</strong> If you are Gold with 800 UXP and then reach 300 XP to become Platinum, your qualification year resets. Your UXP balance is carried over (up to 900 max), but you start a fresh year. You now have 12 months to accumulate 900 UXP for Ultimate.
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 Ultimate Does NOT Reset Your Year:</strong> Unlike Silver, Gold, and Platinum, reaching Ultimate does not trigger a new qualification year. Ultimate is a status layer on top of Platinum, not a separate XP level. Your qualification year remains unchanged when you achieve Ultimate.
+            </div>
+
+            <h2>UXP Caps and Limits</h2>
+
+            <p>UXP has two important caps that limit how much you can accumulate and carry over.</p>
+
+            <h3>1. Annual Cap: 1,800 UXP</h3>
+            <p>Within a single qualification year, only 1,800 UXP can count toward your balance:</p>
+            <ul>
+                <li><strong>First 900 UXP:</strong> Required to qualify for Ultimate.</li>
+                <li><strong>Next 900 UXP:</strong> Can roll over to next year.</li>
+                <li><strong>Above 1,800 UXP:</strong> Does not count. It is "wasted" as UXP (though it still counts as regular XP).</li>
+            </ul>
+
+            <h3>2. Rollover Cap: 900 UXP</h3>
+            <p>At the end of your qualification year, after paying 900 UXP for Ultimate, you can carry over a maximum of 900 UXP to your next year.</p>
+            
+            <div class="example-box">
+                <h4>📊 Scenario A: Under the UXP Rollover Cap</h4>
+                <p><strong>Situation:</strong> You are Ultimate and earned 1,200 UXP this year.</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>UXP Balance: 1,200 UXP</li>
+                    <li>Ultimate cost: 900 UXP</li>
+                    <li>Remainder: 1,200 - 900 = 300 UXP</li>
+                    <li>Cap check: 300 < 900, no cap applies</li>
+                </ul>
+                <p><strong>Result:</strong> You start next year with <strong>300 UXP</strong>. You need 600 more UXP for Ultimate.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Scenario B: At the UXP Rollover Cap</h4>
+                <p><strong>Situation:</strong> You are Ultimate and earned 1,800 UXP this year (the annual maximum).</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>UXP Balance: 1,800 UXP</li>
+                    <li>Ultimate cost: 900 UXP</li>
+                    <li>Remainder: 1,800 - 900 = 900 UXP</li>
+                    <li>Cap check: 900 = 900, exactly at cap</li>
+                </ul>
+                <p><strong>Result:</strong> You start next year with <strong>900 UXP</strong>. You are already qualified for Ultimate on day one!</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Scenario C: Hitting the Annual 1,800 Cap</h4>
+                <p><strong>Situation:</strong> You started the year with 900 UXP rollover. During the year, you earn 1,200 UXP on flights.</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>Starting UXP: 900 UXP (rollover)</li>
+                    <li>Earned UXP: 1,200 UXP</li>
+                    <li>Mathematical total: 2,100 UXP</li>
+                    <li>Annual cap: 1,800 UXP</li>
+                </ul>
+                <p><strong>Result:</strong> Only 1,800 UXP counts. The extra 300 UXP above the annual cap is "wasted" as UXP. At year end: 1,800 - 900 = 900 UXP rollover.</p>
+            </div>
+
+            <h2>Ultimate Status Requirements</h2>
+            <p>To achieve Ultimate status, you must meet two requirements simultaneously within one qualification year:</p>
+            <ol>
+                <li><strong>Be Platinum:</strong> You must hold <a href="/guide/flying-blue-platinum-status">Platinum status</a> (requires 300 XP).</li>
+                <li><strong>Have 900 UXP:</strong> Accumulate at least 900 UXP within that same qualification year.</li>
             </ol>
             
-            <p>Key insight: UXP is a <strong>subset</strong> of XP. Every UXP point also counts as regular XP, but not every XP point counts as UXP.</p>
-            
-            <div class="example-box">
-                <strong>📊 Scenario Example:</strong> You fly 10 long-haul round trips earning 100 XP each = 1,000 XP total. If 7 trips were on KLM and 3 were on Delta codeshares operated by Delta, you'd have 1,000 XP but only 700 UXP. You'd be Platinum but not Ultimate.
+            <div class="strategy-card">
+                <h3>🛡️ The Ultimate Soft Landing Rule</h3>
+                <p>Ultimate members have a special safety net that differs from all other status levels.</p>
+                <ul>
+                    <li><strong>The Rule:</strong> If you are Ultimate but fail to earn 900 UXP in a year, you always soft land to Platinum.</li>
+                    <li><strong>Even with 0 XP:</strong> This applies even if you earned zero XP that year.</li>
+                    <li><strong>Never skip levels:</strong> You can never drop from Ultimate directly to Gold or lower.</li>
+                    <li><strong>One-time protection:</strong> Once you land at Platinum, normal XP rules apply for the following year.</li>
+                </ul>
             </div>
             
-            <h2>UXP Rollover Rules</h2>
-            <p>Like regular XP, UXP can roll over to your next qualification year:</p>
-            
-            <ul>
-                <li><strong>Maximum UXP rollover:</strong> 900 UXP</li>
-                <li><strong>Total cap:</strong> You can have at most 1,800 UXP in a year (900 earned + 900 rollover)</li>
-                <li>UXP rollover is separate from XP rollover</li>
-            </ul>
-            
-            <div class="example-box">
-                <strong>📊 Rollover Example:</strong> You're Ultimate and earned 400 XP and 1,200 UXP this year.<br>
-                • XP rollover: 400 - 300 = 100 XP (under 300 cap, all rolls over)<br>
-                • UXP rollover: 1,200 - 900 = 300 excess. Less than 900 cap, so 300 rolls over.<br>
-                • Next year starts with 100 XP and 300 UXP already banked
+            <h2>Strategies for Earning UXP</h2>
+
+            <div class="strategy-card">
+                <h3>Strategy 1: The AF/KL Purist</h3>
+                <p><strong>The Approach:</strong> Book exclusively on AF or KL marketed flights, even if partner flights are cheaper or more convenient.</p>
+                <p><strong>The Trade-off:</strong> You may pay more or have less convenient routings. But every flight counts toward both XP and UXP.</p>
+                <p><strong>Tip:</strong> Use the "Airline" filter during booking and select only Air France and KLM to ensure UXP earnings.</p>
             </div>
-            
+
+            <div class="strategy-card">
+                <h3>Strategy 2: The 1,800 UXP Target</h3>
+                <p><strong>The Goal:</strong> Earn 1,800 UXP in one year to maximize rollover.</p>
+                <p><strong>The Math:</strong> 1,800 UXP - 900 (Ultimate cost) = 900 UXP rollover. You start next year already qualified for Ultimate.</p>
+                <p><strong>The Benefit:</strong> In alternating years, you can fly less aggressively while maintaining Ultimate status.</p>
+            </div>
+
+            <div class="strategy-card">
+                <h3>Strategy 3: The SAF Accelerator</h3>
+                <p><strong>The Scenario:</strong> You are 50-100 UXP short of 900 at the end of your year.</p>
+                <p><strong>The Solution:</strong> Sustainable Aviation Fuel (SAF) purchases on AF/KL tickets count as UXP. This is often cheaper than booking a <a href="/guide/what-is-a-mileage-run">mileage run</a> flight.</p>
+                <p><strong>The Caveat:</strong> SAF contributions can be expensive per UXP. Calculate the cost before committing.</p>
+            </div>
+
             <h2>Is Pursuing UXP Worth It?</h2>
-            
-            <h3>Ultimate Makes Sense If:</h3>
-            <ul>
-                <li>You naturally fly 80%+ on Air France or KLM anyway</li>
-                <li>Platinum for Life (10 consecutive years) is your goal</li>
-                <li>You'd reach 900 UXP without expensive rerouting</li>
-                <li>Premium lounge access matters to you</li>
-            </ul>
-            
-            <h3>Stay at Platinum If:</h3>
-            <ul>
-                <li>You fly significant mileage on Delta or other partners</li>
-                <li>Rerouting to AF/KL would cost significantly more</li>
-                <li>You rely on Amex XP to maintain status</li>
-                <li>The incremental benefits don't justify the effort</li>
-            </ul>
-            
             <div class="tip-box">
-                <strong>💡 Strategic Insight:</strong> Calculate your natural UXP earning before pursuing Ultimate. If you'd naturally earn 600 UXP and need 900, you need an extra 300 UXP. That is roughly 3-4 additional long-haul AF/KL round trips. Is that €2,000-4,000 worth the incremental Ultimate benefits?
+                <strong>💡 Remco's Strategic Calculation:</strong><br>
+                Calculate your "natural" UXP first. If you naturally earn 600 UXP per year and need 900, you are short 300 UXP. That is roughly 3-4 additional long-haul AF/KL Business Class round trips. Is that investment worth the incremental Ultimate benefits (upgrade vouchers, dedicated service, 8 lounge guests)?<br>
+                <br>
+                If you fly primarily on <a href="/guide/flying-blue-partner-airlines">partners</a> (Delta, Korean Air), stay comfortable at Platinum. If you fly AF/KL metal heavily anyway, Ultimate is a natural next step.
             </div>
             
             <h2>Tracking Your UXP</h2>
-            <p>The Flying Blue website shows limited UXP information. Common challenges:</p>
-            <ul>
-                <li>No clear breakdown of UXP vs XP per flight</li>
-                <li>Difficult to see UXP projection toward Ultimate</li>
-                <li>Rollover calculations are not transparent</li>
-                <li>No planning tools for UXP-focused routing</li>
-            </ul>
+            <p>The Flying Blue website shows your UXP total, but does not always clearly distinguish the source or project your rollover potential.</p>
             
             <div class="cta-box">
                 <h3>👑 Track Your UXP Progress</h3>
-                <p>SkyStatus Pro shows your UXP separately from XP, with projections and rollover calculations specifically for Ultimate status qualification.</p>
+                <p>SkyStatus Pro separates your UXP from XP, with projections and rollover calculations specifically for Ultimate status qualification.</p>
                 <a href="/">Track UXP Free →</a>
             </div>
             
@@ -300,12 +420,13 @@
                 <ul>
                     <li><a href="/guide/flying-blue-ultimate-status">Ultimate Status Complete Guide</a></li>
                     <li><a href="/guide/flying-blue-platinum-status">How to Reach Platinum Status</a></li>
+                    <li><a href="/guide/flying-blue-xp-rollover">How XP Rollover Works</a></li>
                     <li><a href="/guide/flying-blue-partner-airlines">Flying Blue Partner Airlines</a></li>
                     <li><a href="/guide/what-is-flying-blue-xp">What is Flying Blue XP?</a></li>
                 </ul>
             </div>
             
-            <p class="source-note">This guide is based on official Flying Blue program rules. UXP requirements may change. Always verify current terms on the official Flying Blue website. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
+            <p class="source-note">This guide is based on official Flying Blue program rules as of late 2025. UXP requirements may change. Always verify current terms on the official Flying Blue website. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
         </article>
         
         <footer>

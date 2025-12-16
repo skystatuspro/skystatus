@@ -19,7 +19,7 @@
             "url": "https://skystatus.pro/about",
             "jobTitle": "Founder, SkyStatus Pro",
             "sameAs": ["https://www.linkedin.com/in/remcodegraaf/"]
-        },"publisher":{"@type":"Organization","name":"SkyStatus","url":"https://skystatus.pro"},"datePublished":"2024-12-15","dateModified":"2025-01-15"}
+        },"publisher":{"@type":"Organization","name":"SkyStatus","url":"https://skystatus.pro"},"datePublished":"2024-12-15","dateModified":"2025-12-16"}
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,6 +36,16 @@
         .definition-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1.5rem; margin-bottom: 2rem; }
         .definition-box h2 { font-size: 1rem; color: #1e40af; margin-bottom: 0.5rem; font-weight: 600; }
         .definition-box p { color: #1e3a8a; margin: 0; font-size: 1.05rem; }
+        
+        .process-box { background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
+        .process-box h2 { font-size: 1.2rem; color: #3730a3; margin: 0 0 1rem 0; font-weight: 700; }
+        .process-box p { color: #312e81; margin-bottom: 0.75rem; }
+        .process-box ul { margin: 0 0 0 1.2rem; color: #312e81; }
+        .process-box li { margin-bottom: 0.75rem; font-weight: 500; }
+        
+        .strategy-card { background: white; border: 2px solid #3b82f6; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .strategy-card h3 { color: #1e40af; margin-top: 0; }
+        
         h2 { font-size: 1.5rem; margin: 2rem 0 1rem 0; color: #0f172a; }
         h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem 0; color: #1e293b; }
         p { margin-bottom: 1rem; color: #475569; }
@@ -91,7 +101,7 @@
         <div class="breadcrumb"><a href="/">Home</a> → <a href="/guide">Guides</a> → XP Rollover</div>
         <article>
             <h1>Flying Blue XP Rollover: How It Works</h1>
-            <p class="meta">Last updated: December 2025 · 6 min read · Based on official Flying Blue program rules</p>
+            <p class="meta">Last updated: December 2025 · 14 min read · Based on official Flying Blue program rules</p>
             <div class="author-byline">
                 <div class="author-avatar">R</div>
                 <div class="author-info">
@@ -103,24 +113,58 @@
             
             <div class="definition-box">
                 <h2>Definition</h2>
-                <p><strong>XP Rollover</strong> is a Flying Blue feature that lets excess XP carry forward to your next qualification year. When you earn more XP than needed to maintain your status, the surplus rolls over. This is capped at <strong>300 XP maximum</strong>. For Ultimate members, up to <strong>900 UXP</strong> can also roll over separately.</p>
+                <p><strong>XP Rollover</strong> is a Flying Blue feature that lets excess <a href="/guide/what-is-flying-blue-xp">XP</a> carry forward to your next qualification year. When you earn more XP than needed to maintain your status, the surplus rolls over. This is capped at <strong>300 XP maximum</strong>. For <a href="/guide/flying-blue-ultimate-status">Ultimate members</a>, up to <strong>900 UXP</strong> can also roll over separately. The key insight: XP and <a href="/guide/flying-blue-uxp-explained">UXP</a> rollover are calculated independently, but both follow the same "payment" logic.</p>
+            </div>
+
+            <h2>The Core Mechanic: "Paying" for Status</h2>
+            <p>Before you understand rollover, you must understand how Flying Blue handles status transitions. When your qualification year ends (or you level up), the system does not just "keep" your status. It <strong>deducts</strong> points from your balance as "payment" for your new or renewed status.</p>
+
+            <div class="process-box">
+                <h2>How Status Payment Works</h2>
+                <p>At every status transition, the system performs a calculation:</p>
+                <ul>
+                    <li><strong>Step 1:</strong> Check if you have enough XP to qualify for your target status.</li>
+                    <li><strong>Step 2:</strong> Deduct the required XP from your balance (100 for Silver, 180 for Gold, 300 for Platinum).</li>
+                    <li><strong>Step 3:</strong> Calculate your rollover from the remaining XP (capped at 300 XP).</li>
+                    <li><strong>Step 4:</strong> Start your new qualification year with the rollover amount.</li>
+                </ul>
+                <p><em>This "payment" mechanic is why you do not simply reach 180 XP total to go from Explorer to Gold. You must first "pay" 100 XP for Silver, then earn 180 XP fresh for Gold.</em></p>
+            </div>
+
+            <div class="process-box">
+                <h2>How UXP Payment Works (Ultimate)</h2>
+                <p>UXP follows the same "payment" logic as XP, but for Ultimate status:</p>
+                <ul>
+                    <li><strong>Step 1:</strong> Check if you have at least 900 UXP AND are Platinum.</li>
+                    <li><strong>Step 2:</strong> When you qualify for Ultimate, 900 UXP is deducted from your UXP balance.</li>
+                    <li><strong>Step 3:</strong> Calculate your UXP rollover from the remaining balance (capped at 900 UXP).</li>
+                    <li><strong>Step 4:</strong> Start your new qualification year with the UXP rollover amount.</li>
+                </ul>
+                <p><em>Important: Ultimate is not an XP status level. It is a layer on top of Platinum. Reaching Ultimate does NOT reset your qualification year.</em></p>
             </div>
             
-            <h2>The Rollover Formula</h2>
+            <h2>The Rollover Formulas</h2>
             
             <div class="formula-box">
-                Rollover XP = min(XP Earned - Status Threshold, 300)
+                XP Rollover = min(XP Balance - Status Cost, 300)
+            </div>
+
+            <div class="formula-box" style="margin-top: 1rem;">
+                UXP Rollover = min(UXP Balance - 900, 900)
             </div>
             
-            <p>In plain terms: your rollover equals your total XP minus what you needed, capped at 300 XP.</p>
+            <p>In plain terms: your rollover equals your total points minus what you "paid" for status, capped at the maximum allowed. Any points above the cap are lost.</p>
             
-            <h2>Rollover Caps by Status</h2>
+            <h2>Rollover Caps by Status Level</h2>
+            
+            <p>The rollover cap applies differently depending on which <a href="/guide/flying-blue-status-levels">status level</a> you hold:</p>
             
             <table>
                 <tr>
                     <th>Status</th>
-                    <th>XP Threshold</th>
+                    <th>XP Cost</th>
                     <th>Max XP Rollover</th>
+                    <th>UXP Cost</th>
                     <th>Max UXP Rollover</th>
                 </tr>
                 <tr>
@@ -128,93 +172,331 @@
                     <td>100 XP</td>
                     <td>300 XP</td>
                     <td>N/A</td>
+                    <td>N/A</td>
                 </tr>
                 <tr>
-                    <td>Gold</td>
+                    <td><a href="/guide/flying-blue-gold-status">Gold</a></td>
                     <td>180 XP</td>
                     <td>300 XP</td>
                     <td>N/A</td>
-                </tr>
-                <tr>
-                    <td>Platinum</td>
-                    <td>300 XP</td>
-                    <td>300 XP</td>
                     <td>N/A</td>
                 </tr>
                 <tr>
-                    <td>Ultimate</td>
-                    <td>300 XP + 900 UXP</td>
+                    <td><a href="/guide/flying-blue-platinum-status">Platinum</a></td>
                     <td>300 XP</td>
+                    <td>300 XP</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td><a href="/guide/flying-blue-ultimate-status">Ultimate</a></td>
+                    <td>300 XP</td>
+                    <td>300 XP</td>
+                    <td>900 UXP</td>
                     <td>900 UXP</td>
                 </tr>
             </table>
-            
-            <h2>Rollover Calculation Examples</h2>
-            
-            <div class="example-box">
-                <h4>📊 Example 1: Gold Member Requalifying</h4>
-                <p><strong>Situation:</strong> You're Gold and earned 250 XP by your qualification date.</p>
-                <p><strong>Calculation:</strong> 250 XP - 180 (Gold threshold) = 70 XP rollover</p>
-                <p><strong>Result:</strong> Your new year starts with 70 XP already banked. You only need 110 more XP to maintain Gold next year.</p>
+
+            <div class="tip-box">
+                <strong>💡 Key Insight:</strong> Ultimate members pay twice: 300 XP for Platinum maintenance AND 900 UXP for Ultimate. These are independent calculations. You can roll over up to 300 XP AND up to 900 UXP simultaneously.
             </div>
-            
-            <div class="example-box">
-                <h4>📊 Example 2: Hitting the 300 XP Cap</h4>
-                <p><strong>Situation:</strong> You're Gold and earned 550 XP (heavy travel year).</p>
-                <p><strong>Calculation:</strong> 550 XP - 180 = 370 XP excess, but max is 300.</p>
-                <p><strong>Result:</strong> Your new year starts with 300 XP. The extra 70 XP is "wasted" for rollover purposes.</p>
+
+            <div class="warning-box">
+                <strong>⚠️ The 300 XP Cap is Absolute:</strong> Even if you are Ultimate and earn 800 XP in a year, you can only roll over 300 XP (after paying 300 for Platinum maintenance). The remaining 200 XP is "wasted" for rollover purposes. Plan your flying accordingly.
             </div>
-            
+
+            <h2>Understanding Your Qualification Year</h2>
+
+            <p>Your qualification year is personal to you. It does not follow the calendar year. Understanding when it starts and ends is essential for rollover planning.</p>
+
+            <div class="process-box">
+                <h2>How Your Qualification Year Works</h2>
+                <ul>
+                    <li><strong>Structure:</strong> Always runs from the first day of a month to the last day of the month before, one year later (e.g., November 1 to October 31).</li>
+                    <li><strong>Determined by:</strong> Your last level up to your current XP status.</li>
+                    <li><strong>Two triggers for a new year:</strong> Requalification (year stays same) or Level up (year resets).</li>
+                </ul>
+            </div>
+
+            <h3>Trigger 1: Requalification (Same Level)</h3>
+            <p>Your qualification year ends naturally. You have met the XP threshold for your current status. The system deducts the cost, calculates rollover, and your qualification year dates stay exactly the same.</p>
+
             <div class="example-box">
-                <h4>📊 Example 3: Level-Up Mid-Cycle</h4>
-                <p><strong>Situation:</strong> You're Silver with 100 XP and hit 200 XP in June (Gold threshold is 180).</p>
+                <h4>📊 Requalification Example</h4>
+                <p><strong>Situation:</strong> Your Platinum year runs November 1 to October 31. You earn 400 XP by October 31.</p>
                 <p><strong>What happens:</strong></p>
-                <p>• You immediately become Gold</p>
-                <p>• Your qualification cycle resets to June</p>
-                <p>• 200 - 180 = 20 XP rolls over to start your new Gold year</p>
+                <ul>
+                    <li>You requalify as Platinum (400 >= 300)</li>
+                    <li>300 XP is deducted</li>
+                    <li>100 XP rolls over</li>
+                    <li>Your new year is again November 1 to October 31</li>
+                </ul>
             </div>
             
-            <h2>When Rollover Happens</h2>
+            <h3>Trigger 2: Level Up (Status Upgrade)</h3>
+            <p>You earn enough XP mid cycle to reach the next status level. Your cycle <strong>immediately resets</strong> to the first day of the following month.</p>
+
+            <div class="process-box">
+                <h2>The Level Up Reset Mechanic</h2>
+                <ul>
+                    <li><strong>Instant Upgrade:</strong> The moment you cross a threshold (e.g., 180 XP for Gold), you are upgraded immediately.</li>
+                    <li><strong>Cycle Reset:</strong> Your qualification year resets to the 1st of the next month.</li>
+                    <li><strong>XP Deduction:</strong> The cost for your new status is deducted from your balance.</li>
+                    <li><strong>Rollover Calculation:</strong> Any remaining XP (up to 300) becomes your starting balance.</li>
+                </ul>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Level Up Example</h4>
+                <p><strong>Situation:</strong> You are Gold. Your year runs until October 31. On May 3, you reach 300 XP.</p>
+                <p><strong>What happens:</strong></p>
+                <ul>
+                    <li>You immediately become Platinum</li>
+                    <li>300 XP is deducted (300 - 300 = 0 XP)</li>
+                    <li>Your new Platinum year runs June 1 to May 31</li>
+                    <li>You start with 0 XP</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Ultimate Does NOT Reset Your Year:</strong> Unlike Silver, Gold, and Platinum, reaching Ultimate does not trigger a new qualification year. Ultimate is a status layer on top of Platinum, not a separate XP level. Your qualification year remains unchanged when you achieve Ultimate.
+            </div>
             
-            <h3>Scenario 1: Normal Requalification</h3>
-            <p>Your 12-month cycle ends, you've met the XP threshold, and you keep your status. Rollover is automatically calculated and applied to your new cycle.</p>
+            <h2>XP Rollover Calculation Examples</h2>
             
-            <h3>Scenario 2: Level-Up</h3>
-            <p>You earn enough XP mid-cycle to reach the next status. Your cycle immediately resets, and excess XP from that moment rolls over.</p>
+            <h3>Scenario 1: Normal Requalification (Under Cap)</h3>
+            <div class="example-box">
+                <h4>📊 Gold Member Requalifying</h4>
+                <p><strong>Situation:</strong> You are Gold and earned 250 XP by your qualification date.</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>XP Balance: 250 XP</li>
+                    <li>Gold maintenance cost: 180 XP</li>
+                    <li>Remainder: 250 - 180 = 70 XP</li>
+                    <li>Cap check: 70 < 300, so no cap applies</li>
+                </ul>
+                <p><strong>Result:</strong> Your new Gold year starts with <strong>70 XP</strong> already banked. You only need 110 more XP to maintain Gold next year.</p>
+            </div>
+            
+            <h3>Scenario 2: Hitting the 300 XP Cap</h3>
+            <div class="example-box">
+                <h4>📊 Heavy Travel Year</h4>
+                <p><strong>Situation:</strong> You are Gold and earned 550 XP (heavy travel year).</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>XP Balance: 550 XP</li>
+                    <li>Gold maintenance cost: 180 XP</li>
+                    <li>Mathematical remainder: 550 - 180 = 370 XP</li>
+                    <li>Cap check: 370 > 300, so cap applies</li>
+                </ul>
+                <p><strong>Result:</strong> Your new year starts with <strong>300 XP</strong> (the maximum). The extra 70 XP is lost.</p>
+            </div>
+
+            <h3>Scenario 3: Level Up Mid Cycle</h3>
+            <div class="example-box">
+                <h4>📊 Silver to Gold Upgrade</h4>
+                <p><strong>Situation:</strong> You are Silver with 78 XP banked. You take a trip earning 102 XP. Your balance hits 280 XP, crossing the 180 XP Gold threshold.</p>
+                <p><strong>What happens:</strong></p>
+                <ul>
+                    <li>You immediately become Gold</li>
+                    <li>The system deducts 180 XP (Gold cost)</li>
+                    <li>Remainder: 280 - 180 = 100 XP</li>
+                    <li>Your qualification year resets to the 1st of next month</li>
+                </ul>
+                <p><strong>Result:</strong> You start your new Gold year with <strong>100 XP</strong>. You now have 12 months to earn 180 XP to maintain Gold (but you only need 80 more!).</p>
+            </div>
+
+            <h3>Scenario 4: Platinum Requalification Examples</h3>
+
+            <div class="example-box">
+                <h4>📊 Scenario A: Under the Cap</h4>
+                <p><strong>Situation:</strong> Start of year: Platinum with 70 XP rollover. You earn 400 XP during the year.</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>Total XP Balance: 70 + 400 = 470 XP</li>
+                    <li>Platinum cost: 300 XP</li>
+                    <li>Remainder: 470 - 300 = 170 XP</li>
+                    <li>Cap check: 170 < 300, no cap applies</li>
+                </ul>
+                <p><strong>Result:</strong> New year starts with <strong>170 XP</strong>.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Scenario B: Hitting the Cap</h4>
+                <p><strong>Situation:</strong> Start of year: Platinum with 170 XP rollover. You earn 600 XP during the year.</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>Total XP Balance: 170 + 600 = 770 XP</li>
+                    <li>Platinum cost: 300 XP</li>
+                    <li>Mathematical remainder: 770 - 300 = 470 XP</li>
+                    <li>Cap check: 470 > 300, cap applies</li>
+                </ul>
+                <p><strong>Result:</strong> New year starts with <strong>300 XP</strong>. The extra 170 XP is "waste."</p>
+            </div>
             
             <div class="warning-box">
-                <strong>⚠️ Important Timing Note:</strong> When you level up, only XP earned up to and including that moment counts. If you hit Gold on June 15th with 195 XP, your rollover is 15 XP. This applies even if you earn 50 more XP on June 16th. Those 50 XP count toward your new cycle, not as additional rollover.
+                <strong>⚠️ Important Timing Note:</strong> When you level up, only XP earned up to and including that moment counts for rollover. If you hit Gold on June 15th with 195 XP, your rollover is 15 XP (195 - 180). Any XP earned on June 16th counts toward your new Gold cycle, not as additional rollover.
             </div>
+
+            <h2>Soft Landing Rules and Rollover</h2>
             
-            <h3>Scenario 3: Status Drop</h3>
-            <p>If you don't earn enough XP to maintain status, you drop one level. <strong>There is no rollover when you drop status.</strong> Your new cycle starts at 0 XP in the lower tier.</p>
-            
+            <p>If you do not earn enough XP to maintain your status, you drop one level. This is called a "Soft Landing." The rollover rules differ based on your situation.</p>
+
+            <div class="process-box">
+                <h2>Normal XP Soft Landing</h2>
+                <p>Applies to Explorer, Silver, Gold, and Platinum (but not from Ultimate).</p>
+                <ul>
+                    <li><strong>Rule:</strong> You can drop at most one status level per year.</li>
+                    <li><strong>Gold who misses 180 XP:</strong> Drops to Silver.</li>
+                    <li><strong>Platinum who misses 300 XP:</strong> Drops to Gold.</li>
+                    <li><strong>Silver who misses 100 XP:</strong> Drops to Explorer.</li>
+                </ul>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Soft Landing with Surplus XP</h4>
+                <p><strong>Situation:</strong> You are Gold (requires 180 XP) but only earned 150 XP.</p>
+                <p><strong>What happens:</strong></p>
+                <ul>
+                    <li>You cannot maintain Gold (150 < 180)</li>
+                    <li>You drop to Silver</li>
+                    <li>The system deducts 100 XP (Silver cost) from your 150 XP</li>
+                    <li>Remainder: 150 - 100 = 50 XP</li>
+                </ul>
+                <p><strong>Result:</strong> You start your new Silver year with <strong>50 XP</strong>.</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 Soft Landing with Zero XP</h4>
+                <p><strong>Situation:</strong> You are Gold but earned 0 XP (you did not fly at all).</p>
+                <p><strong>What happens:</strong></p>
+                <ul>
+                    <li>You cannot maintain Gold (0 < 180)</li>
+                    <li>You drop to Silver</li>
+                    <li>The system "grants" you Silver for free (no XP to deduct)</li>
+                </ul>
+                <p><strong>Result:</strong> You start your new Silver year with <strong>0 XP</strong>. You still benefit from Soft Landing protection.</p>
+            </div>
+
             <h2>UXP Rollover for Ultimate Members</h2>
-            <p>Ultimate members have separate UXP rollover rules:</p>
-            <ul>
-                <li><strong>Maximum UXP rollover:</strong> 900 UXP</li>
-                <li><strong>Total cap:</strong> You can have at most 1,800 UXP in a year (900 earned + 900 rollover)</li>
-                <li>UXP rollover operates independently of XP rollover</li>
-            </ul>
+            
+            <p><a href="/guide/flying-blue-uxp-explained">UXP (Ultimate XP)</a> is a separate counter that runs parallel to your regular XP. It follows your qualification year and has its own payment and rollover rules.</p>
+
+            <div class="tip-box">
+                <strong>💡 UXP Always Counts:</strong> Your UXP accumulates from the moment you join Flying Blue, even if you are not yet Platinum. However, UXP only becomes relevant for Ultimate qualification once you reach Platinum status.
+            </div>
+
+            <div class="process-box">
+                <h2>UXP Mechanics</h2>
+                <ul>
+                    <li><strong>Sources:</strong> Only flights marketed by KLM (KL) or Air France (AF), plus SAF purchases on KL/AF tickets.</li>
+                    <li><strong>Relationship:</strong> Every UXP is also XP, but not every XP is UXP.</li>
+                    <li><strong>Tied to Qualification Year:</strong> UXP counter resets when your qualification year resets (including on level up).</li>
+                    <li><strong>Annual Cap:</strong> Maximum 1,800 UXP per qualification year (900 for Ultimate + 900 rollover).</li>
+                    <li><strong>Payment:</strong> When you achieve or maintain Ultimate, 900 UXP is deducted.</li>
+                    <li><strong>Rollover Cap:</strong> Maximum 900 UXP can roll over to the next year.</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ UXP Resets on Level Up:</strong> Because UXP is tied to your qualification year, a level up (e.g., Gold to Platinum) will reset your UXP counter. You start your new Platinum year with 0 UXP (plus any rollover from the old year, capped at 900).
+            </div>
+
+            <h3>UXP Rollover Examples</h3>
             
             <div class="example-box">
-                <h4>📊 Example: Ultimate Member Rollover</h4>
-                <p><strong>Situation:</strong> You earned 400 XP and 1,200 UXP this year.</p>
-                <p><strong>XP rollover:</strong> 400 - 300 = 100 XP (under 300 cap, all rolls over)</p>
-                <p><strong>UXP rollover:</strong> 1,200 - 900 = 300 UXP excess. (Less than 900 cap, all 300 rolls over)</p>
-                <p><strong>Result:</strong> Next year starts with 100 XP and 300 UXP.</p>
+                <h4>📊 Ultimate Member: Under Both Caps</h4>
+                <p><strong>Situation:</strong> You are Ultimate and earned 500 XP and 1,200 UXP this year (all on AF/KL flights).</p>
+                <p><strong>XP Calculation:</strong></p>
+                <ul>
+                    <li>XP Balance: 500 XP</li>
+                    <li>Platinum cost: 300 XP</li>
+                    <li>XP Rollover: 500 - 300 = 200 XP (under 300 cap)</li>
+                </ul>
+                <p><strong>UXP Calculation:</strong></p>
+                <ul>
+                    <li>UXP Balance: 1,200 UXP</li>
+                    <li>Ultimate cost: 900 UXP</li>
+                    <li>UXP Rollover: 1,200 - 900 = 300 UXP (under 900 cap)</li>
+                </ul>
+                <p><strong>Result:</strong> Next year starts with <strong>200 XP</strong> and <strong>300 UXP</strong>.</p>
             </div>
-            
+
+            <div class="example-box">
+                <h4>📊 Ultimate Member: Hitting the UXP Cap</h4>
+                <p><strong>Situation:</strong> You are Ultimate and earned 1,800 UXP this year (the annual maximum).</p>
+                <p><strong>UXP Calculation:</strong></p>
+                <ul>
+                    <li>UXP Balance: 1,800 UXP (at annual cap)</li>
+                    <li>Ultimate cost: 900 UXP</li>
+                    <li>Mathematical remainder: 1,800 - 900 = 900 UXP</li>
+                    <li>Cap check: 900 = 900, exactly at rollover cap</li>
+                </ul>
+                <p><strong>Result:</strong> Next year starts with <strong>900 UXP</strong>. You are instantly qualified for Ultimate again!</p>
+            </div>
+
+            <div class="example-box">
+                <h4>📊 The 1,800 UXP Annual Hard Limit</h4>
+                <p><strong>Situation:</strong> You started the year with 900 UXP rollover. During the year, you earn 1,200 UXP on flights.</p>
+                <p><strong>Calculation:</strong></p>
+                <ul>
+                    <li>Starting UXP: 900 UXP (rollover)</li>
+                    <li>Earned UXP: 1,200 UXP</li>
+                    <li>Mathematical total: 2,100 UXP</li>
+                    <li>Annual cap: 1,800 UXP</li>
+                </ul>
+                <p><strong>Result:</strong> Only 1,800 UXP counts. The extra 300 UXP above the cap is "wasted." At year end: you pay 900 for Ultimate, roll over 900 UXP.</p>
+            </div>
+
+            <h2>The Ultimate Safety Net</h2>
+            <p>Ultimate members have a special soft landing rule that differs from all other status levels.</p>
+
+            <div class="process-box">
+                <h2>Ultimate Soft Landing Rule</h2>
+                <ul>
+                    <li><strong>The Rule:</strong> If you are Ultimate but fail to earn 900 UXP in a year, you always soft land to Platinum.</li>
+                    <li><strong>Even with 0 XP:</strong> This applies even if you earned zero XP that year.</li>
+                    <li><strong>Never skip levels:</strong> You can never drop from Ultimate directly to Gold or lower.</li>
+                    <li><strong>One time protection:</strong> Once you land at Platinum, normal XP rules apply. If you fail again, you drop to Gold.</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 Platinum for Life Strategy:</strong> The Ultimate Safety Net is crucial for members pursuing Platinum for Life (10 consecutive years of Platinum). Ultimate effectively gives you a "free year" of Platinum protection if your travel patterns change unexpectedly.
+            </div>
+
             <h2>Strategies to Maximize Rollover Value</h2>
             
-            <h3>Strategy 1: Time Large Trips</h3>
-            <p>If you're approaching the 300 XP rollover cap near the end of your qualification year, consider delaying a large trip until after your cycle resets. Those XP will count toward next year instead of being capped.</p>
-            
-            <h3>Strategy 2: Know Your Cycle Date</h3>
-            <p>Many members don't realize their qualification year doesn't follow the calendar year. It runs for 12 months from when you first achieved your current status. Track this date to optimize timing.</p>
-            
+            <div class="strategy-card">
+                <h3>Strategy 1: The 600 XP Target (Platinum)</h3>
+                <p><strong>The Goal:</strong> Earn exactly 600 XP in one year as a Platinum member.</p>
+                <p><strong>The Math:</strong> 600 XP - 300 (Platinum cost) = 300 XP rollover (at cap). You start next year already qualified for Platinum.</p>
+                <p><strong>The Benefit:</strong> In alternating years, you can fly less aggressively while maintaining status. Year 1: 600 XP effort. Year 2: 0 XP needed (already qualified from rollover).</p>
+            </div>
+
+            <div class="strategy-card">
+                <h3>Strategy 2: The 1,800 UXP Target (Ultimate)</h3>
+                <p><strong>The Goal:</strong> Earn 1,800 UXP in one year as an Ultimate member.</p>
+                <p><strong>The Math:</strong> 1,800 UXP - 900 (Ultimate cost) = 900 UXP rollover (at cap). You start next year already qualified for Ultimate.</p>
+                <p><strong>The Caveat:</strong> This requires flying exclusively on AF/KL marketed flights. <a href="/guide/flying-blue-partner-airlines">Partner flights</a> earn XP but zero UXP.</p>
+            </div>
+
+            <div class="strategy-card">
+                <h3>Strategy 3: Time Large Trips Strategically</h3>
+                <p><strong>The Scenario:</strong> You have 520 XP with 2 months left in your Platinum year. A planned Business Class trip to Tokyo would earn 72 XP.</p>
+                <p><strong>The Analysis:</strong> 520 + 72 = 592 XP. After 300 XP cost, you roll over 292 XP. Nothing wasted.</p>
+                <p><strong>Alternative:</strong> If you already had 550 XP, that same trip yields 622 XP. After cost: 322 XP, but cap is 300. You waste 22 XP.</p>
+                <p><strong>The Strategy:</strong> If approaching the 600 XP mark, consider delaying large trips until after your cycle resets. Those XP will count toward next year instead of being capped.</p>
+            </div>
+
+            <div class="strategy-card">
+                <h3>Strategy 4: Know Your Qualification Date</h3>
+                <p><strong>The Issue:</strong> Many members do not realize their qualification year does not follow the calendar year. It runs for 12 months from when you achieved your current status level.</p>
+                <p><strong>The Fix:</strong> Check your exact qualification date in the Flying Blue app or website. Plan your heaviest flying in the months before this date if you need to maximize rollover, or after this date if you are approaching the cap.</p>
+            </div>
+
             <div class="tip-box">
-                <strong>💡 Pro Tip:</strong> The Flying Blue website doesn't show rollover projections. Using a tracking tool that calculates your expected rollover can help you make strategic decisions about flight timing.
+                <strong>💡 Pro Tip:</strong> The Flying Blue website does not show rollover projections. Using a tracking tool that calculates your expected rollover can help you make strategic decisions about flight timing and avoid wasting XP or UXP.
             </div>
             
             <h2>Common Questions</h2>
@@ -223,14 +505,27 @@
             <p>Yes. If you start your Gold year with 50 XP rollover, you only need 250 more XP to reach Platinum (300 total required).</p>
             
             <h3>Can I lose rollover XP?</h3>
-            <p>Yes, in two scenarios: (1) If you drop status, there's no rollover. (2) If you exceed 300 XP rollover, the excess is lost.</p>
+            <p>Yes, in two scenarios:</p>
+            <ul>
+                <li><strong>Exceeding the cap:</strong> If your rollover calculation exceeds 300 XP (or 900 UXP), the excess is lost.</li>
+                <li><strong>Annual UXP cap:</strong> If your total UXP (rollover + earned) exceeds 1,800, the excess does not count.</li>
+            </ul>
             
-            <h3>Is there any way to increase the 300 cap?</h3>
+            <h3>Is there any way to increase the 300 XP cap?</h3>
             <p>No. The 300 XP cap is fixed and applies to all status levels. Ultimate members get separate UXP rollover (up to 900) but the XP cap remains 300.</p>
+
+            <h3>Does rollover XP count as UXP?</h3>
+            <p>It depends on the source. If your rollover XP was originally earned on AF/KL marketed flights, it also rolls over as UXP. XP from <a href="/guide/flying-blue-partner-airlines">partner airlines</a> rolls over as XP only, not UXP.</p>
+
+            <h3>What happens to my rollover if I do not fly at all next year?</h3>
+            <p>Your rollover XP remains in your account for the full qualification year. At year end, it counts toward your status maintenance. If you started with 300 XP rollover and earned 0 XP, you would have 300 XP total. For Gold (180 required), this is enough to maintain status and roll over another 120 XP.</p>
+
+            <h3>Does UXP count if I am not yet Platinum?</h3>
+            <p>Yes. Your UXP counter accumulates from all eligible flights regardless of your status. However, UXP only becomes relevant for achieving Ultimate once you reach Platinum. If you level up to Platinum mid year, your UXP counter resets (with rollover) just like your XP counter.</p>
             
             <div class="cta-box">
                 <h3>Calculate Your XP Rollover</h3>
-                <p>See exactly how much XP will roll over to your next cycle and plan your flights accordingly.</p>
+                <p>See exactly how much XP and UXP will roll over to your next cycle and plan your flights accordingly.</p>
                 <a href="/">Calculate Rollover Free →</a>
             </div>
             
@@ -241,6 +536,9 @@
                     <li><a href="/guide/flying-blue-status-levels">Flying Blue Status Levels Explained</a></li>
                     <li><a href="/guide/flying-blue-uxp-explained">What is UXP (Ultimate XP)?</a></li>
                     <li><a href="/guide/flying-blue-gold-status">How to Reach Gold Status</a></li>
+                    <li><a href="/guide/flying-blue-platinum-status">How to Reach Platinum Status</a></li>
+                    <li><a href="/guide/flying-blue-ultimate-status">Ultimate Status Complete Guide</a></li>
+                    <li><a href="/guide/what-is-a-mileage-run">What is a Mileage Run?</a></li>
                 </ul>
             </div>
             
