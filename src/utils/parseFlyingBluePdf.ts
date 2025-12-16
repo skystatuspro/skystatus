@@ -620,8 +620,8 @@ export function parseFlyingBlueText(text: string): ParseResult {
         if (miles > 0) {
           getOrCreateMonth(month).hotel += miles;
         }
-        // Some hotel stays give bonus XP even with 0 miles
-        if (xp > 0 && miles === 0) {
+        // Hotel stays can give bonus XP (with or without miles)
+        if (xp > 0) {
           getOrCreateMonth(month).bonusXp += xp;
         }
       }
@@ -665,6 +665,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
       // === CREDIT/DEBIT CARDS (universal detection) ===
       // This is AFTER all specific categories - catches any card-related earning
       // We use broad patterns that work regardless of card brand/issuer/country
+      // NOTE: Flying Blue co-branded cards (AMEX, etc.) can earn BOTH Miles AND XP!
       else if (
         // Any card network/type mention
         /Mastercard|Visa|Express|Amex|Diners|Discover|Debit|Credit|Betaal/i.test(content) ||
@@ -675,16 +676,37 @@ export function parseFlyingBlueText(text: string): ParseResult {
         // Card-related terms in multiple languages
         /kaart|carte|tarjeta|card|co-?brand/i.test(content)
       ) {
-        const { miles } = extractNumbers(content);
+        const { miles, xp } = extractNumbers(content);
         if (miles > 0) {
           getOrCreateMonth(month).amex += miles; // "amex" field stores all credit card miles
         } else if (miles < 0) {
           getOrCreateMonth(month).debit += Math.abs(miles);
         }
+        // Flying Blue AMEX and other co-branded cards also earn XP!
+        if (xp > 0) {
+          getOrCreateMonth(month).bonusXp += xp;
+        }
       }
       
       // === REQUALIFICATION EVENTS ===
-      else if (/XP.?(?:Counter|teller).?offset|Requalif|Herkwalif|Gekwalificeerd|Status.*(?:renewed|verlengd)|(?:renewed|verlengd).*status/i.test(content)) {
+      // Detect status renewal/requalification in all supported languages
+      // EN: "XP Counter offset", "Requalification", "Status renewed"
+      // NL: "XP teller offset", "Herkwalificatie", "Gekwalificeerd", "Status verlengd"
+      // FR: "Requalification", "Qualifié", "Statut renouvelé"
+      // DE: "Qualifikation", "Qualifiziert", "Status erneuert"
+      // IT: "Riqualificazione", "Qualificato", "Stato rinnovato"
+      // ES: "Recalificación", "Calificado", "Estado renovado"
+      // PT: "Requalificação", "Qualificado", "Estado renovado"
+      else if (
+        /XP.?(?:Counter|teller|compteur|Zähler|contatore|contador).?(?:offset|reset|compensat)/i.test(content) ||
+        /[Rr]e?qualifi(?:cation|catie|cazione|cación|cação|ed|é|ziert|cato|cado)/i.test(content) ||
+        /[Hh]erkwalifi/i.test(content) ||
+        /[Gg]ekwalificeerd/i.test(content) ||
+        /[Qq]ualifi(?:é|ziert|cato|cado)/i.test(content) ||
+        /[Ss]tatus.*(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado)/i.test(content) ||
+        /(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado).*[Ss]tatus/i.test(content) ||
+        /[Ss]tat(?:o|ut|us).*(?:rinnovato|renouvelé|erneuert|renovado)/i.test(content)
+      ) {
         // Detect requalification/status renewal events
         const statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
         requalifications.push({
