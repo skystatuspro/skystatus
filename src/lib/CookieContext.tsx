@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 // Cookie categories following GDPR guidelines
 export interface CookieConsent {
@@ -75,7 +75,16 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
   const [state, setState] = useState(getInitialState);
   const [showSettings, setShowSettings] = useState(false);
 
+  // Initialize analytics on mount if consent was previously granted
+  useEffect(() => {
+    if (state.consent?.analytics) {
+      initializeAnalytics();
+    }
+  }, []); // Only run once on mount
+
   const saveConsent = useCallback((newConsent: CookieConsent) => {
+    const previousConsent = state.consent;
+    
     const stored: StoredConsent = {
       version: CONSENT_VERSION,
       consent: newConsent,
@@ -85,11 +94,15 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
     setState({ consent: newConsent, showBanner: false });
     setShowSettings(false);
 
-    // Trigger analytics initialization if accepted
-    if (newConsent.analytics) {
+    // Handle analytics consent changes
+    if (newConsent.analytics && (!previousConsent || !previousConsent.analytics)) {
+      // Analytics newly enabled
       initializeAnalytics();
+    } else if (!newConsent.analytics && previousConsent?.analytics) {
+      // Analytics was enabled, now disabled
+      revokeAnalytics();
     }
-  }, []);
+  }, [state.consent]);
 
   const acceptAll = useCallback(() => {
     saveConsent({
@@ -145,17 +158,26 @@ export const CookieConsentProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-// Placeholder for analytics initialization
-// Replace with actual analytics (GA4, Plausible, etc.) when needed
-function initializeAnalytics() {
-  // Example: Initialize Google Analytics 4
-  // if (typeof window !== 'undefined' && window.gtag) {
-  //   window.gtag('consent', 'update', {
-  //     analytics_storage: 'granted',
-  //   });
-  // }
-  
-  console.log('[Cookie Consent] Analytics consent granted - ready to initialize tracking');
+// Initialize Google Analytics 4 when consent is granted
+async function initializeAnalytics() {
+  try {
+    const { initializeAnalytics: initGA4 } = await import('./analytics');
+    await initGA4();
+    console.log('[Cookie Consent] Analytics consent granted - GA4 initialized');
+  } catch (error) {
+    console.error('[Cookie Consent] Failed to initialize analytics:', error);
+  }
+}
+
+// Revoke analytics when consent is withdrawn
+async function revokeAnalytics() {
+  try {
+    const { revokeAnalyticsConsent } = await import('./analytics');
+    revokeAnalyticsConsent();
+    console.log('[Cookie Consent] Analytics consent revoked');
+  } catch (error) {
+    console.error('[Cookie Consent] Failed to revoke analytics:', error);
+  }
 }
 
 // Export for use in index.html or external scripts

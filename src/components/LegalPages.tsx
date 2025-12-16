@@ -7,7 +7,7 @@ interface LegalPageProps {
 }
 
 export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
-  const lastUpdated = '13 December 2024';
+  const lastUpdated = '16 December 2024';
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -167,12 +167,31 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-3">8. Cookies</h2>
-            <p className="text-slate-600 leading-relaxed">
-              SkyStatus uses only essential cookies. These are required for authentication and session management. 
-              We do not use tracking cookies or third-party advertising cookies. If we add optional analytics 
-              in the future, we will update this policy and request your consent.
+            <h2 className="text-xl font-bold text-slate-900 mb-3">8. Cookies & Analytics</h2>
+            <p className="text-slate-600 leading-relaxed mb-4">
+              SkyStatus uses cookies and analytics services. Here's what we use:
             </p>
+            <ul className="space-y-2 text-slate-600 mb-4">
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Essential cookies:</strong> Required for authentication and session management. These cannot be disabled.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Functional cookies:</strong> Remember your preferences like currency and home airport.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Analytics cookies:</strong> Google Analytics 4 (GA4) to understand how visitors use SkyStatus. This is optional and requires your consent.</span>
+              </li>
+            </ul>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-blue-800 text-sm">
+                <strong>🔒 Privacy-first analytics:</strong> We use GA4 with enhanced privacy settings. IP addresses are anonymized, 
+                Google Signals is disabled, and no advertising features are enabled. We only collect anonymous usage data to improve SkyStatus.
+                You can opt out at any time via the Cookie Settings in the footer.
+              </p>
+            </div>
           </section>
 
           <section>
@@ -188,6 +207,10 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
                 <span><strong>Google OAuth:</strong> Sign-in authentication (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">Privacy Policy</a>)</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Google Analytics 4:</strong> Website analytics (optional, requires consent) (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">Privacy Policy</a>)</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
@@ -869,7 +892,7 @@ export const ContactPage: React.FC<LegalPageProps> = ({ onBack }) => {
 
 // Cookie Policy Page
 export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
-  const lastUpdated = '13 December 2024';
+  const lastUpdated = '16 December 2024';
   
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1005,9 +1028,25 @@ export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
                     <td className="py-2 px-3">Persistent</td>
                     <td className="py-2 px-3">Functional</td>
                   </tr>
+                  <tr className="border-b border-slate-100 bg-blue-50/50">
+                    <td className="py-2 px-3 font-mono text-xs">_ga</td>
+                    <td className="py-2 px-3">Google Analytics - distinguishes users</td>
+                    <td className="py-2 px-3">2 years</td>
+                    <td className="py-2 px-3">Analytics</td>
+                  </tr>
+                  <tr className="border-b border-slate-100 bg-blue-50/50">
+                    <td className="py-2 px-3 font-mono text-xs">_ga_*</td>
+                    <td className="py-2 px-3">Google Analytics 4 - maintains session state</td>
+                    <td className="py-2 px-3">2 years</td>
+                    <td className="py-2 px-3">Analytics</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+            <p className="text-slate-500 text-sm mt-3">
+              <strong>Note:</strong> Analytics cookies (highlighted in blue) are only set after you give explicit consent. 
+              You can opt out at any time via Cookie Settings in the footer.
+            </p>
           </section>
 
           <section>
@@ -1052,6 +1091,16 @@ export const CookiePolicy: React.FC<LegalPageProps> = ({ onBack }) => {
                   <strong>Supabase:</strong> For authentication and data storage. 
                   <a href="https://supabase.com/privacy" className="text-brand-600 hover:underline ml-1" target="_blank" rel="noopener noreferrer">
                     Supabase Privacy Policy
+                  </a>
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-brand-500 mt-1">•</span>
+                <span>
+                  <strong>Google Analytics 4:</strong> For website analytics (only with your consent). We use privacy-enhanced settings: 
+                  IP anonymization enabled, Google Signals disabled, no advertising features.
+                  <a href="https://policies.google.com/privacy" className="text-brand-600 hover:underline ml-1" target="_blank" rel="noopener noreferrer">
+                    Google Privacy Policy
                   </a>
                 </span>
               </li>

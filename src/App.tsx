@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext';
 import { useUserData } from './hooks/useUserData';
+import { usePageTracking } from './hooks/useAnalytics';
 import { CurrencyProvider } from './lib/CurrencyContext';
 import { CookieConsentProvider } from './lib/CookieContext';
 import { CookieConsentUI } from './components/CookieConsent';
@@ -29,6 +30,12 @@ import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel } from './types';
+
+// Inner component that uses page tracking (must be inside CookieConsentProvider)
+function PageTracker() {
+  usePageTracking();
+  return null;
+}
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -462,6 +469,7 @@ export default function App() {
 
   return (
     <CookieConsentProvider>
+    <PageTracker />
     <CurrencyProvider currency={state.currency}>
       <Layout
         currentView={view}
