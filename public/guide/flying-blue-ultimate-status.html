@@ -34,9 +34,68 @@
             "jobTitle": "Founder, SkyStatus Pro",
             "sameAs": ["https://www.linkedin.com/in/remcodegraaf/"]
         },
-        "publisher": {"@type": "Organization", "name": "SkyStatus Pro", "url": "https://skystatus.pro"},
+        "publisher": {
+            "@type": "Organization",
+            "@id": "https://skystatus.pro/#organization",
+            "name": "SkyStatus Pro",
+            "url": "https://skystatus.pro",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://skystatus.pro/logo.png"
+            }
+        },
         "datePublished": "2024-12-15",
-        "dateModified": "2025-12-17"
+        "dateModified": "2025-12-16"
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": "https://skystatus.pro/guide/flying-blue-ultimate-status#faq",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "How much UXP do I need for Flying Blue Ultimate?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "You need 900 UXP within one qualification year to reach Flying Blue Ultimate status. You must also hold Platinum status (300 XP) in that same year. Since AF/KL flights earn both XP and UXP simultaneously, reaching 900 UXP typically means you've also earned enough XP for Platinum."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What is the difference between XP and UXP?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "XP is earned on all SkyTeam partner flights and determines your status level (Silver, Gold, Platinum). UXP is only earned on Air France (AF) or KLM (KL) marketed flights. Important: on AF/KL flights, you earn BOTH XP and UXP simultaneously. They are not mutually exclusive."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What happens if I don't requalify for Ultimate?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "If you don't earn 900 UXP in a year, you drop to Platinum status. However, this 'soft landing' protection is not unique to Ultimate. Any Platinum member who earns 600 XP in a year (300 for Platinum + 300 rollover) also guarantees their next year of Platinum status."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Is there Ultimate for Life like Platinum for Life?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "No. Only Platinum for Life exists (after 10 consecutive years of Platinum). Ultimate counts as one year toward Platinum for Life, but there is no separate Ultimate for Life status."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Do I need Ultimate for Platinum protection?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "No. If your goal is simply to secure Platinum status, earning 600 XP in a year (300 pays for Platinum, 300 rolls over) gives you the same protection. You start next year with 300 XP. That is enough to requalify for Platinum even with zero new flights. Ultimate is valuable for its benefits (upgrade vouchers, 24/7 assistant), not for status security."
+                }
+            }
+        ]
     }
     </script>
     
@@ -46,10 +105,109 @@
         .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
         
         /* Navigation & Header */
-        nav { background: #0f172a; padding: 1rem; margin-bottom: 2rem; }
-        nav .inner { max-width: 800px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        nav a { color: white; text-decoration: none; font-weight: 600; }
-        nav .cta { background: #fbbf24; color: #0f172a; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; transition: transform 0.2s; }
+        /* Updated Navigation - matches landing page */
+        nav { 
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+        nav .inner { 
+            max-width: 1152px; 
+            margin: 0 auto; 
+            padding: 0 1rem;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            gap: 0.75rem;
+        }
+        nav .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #0f172a;
+        }
+        nav .logo-icon {
+            background: #0f172a;
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        nav .logo-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+            transform: rotate(-45deg);
+        }
+        nav .logo-text {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.01em;
+        }
+        nav .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        nav .nav-link {
+            padding: 0.5rem 1rem;
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 0.5rem;
+            transition: all 0.15s;
+        }
+        nav .nav-link:hover {
+            color: #0f172a;
+        }
+        nav .nav-link.active {
+            color: #0f172a;
+        }
+        nav .search-btn {
+            padding: 0.5rem;
+            color: #475569;
+            background: transparent;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        nav .search-btn:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+        nav .cta-btn {
+            padding: 0.625rem 1.25rem;
+            background: #0f172a;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 0.75rem;
+            transition: all 0.15s;
+        }
+        nav .cta-btn:hover {
+            background: #1e293b;
+        }
+        @media (max-width: 640px) {
+            nav .nav-link { display: none; }
+            nav .search-btn { display: none; }
+            nav .nav-links { gap: 0.5rem; }
+        }
+        }
         nav .cta:hover { transform: translateY(-1px); }
         
         .breadcrumb { font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem; }
@@ -167,15 +325,30 @@
         ]
     }
     </script>
-    <!-- Google Analytics 4 (consent-aware) -->
-    <script src="/js/ga4-static.js"></script>
 </head>
 <body>
 
     <nav>
         <div class="inner">
-            <a href="/">✈️ SkyStatus Pro</a>
-            <a href="/" class="cta">Check My UXP →</a>
+            <a href="/" class="logo">
+                <span class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 13l-2 2H6l-2 2 3.5.5.5 3.5 2-2v-3l2-2 4.5 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1Z"/>
+                    </svg>
+                </span>
+                <span class="logo-text">SkyStatus</span>
+            </a>
+            <div class="nav-links">
+                <a href="/guide" class="nav-link">Guides</a>
+                <a href="/faq" class="nav-link">Help & FAQ</a>
+                <a href="/?search=1" class="search-btn" title="Search (⌘K)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+                </a>
+                <a href="/" class="cta-btn">Sign In</a>
+            </div>
         </div>
     </nav>
 
@@ -187,7 +360,7 @@
         <article>
             <span class="status-pill status-ult">Highest Tier</span>
             <h1>Flying Blue Ultimate: The Technical Guide</h1>
-            <p class="meta">Last updated: 17 December 2025 · 14 min read · Based on official Flying Blue program rules · <a href="#official-references">See sources</a></p>
+            <p class="meta">Last updated: December 2025 · 14 min read · Based on official Flying Blue program rules · <a href="#official-references">See sources</a></p>
 
             <div class="official-sources">
                 <strong>Official sources used for verification:</strong><br>
@@ -215,7 +388,7 @@
                     <li><a href="#uxp-payment">2. The UXP "Payment" Mechanic</a></li>
                     <li><a href="#qualification-year">3. The Qualification Year</a></li>
                     <li><a href="#uxp-caps">4. UXP Caps and Limits</a></li>
-                    <li><a href="#soft-landing">5. The Ultimate Safety Net (Soft Landing)</a></li>
+                    <li><a href="#soft-landing">5. Status Protection: The Real Math</a></li>
                     <li><a href="#strategies">6. Strategies to Reach 900 UXP</a></li>
                     <li><a href="#benefits">7. Ultimate Benefits vs Platinum</a></li>
                 </ul>
@@ -296,7 +469,7 @@
             </div>
 
             <div class="tip-box">
-                <strong>💡 Double Payment:</strong> As an Ultimate member, you pay twice at year end: 300 XP for Platinum AND 900 UXP for Ultimate. These are independent calculations. You can roll over up to 300 XP AND up to 900 UXP simultaneously.
+                <strong>💡 Double Payment:</strong> As an Ultimate member, you pay twice at year end: 300 XP for Platinum AND 900 UXP for Ultimate (<a href="https://wwws.airfrance.fr/en/information/flyingblue/statuts-flying-blue" target="_blank" rel="noopener">Air France official</a>). These are independent calculations. You can roll over up to 300 XP AND up to 900 UXP simultaneously.
             </div>
 
             <h2 id="qualification-year">3. The Qualification Year</h2>
@@ -330,7 +503,7 @@
                 <li><strong>Above this:</strong> Additional UXP provides no extra benefit for Ultimate planning (though it still counts as regular XP for Platinum maintenance).</li>
             </ul>
 
-            <p class="source-note">Rollover rule: "you will keep the rest (900 UXP maximum)" — <a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">KLM membership levels</a>.</p>
+            <p class="source-note">Rollover rule: "you will keep the rest (900 UXP maximum)". Source: <a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">KLM membership levels</a>.</p>
 
             <div class="example-box">
                 <h4>📊 Scenario: Maximum Rollover Strategy</h4>
@@ -357,22 +530,35 @@
                 <p><strong>Result:</strong> You easily requalify. After paying 900 for Ultimate, you roll over 900 UXP again. Any UXP beyond the rollover cap provides no additional planning benefit.</p>
             </div>
 
-            <h2 id="soft-landing">5. The Ultimate Safety Net (Soft Landing)</h2>
-            <p>Ultimate members have a special safety net that differs from all other status levels.</p>
+            <h2 id="soft-landing">5. Status Protection: The Real Math</h2>
+            <p>Flying Blue has one universal soft landing rule: you can only drop one status level per year. This applies to all levels, not just Ultimate. What makes Ultimate special is the XP math.</p>
 
             <div class="process-box">
-                <h2>The Ultimate Soft Landing Rule</h2>
+                <h2>Why Ultimate Guarantees 2+ Years of Platinum</h2>
                 <ul>
-                    <li><strong>The Rule:</strong> If you are Ultimate but fail to earn 900 UXP in a year, you always soft land to Platinum (<a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">official KLM reference</a>).</li>
-                    <li><strong>Even with 0 XP:</strong> This applies even if you earned zero XP that year.</li>
-                    <li><strong>Never skip levels:</strong> You can never drop from Ultimate directly to Gold or lower.</li>
-                    <li><strong>One-time protection:</strong> Once you land at Platinum, normal XP rules apply for the following year. If you then fail to earn 300 XP, you drop to Gold.</li>
+                    <li><strong>The requirement:</strong> Ultimate needs 900 UXP from AF/KL flights.</li>
+                    <li><strong>The hidden bonus:</strong> AF/KL flights earn XP and UXP simultaneously. So 900 UXP also means 900+ XP earned.</li>
+                    <li><strong>No XP deduction for Ultimate:</strong> When you reach Ultimate, nothing is deducted from your XP balance. Your qualification year also stays the same. You keep all 900 XP.</li>
+                    <li><strong>At year end:</strong> 300 XP is deducted for Platinum requalification. You have 600 XP left.</li>
+                    <li><strong>The rollover cap:</strong> Maximum 300 XP can roll over. You start next year with 300 XP. The other 300 XP is lost.</li>
+                    <li><strong>The result:</strong> 300 XP is exactly enough to requalify for Platinum. Even with zero new flights.</li>
                 </ul>
+                <p style="margin-top: 1rem;"><strong>Bottom line:</strong> Reaching Ultimate once automatically secures at least two more years of Platinum status through XP alone. The soft landing rule is just a backup. Note: you lose 300 XP due to the rollover cap.</p>
+            </div>
+
+            <div class="edge-case" style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 1.25rem; margin: 1.5rem 0;">
+                <h3 style="color: #92400e; margin-top: 0;">⚠️ For Platinum Members: The 600 XP Alternative</h3>
+                <p style="margin-bottom: 0.75rem;">Don't want to chase Ultimate? You can secure Platinum protection without UXP:</p>
+                <ul style="margin-bottom: 0.75rem;">
+                    <li><strong>Earn 600 XP in a year.</strong> 300 XP pays for Platinum. 300 XP rolls over.</li>
+                    <li><strong>Next year you start with 300 XP.</strong> That is exactly enough to requalify for Platinum.</li>
+                    <li><strong>Result:</strong> Two years of guaranteed Platinum. No AF/KL requirement. Partner flights count.</li>
+                </ul>
+                <p style="margin: 0; font-size: 0.95rem;"><strong>When does Ultimate make sense?</strong> For the benefits: upgrade vouchers, 24/7 personal assistant, priority handling, and free Wi-Fi. Not for status security.</p>
             </div>
 
             <div class="tip-box">
-                <strong>💡 Platinum for Life Strategy:</strong> This safety net is crucial for members pursuing Platinum for Life (10 consecutive years of Platinum). Ultimate effectively gives you a "free year" of Platinum protection if your travel patterns change unexpectedly.
-            </div>
+                <strong>💡 No Ultimate for Life:</strong> Only Platinum for Life exists. You earn it after 10 consecutive years of Platinum. Ultimate counts as one year toward this goal. It offers no special advantage over regular Platinum years.</div>
 
             <h2 id="strategies">6. Strategies to Reach 900 UXP</h2>
             <p>Reaching 900 UXP requires a deliberate approach, as partner flights do not count.</p>
@@ -438,7 +624,7 @@
                 </tr>
             </table>
 
-            <p class="source-note">Benefits verified at <a href="https://www.flyingblue.com/en/landing-page/informative/ultimate-information" target="_blank" rel="noopener">Flying Blue Ultimate info</a>. Last verified: 17 December 2025.</p>
+            <p class="source-note">Benefits verified at <a href="https://www.flyingblue.com/en/landing-page/informative/ultimate-information" target="_blank" rel="noopener">Flying Blue Ultimate info</a>. Last verified: December 2025.</p>
 
             <div class="cta-box">
                 <h3>👑 Track Your Ultimate Progress</h3>
@@ -459,13 +645,14 @@
 
             <h3 id="official-references" style="margin-top: 2rem;">Official References</h3>
             <ul style="font-size: 0.9rem; color: #64748b;">
-                <li><a href="https://www.flyingblue.com/en/landing-page/informative/ultimate-information" target="_blank" rel="noopener">Flying Blue Ultimate info</a> — UXP definition, marketing carrier rule, benefits</li>
-                <li><a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">KLM Membership Levels</a> — 900 UXP threshold, rollover rules, soft landing</li>
-                <li><a href="https://www.flyingblue.com/en/programme/more-info/status" target="_blank" rel="noopener">Flying Blue Status & XP</a> — Qualification year structure, XP earning</li>
-                <li><a href="https://img.static-fb.com/m/210bf6c67e0bebac/original/Fbcom_Terms-and-Conditions-EN.pdf" target="_blank" rel="noopener">Flying Blue Terms & Conditions (PDF)</a> — Full program rules</li>
+                <li><a href="https://www.flyingblue.com/en/landing-page/informative/ultimate-information" target="_blank" rel="noopener">Flying Blue Ultimate info</a>: UXP definition, marketing carrier rule, benefits</li>
+                <li><a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">KLM Membership Levels</a>: 900 UXP threshold, rollover rules, soft landing</li>
+                <li><a href="https://wwws.airfrance.fr/en/information/flyingblue/statuts-flying-blue" target="_blank" rel="noopener">Air France Flying Blue Levels</a>: XP and UXP deduction rules, double payment</li>
+                <li><a href="https://www.flyingblue.com/en/programme/more-info/status" target="_blank" rel="noopener">Flying Blue Status & XP</a>: Qualification year structure, XP earning</li>
+                <li><a href="https://img.static-fb.com/m/210bf6c67e0bebac/original/Fbcom_Terms-and-Conditions-EN.pdf" target="_blank" rel="noopener">Flying Blue Terms & Conditions (PDF)</a>: Full program rules</li>
             </ul>
 
-            <p class="source-note-footer">This guide is based on official Flying Blue program rules. Key Ultimate requirements verified at <a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">KLM membership levels</a> ("Unlock Flying Blue Ultimate privileges by gaining 900 UXP"). Ultimate requirements and benefits may change. Always verify current terms on the official Flying Blue website. Last verified: 17 December 2025. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
+            <p class="source-note-footer">This guide is based on official Flying Blue program rules. Key Ultimate requirements verified at <a href="https://www.klm.com/information/flying-blue/membership-levels" target="_blank" rel="noopener">KLM membership levels</a> ("Unlock Flying Blue Ultimate privileges by gaining 900 UXP"). Ultimate requirements and benefits may change. Always verify current terms on the official Flying Blue website. Last verified: December 2025. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
         </article>
     </div>
 
@@ -473,5 +660,6 @@
         <p>© 2025 SkyStatus Pro · <a href="/privacy">Privacy</a> · <a href="/about">About</a> · <a href="/faq">FAQ</a></p>
     </footer>
 
+    <script src="/js/report-error.js"></script>
 </body>
 </html>

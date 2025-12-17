@@ -30,6 +30,10 @@ import {
   trackBugReport,
   trackContactForm,
   trackError,
+  trackSearchOpen,
+  trackSearchQuery,
+  trackSearchResultClick,
+  trackSearchResultOpen,
   isAnalyticsActive,
 } from '../lib/analytics';
 
@@ -233,6 +237,40 @@ export function useAnalytics() {
     }
   }, [isEnabled]);
 
+  // --- SEARCH ---
+
+  const trackSearch = useCallback((trigger: 'keyboard' | 'button') => {
+    if (isEnabled) {
+      trackSearchOpen(trigger);
+    }
+  }, [isEnabled]);
+
+  const trackSearchTerm = useCallback((query: string, resultCount: number) => {
+    if (isEnabled) {
+      trackSearchQuery(query, resultCount);
+    }
+  }, [isEnabled]);
+
+  const trackSearchClick = useCallback((
+    query: string,
+    resultType: 'guide' | 'faq' | 'page',
+    resultTitle: string,
+    resultPosition: number
+  ) => {
+    if (isEnabled) {
+      trackSearchResultClick(query, resultType, resultTitle, resultPosition);
+    }
+  }, [isEnabled]);
+
+  const trackSearchExternal = useCallback((
+    resultType: 'guide' | 'faq' | 'page',
+    resultUrl: string
+  ) => {
+    if (isEnabled) {
+      trackSearchResultOpen(resultType, resultUrl);
+    }
+  }, [isEnabled]);
+
   // --- FEATURE USAGE ---
 
   const trackFeature = useCallback((feature: string) => {
@@ -302,6 +340,11 @@ export function useAnalytics() {
     trackSettings,
     // Content
     trackGuide,
+    // Search
+    trackSearch,
+    trackSearchTerm,
+    trackSearchClick,
+    trackSearchExternal,
     // Features
     trackFeature,
     // Feedback

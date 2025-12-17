@@ -1,0 +1,1822 @@
+{
+  "version": 1,
+  "generated": "2025-12-17T13:10:16.590Z",
+  "items": [
+    {
+      "id": "guide-flying-blue-cost-per-mile",
+      "title": "Flying Blue Cost Per Mile (CPM): How to Calculate and Optimize (2025)",
+      "description": "Cost Per Mile (CPM) measures what you paid per mile acquired. Target under €0.012 for good value. Compare Subscribe to Miles (€0.0125), promo purchases (€0.016), and transfer partners.",
+      "content": "Calculate it as: Total Cost ÷ Miles Received . A lower CPM is better. SkyStatus uses €0.012 as a practical benchmark: see how we estimate mile value . Above €0.015 usually only works with a clearly high-value redemption. On This Page The CPM Formula CPM Benchmarks CPM by Acquisition Method Transfer Partners: The Best Value Subscribe to Miles Promotional Purchases CPM vs Value Per Mile Weighted Average CPM FAQ Sources The CPM Formula CPM = Total Cost (€) ÷ Miles Received 📘 Example You buy 10,000 miles for €200. CPM = €200 ÷ 10,000 = €0.02 per mile This is above the €0.012 benchmark, so you need a redemption worth at least €0.02/mile to break even. CPM Benchmarks SkyStatus uses the following thresholds based on typical redemption values : CPM Range Verdict When It Makes Sense Under €0.008 🌟 Excellent Transfer bonuses, credit card earning on spend you would make anyway €0.008 to 0.012 ✅ Good Standard transfers, flight earning, some promotional purchases €0.012 to 0.015 ⚠️ Fair Subscribe to Miles, topping off for a specific redemption €0.015 to 0.02 ⚠️ Marginal Only for high-value Business Class redemptions Above €0.02 ❌ Poor Almost never worth it; consider paying cash instead CPM by Acquisition Method Method Typical CPM Notes Transfer partners (with bonus) €0.006 to 0.008 ✅ Best option when 25%+ bonus available Transfer partners (standard) €0.008 to 0.01 ✅ Excellent if you earn points on regular spending Flying (implicit cost) ~€0.01 ✅ Part of your ticket cost; not incremental spend Subscribe to Miles €0.0125 ⚠️ Best for small top-ups; cancellable Promo purchase (80% bonus) €0.016 ⚠️ Only for specific high-value redemptions Promo purchase (45% discount) €0.016 ⚠️ Similar to bonus promos Standard purchase €0.028 ❌ Almost never worth it Transfer Partners: The Best Value The most cost-effective way to acquire Flying Blue miles is through credit card transfer partners. If you earn points on spending you would do anyway, your effective CPM approaches zero. Official list of partners and conversion options: Flying Blue partner conversions . Flying Blue transfer partners American Express Membership Rewards Chase Ultimate Rewards Citi ThankYou Points Capital One Miles Bilt Rewards Wells Fargo Rewards Transfer bonuses of 20 to 30% happen several times per year. A 25% bonus means 100,000 credit card points become 125,000 Flying Blue miles. Ratios may vary by partner and region. 📊 Transfer Bonus Example You earn 50,000 Amex points on €25,000 credit card spend (2x earning rate). Transfer during 25% bonus: 50,000 → 62,500 Flying Blue miles. If you value the Amex points at €0.01 each: CPM = €500 ÷ 62,500 = €0.008/mile This is excellent value, well below the €0.012 benchmark. 💡 Strategy: Never transfer points speculatively. Wait until you have a specific redemption in mind and award availability confirmed. Then check if a transfer bonus is active. If not, evaluate whether the redemption value justifies the standard transfer. Subscribe to Miles Flying Blue offers a monthly subscription service called \"Subscribe to Miles\" where you pay a fixed monthly fee for a set number of miles. Official overview: Introducing Subscribe to Miles . Manage subscription: Subscribe to Miles portal . Package Miles per Month Price (USD) CPM (USD) CPM (EUR approx.) Starter 2,000 $39.80 1.99¢ €0.0185 Smart 5,000 $89.80 1.80¢ €0.0167 Advanced 10,000 $159.80 1.60¢ €0.0149 Complete 17,000 $227.80 1.34¢ €0.0125 Subscribe to Miles: Key Details Cancellation and refund rules depend on your checkout terms and country Miles validity is governed by the Flying Blue programme terms Posting timing can vary after payment Plan changes may be restricted depending on subscription terms Miles do NOT count toward XP or status The Complete package at 1.34¢ USD (approximately €0.0125) is close to typical redemption values of €0.012. This makes it useful for topping off your balance for a specific redemption, but not for speculative accumulation. 💡 When Subscribe to Miles Makes Sense: You are 15,000 miles short of a Business Class redemption worth €0.025/mile. Subscribe for one month at the Complete tier (17,000 miles for $227.80), book your award, then cancel. Your CPM is €0.0125, but your redemption value is €0.025. That is a 2x return. Promotional Purchases Flying Blue runs promotional purchase offers several times per year, typically offering 50 to 100% bonus miles or 35 to 45% discounts. Promotion Type Effective CPM (USD) Effective CPM (EUR) Frequency 100% bonus (best ever) 1.53¢ €0.0142 Rare, last seen 2022 80% bonus (current Dec 2025) 1.69¢ €0.0157 Several times per year 45% discount 1.68¢ €0.0156 Several times per year 50% bonus 2.03¢ €0.0189 Common Standard (no promo) 3.05¢ €0.0284 Always available ⚠️ Standard Purchases Are Almost Never Worth It: At €0.028 per mile, you are paying more than double the benchmark. Even with an 80% bonus, you need a redemption worth at least €0.016/mile to break even. Always have a specific high-value redemption in mind before ",
+      "url": "/guide/flying-blue-cost-per-mile",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Definition"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The CPM Formula"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "CPM Benchmarks"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "CPM by Acquisition Method"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Transfer Partners: The Best Value"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Flying Blue transfer partners"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Subscribe to Miles"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Subscribe to Miles: Key Details"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Promotional Purchases"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "CPM vs Value Per Mile"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Weighted Average CPM"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Practical Application"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "FAQ"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "What is a good cost per mile for Flying Blue?"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-gold-status",
+      "title": "Flying Blue Gold Status: Requirements, Benefits & Strategies (2025)",
+      "description": "The complete guide to Flying Blue Gold. Master the 180 XP requirement (after Silver!), calculate your ROI, and use smart strategies to unlock worldwide lounge access.",
+      "content": "When you qualify for Silver, 100 XP is deducted and your balance resets. Gold therefore requires a total earning effort of 280 XP from zero. Gold unlocks SkyTeam lounge access with one guest. Source . On This Page How to Reach 180 XP Understanding Your Qualification Year Why Gold is the \"Sweet Spot\" Is Gold Worth the Investment? Strategies to Reach 180 XP XP Accelerators Maintaining Gold FAQ Sources The Rules: How to Reach 180 XP Many new members underestimate the path to Gold. It is not a straight climb to 180 XP total. The program works in steps where you \"pay\" XP to unlock each level. Step 1: The Silver Hurdle Starting as an Explorer (0 XP), your first target is Silver. Goal: Reach 100 XP . The Event: The moment you hit 100 XP, you become Silver. The Cost: 100 XP is immediately deducted (\"paid\") from your balance. The Reset: Your qualification year resets to the 1st of the next month. Step 2: The Climb to Gold Now that you are Silver, you start fresh toward Gold. Goal: Reach 180 XP (within your new qualification year). Note: The 100 XP you earned for Silver is gone. You build this 180 XP from your new balance. Total Effort: From zero to Gold requires effectively 280 XP (100 for Silver + 180 for Gold) in a continuous run. 📊 Calculation Example Situation: You have 90 XP. You fly a trip earning 30 XP. Total hits 120 XP. Silver is triggered. Cost: 100 XP. New Balance: 20 XP. To reach Gold: You need 160 more XP (Target 180 minus Balance 20). Understanding Your Qualification Year Your qualification year is personal to you. Understanding its structure is essential for status planning. Qualification Year Structure Format: Always runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31). Determined by: Your last level-up to your current XP status. Requalification: If you maintain your status (not level up), your year dates stay exactly the same. Level-up reset: If you reach a higher status mid-year, your qualification year resets to the 1st of the next month. Source . 📊 Level-Up Example Situation: Your Silver year runs until October 31. On May 3, you hit 180 XP. You immediately become Gold. 180 XP is deducted from your balance. Your new Gold year runs June 1 to May 31. Why Gold is the \"Sweet Spot\" Gold status unlocks the single most valuable airline benefit for many travelers: lounge access . Here is why Gold offers the best return on effort compared to Silver . Benefit Silver Gold Value Jump Lounge Access No ✅ All SkyTeam lounges (+1 guest) Huge Value Miles Earning 6 Miles per euro 7 Miles per euro +17% SkyPriority Check-in/Boarding Check-in/Boarding/Baggage Faster bags Economy Comfort seat ❌ Free 72h before Better seats Discount Options 25% off 50% off Double savings 💡 Lounge Access Details: Gold members get access to 750+ SkyTeam lounges when flying internationally on SkyTeam-operated flights. Your guest must be on the same flight. Since April 2025, domestic lounge access is available at select airports. Is Gold Worth the Investment? Before you start a mileage run , calculate your personal ROI. Gold typically delivers 600 to 1,050 euros in annual value for moderate travelers. Lounge visits: 15 visits x 40 euros value = 600 euros. Extra baggage: 4 flights x 50 euros = 200 euros. Priority & Comfort: Estimated 200 euros in time saved and comfort. Strategies to Reach 180 XP Once you are Silver, how do you get those 180 XP efficiently? Choose the strategy that fits your budget. Check our XP earning chart for current rates. Strategy 1: The Positioning Flight (Fastest) The Strategy: Never fly direct if you want status. Adding a segment increases your XP significantly because XP is calculated per leg . Direct: AMS to New York (Business) = 30 XP one way. Connected: AMS to Paris to New York (Business) = 15 XP + 30 XP = 45 XP one way. By adding a connection, you earn 50% more XP for roughly the same price. This is a classic mileage run tactic. Strategy 2: Business Class Sprint (Efficiency) The Strategy: Long-haul Business Class is the XP engine. Distance and cabin multipliers work in your favor. AMS to New York (JFK) in Business: 60 XP return. AMS to Tokyo (NRT) in Business: 72 XP return. The Math: Just 3 long-haul Business trips (3 x 60 = 180 XP) will take you from Silver to Gold immediately. Strategy 3: The Economy Grind (Budget) The Strategy: Maximize XP per euro by flying Economy on longer routes with competitive pricing. You can significantly reduce the number of trips needed by booking smart connections. The \"Expert\" Method: Just like with Business Class, adding a connection boosts your Economy XP earnings by 50% per trip. Direct: AMS to New York (Economy) = 20 XP return (10 XP x 2 legs). Via Paris: AMS to Paris (5 XP) + Paris to New York (10 XP) = 30 XP return . Expert Tip (The \"Antwerp Run\"): Starting your journey from Antwerp (ZWE) or Brussels often lowers the ticket price and adds a \"flight\" segment. The train ride to Amsterdam counts as a flight segmen",
+      "url": "/guide/flying-blue-gold-status",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "🥇 Gold Status Summary"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Rules: How to Reach 180 XP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Step 1: The Silver Hurdle"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Step 2: The Climb to Gold"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Understanding Your Qualification Year"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Qualification Year Structure"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Why Gold is the \"Sweet Spot\""
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Is Gold Worth the Investment?"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Strategies to Reach 180 XP"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy 1: The Positioning Flight (Fastest)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy 2: Business Class Sprint (Efficiency)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy 3: The Economy Grind (Budget)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "XP Accelerators"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Maintaining Gold"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-miles-value",
+      "title": "What Are Flying Blue Miles Worth? Realistic Valuation Guide (2025)",
+      "description": "Flying Blue miles are worth €0.01-0.02 depending on redemption. Business Class gives best value (€0.015-0.025/mile). Economy averages €0.008-0.012. Complete valuation guide with current award pricing.",
+      "content": "01 to 0.02 per mile depending on how you redeem them. Economy redemptions average €0.008 to 0.012 per mile. Business Class averages €0.015 to 0.025 per mile. The baseline valuation most analysts use is €0.012 per mile (approximately 1.2 to 1.3 US cents) based on industry benchmarks from TPG and NerdWallet . This is achievable with a mix of redemption types. Short answer A Flying Blue mile is typically worth €0.01 to 0.02 . Business Class and Promo Rewards deliver the highest value. Economy and non-flight redemptions are usually poor value. Values of €0.04+ per mile are outliers , not the average. 📢 January 2025 Update: Flying Blue increased award prices. Transatlantic Business Class now starts at 60,000 miles (was 50,000). Economy starts at 25,000 miles (was 20,000). Source: TPG . This guide reflects current pricing. On This Page Value by Redemption Type Current Award Pricing (2025) Promo Rewards: 25 to 50% Off How to Earn Miles: Transfer Partners Factors That Affect Value When NOT to Redeem Miles Maximizing Your Mile Value FAQ Sources Value by Redemption Type 🌟 Excellent Value: €0.02+ per mile Long-haul Business Class during peak season when cash prices exceed €3,000 La Première (First Class) redemptions on Air France flagship routes Promo Rewards with 25 to 50% discount on award prices Partner redemptions on airlines with expensive cash fares ✅ Good Value: €0.012 to 0.02 per mile Business Class within Europe at 50,000 to 80,000 miles for €800 to €1,200 equivalent Premium Economy long-haul when cash prices are high Transatlantic saver awards at 60,000 miles when cash fares exceed €1,500 ⚠️ Fair Value: €0.008 to 0.012 per mile Economy long-haul on standard award pricing Economy within Europe on medium-distance routes ❌ Poor Value: Under €0.008 per mile Short-haul Economy when cheap cash fares are available Non-flight redemptions (shopping at 0.002 to 0.003/mile, hotels at 0.004 to 0.005/mile) Miles + Cash options (unless heavily discounted) Peak dynamic pricing at 150,000+ miles for routes normally costing 60,000 Current Award Pricing (2025) Flying Blue uses dynamic pricing , meaning the same route can cost vastly different amounts depending on demand. Here are the minimum \"saver\" rates for transatlantic travel since January 2025. Source: Flying Blue reward tickets . Cabin Class Saver Rate (One-Way) With Promo Reward (25% off) Peak Pricing Range Economy 25,000 miles 18,750 miles 40,000 to 80,000+ Premium Economy 40,000 miles 30,000 miles 60,000 to 120,000+ Business Class 60,000 miles 45,000 miles 100,000 to 200,000+ ⚠️ Dynamic Pricing Alert: The saver rates above are minimums. On popular routes or dates, expect to pay 2 to 3 times these amounts. A New York to Paris Business Class seat can cost 60,000 miles on Tuesday in February or 180,000 miles on Friday in July. Always compare before booking. Redemption Value Examples Route Class Miles (Saver) Cash Value Value per Mile AMS to New York Business 60,000 €1,500 to €3,000 €0.025 to 0.05 AMS to New York Economy 25,000 €350 to €600 €0.014 to 0.024 CDG to Tokyo Business 72,000 €2,500 to €4,500 €0.035 to 0.063 Europe short-haul Business 30,000 to 50,000 €400 to €700 €0.010 to 0.014 Europe short-haul Economy 10,000 to 20,000 €80 to €200 €0.006 to 0.010 AMS to New York (Promo) Business 45,000 €1,500 to €3,000 €0.033 to 0.067 💡 Pro Tip: The best value comes from finding saver-level Business Class during peak travel seasons. If cash fares are €3,000 and you pay 60,000 miles, you are getting €0.05 per mile, four times the baseline value. Note: These are outliers , not typical redemptions. Promo Rewards: 25 to 50% Off Every month, Flying Blue publishes Promo Rewards offering 25 to 50% off award prices on select routes. This is one of the best ways to maximize mile value. See the Flying Blue Promo Rewards page . How Promo Rewards Work Published on the first business day of each month Typically offer 25% discount (occasionally 50%) Valid for booking within that month Travel window usually extends 3 to 6 months Applies only to saver-level awards For December 2025, Promo Rewards include transatlantic Economy from 18,750 miles (25% off the 25,000 saver rate) from cities like New York, Los Angeles, Atlanta, and Boston. 💡 Flying Blue Extra: The Flying Blue Extra subscription (starting at €379/year) includes access to \"Exclusive Promo Rewards\" not available to regular members. Some Business Class deals are only visible to subscribers. How to Earn Miles: Transfer Partners You do not need to fly Air France or KLM to earn Flying Blue miles. Most miles come from credit card transfer partners. This matters for valuation because you can often get transfer bonuses of 20 to 30%. Major Transfer Partners American Express Membership Rewards (1:1 ratio) Chase Ultimate Rewards (1:1 ratio) Citi ThankYou Points (1:1 ratio) Capital One Miles (1:1 ratio) Bilt Rewards (1:1 ratio) Transfer bonuses of 20 to 30% happen several times per year. A 25% bonus means 100,000 credit card points become ",
+      "url": "/guide/flying-blue-miles-value",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Valuation Summary"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Short answer"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Value by Redemption Type"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "🌟 Excellent Value: €0.02+ per mile"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "✅ Good Value: €0.012 to 0.02 per mile"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "⚠️ Fair Value: €0.008 to 0.012 per mile"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "❌ Poor Value: Under €0.008 per mile"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Current Award Pricing (2025)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Redemption Value Examples"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Promo Rewards: 25 to 50% Off"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "How Promo Rewards Work"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How to Earn Miles: Transfer Partners"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Major Transfer Partners"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Factors That Affect Value"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-partner-airlines",
+      "title": "Flying Blue Partner Airlines: Complete List with XP and Miles Earning (2025)",
+      "description": "Complete guide to all Flying Blue partner airlines. See which partners earn XP for status, which earn only Miles, and the earning rates for each airline.",
+      "content": "Some earn both Miles and XP (counting toward status). Others earn Miles only (no status progress). And only Air France and KLM marketed flights earn UXP for Ultimate status ( official UXP rule ). This guide shows exactly what each partner earns. On This Page Understanding Miles, XP, and UXP April 2024 Rule Change SkyTeam Airlines (Miles + XP) SkyTeam Airlines (Miles Only) Other Partners (Miles + XP) Other Partners (Miles Only) Special Cases and Exceptions UXP for Ultimate Status Choosing the Right Partner FAQ Sources Earns Miles + XP (status) Earns Miles only (no status) Earns UXP (Ultimate status) Understanding Miles, XP, and UXP Three Types of Earnings Miles: Currency you spend on award flights. Most partners earn Miles on eligible fares. Learn about what your Miles are worth . XP (Experience Points) : Determines your status level (Silver at 100, Gold at 180, Platinum at 300). Only some partners earn XP. UXP (Ultimate XP) : Required for Ultimate status (900 UXP). Only AF/KL marketed flights earn UXP. ⚠️ Status Chasers Beware: If you are working toward Gold , Platinum , or Ultimate status, flights that earn \"Miles only\" do NOT count toward your goal. Always verify XP earning before booking if status matters to you. April 2024 Rule Change ⚠️ Important: As of April 1, 2024, XP and Elite bonuses are no longer credited on flights marketed and operated by non-SkyTeam airline partners. This affects partners like Japan Airlines, Qantas, El Al, and others. Source: Flying Blue programme rules update . SkyTeam Airlines: Miles + XP These SkyTeam member airlines earn both Miles and XP on qualifying flights. They count toward your status qualification . Some even qualify for XP rollover when you exceed your threshold. Airline Code Max Earning Earns Notes Air France AF Up to 9 Miles per EUR Miles + XP + UXP Program owner. Full earning on all cabins. KLM KL Up to 9 Miles per EUR Miles + XP + UXP Program owner. Full earning on all cabins. Transavia HV Varies by status Miles + XP Part of AF-KLM Group. Fixed Miles by status level. Delta Air Lines DL Up to 300% Miles + XP Different rates for domestic/international. Since June 2019. Aeromexico AM Up to 150% Miles + XP Founding SkyTeam member. Aerolineas Argentinas AR Up to 125% Miles + XP Some flight number ranges excluded. Air Europa UX Up to 100% Miles + XP RENFE train services excluded. China Airlines CI Up to 130% Miles + XP Taiwan's flag carrier. Includes Mandarin Airlines. China Eastern MU Up to 150% Miles + XP Includes Shanghai Airlines (FM). Garuda Indonesia GA Up to 175% Miles + XP Various flight ranges excluded (VIP, ferry, charter). ITA Airways AZ — Partnership Ended Partnership ended November 15, 2025. No longer earns Miles or XP. Source . Kenya Airways KQ Up to 175% Miles + XP Includes Precision Air routes in East Africa. Korean Air KE Up to 175% Miles + XP Some flight number ranges excluded. Middle East Airlines ME Up to 150% Miles + XP Charter and HAJ flights excluded. Saudia SV Up to 250% Miles + XP High earning rates. First Class up to 250%. SAS Scandinavian SK Up to 200% Miles + XP Since Sept 2024 XP earning started September 1, 2024. Source . TAROM RO Up to 150% Miles + XP 2x Domestic Double XP on domestic Romania flights! Vietnam Airlines VN Up to 200% Miles + XP Many specific flight numbers excluded. Xiamen Air MF Up to 150% Miles + XP China's first independent commercial airline. 📅 ITA Airways Update: The partnership between ITA Airways and Flying Blue ended on November 15, 2025. Flights after this date no longer credit Miles or XP to Flying Blue. Source: Flying Blue ITA partner page . SkyTeam Airlines: Miles Only (No XP) These SkyTeam members earn Miles but NOT XP. Flights on these airlines do not count toward status qualification. Airline Code Max Earning Earns Why No XP China Southern CZ Up to 150% Miles Only SkyTeam member but XP not available on own flights. Malaysia Airlines MH Up to 175% Miles Only XP only on MH5000/MH7000 series (operated by AF/KL). 💡 Malaysia Airlines Exception: While MH marketed and operated flights earn Miles only, flights with MH5000 or MH7000 series numbers that are actually operated by Air France or KLM DO earn XP. Always check who operates the flight. This matters especially for XP runs where every point counts. Other Partner Airlines: Miles + XP These non-SkyTeam partners still earn both Miles and XP on qualifying flights (exceptions to the April 2024 rule). Airline Code Max Earning Earns Notes Virgin Atlantic VS Up to 200% Miles + XP UK routes to North America, Caribbean, and beyond. Air Corsica XK Up to 200% Miles + XP Limited Routes XP only on Paris-Orly to Corsica (Ajaccio, Bastia, Calvi, Figari). Aircalin SB Up to 175% Miles + XP New Caledonia's carrier. Wallis/Futuna flights excluded from XP. Other Partner Airlines: Miles Only (No XP) These partner airlines earn Miles but NOT XP (since April 2024). Useful for accumulating award currency but not for status. If you need to top up your Miles balance, you might also c",
+      "url": "/guide/flying-blue-partner-airlines",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Critical Distinction"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Understanding Miles, XP, and UXP"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Three Types of Earnings"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "April 2024 Rule Change"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "SkyTeam Airlines: Miles + XP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "SkyTeam Airlines: Miles Only (No XP)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Other Partner Airlines: Miles + XP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Other Partner Airlines: Miles Only (No XP)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Special Cases and Exceptions"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "airBaltic: The Hybrid Partner"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "TAROM: Double XP Bonus"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "SAS: Recent XP Addition"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "UXP for Ultimate Status"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Choosing the Right Partner"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-platinum-status",
+      "title": "Flying Blue Platinum Status: Benefits, Strategies & XP Rules (2025)",
+      "description": "The complete guide to Flying Blue Platinum. Exclusive benefits, strategies to earn 300 XP, and the exact math behind rollover caps and qualification years.",
+      "content": "When you qualify or requalify, 300 XP is deducted from your balance. Platinum unlocks free seat selection at booking, the Platinum Service Line, and access to earning UXP toward Ultimate status . Short answer 300 XP required within your qualification year (deducted upon qualification) Key upgrade from Gold : free seat selection at booking, +2 bags on AF/KLM, Platinum Service Line Maximum rollover : 300 XP — anything above is lost Key takeaways 300 XP target — Deducted when you qualify or requalify 300 XP rollover cap — Surplus above this is lost ( official source ) Qualification year resets on level-up (1st of next month) UXP tracking starts at Platinum (only AF/KL marketed flights) Soft landing — Maximum one level drop per year On this page Exclusive Platinum privileges Platinum vs Gold comparison How the qualification year works Strategies to reach 300 XP Rollover math and caps Ultimate status: the next level Soft landings FAQ Sources Exclusive Platinum Privileges Why aim for 300 XP? Beyond the status symbol, Platinum unlocks tangible financial and comfort benefits that Gold does not offer. See the official KLM membership levels page for the full list. Platinum Service Line (24/7): Access to dedicated support agents, including during disruptions. See official tier benefits . Free Preferred Seats: Select Economy Comfort, Exit Row, or Front Section seats for free at the time of booking. ( Gold members get free seat selection 72h before departure.) Enhanced Baggage Allowance: On SkyTeam partner flights: +1 extra bag. On Air France & KLM flights: +2 extra bags (a significant AF/KL-specific benefit). Lounge Access: Access to SkyTeam lounges worldwide for you + 1 guest (must be traveling on the same flight operated by a SkyTeam carrier). SkyPriority: Priority at every step: check-in, baggage drop, security (where available), boarding, and baggage delivery. Platinum for Life: After 10 consecutive years of Platinum, you keep the status permanently, regardless of your XP. See tier benefits for details. 💡 Remco's Tip: The \"Free Preferred Seats\" benefit is often undervalued. On a long-haul return trip to Asia or the US, selecting an Exit Row or Economy Comfort seat can normally cost €150-200. As a Platinum member, you save this immediately upon booking. 💡 Edge Cases: Specific benefits like lounge access depend on the operating carrier (SkyTeam members). Baggage rules vary by route and fare class. Always check your booking confirmation for what's included on your specific itinerary. Platinum vs Gold: The Comparison Based on official KLM program information : Benefit Gold Platinum Difference XP Cost 180 XP 300 XP +67% Miles (AF/KLM) 7 per euro 8 per euro +14% Seat Selection Free 72h before Free anytime Better availability Baggage (AF/KLM) +1 bag +2 bags Double allowance Service Line Premium Service Line ✅ Platinum Service Line Dedicated tier Ultimate Path No ✅ Earn UXP Unlocks path How the Qualification Year Works Your qualification year is personal to you. Understanding its structure is essential for status planning. See qualification year guide for full details, or the official status page . Qualification Year Structure Format: Always runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31). Determined by: Your last level-up to your current XP status. Requalification: If you maintain your status (not level up), your qualification year dates stay exactly the same. Level-up: If you reach a higher status mid-year, your qualification year resets to the 1st of the next month. 1. Level Up: Going from Gold to Platinum As soon as your XP balance hits 300 XP, you are upgraded immediately. 300 XP is deducted (\"paid\") from your balance. Your qualification year resets. Your new year starts on the 1st of the following month. Example: You hit 300 XP on May 3rd. You become Platinum. Your new qualification year runs June 1st to May 31st. 2. Maintain: Staying Platinum If you are already Platinum, your qualification year remains fixed. At the end of your year, the system checks if you have at least 300 XP. If yes: 300 XP is deducted to renew Platinum for another year. Remaining XP (up to 300) rolls over . If no: You experience a \"soft landing\" to Gold. Strategies to Reach 300 XP Reaching 300 XP requires a significant amount of flying. Since there is no \"status bonus\" for earning XP (you earn the same XP as an Explorer for the same flight), you rely on volume or cabin class. Strategy 1: Segment Maximization The Strategy: Fly routes with a connection (e.g., AMS-CDG-NCE) instead of direct. Each leg earns XP. This is a classic mileage run technique . Direct AMS-NCE (Business): ~30 XP return. Connected AMS-CDG-NCE (Business): ~60 XP return. Result: 5 of these connected trips per year ≈ 300 XP. You are Platinum. Note: Always compare total time, cost, and disruption risk. Connections can backfire during IRROPS. Strategy 2: The Long-Haul Business Strategy The Strategy: Focus your bud",
+      "url": "/guide/flying-blue-platinum-status",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "💎 Platinum Status Summary"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Short answer"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Key takeaways"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "On this page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Exclusive Platinum Privileges"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Platinum vs Gold: The Comparison"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How the Qualification Year Works"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Qualification Year Structure"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "1. Level Up: Going from Gold to Platinum"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "2. Maintain: Staying Platinum"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Strategies to Reach 300 XP"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy 1: Segment Maximization"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy 2: The Long-Haul Business Strategy"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Platinum Math: Rollover and Caps"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Ultimate Status: The Next Level"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-status-levels",
+      "title": "Flying Blue Status Levels: Silver, Gold, Platinum, Ultimate Compared (2025)",
+      "description": "Complete comparison of Flying Blue status levels. Requirements, benefits, and value analysis for Silver (100 XP), Gold (180 XP), Platinum (300 XP), and Ultimate status.",
+      "content": "See the official tier overview on KLM for the current thresholds and benefits: Flying Blue membership levels . Each level unlocks progressively better benefits. Gold is widely considered the best value due to lounge access at a relatively achievable threshold. Ultimate offers the highest priority and exclusive perks for top-tier travelers. Short answer Silver requires 100 XP, Gold requires 180 XP, Platinum requires 300 XP within your qualification year. Gold is the practical sweet spot for many members because lounge access starts there. Ultimate is an overlay on Platinum and uses a separate counter called UXP . On this page How the XP system works Status levels at a glance Complete benefits comparison table Which status should you target? Status match and challenge programs Maintaining your status FAQ Sources How the XP System Works You start as an Explorer and must earn 100 XP to reach Silver status. The system deducts this specific amount from your counter immediately upon qualification. You keep only the surplus XP above that threshold to start your new cycle. You are now at the start of your Silver level. You need to earn a full 180 XP to reach Gold status. This is a fresh requirement and not the difference between the Silver and Gold levels. The system deducts this 180 XP once you upgrade to Gold. You then need to earn 300 XP to reach Platinum status. Status Levels at a Glance 🥈 Silver Status 100 XP required Deducted upon qualification Note: Upon reaching 100 XP, these points are deducted. You start your Silver year with your remaining surplus only. The entry-level elite status. Achievable with 4-6 round-trip flights per year depending on distance and cabin class. Key benefits: SkyPriority check-in and boarding +1 extra checked bag (23kg) Earn 6 Miles per €1 spent (AF/KLM) 25% discount on seat options Free seat selection during check-in Status extension during parental leave (maternity, paternity, adoption). Official announcement: Air France-KLM Flying Blue Family . Best for: Moderate travelers (3-5 trips/year) who value priority services and extra baggage. 🥇 Gold Status: Best Value 180 XP required New balance needed (Not 100 + 80) Crucial: You need to earn a full 180 XP while you are Silver. It is not 80 XP extra. Your previous XP was used to 'buy' Silver. The most popular elite tier and widely considered the sweet spot. Unlocks lounge access . This is the single most valuable frequent flyer benefit for many travelers. Key benefits: SkyTeam lounge access worldwide (+1 guest). See official tier benefits: Flying Blue tier benefits . All Silver benefits, plus: Priority baggage handling Guaranteed Economy seat (book 48h before) Earn 7 Miles per €1 spent (AF/KLM) 50% discount on seat options Free seat selection (including Economy Comfort with KLM) 72 hours before departure Best for: Frequent travelers (6-10 trips/year) who want lounge access and solid benefits without excessive flying. 💎 Platinum Status 300 XP required New balance needed (Not 180 + 120) Note: You must earn 300 XP within your Gold year. Once reached, 300 XP is deducted to upgrade you to Platinum. Premium elite status with additional perks. This is where UXP becomes relevant for Ultimate qualification. Key benefits: All Gold benefits, plus: Start earning UXP (Ultimate XP) Earn 8 Miles per €1 spent (AF/KLM) Free seat selection at booking (all standard & preferred seats) Platinum Service Line 24/7 Platinum for Life eligibility (after 10 consecutive years) Best for: Heavy travelers (10-15+ trips/year) who value upgrades and comprehensive flexibility. 👑 Ultimate Status 900 UXP Overlay on Platinum Status Distinct System: Ultimate is not a standard XP level. It is an exclusive status on top of Platinum. It requires 900 UXP (Ultimate XP) earned solely on Air France and KLM flights within one qualification year. See official Flying Blue Ultimate info . Partner flights still earn XP but typically not UXP. See partner airlines guide . The highest Flying Blue status. Requires flying primarily on Air France and KLM metal. Ultimate helps protect your Platinum for Life streak via soft landing. Key benefits: All Platinum benefits, plus: Soft landing to Platinum (protects Platinum for Life streak) Dedicated Ultimate phone line Premium lounge access (La Première, etc.) Earn 9 Miles per €1 spent (AF/KLM) Highest upgrade priority 4 upgrade vouchers per year Platinum card for 1 companion Best for: AF/KLM loyalists who fly primarily on Air France or KLM and want lifetime status security. Complete Benefits Comparison Table Benefit Silver Gold Platinum Ultimate XP Required 100 180 (New) 300 (New) 900 UXP Miles (AF/KLM) (official) 6 per € 7 per € 8 per € 9 per € Miles (Partners) +50% Bonus +75% Bonus +100% Bonus +100% Bonus Lounge Access ❌ ✅ Self + guest ✅ Self + guest ✅ Premium Extra Baggage +1 bag +1 bag +2 bags +2 bags Seat Discount 25% 50% Free Free Free Seat Select Check-in 72h before Anytime Anytime Upgrades Paid Paid ✅ Eligible ✅ Priority PFL Eligibilit",
+      "url": "/guide/flying-blue-status-levels",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Quick Reference"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Short answer"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "On this page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How the XP System Works"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Status Levels at a Glance"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "🥈 Silver Status"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "🥇 Gold Status: Best Value"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "💎 Platinum Status"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "👑 Ultimate Status"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Complete Benefits Comparison Table"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Which Status Should You Target?"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Target Silver if:"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Target Gold if:"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Target Platinum if:"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Target Ultimate if:"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-subscription",
+      "title": "Flying Blue Subscriptions: Subscribe to Miles vs Flying Blue Extra (2025)",
+      "description": "Flying Blue has two subscription products: Subscribe to Miles (€0.0125/mile monthly) and Flying Blue Extra (€379-699/year for XP bonus and exclusive promos). Honest analysis of who should subscribe.",
+      "content": "Prices and benefits can change. Check official pages before subscribing: Flying Blue Extra , Subscribe to Miles , Promo Rewards . R By Remco Flying Blue Platinum · 20 years in the program Short answer: Subscribe to Miles is for buying miles cheaply (no XP). Flying Blue Extra is for perks and status acceleration (no miles included). Both have narrow use cases. Most travelers should skip Flying Blue Extra entirely. Two Different Products, Two Different Purposes Flying Blue offers two subscription products that serve completely different needs. Subscribe to Miles lets you buy miles monthly at a discount. Flying Blue Extra (launched November 2025) gives perks like bonus XP and exclusive Promo Rewards . This guide provides an honest, critical analysis of both. On This Page Quick Comparison Key Takeaways Subscribe to Miles: Monthly Miles Purchase Flying Blue Extra: Premium Annual Subscription Who Should Subscribe? Realistic Scenarios The Honest Verdict FAQ Quick Comparison Feature Subscribe to Miles Flying Blue Extra Purpose Buy miles at discount Perks and XP acceleration Pricing $39.80 to $227.80/month €379 or €699/year Miles included 2,000 to 17,000/month None XP included None 20% bonus (Extended only) Commitment Cancel anytime 12 months Best for Topping off for redemptions Status chasers without elite perks Prices verified at Flying Blue Extra and Subscribe to Miles . Last verified: December 2025. Key Takeaways Subscribe to Miles: Miles kopen, geen XP . Flying Blue Extra: Perks en status-acceleratie, geen miles bundel . Extra waarde: Sterk afhankelijk van jouw routes en of je de beperkingen echt kunt benutten. Prijzen: Tijdgevoelig. Check altijd de officiële pagina's voordat je betaalt. Subscribe to Miles: Monthly Miles Purchase Subscribe to Miles is a monthly subscription that deposits miles into your account at a fixed price. It launched in late 2024 and offers the best cost per mile compared to standard purchases. ✅ Best for Topping Off Subscribe to Miles Tiers Package Miles/Month Price (USD) Cost Per Mile Starter 2,000 $39.80 1.99¢ (€0.0185) Smart 5,000 $89.80 1.80¢ (€0.0167) Advanced 10,000 $159.80 1.60¢ (€0.0149) Complete 17,000 $227.80 1.34¢ (€0.0125) Prices in USD. EUR equivalents approximate at current exchange rates. Subscribe to Miles: Key Details Cancel anytime (withdrawal right within 14 working days, see official terms ) Miles deposited within 72 hours of payment Miles never expire while subscription is active (see miles expiration rules ) Cannot pause, upgrade, or downgrade mid-month Does NOT include any XP toward status Processed through Points.com (does not code as travel) 💡 Edge Cases: FX fluctuations can affect your effective cost per mile. Purchases through Points.com may not code as travel for credit card rewards. Devaluation risk: miles can lose value if Flying Blue changes award pricing. ⚠️ Common Misconception: Subscribe to Miles does NOT give you any XP. You cannot earn status through this subscription. It only provides award miles for redemptions. If you want XP, you need to fly or purchase Flying Blue Extra Extended. When Subscribe to Miles Makes Sense ✅ Good Scenario: Topping Off for a Redemption You have 45,000 miles and want to book a Business Class award requiring 60,000 miles. Subscribe to Complete tier for one month: 17,000 miles for $227.80 (€212) Book your award, then cancel the subscription. Your cost per mile : €0.0125. If the redemption value is €0.025/mile , you doubled your money. ❌ Bad Scenario: Speculative Accumulation Subscribing for 12 months \"just in case\" means spending $2,733.60 (€2,540) for 204,000 miles. If you do not have a specific redemption planned, you are locking up capital in a currency that can devalue overnight. Transfer partners often offer better value, especially during bonus periods. Subscribe to Miles vs Other Acquisition Methods Method Cost Per Mile Verdict Transfer (25% bonus) ~€0.008 Best if you have points Transfer (standard) ~€0.01 Usually better than Subscribe Subscribe to Miles (Complete) €0.0125 Good for topping off Promo purchase (80% bonus) €0.016 Slightly worse than Subscribe Standard purchase €0.028 Almost never worth it For more on these comparisons, see our Should You Buy Flying Blue Miles? guide. Flying Blue Extra: Premium Annual Subscription Flying Blue Extra launched in November 2025 as a premium subscription offering perks like exclusive Promo Rewards and bonus XP. It comes in two tiers: Essential (€379/year) and Extended (€699/year). ⚠️ Industry Reception: Flying Blue Extra has received mixed reviews in the frequent flyer community. One example is LoyaltyLobby's launch coverage (non-official): analysis and critique . ⚠️ Very Limited Value Flying Blue Extra Essential €379/year (~€32/month) Exclusive Promo Rewards : Access to additional discounted routes each month 10% discount on Cash + Miles : When paying with miles + cash combination Extended miles validity: Miles do not expire during subscription 10% discount on reward upgrade",
+      "url": "/guide/flying-blue-subscription",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Two Different Products, Two Different Purposes"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Quick Comparison"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Key Takeaways"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Subscribe to Miles: Monthly Miles Purchase"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Subscribe to Miles Tiers"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Subscribe to Miles: Key Details"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "When Subscribe to Miles Makes Sense"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Subscribe to Miles vs Other Acquisition Methods"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Flying Blue Extra: Premium Annual Subscription"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Flying Blue Extra Essential"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Flying Blue Extra Extended"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Flying Blue Extra: Critical Analysis"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "The Math on Flying Blue Extra Extended (€699)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Who Should Subscribe? Realistic Scenarios"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-ultimate-status",
+      "title": "Flying Blue Ultimate Status: The Complete Technical Guide (2025)",
+      "description": "Deep dive into Flying Blue Ultimate status. Learn the exact math behind UXP payment, the qualification caps, dynamic qualification years, and the",
+      "content": "Home / Guides / Ultimate Status Highest Tier Flying Blue Ultimate: The Technical Guide Last updated: December 2025 · 14 min read · Based on official Flying Blue program rules · See sources Official sources used for verification: Flying Blue: Ultimate info · KLM: Membership levels · Flying Blue: Status & XP R By Remco Flying Blue Platinum · 20 years in the program Short answer: To reach Flying Blue Ultimate , you must hold Platinum status and earn 900 UXP within one qualification year . UXP is earned only on AF or KL marketed flights and is calculated separately from XP. On This Page 1. XP vs UXP: The Two Point Systems 2. The UXP \"Payment\" Mechanic 3. The Qualification Year 4. UXP Caps and Limits 5. Status Protection: The Real Math 6. Strategies to Reach 900 UXP 7. Ultimate Benefits vs Platinum What is Ultimate? Flying Blue Ultimate is not a separate XP level like Gold or Silver. It is a prestigious status layer added on top of Platinum . While XP determines your base status, UXP (Ultimate XP) determines if you unlock this top tier. The Golden Rule: To be Ultimate, you must be Platinum AND have earned 900 UXP within your current qualification year ( official KLM reference ). When you qualify, 900 UXP is deducted from your balance. 1. The Two Point Systems: XP vs UXP To understand Ultimate, you must understand the two parallel counters running in your account. Feature Standard XP UXP Purpose Determines Explorer to Platinum Determines Ultimate eligibility Sources All SkyTeam partners , Transavia, AMEX Only AF/KL marketed flights + SAF on AF/KL ( official ) Relationship Every UXP is also XP Not every XP is UXP Payment 100/180/300 XP deducted for status 900 UXP deducted for Ultimate Rollover Cap Max 300 XP. See Rollover Rules . Max 900 UXP ⚠️ Marketing Carrier Matters: UXP is earned only on flights marketed by Air France (AF) or KLM (KL) ( official Flying Blue Ultimate rules ). A flight operated by KLM but booked with a Delta flight number (DL9600) earns zero UXP . Always check the flight code on your ticket. 💡 Edge Cases: Codeshares can be confusing. The rule is simple: look at the flight number on your ticket. If it starts with AF or KL, you earn UXP. Transavia flights never earn UXP, even when booked via KLM. Partner bookings via the AF/KL website still depend on the flight number, not the booking channel. 2. The UXP \"Payment\" Mechanic Just like XP, UXP follows a \"payment\" system when you achieve or maintain Ultimate status. How UXP Payment Works Step 1: Check if you are Platinum AND have at least 900 UXP. Step 2: When you qualify for Ultimate, 900 UXP is deducted from your balance ( official KLM reference ). Step 3: Calculate your UXP rollover from the remaining balance. Step 4: Cap the rollover at 900 UXP maximum. UXP Rollover = min(UXP Balance - 900, 900) 💡 Double Payment: As an Ultimate member, you pay twice at year end: 300 XP for Platinum AND 900 UXP for Ultimate ( Air France official ). These are independent calculations. You can roll over up to 300 XP AND up to 900 UXP simultaneously. 3. The Qualification Year Your UXP counter is tied to your personal qualification year. Understanding this is crucial for planning. Key Rules Structure: Runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31). Official reference: Flying Blue Status & XP . Determined by: Your last level-up to your current XP status. UXP follows XP: Your UXP counter is tied to the same qualification year. UXP always counts: Even before you reach Platinum, your UXP accumulates. ⚠️ Level-Up Resets Your UXP Counter: If you level up from Gold to Platinum mid-year, your qualification year resets to the 1st of the next month. Your UXP counter also resets (with rollover up to 900). You then have 12 months to accumulate 900 UXP for Ultimate. 💡 Ultimate Does NOT Reset Your Year: Unlike Silver, Gold, and Platinum, reaching Ultimate does not trigger a new qualification year. Ultimate is a status layer on top of Platinum, not a separate XP level. Your qualification year remains unchanged when you achieve Ultimate. 4. UXP Caps and Limits The Practical UXP Planning Limit For planning purposes, Ultimate follows a simple structure: 900 UXP is required to qualify, and up to 900 additional UXP can strengthen your rollover into the next qualification year. In practice: First 900 UXP: Required to qualify for Ultimate (deducted upon qualification). Next 900 UXP: Can roll over to the next year. Above this: Additional UXP provides no extra benefit for Ultimate planning (though it still counts as regular XP for Platinum maintenance). Rollover rule: \"you will keep the rest (900 UXP maximum)\". Source: KLM membership levels . 📊 Scenario: Maximum Rollover Strategy Situation: You are Ultimate and earn 1,800 UXP this year. Calculation: UXP Balance: 1,800 UXP Ultimate cost: 900 UXP deducted Remainder: 1,800 - 900 = 900 UXP Rollover cap: 900 UXP (exactly at cap) Result: You start next year with 900 UXP . You a",
+      "url": "/guide/flying-blue-ultimate-status",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "What is Ultimate?"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "1. The Two Point Systems: XP vs UXP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "2. The UXP \"Payment\" Mechanic"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How UXP Payment Works"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "3. The Qualification Year"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Key Rules"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "4. UXP Caps and Limits"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "The Practical UXP Planning Limit"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "5. Status Protection: The Real Math"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Why Ultimate Guarantees 2+ Years of Platinum"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "⚠️ For Platinum Members: The 600 XP Alternative"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "6. Strategies to Reach 900 UXP"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy A: The AF/KL Purist"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Strategy B: The Maximum Rollover Target"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-uxp-explained",
+      "title": "What is Flying Blue UXP? Ultimate XP Explained (2025)",
+      "description": "UXP (Ultimate XP) depends on the marketing carrier (AF/KL code). You need 900 UXP to reach Ultimate status. Master the dynamic qualification year, rollover math, and soft landing rules.",
+      "content": "You need 900 UXP within one qualification year to reach Flying Blue Ultimate. Your UXP follows the same qualification year as your XP. On This Page XP vs UXP: The Two Point Systems UXP Always Counts (Even Without Platinum) Which Flights Earn UXP? The UXP \"Payment\" Mechanic Qualification Year and UXP UXP Caps and Limits Ultimate Status Requirements Strategies for Earning UXP Tracking Your UXP FAQ Definition: Marketing Carrier is Key UXP (Ultimate XP) is the metric used exclusively to qualify for Flying Blue Ultimate status . The golden rule: UXP is earned on flights marketed by Air France (AF) or KLM (KL) ( official Flying Blue Ultimate info ). This means the two-letter code on your ticket must be AF or KL, regardless of which airline actually flies the plane (the operating carrier). Partner flights marketed by Delta, Kenya Airways, or others earn regular XP but zero UXP. The Two Point Systems: XP vs UXP Flying Blue operates two parallel point systems. Understanding the difference is critical for anyone pursuing Ultimate status. Aspect Regular XP UXP (Ultimate XP) Purpose Determines Explorer to Platinum Required for Ultimate status Sources All SkyTeam partners , Transavia, AMEX cards Only AF/KL marketed flights + SAF on AF/KL ( official ) Relationship Includes all UXP Every UXP is also XP Threshold 100 / 180 / 300 for status levels 900 UXP for Ultimate ( official KLM ) Payment Deducted at status transition 900 UXP deducted for Ultimate Rollover Cap 300 XP maximum 900 UXP maximum ⚠️ The \"Marketing Carrier\" Trap: Do not look at the aircraft livery; look at your ticket. A flight operated by KLM but booked with a Delta flight number (e.g., DL9600) earns zero UXP . Conversely, a flight operated by Delta but booked with a KLM flight number (e.g., KL6000) does earn UXP . The flight code on your ticket is the deciding factor. UXP Always Counts (Even Without Platinum) A common misconception is that UXP only starts counting once you reach Platinum. This is wrong. 💡 Key Insight: Your UXP counter accumulates from the moment you join Flying Blue, regardless of your status level. Every AF/KL marketed flight adds to your UXP balance. However, UXP only becomes relevant for Ultimate qualification once you are Platinum. This has an important implication: if you level up to Platinum mid-year, your UXP counter resets (with rollover ) just like your XP counter. Plan accordingly. Which Flights Earn UXP? ✅ Earns UXP AF coded flights: E.g., AF1234 (even if operated by Delta, Virgin Atlantic, or partners) KL coded flights: E.g., KL5678 (even if operated by Delta, Kenya Airways, or partners) SAF purchases: Sustainable Aviation Fuel contributions on AF/KL tickets ❌ Does NOT Earn UXP (Regular XP Only) Delta coded flights (DL...) Korean Air, Vietnam Airlines, China Airlines, Garuda coded flights Transavia flights (even if booked via KLM) Flying Blue AMEX card annual XP bonuses Promotional XP (unless explicitly stated otherwise) 💡 Edge Cases: Codeshare flights can be confusing. The rule is simple: look at the flight number on your ticket. If it starts with AF or KL, you earn UXP. If it starts with anything else (DL, KE, VN, etc.), you earn XP only. When booking partner-operated flights, always select the AF/KL marketed option if available. 📊 Scenario: The Codeshare Difference You fly New York to Amsterdam on a KLM aircraft (blue livery). Ticket KL642: You earn XP + UXP ✅ Ticket DL9642: You earn regular XP only ❌ Insider Tip: Always book the \"Marketed by KLM/Air France\" option on the website to ensure UXP earnings. The UXP \"Payment\" Mechanic Just like XP, UXP follows a \"payment\" system. When you achieve or maintain Ultimate status, points are deducted from your balance. How UXP Payment Works Step 1: Check if you have at least 900 UXP AND are Platinum. Step 2: When you qualify for Ultimate, 900 UXP is deducted from your balance. Step 3: Calculate your UXP rollover from the remaining balance. Step 4: Cap the rollover at 900 UXP maximum. This is the same \"payment\" logic that applies to XP for Silver (100), Gold (180), and Platinum (300). UXP Rollover = min(UXP Balance - 900, 900) 💡 Double Payment for Ultimate: As an Ultimate member, you pay twice at the end of your qualification year: 300 XP for Platinum maintenance AND 900 UXP for Ultimate. These are calculated independently. You can roll over up to 300 XP AND up to 900 UXP simultaneously. The Qualification Year and UXP UXP is tied to your personal qualification year. Understanding this connection is essential for planning your Ultimate qualification. Qualification Year Structure Format: Always runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31). Official reference: Flying Blue Status & XP . Determined by: Your last level-up to your current XP status. UXP follows XP: Your UXP counter is tied to the same qualification year as your XP counter. When Does Your UXP Counter Reset? Your UXP counter resets whenever a new qualificatio",
+      "url": "/guide/flying-blue-uxp-explained",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Definition: Marketing Carrier is Key"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Two Point Systems: XP vs UXP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "UXP Always Counts (Even Without Platinum)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Which Flights Earn UXP?"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "✅ Earns UXP"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "❌ Does NOT Earn UXP (Regular XP Only)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The UXP \"Payment\" Mechanic"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How UXP Payment Works"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Qualification Year and UXP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Qualification Year Structure"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "When Does Your UXP Counter Reset?"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "UXP Caps and Limits"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "1. Practical Planning: 900 to Qualify + Up to 900 Surplus"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "2. Rollover Cap: 900 UXP"
+        }
+      ]
+    },
+    {
+      "id": "guide-flying-blue-xp-rollover",
+      "title": "Flying Blue XP Rollover: How It Works and Maximum Limits (2025)",
+      "description": "Flying Blue XP rollover allows up to 300 XP to carry over to your next qualification year. Learn exactly when rollover happens, how it",
+      "content": "When you earn more XP than needed to maintain your status, the surplus rolls over. This is capped at 300 XP maximum . For Ultimate members , up to 900 UXP can also roll over separately. Official reference: KLM membership levels (\"you'll keep the rest\" after XP deduction). The Core Mechanic: \"Paying\" for Status Before you understand rollover, you must understand how Flying Blue handles status transitions. When your qualification year ends (or you level up), the system does not just \"keep\" your status. It deducts points from your balance as \"payment\" for your new or renewed status. How Status Payment Works At every status transition, the system performs a calculation: Step 1: Check if you have enough XP to qualify for your target status. Step 2: Deduct the required XP from your balance (100 for Silver, 180 for Gold, 300 for Platinum). Step 3: Calculate your rollover from the remaining XP (capped at 300 XP). Step 4: Start your new qualification year with the rollover amount. This \"payment\" mechanic is why you do not simply reach 180 XP total to go from Explorer to Gold. You must first \"pay\" 100 XP for Silver, then earn 180 XP fresh for Gold. Your counter resets at each tier upgrade. For more on how XP works: What is Flying Blue XP? How UXP Payment Works (Ultimate) UXP follows the same \"payment\" logic as XP, but for Ultimate status : Step 1: Check if you have at least 900 UXP AND are Platinum. Step 2: When you qualify for Ultimate, 900 UXP is deducted from your UXP balance. Step 3: Calculate your UXP rollover from the remaining balance (capped at 900 UXP). Step 4: Start your new qualification year with the UXP rollover amount. Important: Ultimate is not an XP status level. It is a layer on top of Platinum. In practice, reaching Ultimate typically does not reset your qualification year. Official reference: Flying Blue Ultimate . The Rollover Formulas XP Rollover = min(XP Balance - Status Cost, 300) UXP Rollover = min(UXP Balance - 900, 900) In plain terms: your rollover equals your total points minus what you \"paid\" for status, capped at the maximum allowed. Any points above the cap are lost. Official rule: \"surplus XP (up to 300 XP) will be yours to keep\" — KLM membership levels . Last verified: December 2025. Rollover Caps by Status Level The rollover cap applies the same way at all status levels : Status XP Cost Max XP Rollover UXP Cost Max UXP Rollover Silver 100 XP 300 XP N/A N/A Gold 180 XP 300 XP N/A N/A Platinum 300 XP 300 XP N/A N/A Ultimate 300 XP 300 XP 900 UXP 900 UXP 💡 Key Insight: Ultimate members pay twice: 300 XP for Platinum maintenance AND 900 UXP for Ultimate. These are independent calculations. You can roll over up to 300 XP AND up to 900 UXP simultaneously. ⚠️ The 300 XP Cap is Absolute: Even if you are Ultimate and earn 800 XP in a year, you can only roll over 300 XP (after paying 300 for Platinum maintenance). The remaining 200 XP is \"wasted\" for rollover purposes. Plan your flying accordingly. Understanding Your Qualification Year Your qualification year is personal to you. It does not follow the calendar year. Understanding when it starts and ends is essential for rollover planning. How Your Qualification Year Works Structure: Always runs from the first day of a month to the last day of the month before, one year later (e.g., November 1 to October 31). Official reference: Flying Blue Status & XP . Determined by: Your last level up to your current XP status. Two triggers for a new year: Requalification (year stays same) or Level up (year resets). Trigger 1: Requalification (Same Level) Your qualification year ends naturally. You have met the XP threshold for your current status. The system deducts the cost, calculates rollover, and your qualification year dates stay exactly the same. 📊 Requalification Example Situation: Your Platinum year runs November 1 to October 31. You earn 400 XP by October 31. What happens: You requalify as Platinum (400 >= 300) 300 XP is deducted 100 XP rolls over Your new year is again November 1 to October 31 Trigger 2: Level Up (Status Upgrade) You earn enough XP mid cycle to reach the next status level. Your cycle immediately resets to the first day of the following month. The Level Up Reset Mechanic Instant Upgrade: The moment you cross a threshold (e.g., 180 XP for Gold), you are upgraded immediately. Cycle Reset: Your qualification year resets to the 1st of the next month. XP Deduction: The cost for your new status is deducted from your balance. Rollover Calculation: Any remaining XP becomes your starting balance. 📊 Level Up Example Situation: You are Gold. Your year runs until October 31. On May 3, you reach 300 XP. What happens: You immediately become Platinum 300 XP is deducted (300 - 300 = 0 XP) Your new Platinum year runs June 1 to May 31 You start with 0 XP ⚠️ Ultimate Does NOT Reset Your Year: Unlike Silver, Gold, and Platinum, reaching Ultimate does not trigger a new qualification year. Ultimate is a status layer on top of Platinum, not a separate",
+      "url": "/guide/flying-blue-xp-rollover",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Definition"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Core Mechanic: \"Paying\" for Status"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How Status Payment Works"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How UXP Payment Works (Ultimate)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Rollover Formulas"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Rollover Caps by Status Level"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Understanding Your Qualification Year"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How Your Qualification Year Works"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Trigger 1: Requalification (Same Level)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Trigger 2: Level Up (Status Upgrade)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Level Up Reset Mechanic"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "XP Rollover Calculation Examples"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Scenario 1: Normal Requalification (Under Cap)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Scenario 2: Hitting the 300 XP Cap"
+        }
+      ]
+    },
+    {
+      "id": "guide-how-to-import-flying-blue-pdf",
+      "title": "How to Import Your Flying Blue PDF: Step-by-Step Guide",
+      "description": "Download your Flying Blue activity statement PDF and import it into SkyStatus Pro. Works in 7 languages, processed 100% in your browser for privacy. Free and instant.",
+      "content": "Your PDF is processed 100% in your browser . Nothing is uploaded to any server. Works in 7 languages. Takes less than 1 minute. Step-by-Step Instructions Log in to Flying Blue Go to flyingblue.com and log in with your Flying Blue credentials. Navigate to Activity Overview Once logged in, go to: My Account → Activity Overview Or look for \"My Miles\" or \"My XP\" section in your dashboard. Download the PDF Look for the \"More\" button (three dots) or menu, then select \"Download PDF\" or \"Activity Statement\" . The PDF will download to your computer.  Pro Go to skystatus.pro and either: Click the import button, or Drag and drop your PDF directly onto the page Review Your Data SkyStatus will parse your PDF and show all your flights, miles earned, XP earned, and bonus activities. Review the imported data. 🔒 Privacy First Your PDF is processed entirely in your browser using JavaScript. The file is never uploaded to any server. We cannot see your flight data, miles balance, or any personal information. Supported Languages SkyStatus Pro automatically detects and parses Flying Blue PDFs in: 🇬🇧 English 🇳🇱 Dutch (Nederlands) 🇫🇷 French (Français) 🇩🇪 German (Deutsch) 🇪🇸 Spanish (Español) 🇮🇹 Italian (Italiano) 🇵🇹 Portuguese (Português) What Gets Imported SkyStatus extracts from your PDF: ✅ Flight dates and routes ✅ Miles earned per flight ✅ XP earned per flight ✅ Cabin class ✅ Operating airline ✅ Bonus XP (first flight, promos, etc.) ✅ Miles from partners (credit cards, hotels) Troubleshooting PDF won't import Make sure it's the official Flying Blue activity statement Try downloading a fresh copy from Flying Blue Check if the PDF opens correctly on your computer Missing flights Very recent flights may not appear yet (allow 24-72 hours) Partner flights can take 2-4 weeks to credit Download a new PDF after flights have posted 💡 Pro Tip: Download a new PDF periodically (monthly) to keep your data current. Each import adds new flights while preserving existing data. Ready to Import? Get your Flying Blue PDF and start tracking your XP and miles in under 1 minute. Import Your PDF Free → Related Guides What is Flying Blue XP? Flying Blue Status Levels Explained How XP Rollover Works Flying Blue Partner Airlines Sources Last verified: 2025-12-17. Flying Blue Official Website — Account login and PDF download KLM: Earning Miles — Activity statement information SkyStatus Privacy Policy — Details on local-only PDF processing Import process may vary based on PDF format changes by Flying Blue. SkyStatus is not affiliated with Air France-KLM or Flying Blue.",
+      "url": "/guide/how-to-import-flying-blue-pdf",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Quick Summary"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Step-by-Step Instructions"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Log in to Flying Blue"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Navigate to Activity Overview"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Download the PDF"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Open SkyStatus Pro"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Review Your Data"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Supported Languages"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "What Gets Imported"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Troubleshooting"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "PDF won't import"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Missing flights"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Ready to Import?"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Related Guides"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Sources"
+        }
+      ]
+    },
+    {
+      "id": "guide-index",
+      "title": "Flying Blue Guides: Complete Status, XP, and Miles Resource Hub",
+      "description": "Complete guide hub for Flying Blue. Learn about XP, status levels, mileage runs, miles value, and how to reach Gold, Platinum, or Ultimate status efficiently.",
+      "content": "⚡ Quick Reference: Status Thresholds Silver 100 XP Deducted upon qualification Gold 180 XP Deducted upon qualification Platinum 300 XP Deducted upon qualification Ultimate 300 XP + 900 UXP Both deducted (on top of Platinum) 💡 The Core Mechanic: Flying Blue uses a \"payment\" system. When you reach a status threshold, the required XP is deducted from your balance. Surplus XP (up to 300) rolls over to your next qualification year. This is why reaching Gold from Explorer requires 280 XP total (100 for Silver + 180 for Gold), not just 180 XP. 📚 Understanding XP and Status Start Here What is Flying Blue XP? How XP is earned based on cabin class and distance. Understand the \"payment\" system and why you cannot skip status levels. Status Levels Compared Silver, Gold, Platinum, Ultimate: XP thresholds, benefits at each tier, and which level offers the best value for your travel pattern. Important How XP Rollover Works Up to 300 XP can roll over after paying for status. Learn the formulas, caps, and strategies to maximize rollover value. What is UXP (Ultimate XP)? UXP is earned only on AF/KL marketed flights. Required for Ultimate status. 900 UXP is deducted when you qualify. 🎯 Reaching Status Goals Sweet Spot How to Reach Gold Status Gold (180 XP) unlocks lounge access. First clear the Silver hurdle (100 XP), then earn 180 XP fresh. Strategies for efficient earning. How to Reach Platinum Platinum (300 XP) unlocks upgrade eligibility and starts your UXP counter toward Ultimate. High volume strategies explained. Top Tier Ultimate Status Guide Requires Platinum + 900 UXP. Both are deducted upon qualification. Ultimate does not reset your qualification year. Special soft landing rules apply. 💡 Qualification Year: Your 12-month cycle runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31). A level-up resets your year to the 1st of the next month. Requalification at the same level keeps your dates unchanged. Ultimate does not trigger a reset. ✈️ XP Runs (Mileage Runs) What is an XP Run? Flights taken primarily for status points. Why adding a connection can increase your XP by 50% for the same price. Tool Mileage Run Calculator Find the best routes by cost per XP from Amsterdam, Paris, and other hubs. Compare Economy vs Business efficiency. 💰 Miles Value and Acquisition What Are Miles Worth? Typically 0.012 to 0.02 euros per mile depending on redemption. Business Class awards offer the best value per mile. Should You Buy Miles? At 0.025+ euros per mile, buying rarely makes sense. Only consider when Promo Rewards align with your travel plans. Best Value Subscribe to Miles Worth It? At roughly 0.011 euros per mile, subscriptions offer the best acquisition rate. Note: this earns Miles, not XP for status. Cost Per Mile Explained How to calculate CPM and optimize your miles acquisition strategy across different sources. 🛠️ Practical Guides Import Your Flying Blue PDF Step by step guide to importing your activity statement. Works with Dutch, French, German, Spanish, Italian, Portuguese, and English. Partner Airlines List All SkyTeam partners earn XP when credited to Flying Blue. Only flights marketed by AF or KL (the flight code on your ticket) earn UXP. 🔑 Key Concepts at a Glance XP vs Miles XP determines your status level (Silver to Platinum). Miles are a currency you spend on awards. They are earned together but serve different purposes. XP vs UXP XP is earned on all qualifying flights. UXP is earned only on AF/KL marketed flights and is required (on top of Platinum) for Ultimate status. Soft Landing You can only drop one status level per year, even with 0 XP earned. Ultimate members always soft land to Platinum first, never directly to Gold. Rollover Caps Maximum 300 XP and 900 UXP can roll over. Anything above these caps after paying for status is lost. Plan your flying to avoid waste. Track Your Flying Blue Progress Import your PDF and see XP tracking, status projections, rollover calculations, and qualification date countdown. Start Tracking Free →",
+      "url": "/guide",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "⚡ Quick Reference: Status Thresholds"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "📚 Understanding XP and Status"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "What is Flying Blue XP?"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Status Levels Compared"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "How XP Rollover Works"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "What is UXP (Ultimate XP)?"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "🎯 Reaching Status Goals"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "How to Reach Gold Status"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "How to Reach Platinum"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Ultimate Status Guide"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "✈️ XP Runs (Mileage Runs)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "What is an XP Run?"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Mileage Run Calculator"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "💰 Miles Value and Acquisition"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "What Are Miles Worth?"
+        }
+      ]
+    },
+    {
+      "id": "guide-mileage-run-calculator",
+      "title": "Flying Blue Mileage Run Calculator: Find the Best XP Routes (2025)",
+      "description": "Plan your Flying Blue mileage run with our guide. Compare routes by cost per XP, find the best deals from Amsterdam and Paris, and calculate exactly how many flights you need.",
+      "content": "Business Class on short European routes often offers the best €/XP ratio. From Amsterdam, routes like AMS-Barcelona Business (~€350, 30-48 XP return depending on exact routing) are consistently good value. Step-by-Step Mileage Run Planning Step 1: Calculate Your XP Gap Determine exactly how many XP you need: Check current XP on FlyingBlue.com Know your target threshold (Silver 100, Gold 180, Platinum 300) Subtract: Threshold - Current XP = Gap Factor in upcoming regular flights Step 2: Set Your Budget What's status worth to you? Gold annual value: ~€600-1,000 Typical mileage run budget: €200-800 Calculate break-even: Budget ÷ Annual Value = Years Step 3: Find Routes Search for flights with the best €/XP ratio. Use the route tables below as starting points, then check current prices on KLM.com and AirFrance.com. 💡 Important: Unlike Award Miles, XP earnings are NOT multiplied by your status . A Platinum member earns the same XP for a flight as an Explorer member. Do not apply any status multiplier to your XP calculations. Best Routes from Amsterdam (AMS) XP values are estimates for a round-trip. \"Biz\" = Business Class. Route Class Typical Price Return XP €/XP AMS-Barcelona Business €300-450 30 XP (Medium) €10-15 AMS-Paris-Nice Business €450-600 60 XP (4 legs) €7-10 AMS-London Business €250-400 30 XP (Short) €8-13 AMS-Billund Business €250-350 30 XP (Short) €8-12 Best Routes from Paris (CDG) Route Class Typical Price Return XP €/XP CDG-Nice Business €200-350 30 XP (Domestic) €7-12 CDG-Lisbon Business €300-450 30 XP (Medium) €10-15 CDG-AMS-LHR Business €400-550 60 XP (4 legs) €7-9 💡 Segment Run Strategy: Adding a connection (e.g. flying AMS-CDG-NCE instead of AMS-NCE) doubles your XP earning for roughly the same price. A direct return in Business is 30 XP. A connecting return is 60 XP. Timing Your Booking Best Days to Fly Tuesday-Thursday: Cheapest fares, emptiest flights Early morning/late evening: Less popular = lower prices Avoid: Friday evening, Sunday evening (business traveler peaks) Best Time to Book 3-6 weeks before: Optimal pricing window Sales: Watch for Flying Blue promotions (often in Jan, Black Friday) Last minute: Rarely good for mileage runs (high prices) Sample Mileage Run Plans 📊 Plan A: Silver → Gold (Need 80 XP) Budget: ~€900-1,200 Option 1: Two Business Class trips with connections • Example: AMS-CDG-NCE return in Business • 15 XP per leg x 4 legs = 60 XP per trip • 2 trips x 60 XP = 120 XP ✅ • Cost: ~€500 per trip = €1,000 total 📊 Plan B: Gold Maintenance (Need 180 XP) Budget: ~€1,500-2,000 Option: Three Business Class trips with connections • 3 trips x 60 XP each = 180 XP ✅ • Focus on cheaper European routes (Billund, Nice, Berlin) • Spaced out over the year: €500-600 per trip Common Mistakes to Avoid Expecting a status bonus: Remember, you do NOT get extra XP for being Silver/Gold. Math is the same for everyone. Ignoring operating carrier: For UXP, must be AF/KL operated Booking Basic Economy: Sometimes earns reduced XP or miles (check fare conditions) Not checking qualification date: Don't earn XP after your year ends Forgetting Flying Blue number: Add it during booking, not after 🧮 Calculate Your Mileage Run Import your Flying Blue data to see exactly how much XP you need and when your qualification year ends. Start Calculating Free → Related Guides What is a Mileage Run? How to Reach Gold Status What is Flying Blue XP? How XP Rollover Works Sources Last verified: 2025-12-17. KLM: Membership Levels — XP thresholds for each status tier KLM.com — Route search and pricing AirFrance.com — Route search and pricing Route prices and XP values are estimates based on typical availability and may vary. Always verify current prices and XP earning rates before booking. SkyStatus is not affiliated with Air France-KLM or Flying Blue.",
+      "url": "/guide/mileage-run-calculator",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Planning Summary"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Step-by-Step Mileage Run Planning"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Step 1: Calculate Your XP Gap"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Step 2: Set Your Budget"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Step 3: Find Routes"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Best Routes from Amsterdam (AMS)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Best Routes from Paris (CDG)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Timing Your Booking"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Best Days to Fly"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Best Time to Book"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Sample Mileage Run Plans"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Common Mistakes to Avoid"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "🧮 Calculate Your Mileage Run"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Related Guides"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Sources"
+        }
+      ]
+    },
+    {
+      "id": "guide-should-you-buy-flying-blue-miles",
+      "title": "Should You Buy Flying Blue Miles? When It Makes Sense (2025)",
+      "description": "Usually no. Buying Flying Blue miles costs €0.016-0.028/mile depending on promos. Only buy for specific Business Class redemptions worth €0.02+/mile. Transfer partners and Subscribe to Miles are usually better.",
+      "content": "Standard purchases cost €0.028/mile, but typical redemptions are worth only €0.012/mile . Even with an 80% bonus (€0.016/mile), you need a high-value Business Class redemption to break even. Transfer partners are almost always better. On This Page The Math Problem with Buying Miles Current Purchase Pricing (Dec 2025) Better Alternatives: Transfer Partners When Buying CAN Make Sense When NOT to Buy Miles The Decision Framework The Math Problem with Buying Miles The fundamental issue is simple: miles typically cost more to buy than they are worth when redeemed. Here is the breakdown: Acquisition Method Cost Per Mile vs Baseline Value (€0.012) Result Standard purchase €0.028 2.3x higher ❌ 57% loss 80% bonus promo €0.016 1.3x higher ❌ 25% loss Subscribe to Miles €0.0125 ~Equal ⚠️ Break-even Transfer (with 25% bonus) €0.008 0.67x lower ✅ 50% profit Transfer (standard) €0.01 0.83x lower ✅ 20% profit The only way buying miles works is if your planned redemption has a value per mile that exceeds your purchase cost. For standard purchases, you would need redemptions worth €0.028+/mile. That is extremely rare outside of La Première. Current Purchase Pricing (December 2025) Flying Blue sells miles through their Miles Hub (powered by Points.com). The standard rate is 3.05 US cents per mile (approximately €0.028). Promotions offering 50 to 100% bonus miles reduce the effective cost. Purchase Option Price (USD) Effective CPM Assessment Standard (no promo) 3.05¢/mile €0.028 ❌ Never worth it 50% bonus 2.03¢/mile €0.019 ❌ Still too expensive 80% bonus (typical promo) 1.69¢/mile €0.016 ⚠️ Only for high-value redemptions 100% bonus (rare) 1.53¢/mile €0.014 ⚠️ Best promo, still marginal Subscribe to Miles 1.34¢/mile €0.0125 ✅ Best purchase option Pricing verified at Flying Blue Miles Hub . Last verified: December 2025. ⚠️ Current Promo Check: Flying Blue regularly offers bonus promotions on miles purchases. Check the Flying Blue Miles Hub for current offers. An 80% bonus (1.69¢/mile effective) is considered average; 100% bonus (1.53¢) was last seen in 2022. Better Alternatives: Transfer Partners Before buying miles, consider transfer partners. If you have credit card points, transferring is almost always cheaper than purchasing. Flying Blue Transfer Partners (1:1 Ratio) American Express Membership Rewards Chase Ultimate Rewards Citi ThankYou Points Capital One Miles Bilt Rewards Wells Fargo Rewards All transfer 1:1 to Flying Blue. Transfer bonuses of 20 to 30% happen multiple times per year. Official info: KLM earning miles overview . Why Transfers Beat Purchases If you earn credit card points on everyday spending, your \"cost\" for those points is low. Example: 📊 Transfer vs Purchase Comparison Scenario: You need 60,000 miles for a Business Class award. Option A: Buy miles (80% bonus) Cost: $1,014 (60,000 miles at 1.69¢) Option B: Transfer from Amex (25% bonus) Need: 48,000 Amex points (becomes 60,000 with bonus) If earned on 2x category spend: €24,000 spending Effective cost: €0 incremental (points earned on spending you do anyway) Winner: Transfer, by a massive margin. 💡 Strategy: Never buy miles if you have transferable points available. Even without a bonus, transferring at 1:1 is cheaper than buying during an 80% promo. When Buying Miles CAN Make Sense ✅ Scenario 1: Small Top-Off for Specific Redemption You have 55,000 miles and need 60,000 for a Business Class award worth €2,000. Buying 5,000 miles at €80 (even at 1.69¢) makes sense because: 5,000 miles at €0.016 = €80 Your redemption value: €2,000 ÷ 60,000 = €0.033/mile You are paying €80 to unlock €2,000 in value ✅ Scenario 2: High-Value Business Class During Promo A Business Class ticket costs €3,500 cash. Award price is 60,000 miles + €200 taxes. With 80% bonus promo: 60,000 miles costs $1,014 (€943) Total: €943 + €200 = €1,143 vs €3,500 cash. Savings: €2,357 Value per mile: €3,300 ÷ 60,000 = €0.055. This exceeds purchase cost of €0.016. ✅ Scenario 3: Subscribe to Miles for Planned Redemption You need 17,000 miles to complete a booking. Subscribe to Miles for one month at Complete tier ($227.80 for 17,000 miles), book your award, then cancel. See Flying Blue Subscribe to Miles for current pricing. At 1.34¢/mile (€0.0125), this is cheaper than any promotional purchase. When NOT to Buy Miles ❌ Speculative Buying Buying miles \"just in case\" or because there is a promo is almost always a bad deal. Flying Blue award pricing can change without notice. Devaluations have happened before, which can reduce the value of purchased miles overnight. ❌ Economy Redemptions Economy awards typically yield €0.008 to 0.012 per mile. Even with an 80% bonus (€0.016/mile), you lose money. Just pay cash for Economy tickets. ❌ Standard (Non-Promo) Pricing At €0.028/mile, you would need redemptions worth more than 2x the baseline value. This is essentially impossible outside of La Première during peak season. Wait for at least a 50% bonus. ❌ When You Have Transfer Partners Available If you h",
+      "url": "/guide/should-you-buy-flying-blue-miles",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Short Answer: Usually No"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "On This Page"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Math Problem with Buying Miles"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Current Purchase Pricing (December 2025)"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Better Alternatives: Transfer Partners"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Flying Blue Transfer Partners (1:1 Ratio)"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Why Transfers Beat Purchases"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "When Buying Miles CAN Make Sense"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "When NOT to Buy Miles"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Decision Framework"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Before Buying Miles, Answer These Questions"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Maximizing Value with Promo Rewards"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Note for European / Netherlands Users"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Calculate Your Miles Value"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Related Guides"
+        }
+      ]
+    },
+    {
+      "id": "guide-what-is-a-mileage-run",
+      "title": "What is an XP Run? The Flying Blue Mileage Run Guide (2025)",
+      "description": "In Flying Blue, a",
+      "content": "\" But in Flying Blue, miles do not determine your status . XP (Experience Points) do. Therefore, a Flying Blue member does an XP Run . The goal is not to fly far, but to earn the maximum number of XP for the lowest price. This often means flying shorter distances with more connections rather than one long direct flight. See Flying Blue: Status & XP for official programme context. The Golden Rule: More Legs = More XP This is the foundation of every successful XP run. Flying Blue awards XP per flight segment (leg) , not per trip or per mile. Why Connections Beat Direct Flights Direct flight: You earn XP once (for one leg). Connected flight: You earn XP twice (for two legs). Double connection: You earn XP three times (for three legs). Since connecting flights are often priced similarly (or even cheaper) than direct flights, adding a stopover is the easiest way to boost your status earnings by 50% or more. XP Earning by Distance and Cabin Before planning your run, understand how XP is calculated. The earning rate depends on two factors: flight distance and cabin class. Distance Band Economy Premium Business La Première Domestic (France) 2 XP 4 XP 6 XP 10 XP Medium haul (under 2000 mi) 5 XP 10 XP 15 XP 25 XP Long haul 1 (2000 to 3500 mi) 8 XP 16 XP 24 XP 40 XP Long haul 2 (3500 to 5000 mi) 10 XP 20 XP 30 XP 50 XP Long haul 3 (over 5000 mi) 12 XP 24 XP 36 XP 60 XP Official sources: KLM membership levels , Flying Blue Status & XP . Last verified: December 2025. 💡 Key Insight: Business Class earns 3x more XP than Economy per leg. On short European flights, the price difference is often only 50 to 100 euros, but the XP difference is 10 XP (15 vs 5). This makes short haul Business the XP runner's best friend. The Power of Connections: Real Examples 📊 Example 1: Amsterdam to New York Option A: Direct Flight (Business) AMS → JFK: 30 XP (Long haul 2) Return: 30 XP Total: 60 XP Option B: Via Paris (Business) AMS → CDG: 15 XP (Medium haul) CDG → JFK: 30 XP (Long haul 2) Return legs: 15 + 30 = 45 XP Total: 90 XP Result: By changing planes in Paris, you earn 50% more XP for often the same price or less. 📊 Example 2: Amsterdam to Singapore Option A: Direct Flight (Business) AMS → SIN: 36 XP (Long haul 3) Return: 36 XP Total: 72 XP Option B: Via Paris (Business) AMS → CDG: 15 XP CDG → SIN: 36 XP Return legs: 15 + 36 = 51 XP Total: 102 XP Result: The Paris connection adds 30 XP to your trip. Three of these trips per year (306 XP) is enough for Platinum . The Antwerp Hack: The Train That Earns XP This is one of the most powerful XP run strategies, and many members do not know about it. 🚄 The Antwerp Run Explained KLM operates an Air&Rail service from Antwerp (station code: ZWE) and Brussels to Amsterdam Schiphol. When you book a flight that starts from Antwerp, the train ride counts as a flight segment and earns XP. The Magic: The train is classified as a \"Medium haul\" segment. In Economy: 5 XP per direction. In Business: 15 XP per direction. The Double Benefit: Flights from Antwerp or Brussels are often significantly cheaper than direct flights from Amsterdam, while earning more XP due to the extra segment. 📊 Example: The Antwerp Run to New York Standard booking from Amsterdam (Business) AMS → JFK: 30 XP Return: 30 XP Total: 60 XP Antwerp booking (Business) ZWE → AMS (train): 15 XP AMS → JFK: 30 XP Return: 30 + 15 = 45 XP Total: 90 XP Result: Same destination, 50% more XP, often a lower price. The \"cost\" is arriving at Antwerp Central Station instead of Schiphol. 📊 Example: Triple Stack (Antwerp + Paris Connection) Antwerp to New York via Paris (Business) ZWE → AMS (train): 15 XP AMS → CDG: 15 XP CDG → JFK: 30 XP Return: 30 + 15 + 15 = 60 XP Total: 120 XP Result: One round trip earns 120 XP. That is 40% of your entire Platinum requirement (300 XP) in a single booking. ⚠️ Important: The train segment only earns XP when booked as part of a KLM Air&Rail itinerary . Booking the train separately does not count. Understanding When to Do an XP Run Timing is everything. Your qualification year determines when XP runs make strategic sense. Your Qualification Year Structure: Runs from the 1st of a month to the last day of the month before, one year later (e.g., November 1 to October 31). Determined by: Your last level up to your current XP status. XP Expires: Any XP not used for status or rollover is lost when your year ends. Rollover Cap: Maximum 300 XP can carry over to the next year. Official references: KLM membership levels , Flying Blue T&C (PDF) . When an XP Run Makes Sense Close to a threshold: You have 250 XP and need 300 for Platinum. A targeted run closes the gap. Year ending soon: Your qualification year ends in 6 weeks and you will lose your progress without action. Strategic rollover: You want to hit 600 XP as Platinum so you roll over 300 XP and start next year already qualified. Soft landing prevention: You are Gold with 150 XP and your year ends next month. A run to 180 XP saves your status. When to Skip the XP Ru",
+      "url": "/guide/what-is-a-mileage-run",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Flying Blue Difference"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Golden Rule: More Legs = More XP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Why Connections Beat Direct Flights"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "XP Earning by Distance and Cabin"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Power of Connections: Real Examples"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Antwerp Hack: The Train That Earns XP"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "🚄 The Antwerp Run Explained"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Understanding When to Do an XP Run"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Your Qualification Year"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "When an XP Run Makes Sense"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "When to Skip the XP Run"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "XP Runs for Ultimate Aspirants"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "UXP Rules for XP Runners"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "The Key Metric: Cost Per XP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "XP Run Strategies by Goal"
+        }
+      ]
+    },
+    {
+      "id": "guide-what-is-flying-blue-xp",
+      "title": "What is Flying Blue XP? Complete Guide to Experience Points (2025)",
+      "description": "Flying Blue XP (Experience Points) determine your elite status with Air France and KLM. Learn exactly how XP works, earning rates by cabin class, and the thresholds for Silver, Gold, Platinum, and Ultimate status.",
+      "content": "Unlike miles (which you spend on awards), XP accumulates from flights and determines whether you reach Silver (100 XP), Gold (180 XP), Platinum (300 XP), or Ultimate (900 UXP) status. When you reach each level, the required XP is deducted from your balance. XP resets annually but up to 300 XP can roll over to your next qualification year. How the XP System Works You start as an Explorer and must earn 100 XP to reach Silver status. The system deducts 100 XP from your balance immediately upon qualification. You keep only the surplus XP above that threshold to start your new cycle. You are now at the start of your Silver year. You need to earn a full 180 XP to reach Gold status. This is a fresh requirement, not the difference between Silver and Gold. The system deducts 180 XP once you upgrade to Gold. You then need to earn 300 XP to reach Platinum. For Ultimate , you need 900 UXP (earned only on AF/KL marketed flights) while holding Platinum. When you qualify, 900 UXP is deducted. XP vs Miles: Two Separate Currencies Flying Blue operates two distinct currencies. Confusing them is one of the most common mistakes new members make. Here is how they differ: Aspect Miles XP (Experience Points) Purpose Redeemable currency for awards Determines your status level Can you spend them? Yes: flights, upgrades, shopping No: status qualification only Expiration After 24 months of account inactivity Reset each qualification year (with rollover) Earning sources Flights, credit cards , partners, shopping Primarily flights + SAF purchases Transferable? Yes, to other Flying Blue accounts No ⚠️ Common misconception: Many members think spending miles or earning miles from credit cards helps their status. It does not. Only XP determines your status level from Explorer to Platinum. How Flying Blue XP is Earned XP earnings depend on two primary factors: flight distance and cabin class. Unlike Miles, XP earnings are not affected by your status level or the price of your ticket. Factor 1: Flight Distance Flying Blue uses distance bands rather than exact mileage. Longer flights earn proportionally more XP. Distance Band Economy Premium Business First Example Routes Domestic 2 XP 4 XP 6 XP 10 XP Toulouse to Paris (Orly) Medium-haul (<2000 mi) 5 XP 10 XP 15 XP 25 XP AMS to London, CDG to Istanbul Long-haul 1 (2000 to 3500 mi) 8 XP 16 XP 24 XP 40 XP AMS to Dubai, CDG to Montreal Long-haul 2 (3500 to 5000 mi) 10 XP 20 XP 30 XP 50 XP AMS to New York, CDG to Nairobi Long-haul 3 (5000+ mi) 12 XP 24 XP 36 XP 60 XP AMS to Tokyo, CDG to Los Angeles Official source: Flying Blue Status & XP . Rates may vary by airline and booking class. Last verified: December 2025. ✈️ Important: First Class & Feeder Flights KLM does not offer a First Class cabin. First Class is exclusive to specific Air France long-haul routes (branded as La Premiere ). Insider Trick: If you book a La Premiere itinerary that involves a connection (e.g., AMS to Singapore via Paris), you earn First Class XP on the short feeder flight (AMS to CDG) as well. This applies even though you fly in Business Class on that specific leg and even if that leg is operated by KLM. Factor 2: Cabin Class Multiplier Your ticket class significantly impacts XP earned. This is why some frequent flyers specifically book Business Class for status runs : Economy: Base XP (1x) Premium Economy: 2x base XP Business Class: 3x base XP La Premiere (First): 5x base XP 📊 Real Example: A direct Amsterdam to New York round trip (Long-haul 2) in Business Class earns 60 XP (2 legs of 30 XP). 🚀 Expert Tip 1: The Power of Connections If you book the same trip via Paris (AMS to CDG to JFK), you earn for 4 flight segments instead of 2. AMS to CDG (Medium): 15 XP CDG to JFK (Long 2): 30 XP That is 45 XP one-way, or 90 XP total . You earn 50% more status points for often the same price (or less!). 🚄 Expert Tip 2: The \"Antwerp Run\" Prices from outstations (like Antwerp or Brussels) are often significantly cheaper than direct flights from hubs. This is a favorite strategy of \"XP Runners\" . The Hack: If you book Antwerp (ZWE) to Amsterdam to New York, the train ride from Antwerp to Schiphol counts as a flight segment! ZWE to AMS (Train in Business): 15 XP AMS to JFK (Long 2 in Business): 30 XP Total: 90 XP return plus potential savings on the ticket price. Additional XP Sources While flights are the primary source, you can earn bonus XP from: Flying Blue AMEX cards: 15 to 60 XP annually depending on card tier SAF contributions: Sustainable Aviation Fuel purchases earn bonus XP Promotional campaigns: Flying Blue periodically offers double XP on specific routes Flying Blue Status Thresholds Here are the exact XP requirements for each status level. Remember: at each level, the required XP is deducted (\"paid\") from your balance. Status Points Required Key Benefits Explorer 0 XP Base tier, earn miles on flights Silver 100 XP (Deducted upon qualification) SkyPriority, +1 bag Gold 180 XP (Deducted upon qualification) Lounge access",
+      "url": "/guide/what-is-flying-blue-xp",
+      "type": "guide",
+      "headings": [
+        {
+          "level": 2,
+          "id": "",
+          "text": "Definition"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How the XP System Works"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "XP vs Miles: Two Separate Currencies"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "How Flying Blue XP is Earned"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Factor 1: Flight Distance"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "✈️ Important: First Class & Feeder Flights"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Factor 2: Cabin Class Multiplier"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Additional XP Sources"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Flying Blue Status Thresholds"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Understanding Your Qualification Year"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Qualification Year Structure"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Tracking Your XP Progress"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Track Your Flying Blue XP"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Frequently Asked Questions"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Do partner airline flights earn XP?"
+        }
+      ]
+    },
+    {
+      "id": "faq-0",
+      "title": "How do I get started with SkyStatus?",
+      "description": "answer: ( <> When you first open SkyStatus, the onboarding wizard guides you through setup: Choose your home airport - Used for popular route suggestions Select your currency - EUR, USD, GBP, or CHF f",
+      "content": "answer: ( <> When you first open SkyStatus, the onboarding wizard guides you through setup: Choose your home airport - Used for popular route suggestions Select your currency - EUR, USD, GBP, or CHF for all cost displays Import your Flying Blue data - Upload your PDF or enter manually Tip: You can always re-run the onboarding wizard from Data Settings if you want to change these preferences. ) }, { question: 'How do I enter my current status and XP?', answer: ( <> There are two ways to sync your",
+      "url": "/faq#section-0-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-1",
+      "title": "How do I enter my current status and XP?",
+      "description": "answer: ( <> There are two ways to sync your Flying Blue status with SkyStatus: Import your Flying Blue PDF (recommended) This automatically extracts all your flights, XP, and miles. Your status is de",
+      "content": "answer: ( <> There are two ways to sync your Flying Blue status with SkyStatus: Import your Flying Blue PDF (recommended) This automatically extracts all your flights, XP, and miles. Your status is detected from the PDF header. Enter manually: Go to XP Engine → click the settings icon on your cycle → set your starting status and XP rollover. Tip: Find your current XP on flyingblue.com under \"My Account\" → \"XP Overview\". ) }, { question: 'How do I import my Flying Blue PDF?', answer: ( <> 🔒 Priv",
+      "url": "/faq#section-0-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-2",
+      "title": "How do I import my Flying Blue PDF?",
+      "description": "answer: ( <> 🔒 Privacy First: Your PDF is processed entirely in your browser . We never receive, upload, or store your PDF file. All parsing happens locally on your device. Step 1: Download your PDF ",
+      "content": "answer: ( <> 🔒 Privacy First: Your PDF is processed entirely in your browser . We never receive, upload, or store your PDF file. All parsing happens locally on your device. Step 1: Download your PDF from Flying Blue Log in at flyingblue.com Go to My Account → Activity overview ⚠️ Important: Click the \"More\" button at the bottom repeatedly until ALL your activities are visible! Scroll back up and click the \"Download\" button Step 2: Import in SkyStatus Click \"Import PDF\" (on Dashboard or in Data ",
+      "url": "/faq#section-0-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-3",
+      "title": "What are the different login modes?",
+      "description": "answer: ( <> SkyStatus offers three ways to use the app: 🔐 Account Mode (recommended) Sign in with Google or Magic Link. Your data syncs across devices and is securely stored. 🎮 Demo Mode Explore Sk",
+      "content": "answer: ( <> SkyStatus offers three ways to use the app: 🔐 Account Mode (recommended) Sign in with Google or Magic Link. Your data syncs across devices and is securely stored. 🎮 Demo Mode Explore SkyStatus with sample data. No account needed. Data resets when you leave. 💾 Local Mode Data stored only in your browser. Complete privacy, but no sync and data is lost if you clear your cache. ) }, { question: 'How do I use Demo Mode?', answer: ( <> Demo Mode lets you explore all SkyStatus features ",
+      "url": "/faq#section-0-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-4",
+      "title": "How do I use Demo Mode?",
+      "description": "answer: ( <> Demo Mode lets you explore all SkyStatus features with sample data before entering your own. To enter Demo Mode: On the login screen, click \"Try Demo\" You'll see sample data for a fiction",
+      "content": "answer: ( <> Demo Mode lets you explore all SkyStatus features with sample data before entering your own. To enter Demo Mode: On the login screen, click \"Try Demo\" You'll see sample data for a fictional Flying Blue member Explore all features freely. Nothing you do affects real data 🎭 Switch between status levels: In Demo Mode, a purple bar appears at the bottom. Click Silver , Gold , Platinum , or Ultimate to instantly see how SkyStatus looks for each status level! ) } ] }, // SECTION 2: XP En",
+      "url": "/faq#section-0-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-5",
+      "title": "What is the XP Engine?",
+      "description": "answer: ( <> The XP Engine is the heart of SkyStatus. It tracks your qualification cycle and shows: Actual XP - XP from flights you've already taken Projected XP - Including scheduled/future flights S",
+      "content": "answer: ( <> The XP Engine is the heart of SkyStatus. It tracks your qualification cycle and shows: Actual XP - XP from flights you've already taken Projected XP - Including scheduled/future flights Status progression - Visual timeline of your status journey Ultimate tracking - UXP progress for Platinum members ) }, , { question",
+      "url": "/faq#section-1-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-6",
+      "title": "How do I configure my qualification cycle?",
+      "description": "answer: ( <> Click the settings icon (⚙️) on your cycle card in XP Engine to access: Starting Status: Your status at the beginning of this cycle (Explorer, Silver, Gold, Platinum, or Ultimate) XP Roll",
+      "content": "answer: ( <> Click the settings icon (⚙️) on your cycle card in XP Engine to access: Starting Status: Your status at the beginning of this cycle (Explorer, Silver, Gold, Platinum, or Ultimate) XP Rollover: XP carried over from your previous qualification year (max 300) UXP Rollover: For Ultimate members, UXP carried over (max 900) Cycle Start Month: When your qualification year began ) }, { question: 'What is the difference between Actual XP and Projected XP?', answer: ( <> Actual XP XP from fli",
+      "url": "/faq#section-1-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-7",
+      "title": "What is the difference between Actual XP and Projected XP?",
+      "description": "answer: ( <> Actual XP XP from flights you have already taken. This is what Flying Blue shows as your current XP. Projected XP Includes XP from scheduled/future flights you've added. Helps you plan wh",
+      "content": "answer: ( <> Actual XP XP from flights you have already taken. This is what Flying Blue shows as your current XP. Projected XP Includes XP from scheduled/future flights you've added. Helps you plan whether you'll reach your status goal. ) }, { question: 'How do I add manual XP corrections?', answer: ( <> If your XP doesn't match Flying Blue exactly, you can add corrections: Go to XP Engine Scroll to the Monthly XP Ledger Find the month you want to correct and click the edit icon Enter the correc",
+      "url": "/faq#section-1-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-8",
+      "title": "How do I add manual XP corrections?",
+      "description": "answer: ( <> If your XP doesn't match Flying Blue exactly, you can add corrections: Go to XP Engine Scroll to the Monthly XP Ledger Find the month you want to correct and click the edit icon Enter the",
+      "content": "answer: ( <> If your XP doesn't match Flying Blue exactly, you can add corrections: Go to XP Engine Scroll to the Monthly XP Ledger Find the month you want to correct and click the edit icon Enter the correction amount (positive to add, negative to subtract) Use this for bonus XP from promotions, credit cards, or to fix small discrepancies. ) }, { question: 'How does XP \"payment\" work on level-up?', answer: ( <> When you reach a status threshold, that XP amount is \"consumed\" and your qualificati",
+      "url": "/faq#section-1-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-9",
+      "title": "How does XP ",
+      "description": "answer: ( <> When you reach a status threshold, that XP amount is \"consumed\" and your qualification year resets immediately: Explorer → Silver 100 XP consumed Silver → Gold 180 XP consumed Gold → Plat",
+      "content": "answer: ( <> When you reach a status threshold, that XP amount is \"consumed\" and your qualification year resets immediately: Explorer → Silver 100 XP consumed Silver → Gold 180 XP consumed Gold → Platinum 300 XP consumed Example: You have 250 XP as Silver. You earn 80 XP (total 330). You level up to Gold, paying 180 XP. You keep 150 XP, and your new qualification year starts on the 1st of the next month. ) }, { question: 'What is rollover XP?', answer: ( <> At the end of your qualification year,",
+      "url": "/faq#section-1-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-10",
+      "title": "What is rollover XP?",
+      "description": "answer: ( <> At the end of your qualification year, excess XP carries over to the next year: Maximum XP rollover: 300 XP (for Silver, Gold, Platinum) Maximum UXP rollover: 900 UXP (for Ultimate member",
+      "content": "answer: ( <> At the end of your qualification year, excess XP carries over to the next year: Maximum XP rollover: 300 XP (for Silver, Gold, Platinum) Maximum UXP rollover: 900 UXP (for Ultimate members) UXP Cap: Total UXP balance cannot exceed 1800 UXP Example: You end the year with 450 XP as Platinum. You roll over 300 XP (the maximum) to start your next year. ) }, { question: 'What is soft landing?', answer: ( <> Flying Blue has a \"soft landing\" rule. If you fail to requalify, you only drop on",
+      "url": "/faq#section-2-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-11",
+      "title": "What is soft landing?",
+      "description": "answer: ( <> Flying Blue has a \"soft landing\" rule. If you fail to requalify, you only drop one status level per year . Platinum → Gold Gold → Silver Silver → Explorer 👑 Ultimate Exception: If you ar",
+      "content": "answer: ( <> Flying Blue has a \"soft landing\" rule. If you fail to requalify, you only drop one status level per year . Platinum → Gold Gold → Silver Silver → Explorer 👑 Ultimate Exception: If you are Ultimate and fail to reach 900 UXP, you drop to Platinum (never lower). This ensures your Platinum for Life streak remains unbroken. ) } ] }, // SECTION 3: XP Run Simulator , {",
+      "url": "/faq#section-2-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-12",
+      "title": "What is the XP Run Simulator?",
+      "description": "answer: ( <> The XP Run Simulator helps you plan mileage runs to reach your status goals. It calculates: XP earned for any route and cabin class Cost per XP (efficiency analysis) Status projection aft",
+      "content": "answer: ( <> The XP Run Simulator helps you plan mileage runs to reach your status goals. It calculates: XP earned for any route and cabin class Cost per XP (efficiency analysis) Status projection after the run Multi-segment routes with stopover options ) }, , { question: 'How do I change cabin class for individual segments?', answer: ( <> Each segment can have a different cabin class: Enter your route to generate segments In the Segment B",
+      "url": "/faq#section-2-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-13",
+      "title": "How do I use the XP Run Simulator?",
+      "description": "answer: ( <> Basic usage: Enter your route as airport codes: AMS CDG BKK Select your base cabin class Toggle \"Return\" if you're flying round-trip Enter the total cost to see efficiency metrics ) }, , ",
+      "content": "answer: ( <> Basic usage: Enter your route as airport codes: AMS CDG BKK Select your base cabin class Toggle \"Return\" if you're flying round-trip Enter the total cost to see efficiency metrics ) }, , { question: 'What are the distance bands?', answer: ( <> XP is based on flight distance (marketed by Flying Blue) and cabin class: <div className=\"mt",
+      "url": "/faq#section-2-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-14",
+      "title": "How do I change cabin class for individual segments?",
+      "description": "answer: ( <> Each segment can have a different cabin class: Enter your route to generate segments In the Segment Breakdown section, find the segment you want to change Click the cabin class dropdown n",
+      "content": "answer: ( <> Each segment can have a different cabin class: Enter your route to generate segments In the Segment Breakdown section, find the segment you want to change Click the cabin class dropdown next to that segment Useful when you're flying Business outbound but Economy on the return. ) }, { question: 'What are the distance bands?', answer: ( <> XP is based on flight distance (marketed by Flying Blue) and cabin class: Short: &lt; 500 mi Medium: 500-2000 mi Long 1: 2000-3500 mi Long 2: 3500-",
+      "url": "/faq#section-2-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-15",
+      "title": "What are the distance bands?",
+      "description": "answer: ( <> XP is based on flight distance (marketed by Flying Blue) and cabin class: Short: &lt; 500 mi Medium: 500-2000 mi Long 1: 2000-3500 mi Long 2: 3500-5000 mi Long 3: &gt; 5000 mi XP Multipli",
+      "content": "answer: ( <> XP is based on flight distance (marketed by Flying Blue) and cabin class: Short: &lt; 500 mi Medium: 500-2000 mi Long 1: 2000-3500 mi Long 2: 3500-5000 mi Long 3: &gt; 5000 mi XP Multipliers: Economy (1x), Premium Economy (2x), Business (3x), First (5x). ) }, { question: 'What is Classic Mode vs Optimizer Mode?', answer: ( <> Classic Mode Calculates total cost ÷ total XP . Simple efficiency metric for the entire trip. Optimizer Mode Cal",
+      "url": "/faq#section-3-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-16",
+      "title": "What is Classic Mode vs Optimizer Mode?",
+      "description": "answer: ( <> Classic Mode Calculates total cost ÷ total XP . Simple efficiency metric for the entire trip. Optimizer Mode Calculates marginal cost ÷ marginal XP . Shows the cost of upgrading from Econ",
+      "content": "answer: ( <> Classic Mode Calculates total cost ÷ total XP . Simple efficiency metric for the entire trip. Optimizer Mode Calculates marginal cost ÷ marginal XP . Shows the cost of upgrading from Economy. This is useful for deciding whether to pay for a higher cabin. ) } ] }, // SECTION 4: Flights & Data { title: 'Flights & Data', icon: , items: [ { question: 'How do I add flights manually?', answer: ( <> Go to Add Flight from the menu: Enter the flight date Enter route (e.g., AMS-CDG) Select ai",
+      "url": "/faq#section-3-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-17",
+      "title": "How do I add flights manually?",
+      "description": "answer: ( <> Go to Add Flight from the menu: Enter the flight date Enter route (e.g., AMS-CDG) Select airline (KL, AF, or partner) Choose cabin class Mark as flown or scheduled ) }, , { question: 'Wha",
+      "content": "answer: ( <> Go to Add Flight from the menu: Enter the flight date Enter route (e.g., AMS-CDG) Select airline (KL, AF, or partner) Choose cabin class Mark as flown or scheduled ) }, , { question: 'What is the difference between KL/AF and partner flights?', answer: ( <> KLM (K",
+      "url": "/faq#section-3-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-18",
+      "title": "How do I edit or delete flights?",
+      "description": "answer: ( <> In the Flight Ledger (visible on Add Flight page): Edit: Click the pencil icon on any flight to modify details Delete: Click the trash icon to remove a flight Toggle status: Click the che",
+      "content": "answer: ( <> In the Flight Ledger (visible on Add Flight page): Edit: Click the pencil icon on any flight to modify details Delete: Click the trash icon to remove a flight Toggle status: Click the checkbox to switch between flown/scheduled ) }, { question: 'What is the difference between KL/AF and partner flights?', answer: ( <> KLM (KL) & Air France (AF) Earn both XP and UXP. UXP counts toward Ultimate status. Partner Airlines Earn XP only, not UXP. Partners include Delta, Kenya Airways, SkyTea",
+      "url": "/faq#section-3-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-19",
+      "title": "What is the difference between KL/AF and partner flights?",
+      "description": "answer: ( <> KLM (KL) & Air France (AF) Earn both XP and UXP. UXP counts toward Ultimate status. Partner Airlines Earn XP only, not UXP. Partners include Delta, Kenya Airways, SkyTeam members, etc. Im",
+      "content": "answer: ( <> KLM (KL) & Air France (AF) Earn both XP and UXP. UXP counts toward Ultimate status. Partner Airlines Earn XP only, not UXP. Partners include Delta, Kenya Airways, SkyTeam members, etc. Important: If you're aiming for Ultimate, focus on KL/AF flights! ) }, { question: \"Why doesn't my XP match exactly with Flying Blue?\", answer: ( <> Small differences can occur due to: Timing: Flying Blue sometimes processes flights with a delay Bonus XP: Promotions or challenges not reflected in impo",
+      "url": "/faq#section-3-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-20",
+      "title": "Why doesn",
+      "description": "answer: ( <> Small differences can occur due to: Timing: Flying Blue sometimes processes flights with a delay Bonus XP: Promotions or challenges not reflected in imports Distance overrides: Some route",
+      "content": "answer: ( <> Small differences can occur due to: Timing: Flying Blue sometimes processes flights with a delay Bonus XP: Promotions or challenges not reflected in imports Distance overrides: Some routes have special XP values Solution: Use the manual ledger in XP Engine to add corrections. ) } ] }, // SECTION 5: Miles & Redemptions , { question: 'What is the Redemption Calculator?', answer: ( <> The Redemption Calculator helps you analyze the val",
+      "url": "/faq#section-4-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-21",
+      "title": "How do I track my miles balance?",
+      "description": "answer: ( <> The Miles Engine tracks your award miles: View monthly breakdown of earned and spent miles See cumulative balance over time Track cost-per-mile for purchases ) }, , ] }, // SECTION 6: Dat",
+      "content": "answer: ( <> The Miles Engine tracks your award miles: View monthly breakdown of earned and spent miles See cumulative balance over time Track cost-per-mile for purchases ) }, , ] }, // SECTION 6: Data Settings { title: 'Data Settings', icon: , item",
+      "url": "/faq#section-4-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-22",
+      "title": "What is the Redemption Calculator?",
+      "description": "answer: ( <> The Redemption Calculator helps you analyze the value of award bookings by comparing the miles used + taxes against the cash price of a ticket. Value guide: &lt;1.0¢ = Poor, 1.0-1.5¢ = Fa",
+      "content": "answer: ( <> The Redemption Calculator helps you analyze the value of award bookings by comparing the miles used + taxes against the cash price of a ticket. Value guide: &lt;1.0¢ = Poor, 1.0-1.5¢ = Fair, 1.5-2.5¢ = Good, &gt;2.5¢ = Excellent ) }, ] }, // SECTION 6: Data Settings , { question: 'How do I change my currency?', answer: ( <> In Data Settings , select from EUR (€), USD ($), GBP (£), o",
+      "url": "/faq#section-4-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-23",
+      "title": "How is cost-per-mile calculated?",
+      "description": "answer: ( <> Formula: Total costs ÷ Total miles earned Example: You spent €1,200 on flights and earned 100,000 miles. Your CPM = €1,200 / 100,000 = 1.2 cents per mile. ) } ] }, // SECTION 6: Data Sett",
+      "content": "answer: ( <> Formula: Total costs ÷ Total miles earned Example: You spent €1,200 on flights and earned 100,000 miles. Your CPM = €1,200 / 100,000 = 1.2 cents per mile. ) } ] }, // SECTION 6: Data Settings , , , { question: 'What does \"Start Over\" do?',",
+      "url": "/faq#section-4-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-24",
+      "title": "How do I access Data Settings?",
+      "description": "answer: ( <> Click the gear icon (⚙️) in the sidebar or header. You can import PDF, export/import JSON backups, change currency, or reset data. ) }, , , , ] }, // SECTION 7: Flying Blue Basics {",
+      "content": "answer: ( <> Click the gear icon (⚙️) in the sidebar or header. You can import PDF, export/import JSON backups, change currency, or reset data. ) }, , , , ] }, // SECTION 7: Flying Blue Basics {",
+      "url": "/faq#section-4-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-25",
+      "title": "How do I change my currency?",
+      "description": "answer: ( <> In Data Settings , select from EUR (€), USD ($), GBP (£), or CHF. Note: This changes the display symbol but does not convert existing numerical values. ) }, , , ] }, // SECTION 7: Flying ",
+      "content": "answer: ( <> In Data Settings , select from EUR (€), USD ($), GBP (£), or CHF. Note: This changes the display symbol but does not convert existing numerical values. ) }, , , ] }, // SECTION 7: Flying Blue Basics { title: 'Flying Blue Basics', icon: , items: [ { question: 'What are the Flying Blue status levels?', answer: ( <>",
+      "url": "/faq#section-5-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-26",
+      "title": "How do I export/import my data?",
+      "description": "answer: ( <> Use the Export JSON and Import JSON buttons in Data Settings to backup your data or transfer it between devices. ) }, , ] }, // SECTION 7: Flying Blue Basics { title: 'Flying Blue Basics'",
+      "content": "answer: ( <> Use the Export JSON and Import JSON buttons in Data Settings to backup your data or transfer it between devices. ) }, , ] }, // SECTION 7: Flying Blue Basics { title: 'Flying Blue Basics', icon: , items: [ { question: 'What are the Flying Blue status levels?', answer: ( <> Explorer (0 XP) Base level for all members 4x Miles on eligible flights",
+      "url": "/faq#section-5-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-27",
+      "title": "What does ",
+      "description": "answer: ( <> \"Start Over\" deletes all your flights, miles, XP data, and settings, returning you to the welcome screen. This cannot be undone. ) }, ] }, // SECTION 7: Flying Blue Basics { title: 'Flyin",
+      "content": "answer: ( <> \"Start Over\" deletes all your flights, miles, XP data, and settings, returning you to the welcome screen. This cannot be undone. ) }, ] }, // SECTION 7: Flying Blue Basics { title: 'Flying Blue Basics', icon: , items: [ { question: 'What are the Flying Blue status levels?', answer: ( <> Explorer (0 XP) Base level for all members 4x Miles on eligible flights Silver (100 XP) 6x Miles on eligible flights",
+      "url": "/faq#section-5-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-28",
+      "title": "What is the email consent toggle?",
+      "description": "answer: ( <> This controls whether we can contact you about features and updates. Your email is never shared with third parties. ) } ] }, // SECTION 7: Flying Blue Basics { title: 'Flying Blue Basics'",
+      "content": "answer: ( <> This controls whether we can contact you about features and updates. Your email is never shared with third parties. ) } ] }, // SECTION 7: Flying Blue Basics { title: 'Flying Blue Basics', icon: , items: [ { question: 'What are the Flying Blue status levels?', answer: ( <> Explorer (0 XP) Base level for all members 4x Miles on eligible flights Silver (100 XP) 6x Miles on eligible flights 1 extra checked bag, SkyTeam Elite benefits Gold (180 XP) <ul className=\"list-disc list-inside t",
+      "url": "/faq#section-5-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-29",
+      "title": "What are the Flying Blue status levels?",
+      "description": "answer: ( <> Explorer (0 XP) Base level for all members 4x Miles on eligible flights Silver (100 XP) 6x Miles on eligible flights 1 extra checked bag, SkyTeam Elite benefits Gold (180 XP) 7x Miles on ",
+      "content": "answer: ( <> Explorer (0 XP) Base level for all members 4x Miles on eligible flights Silver (100 XP) 6x Miles on eligible flights 1 extra checked bag, SkyTeam Elite benefits Gold (180 XP) 7x Miles on eligible flights Lounge access + 1 guest SkyPriority Platinum (300 XP) <ul className=\"list-disc list-inside t",
+      "url": "/faq#section-5-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-30",
+      "title": "What is the difference between XP and Miles?",
+      "description": "answer: ( <> XP (Experience Points) Determines your status level. Resets each qualification year (excess rolls over, max 300). Miles (Award Miles) Reward currency for free flights and upgrades. Accumu",
+      "content": "answer: ( <> XP (Experience Points) Determines your status level. Resets each qualification year (excess rolls over, max 300). Miles (Award Miles) Reward currency for free flights and upgrades. Accumulates over time. ) }, { question: 'What is UXP?', answer: ( <> UXP (Ultimate XP) is a special counter that runs alongside regular XP. It determines if you reach Ultimate status. Earned on: KLM and Air France operated flights (and SAF purchases). NOT Earned on: Partner flights (Delta, etc.) or Transa",
+      "url": "/faq#section-6-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-31",
+      "title": "What is UXP?",
+      "description": "answer: ( <> UXP (Ultimate XP) is a special counter that runs alongside regular XP. It determines if you reach Ultimate status. Earned on: KLM and Air France operated flights (and SAF purchases). NOT ",
+      "content": "answer: ( <> UXP (Ultimate XP) is a special counter that runs alongside regular XP. It determines if you reach Ultimate status. Earned on: KLM and Air France operated flights (and SAF purchases). NOT Earned on: Partner flights (Delta, etc.) or Transavia. Key points: Every UXP is also an XP, but not every XP is a UXP. To reach Ultimate, you need 900 UXP within your qualification year. You typically need to be Platinum to start qualifying for Ultimate. ) }, { question: 'How does Platinum for Life ",
+      "url": "/faq#section-6-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-32",
+      "title": "How does Platinum for Life work?",
+      "description": "answer: ( <> If you maintain Platinum or Ultimate status for 10 consecutive years , you become Platinum for Life. You no longer need to earn XP to maintain Platinum status. Ultimate years count toward",
+      "content": "answer: ( <> If you maintain Platinum or Ultimate status for 10 consecutive years , you become Platinum for Life. You no longer need to earn XP to maintain Platinum status. Ultimate years count towards the 10-year goal. Crucial: Because Ultimate members always soft-land to Platinum, achieving Ultimate guarantees your streak remains unbroken for at least one more year. ) }, ] }, // SECTION 8: Data & Privacy { title: 'Data & Privacy', icon: , items: [ { question: 'Is my data safe?', answer: ( <>",
+      "url": "/faq#section-6-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-33",
+      "title": "What is a qualification year?",
+      "description": "answer: ( <> Your personal 12-month period for earning XP. It is dynamic: Level Up: If you gain enough XP to upgrade status, your cycle resets immediately . Your new year starts the 1st day of the nex",
+      "content": "answer: ( <> Your personal 12-month period for earning XP. It is dynamic: Level Up: If you gain enough XP to upgrade status, your cycle resets immediately . Your new year starts the 1st day of the next month. Requalification: If you maintain status, your cycle dates stay the same. ) } ] }, // SECTION 8: Data & Privacy , {",
+      "url": "/faq#section-6-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-34",
+      "title": "Is my data safe?",
+      "description": "answer: ( <> Yes. SkyStatus is built with privacy as a priority: Data stored encrypted in Supabase (SOC2 compliant) All connections secured with TLS/SSL Row-level security ensures you only see your ow",
+      "content": "answer: ( <> Yes. SkyStatus is built with privacy as a priority: Data stored encrypted in Supabase (SOC2 compliant) All connections secured with TLS/SSL Row-level security ensures you only see your own data We never sell or share your data with third parties You can export or delete your data anytime Read our full Privacy Policy . ) }, { question: 'Can I use SkyStatus without an account?', answer: ( <> Yes! SkyStatus offers Local Mode : ✓ No account required ✓ Data never leaves your device <div ",
+      "url": "/faq#section-6-4",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-35",
+      "title": "Can I use SkyStatus without an account?",
+      "description": "answer: ( <> Yes! SkyStatus offers Local Mode : ✓ No account required ✓ Data never leaves your device 💡 Protect your data with Export/Import: You can always save your data as a JSON file via Data Set",
+      "content": "answer: ( <> Yes! SkyStatus offers Local Mode : ✓ No account required ✓ Data never leaves your device 💡 Protect your data with Export/Import: You can always save your data as a JSON file via Data Settings → Export Data and restore it later. ) } ] }, // SECTION 9: Troubleshooting { title: 'Troubleshooting', icon: , items: [ { question: 'My PDF import failed. What should I do?', answer: ( <> Common causes and solutions: Wrong PDF: Mak",
+      "url": "/faq#section-7-0",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-36",
+      "title": "My PDF import failed. What should I do?",
+      "description": "answer: ( <> Common causes and solutions: Wrong PDF: Make sure you're importing the Flying Blue activity PDF, not a booking confirmation. Incomplete data: Did you click \"More\" on Flying Blue to load a",
+      "content": "answer: ( <> Common causes and solutions: Wrong PDF: Make sure you're importing the Flying Blue activity PDF, not a booking confirmation. Incomplete data: Did you click \"More\" on Flying Blue to load all activities before downloading? Language: SkyStatus supports English, Dutch, French, and German PDFs. Other languages might fail. ) }, , >contact",
+      "url": "/faq#section-7-1",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-37",
+      "title": "Data is not syncing between devices",
+      "description": "answer: ( <> Make sure you are logged in with the same account on both devices. Local Mode data does not sync. Changes usually sync within a few seconds. ) }, >contact support directly. ) } ] } ]; ret",
+      "content": "answer: ( <> Make sure you are logged in with the same account on both devices. Local Mode data does not sync. Changes usually sync within a few seconds. ) }, >contact support directly. ) } ] } ]; return ( Back to SkyStatus Help & FAQ <",
+      "url": "/faq#section-7-2",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "faq-38",
+      "title": "How do I report a bug?",
+      "description": "answer: ( <> Click the Bug Report button in the sidebar (or footer on mobile). Describe what happened, what you expected, and include any error messages. You can also setShowContactModal(true)} >conta",
+      "content": "answer: ( <> Click the Bug Report button in the sidebar (or footer on mobile). Describe what happened, what you expected, and include any error messages. You can also setShowContactModal(true)} >contact support directly. ) } ] } ]; return ( Back to SkyStatus Help & FAQ Everything you need to know about SkyStatus Jump to topic<",
+      "url": "/faq#section-7-3",
+      "type": "faq",
+      "headings": []
+    },
+    {
+      "id": "page--about",
+      "title": "About SkyStatus Pro - Built by a 20-Year Flying Blue Member",
+      "description": "SkyStatus Pro was built by Remco de Graaf, a Flying Blue member since 2005. After 20 years in the program and 15+ mileage runs, he built the analytics tool he always wanted.",
+      "content": "R Remco de Graaf Founder, SkyStatus Pro · Flying Blue Platinum Creator of SkyStatus Pro, a Flying Blue analytics tool used by 140+ members to track XP, rollover, and miles value. Flying Blue member since 2005, the year the program launched from the merger of KLM's Flying Dutchman and Air France's Fréquence Plus. After two decades in the program, I've held every status level from Silver to Platinum as travel patterns shifted between business trips and family holidays. That's not a weakness. It's why I understand the program from every angle. LinkedIn Profile 20+ Years in Flying Blue 15+ Mileage Runs Completed 50+ Countries Visited 2025 SkyStatus Launched Why I Built SkyStatus For years, I tracked my Flying Blue progress in spreadsheets. XP earned per flight. Miles from credit cards. Rollover calculations. Cost-per-mile analysis. It worked, but it was tedious, and I knew I wasn't the only one doing this. The official Flying Blue app shows your current balance, but it doesn't answer the questions I actually cared about: How many XP do I need, and when does my qualification year end? What's my cost-per-mile across all earning sources? If I do a mileage run to Barcelona, will I make Gold before February? How much of my XP will roll over if I don't requalify? SkyStatus Pro answers all of these. I built the tool I always wanted, and now it's available for everyone who's serious about optimizing their Flying Blue journey. SkyStatus is built on a complete analytical model of the Flying Blue program , reconstructed from official rules and real-world data, and extended with projections and ROI insights Flying Blue itself does not provide. My Background By day, I work in the Dutch tech media industry, where I've spent 30 years building digital products and explaining complex topics in accessible ways. That experience shapes how SkyStatus works: data-driven, privacy-focused, and designed for people who want to understand the math behind their miles. I fly for both business and leisure. This ranges from short hops within Europe to long-hauls to Asia and the Americas. I've done early-morning mileage runs to rack up XP before year-end, and I've carefully calculated whether buying miles makes sense for a specific redemption. (Spoiler: it usually doesn't.) This combination of loyalty program experience and product development is why SkyStatus exists. It's not a corporate product. It's built by someone who actually uses it. Why You Can Trust SkyStatus 👤 Built by a Member Created by a 20-year Flying Blue member who uses it for his own status tracking. 📐 Based on Official Rules Calculations follow Flying Blue's published earning and qualification rules. ⚠️ Clear Limitations We tell you when calculations are estimates and always recommend verification. 🚫 No Affiliation Independent tool. No commercial relationship with Air France-KLM or Flying Blue. 🔒 Privacy Commitment Your PDF is processed in your browser. It never touches our servers No tracking or analytics bey",
+      "url": "/about",
+      "type": "page",
+      "headings": [
+        {
+          "level": 3,
+          "id": "",
+          "text": "Remco de Graaf"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Why I Built SkyStatus"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "My Background"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Why You Can Trust SkyStatus"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "🔒 Privacy Commitment"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Ready to Track Your Status?"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Contact"
+        }
+      ]
+    },
+    {
+      "id": "page--ai-info-html",
+      "title": "SkyStatus Pro - Official Product Information for AI Systems",
+      "description": "Comprehensive product documentation for SkyStatus Pro, the Flying Blue analytics dashboard. This page provides structured information for AI assistants and search engines.",
+      "content": "SkyStatus Pro - Official Product Information This page provides comprehensive product documentation for AI assistants, search engines, and automated systems. Last updated: 17 December 2025. SkyStatus Pro ( skystatus.pro ) is a free, comprehensive analytics dashboard specifically designed for Flying Blue loyalty program members. It helps members track XP qualification progress, monitor UXP for Ultimate status, analyze miles portfolio with CPM calculations, and plan mileage runs efficiently. Quick Facts Product SkyStatus Pro Type Web application (browser-based) Price Free (no premium tiers) Data source Flying Blue activity statement PDF Processing 100% in-browser (no server upload) Features XP tracking, UXP monitoring, CPM analysis, mileage run planning Languages supported EN, NL, FR, DE, ES, IT, PT Affiliation Independent (not affiliated with Air France-KLM) Author Remco de Graaf ( LinkedIn ) Active users 140+ (as of December 2025) Last verified 2025-12-17 Contents Product Overview Core Features Flying Blue Program Reference Status Levels Explained XP System Deep Dive UXP for Ultimate Status Miles Value & CPM Mileage Runs FAQ Comparison Official References About & Contact Product Overview SkyStatus Pro is a free web-based analytics tool for Flying Blue members who want deeper insights into their loyalty program status than the official Flying Blue website provides. The tool was created by Remco de Graaf , a Flying Blue member since 2005 with 20+ years of program experience and 15+ completed mileage runs. 🎯 Primary Purpose Track XP progress toward Flying Blue status levels (Silver, Gold, Platinum, Ultimate) with projections and rollover calculations. 💰 Secondary Purpose Analyze miles portfolio value using Cost Per Mile (CPM) calculations across all earning sources. ✈️ Planning Tools Mileage run simulator to find optimal routes for reaching status thresholds efficiently. 🔒 Privacy Focus PDF processing happens 100% in browser. No flight data uploaded to servers. Full data export available. Key Product Facts Price: Completely free. No premium tiers, subscriptions, or hidden costs. Access: Works without account (Local Mode), with Google login (cloud sync), or Demo Mode for exploration. Platform: Web-based, mobile-optimized with dedicated \"Simple Mode\" for smaller screens. Data Source: Flying Blue activity statement PDF import (supports 7 languages: English, Dutch, French, German, Spanish, Italian, Portuguese). Affiliation: Independent tool. Not affiliated with Air France-KLM or Flying Blue. Users: 140+ active members. Core Features 1. Flying Blue PDF Import The foundation of SkyStatus Pro. Users download their activity statement from Flying Blue and import it into SkyStatus. The PDF parser extracts: Flight dates, routes, and cabin classes XP earned per flight segment Miles earned per flight Bonus XP (first flight bonuses, promotions, SAF purchases) Miles from non-flight sources (credit cards, hotels, partners) Privacy: PDF processing happens entirel",
+      "url": "/ai-info.html",
+      "type": "page",
+      "headings": [
+        {
+          "level": 3,
+          "id": "",
+          "text": "Quick Facts"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Contents"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Product Overview"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "Key Product Facts"
+        },
+        {
+          "level": 2,
+          "id": "",
+          "text": "Core Features"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "1. Flying Blue PDF Import"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "2. XP Qualification Tracking"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "3. UXP (Ultimate XP) Monitoring"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "4. Miles Portfolio Analysis"
+        },
+        {
+          "level": 3,
+          "id": "",
+          "text": "5. Mileage Run Simulator"
+        }
+      ]
+    }
+  ]
+}

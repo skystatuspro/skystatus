@@ -2,7 +2,7 @@
 # Checks if skystatus.pro is reachable every 30 minutes
 # Creates an issue if the site is down
 
-name: 🟢 Uptime Monitor
+name: Uptime Monitor
 
 on:
   schedule:
@@ -33,9 +33,9 @@ jobs:
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$url" || echo "000")
             
             if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
-              echo "  ✅ $url - HTTP $HTTP_CODE"
+              echo "  OK $url - HTTP $HTTP_CODE"
             else
-              echo "  ❌ $url - HTTP $HTTP_CODE"
+              echo "  FAIL $url - HTTP $HTTP_CODE"
               FAILED="${FAILED}\n- $url (HTTP $HTTP_CODE)"
             fi
           done
@@ -45,7 +45,7 @@ jobs:
             echo "failed_urls=$FAILED" >> $GITHUB_OUTPUT
           else
             echo "is_down=false" >> $GITHUB_OUTPUT
-            echo "All endpoints responding correctly ✅"
+            echo "All endpoints responding correctly"
           fi
 
       - name: Create or update issue if down
@@ -53,10 +53,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const failedUrls = `${{ steps.check.outputs.failed_urls }}`.replace(/\\n/g, '\n');
+            const failedUrls = process.env.FAILED_URLS.replace(/\\n/g, '\n');
             const now = new Date().toISOString();
             
-            // Check for existing open issue
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -64,46 +63,47 @@ jobs:
               labels: 'downtime'
             });
             
-            const body = `## 🔴 Site Down Alert
-
-**Detected:** ${now}
-
-The following URLs are not responding correctly:
-${failedUrls}
-
-### Suggested Actions
-1. Check [Vercel Dashboard](https://vercel.com) for deployment status
-2. Check [Supabase Dashboard](https://supabase.com) for database status
-3. Try accessing the site manually
-4. Check DNS settings if all endpoints fail
-
-This issue will auto-close when the site is back up.`;
+            const body = [
+              '## Site Down Alert',
+              '',
+              '**Detected:** ' + now,
+              '',
+              'The following URLs are not responding correctly:',
+              failedUrls,
+              '',
+              '### Suggested Actions',
+              '1. Check Vercel Dashboard for deployment status',
+              '2. Check Supabase Dashboard for database status',
+              '3. Try accessing the site manually',
+              '4. Check DNS settings if all endpoints fail',
+              '',
+              'This issue will auto-close when the site is back up.'
+            ].join('\n');
             
             if (issues.data.length > 0) {
-              // Add comment to existing issue
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issues.data[0].number,
-                body: `### 🔄 Still down at ${now}\n${failedUrls}`
+                body: '### Still down at ' + now + '\n' + failedUrls
               });
             } else {
-              // Create new issue
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: '🔴 SkyStatus Pro is down!',
+                title: 'SkyStatus Pro is down!',
                 body: body,
                 labels: ['downtime', 'urgent', 'automated']
               });
             }
+        env:
+          FAILED_URLS: ${{ steps.check.outputs.failed_urls }}
 
       - name: Close issue if back up
         if: steps.check.outputs.is_down == 'false'
         uses: actions/github-script@v7
         with:
           script: |
-            // Check for existing open downtime issue
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -111,12 +111,14 @@ This issue will auto-close when the site is back up.`;
               labels: 'downtime'
             });
             
+            const now = new Date().toISOString();
+            
             for (const issue of issues.data) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                body: `### ✅ Site is back up!\n\nRecovered at ${new Date().toISOString()}`
+                body: '### Site is back up!\n\nRecovered at ' + now
               });
               
               await github.rest.issues.update({

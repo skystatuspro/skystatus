@@ -16,6 +16,11 @@
     {
         "@context":"https://schema.org",
         "@type":"Article",
+        "@id":"https://skystatus.pro/guide/what-is-flying-blue-xp#article",
+        "mainEntityOfPage":{
+            "@type":"WebPage",
+            "@id":"https://skystatus.pro/guide/what-is-flying-blue-xp"
+        },
         "headline":"What is Flying Blue XP? Complete Guide to Experience Points",
         "description":"Flying Blue XP (Experience Points) determine your elite status with Air France and KLM. Complete guide covering earning rates, status thresholds, and qualification cycles.",
         "author": {
@@ -25,19 +30,161 @@
             "jobTitle": "Founder, SkyStatus Pro",
             "sameAs": ["https://www.linkedin.com/in/remcodegraaf/"]
         },
-        "publisher":{"@type":"Organization","name":"SkyStatus","url":"https://skystatus.pro"},
+        "publisher":{
+            "@type":"Organization",
+            "@id":"https://skystatus.pro/#organization",
+            "name":"SkyStatus Pro",
+            "url":"https://skystatus.pro",
+            "logo":{
+                "@type":"ImageObject",
+                "url":"https://skystatus.pro/logo.png"
+            }
+        },
         "datePublished":"2024-12-15",
-        "dateModified": "2025-12-17"
+        "dateModified":"2025-12-16"
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": "https://skystatus.pro/guide/what-is-flying-blue-xp#faq",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is Flying Blue XP?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "XP (Experience Points) are the status currency in the Flying Blue loyalty program. Unlike Miles which are used for rewards, XP determines your elite status level: Silver (100 XP), Gold (180 XP), Platinum (300 XP), or Ultimate (900 UXP)."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I earn Flying Blue XP?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "You earn XP by flying on Air France, KLM, and SkyTeam partner airlines. The amount depends on your cabin class: Economy earns 4-8 XP per segment, Business earns 16-20 XP, and First/La Première earns 24+ XP."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What is the difference between XP and Miles?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "XP determines your status level and resets each qualification year. Miles are your reward currency that can be redeemed for flights, upgrades, and other rewards. They are earned separately and don't expire as long as you have account activity."
+                }
+            }
+        ]
     }
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b; background: #f8fafc; }
         .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
-        nav { background: #0f172a; padding: 1rem; margin-bottom: 2rem; }
-        nav .inner { max-width: 800px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        nav a { color: white; text-decoration: none; font-weight: 600; }
-        nav .cta { background: #3b82f6; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; }
+        /* Updated Navigation - matches landing page */
+        nav { 
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid #f1f5f9;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+        nav .inner { 
+            max-width: 1152px; 
+            margin: 0 auto; 
+            padding: 0 1rem;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            gap: 0.75rem;
+        }
+        nav .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #0f172a;
+        }
+        nav .logo-icon {
+            background: #0f172a;
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        nav .logo-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+            transform: rotate(-45deg);
+        }
+        nav .logo-text {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.01em;
+        }
+        nav .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        nav .nav-link {
+            padding: 0.5rem 1rem;
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border-radius: 0.5rem;
+            transition: all 0.15s;
+        }
+        nav .nav-link:hover {
+            color: #0f172a;
+        }
+        nav .nav-link.active {
+            color: #0f172a;
+        }
+        nav .search-btn {
+            padding: 0.5rem;
+            color: #475569;
+            background: transparent;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        nav .search-btn:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+        nav .cta-btn {
+            padding: 0.625rem 1.25rem;
+            background: #0f172a;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 0.75rem;
+            transition: all 0.15s;
+        }
+        nav .cta-btn:hover {
+            background: #1e293b;
+        }
+        @media (max-width: 640px) {
+            nav .nav-link { display: none; }
+            nav .search-btn { display: none; }
+            nav .nav-links { gap: 0.5rem; }
+        }
+        }
         .breadcrumb { font-size: 0.9rem; color: #64748b; margin-bottom: 1rem; }
         .breadcrumb a { color: #3b82f6; text-decoration: none; }
         h1 { font-size: 2.2rem; margin-bottom: 1rem; color: #0f172a; }
@@ -100,16 +247,36 @@
         ]
     }
     </script>
-    <!-- Google Analytics 4 (consent-aware) -->
-    <script src="/js/ga4-static.js"></script>
 </head>
 <body>
-    <nav><div class="inner"><a href="/">✈️ SkyStatus Pro</a><a href="/" class="cta">Track Your XP →</a></div></nav>
+    <nav>
+        <div class="inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 13l-2 2H6l-2 2 3.5.5.5 3.5 2-2v-3l2-2 4.5 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1Z"/>
+                    </svg>
+                </span>
+                <span class="logo-text">SkyStatus</span>
+            </a>
+            <div class="nav-links">
+                <a href="/guide" class="nav-link">Guides</a>
+                <a href="/faq" class="nav-link">Help & FAQ</a>
+                <a href="/?search=1" class="search-btn" title="Search (⌘K)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+                </a>
+                <a href="/" class="cta-btn">Sign In</a>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <div class="breadcrumb"><a href="/">Home</a> → <a href="/guide">Guides</a> → What is Flying Blue XP</div>
         <article>
             <h1>What is Flying Blue XP? Complete Guide to Experience Points</h1>
-            <p class="meta">Last updated: 17 December 2025 · 10 min read · Based on official Flying Blue program rules · <a href="#official-references" style="color: #3b82f6;">See sources</a></p>
+            <p class="meta">Last updated: December 2025 · 10 min read · Based on official Flying Blue program rules · <a href="#official-references" style="color: #3b82f6;">See sources</a></p>
             <div class="author-byline">
                 <div class="author-avatar">R</div>
                 <div class="author-info">
@@ -233,7 +400,7 @@
             </table>
             
             <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;">
-                Official source: <a href="https://www.flyingblue.com/en/programme/more-info/status" target="_blank" rel="noopener">Flying Blue Status & XP</a>. Rates may vary by airline and booking class. Last verified: 17 December 2025.
+                Official source: <a href="https://www.flyingblue.com/en/programme/more-info/status" target="_blank" rel="noopener">Flying Blue Status & XP</a>. Rates may vary by airline and booking class. Last verified: December 2025.
             </p>
             
             <div class="tip-box">
@@ -313,11 +480,11 @@
                 <tr>
                     <td><strong><a href="/guide/flying-blue-platinum-status">Platinum</a></strong></td>
                     <td>300 XP<br><span style="font-size:0.85em; color:#64748b; font-weight:normal">(Deducted upon qualification)</span></td>
-                    <td>Free seat selection at booking (including Economy Comfort on KLM), start earning UXP</td>
+                    <td>Complimentary upgrades, start earning UXP</td>
                 </tr>
                 <tr>
                     <td><strong><a href="/guide/flying-blue-ultimate-status">Ultimate</a></strong></td>
-                    <td>900 <a href="/guide/flying-blue-uxp-explained">UXP</a><br><span style="font-size:0.85em; color:#64748b; font-weight:normal">(Both deducted upon qualification)</span></td>
+                    <td>300 XP + 900 <a href="/guide/flying-blue-uxp-explained">UXP</a><br><span style="font-size:0.85em; color:#64748b; font-weight:normal">(Both deducted upon qualification)</span></td>
                     <td>Highest priority, lifetime status path, upgrade vouchers</td>
                 </tr>
             </table>
@@ -350,6 +517,7 @@
 
             <div class="warning-box">
                 <strong>⚠️ Ultimate Does NOT Reset Your Year:</strong> Unlike Silver, Gold, and Platinum, reaching Ultimate does not trigger a new qualification year. Ultimate is a status layer on top of Platinum, not a separate XP level.
+            </div>
             </div>
             
             <div class="example-box">
@@ -414,7 +582,7 @@
                 <li><a href="https://img.static-fb.com/m/210bf6c67e0bebac/original/Fbcom_Terms-and-Conditions-EN.pdf" target="_blank" rel="noopener">Flying Blue Terms & Conditions (PDF)</a> — Full program rules</li>
             </ul>
             
-            <p class="source-note">This guide is based on official Flying Blue program rules. Status requirements and benefits may change. Always verify current terms on the official Flying Blue website. Last verified: 17 December 2025. SkyStatus is an independent tool and is not affiliated with Air France-KLM or Flying Blue.</p>
+            <p class="source-note">This guide is based on official Flying Blue program rules. Status requirements and benefits may change. Always verify current terms on the official Flying Blue website. Last verified: December 2025. SkyStatus is an independent tool and is not affiliated with Air France-KLM or Flying Blue.</p>
         </article>
         
         <footer>
@@ -422,5 +590,6 @@
             <p style="margin-top: 0.5rem;">© 2025 SkyStatus. Not affiliated with Air France-KLM or Flying Blue.</p>
         </footer>
     </div>
+    <script src="/js/report-error.js"></script>
 </body>
 </html>
