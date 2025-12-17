@@ -147,7 +147,7 @@ export const Layout: React.FC<LayoutProps> = ({
         } flex flex-col`}
       >
         {/* Logo Area */}
-        <div className="flex items-center gap-3 px-2 mb-6 mt-2 flex-shrink-0">
+        <div className="flex items-center gap-3 px-2 mb-10 mt-2 flex-shrink-0">
           <div className="bg-white p-2 rounded-xl shadow-lg shadow-white/10">
               <Plane className="text-slate-900 transform -rotate-45" size={24} fill="currentColor" />
           </div>
@@ -160,16 +160,6 @@ export const Layout: React.FC<LayoutProps> = ({
             </p>
           </div>
         </div>
-
-        {/* Search Button */}
-        <button
-          onClick={handleSearchOpen}
-          className="w-full flex items-center gap-3 px-4 py-2.5 mb-4 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors text-sm"
-        >
-          <Search size={18} />
-          <span>Search</span>
-          <kbd className="ml-auto px-1.5 py-0.5 bg-slate-700 rounded text-[10px] font-mono text-slate-500">⌘K</kbd>
-        </button>
 
         {/* Navigation Links */}
         <nav className="space-y-2 flex-1 overflow-y-auto">
@@ -198,6 +188,16 @@ export const Layout: React.FC<LayoutProps> = ({
                 setIsMobileMenuOpen(false);
             }} 
           />
+          
+          {/* Search - secondary utility */}
+          <button
+            onClick={handleSearchOpen}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-200 group"
+          >
+            <Search size={20} className="text-slate-500 group-hover:text-white transition-colors" />
+            <span className="font-medium text-sm tracking-wide">Search</span>
+            <kbd className="ml-auto px-1.5 py-0.5 bg-slate-800 group-hover:bg-slate-700 rounded text-[10px] font-mono text-slate-500">⌘K</kbd>
+          </button>
         </nav>
 
         {/* Footer Info */}
