@@ -30,6 +30,13 @@ const CURRENT_YEAR = today.getFullYear();
 const TODAY_ISO = today.toISOString().split('T')[0]; // 2025-12-17
 const TODAY_MONTH_YEAR = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }); // December 2025
 
+// Human-readable European format: "17 December 2025"
+const TODAY_HUMAN = today.toLocaleDateString('en-GB', { 
+  day: 'numeric', 
+  month: 'long', 
+  year: 'numeric' 
+}); // 17 December 2025
+
 // User count - kan worden overschreven via SKYSTATUS_USER_COUNT env var
 // Of via een aparte fetch-user-count.js script dat dit voor de build zet
 const USER_COUNT = process.env.SKYSTATUS_USER_COUNT || null;
@@ -131,18 +138,21 @@ function updateLastUpdatedDates() {
   let updated = 0;
   guideFiles.forEach(file => {
     const wasUpdated = updateFile(file, [
-      // "Last updated: December 2025" format → convert to specific date
-      [/Last updated: \w+ \d{4}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
-      // "Last updated: 2025-12-16" format
-      [/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
+      // "Last updated: December 2025" format → human readable
+      [/Last updated: \w+ \d{4}(?!\d)/g, `Last updated: ${TODAY_HUMAN}`, `Last updated → ${TODAY_HUMAN}`],
+      // "Last updated: 2025-12-16" format → human readable
+      [/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${TODAY_HUMAN}`, `Last updated → ${TODAY_HUMAN}`],
+      // "Last updated: 17 December 2025" format → update to today
+      [/Last updated: \d{1,2} \w+ \d{4}/g, `Last updated: ${TODAY_HUMAN}`, `Last updated → ${TODAY_HUMAN}`],
     ]);
     if (wasUpdated) updated++;
   });
   
   // Also update ai-info.html
   updateFile(join(rootDir, 'public/ai-info.html'), [
-    [/Last updated: \w+ \d{4}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
-    [/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
+    [/Last updated: \w+ \d{4}(?!\d)/g, `Last updated: ${TODAY_HUMAN}`, `Last updated → ${TODAY_HUMAN}`],
+    [/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${TODAY_HUMAN}`, `Last updated → ${TODAY_HUMAN}`],
+    [/Last updated: \d{1,2} \w+ \d{4}/g, `Last updated: ${TODAY_HUMAN}`, `Last updated → ${TODAY_HUMAN}`],
   ]);
   
   log('✅', `Last updated dates: ${updated} guide files updated`);
@@ -162,10 +172,12 @@ function updateLastVerifiedDates() {
   let updated = 0;
   guideFiles.forEach(file => {
     const wasUpdated = updateFile(file, [
-      // "Last verified: December 2025" format → convert to specific date
-      [/Last verified: \w+ \d{4}/g, `Last verified: ${TODAY_ISO}`, `Last verified → ${TODAY_ISO}`],
-      // "Last verified: 2025-12-16" format  
-      [/Last verified: \d{4}-\d{2}-\d{2}/g, `Last verified: ${TODAY_ISO}`, `Last verified → ${TODAY_ISO}`],
+      // "Last verified: December 2025" format → human readable
+      [/Last verified: \w+ \d{4}(?!\d)/g, `Last verified: ${TODAY_HUMAN}`, `Last verified → ${TODAY_HUMAN}`],
+      // "Last verified: 2025-12-16" format → human readable
+      [/Last verified: \d{4}-\d{2}-\d{2}/g, `Last verified: ${TODAY_HUMAN}`, `Last verified → ${TODAY_HUMAN}`],
+      // "Last verified: 17 December 2025" format → update to today
+      [/Last verified: \d{1,2} \w+ \d{4}/g, `Last verified: ${TODAY_HUMAN}`, `Last verified → ${TODAY_HUMAN}`],
     ]);
     if (wasUpdated) updated++;
   });
@@ -319,6 +331,30 @@ function updateAiInfo() {
 }
 
 // ============================================================
+// 9. UPDATE RATING COUNT (based on user count)
+// ============================================================
+
+function updateRatingCount() {
+  if (!USER_COUNT) {
+    log('ℹ️', 'Rating count: skipped (no user count available)');
+    return;
+  }
+  
+  log('⭐', 'Updating ratingCount in structured data...');
+  
+  const indexPath = join(rootDir, 'index.html');
+  
+  // Use user count as ratingCount (or a percentage of it)
+  const ratingCount = USER_COUNT;
+  
+  updateFile(indexPath, [
+    [/"ratingCount":\s*"\d+"/g, `"ratingCount": "${ratingCount}"`, `ratingCount → ${ratingCount}`],
+  ]);
+  
+  log('✅', `Rating count updated to ${ratingCount}`);
+}
+
+// ============================================================
 // MAIN EXECUTION
 // ============================================================
 
@@ -334,6 +370,7 @@ updateLastVerifiedDates();
 updateYearInTitles();
 generateSitemap();
 updateUserCount();
+updateRatingCount();
 updateAiInfo();
 
 console.log('\n✨ Pre-build complete!\n');
