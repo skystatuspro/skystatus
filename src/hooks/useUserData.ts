@@ -597,13 +597,13 @@ export function useUserData(): UseUserDataReturn {
     }
     // If no bonus XP, keep existing ledger unchanged
 
-    // 4. QUALIFICATION SETTINGS: NEVER overwrite existing settings
-    // The user's current settings are the source of truth - they know their cycle better than the PDF
-    // Only set settings if user has NONE (first time import)
+    // 4. QUALIFICATION SETTINGS: Only update on actual status CHANGE
+    // Compare PDF header status (source of truth) with user's current status
     if (cycleSettings) {
+      const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
+      
       if (!qualificationSettings) {
         // No existing settings - use PDF settings (first time setup)
-        const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
         setQualificationSettingsInternal({
           cycleStartMonth: cycleSettings.cycleStartMonth,
           cycleStartDate: cycleSettings.cycleStartDate,
@@ -611,12 +611,26 @@ export function useUserData(): UseUserDataReturn {
           startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
           startingXP: cycleSettings.startingXP ?? 0,
         });
-        console.log('[handlePdfImport] Set qualification settings from PDF (no existing settings)');
+        console.log('[handlePdfImport] Set qualification settings from PDF (first time setup)');
       } else {
-        // User already has settings - DO NOT CHANGE THEM
-        // Their existing cycle/status is correct, PDF import should only add flights
-        console.log('[handlePdfImport] User has existing qualification settings - keeping unchanged');
-        console.log(`  Existing: ${qualificationSettings.startingStatus} from ${qualificationSettings.cycleStartMonth}`);
+        // User has existing settings - only update if status CHANGED
+        const currentUserStatus = qualificationSettings.startingStatus;
+        
+        if (pdfOfficialStatus && pdfOfficialStatus !== currentUserStatus) {
+          // STATUS CHANGE detected! PDF header shows different status than user has
+          // This means user upgraded or downgraded - update the cycle
+          setQualificationSettingsInternal({
+            cycleStartMonth: cycleSettings.cycleStartMonth,
+            cycleStartDate: cycleSettings.cycleStartDate,
+            startingStatus: pdfOfficialStatus,
+            startingXP: cycleSettings.startingXP ?? 0,
+          });
+          console.log(`[handlePdfImport] Status CHANGE detected: ${currentUserStatus} → ${pdfOfficialStatus}`);
+          console.log(`  New cycle: ${cycleSettings.cycleStartMonth}`);
+        } else {
+          // Same status - keep existing settings unchanged
+          console.log(`[handlePdfImport] Status unchanged (${currentUserStatus}) - keeping existing cycle settings`);
+        }
       }
     }
 
