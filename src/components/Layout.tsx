@@ -82,10 +82,16 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { user, signOut } = useAuth();
   const { viewMode, isSimpleMode, setViewMode } = useViewMode();
-  const { trackViewMode, trackNav, trackUserSignOut } = useAnalytics();
+  const { trackViewMode, trackNav, trackUserSignOut, trackSearch } = useAnalytics();
 
-  // Cmd+K shortcut for search
-  useSearchShortcut(() => setIsSearchOpen(true));
+  // Cmd+K shortcut for search (with tracking)
+  useSearchShortcut(() => setIsSearchOpen(true), trackSearch);
+
+  // Handle search open from button click
+  const handleSearchOpen = () => {
+    trackSearch('button');
+    setIsSearchOpen(true);
+  };
 
   // Track navigation with analytics
   const handleNavigate = (view: ViewState) => {
@@ -157,7 +163,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Search Button */}
         <button
-          onClick={() => setIsSearchOpen(true)}
+          onClick={handleSearchOpen}
           className="w-full flex items-center gap-3 px-4 py-2.5 mb-4 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-400 hover:text-white transition-colors text-sm"
         >
           <Search size={18} />
@@ -309,7 +315,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsSearchOpen(true)}
+              onClick={handleSearchOpen}
               className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Search"
             >

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, FileText, HelpCircle, BookOpen, ArrowRight, Hash, ArrowLeft, ExternalLink, Loader2 } from 'lucide-react';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 // ============================================================
 // TYPES
@@ -117,9 +118,14 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTitle, setPreviewTitle] = useState<string>('');
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewType, setPreviewType] = useState<'guide' | 'faq' | 'page'>('guide');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const lastTrackedQuery = useRef<string>('');
+  
+  // Analytics
+  const { trackSearch, trackSearchTerm, trackSearchClick, trackSearchExternal } = useAnalytics();
 
   // Load search index
   useEffect(() => {
@@ -151,10 +157,19 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
       const searchResults = searchItems(searchIndex.items, query);
       setResults(searchResults);
       setSelectedIndex(0);
+      
+      // Track search query (debounced - only if query changed significantly)
+      if (query.length >= 2 && query !== lastTrackedQuery.current) {
+        const timer = setTimeout(() => {
+          trackSearchTerm(query, searchResults.length);
+          lastTrackedQuery.current = query;
+        }, 500);
+        return () => clearTimeout(timer);
+      }
     } else {
       setResults([]);
     }
-  }, [query, searchIndex]);
+  }, [query, searchIndex, trackSearchTerm]);
 
   // Reset state when closing
   useEffect(() => {
@@ -188,7 +203,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
       case 'Enter':
         e.preventDefault();
         if (results[selectedIndex]) {
-          handleSelect(results[selectedIndex]);
+          handleSelect(results[selectedIndex], selectedIndex);
         }
         break;
       case 'Escape':
@@ -207,14 +222,18 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
     }
   }, [selectedIndex]);
 
-  const handleSelect = (result: SearchResult) => {
+  const handleSelect = (result: SearchResult, position: number) => {
     let url = result.url;
     if (result.matchedHeading?.id) {
       url += `#${result.matchedHeading.id}`;
     }
     
+    // Track the click
+    trackSearchClick(query, result.type, result.title, position + 1);
+    
     setPreviewTitle(result.title);
     setPreviewUrl(url);
+    setPreviewType(result.type);
     setPreviewLoading(true);
   };
 
@@ -225,6 +244,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
   const handleOpenExternal = () => {
     if (previewUrl) {
+      trackSearchExternal(previewType, previewUrl);
       window.open(previewUrl, '_blank');
     }
   };
@@ -378,7 +398,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                         <button
                           key={result.id}
                           data-selected={index === selectedIndex}
-                          onClick={() => handleSelect(result)}
+                          onClick={() => handleSelect(result, index)}
                           onMouseEnter={() => setSelectedIndex(index)}
                           className={`w-full p-4 flex items-start gap-4 text-left rounded-xl transition-all ${
                             index === selectedIndex 
@@ -520,18 +540,19 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 // KEYBOARD SHORTCUT HOOK
 // ============================================================
 
-export function useSearchShortcut(callback: () => void) {
+export function useSearchShortcut(callback: () => void, onTrack?: (trigger: 'keyboard') => void) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
+        onTrack?.('keyboard');
         callback();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [callback]);
+  }, [callback, onTrack]);
 }
 
 // ============================================================

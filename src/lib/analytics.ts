@@ -441,6 +441,61 @@ export function trackGuideView(guideSlug: string): void {
   });
 }
 
+// --- SEARCH ---
+
+/**
+ * Track when search modal is opened
+ */
+export function trackSearchOpen(trigger: 'keyboard' | 'button'): void {
+  trackEvent('search_open', {
+    trigger: trigger,
+    event_category: 'search',
+  });
+}
+
+/**
+ * Track search query
+ */
+export function trackSearchQuery(query: string, resultCount: number): void {
+  trackEvent('search_query', {
+    search_term: query.substring(0, 100), // Limit length for GA
+    result_count: resultCount,
+    event_category: 'search',
+  });
+}
+
+/**
+ * Track when a search result is clicked (preview)
+ */
+export function trackSearchResultClick(
+  query: string,
+  resultType: 'guide' | 'faq' | 'page',
+  resultTitle: string,
+  resultPosition: number
+): void {
+  trackEvent('search_result_click', {
+    search_term: query.substring(0, 100),
+    result_type: resultType,
+    result_title: resultTitle.substring(0, 100),
+    result_position: resultPosition,
+    event_category: 'search',
+  });
+}
+
+/**
+ * Track when user opens a search result externally
+ */
+export function trackSearchResultOpen(
+  resultType: 'guide' | 'faq' | 'page',
+  resultUrl: string
+): void {
+  trackEvent('search_result_open', {
+    result_type: resultType,
+    result_url: resultUrl,
+    event_category: 'search',
+  });
+}
+
 // --- FEATURE USAGE ---
 
 /**
