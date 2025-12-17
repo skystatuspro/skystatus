@@ -26,7 +26,7 @@ const newNavCSS = `
             position: sticky;
             top: 0;
             z-index: 50;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid #f1f5f9;
@@ -34,12 +34,13 @@ const newNavCSS = `
             margin-bottom: 2rem;
         }
         nav .inner { 
-            max-width: 900px; 
+            max-width: 1152px; 
             margin: 0 auto; 
+            padding: 0 1rem;
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
         }
         nav .logo {
             display: flex;
@@ -47,8 +48,6 @@ const newNavCSS = `
             gap: 0.75rem;
             text-decoration: none;
             color: #0f172a;
-            font-weight: 700;
-            font-size: 1.25rem;
         }
         nav .logo-icon {
             background: #0f172a;
@@ -61,13 +60,18 @@ const newNavCSS = `
         nav .logo-icon svg {
             width: 20px;
             height: 20px;
-            color: white;
+            fill: white;
             transform: rotate(-45deg);
+        }
+        nav .logo-text {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.01em;
         }
         nav .nav-links {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
         nav .nav-link {
             padding: 0.5rem 1rem;
@@ -80,16 +84,14 @@ const newNavCSS = `
         }
         nav .nav-link:hover {
             color: #0f172a;
-            background: #f1f5f9;
         }
         nav .nav-link.active {
             color: #0f172a;
-            background: #f1f5f9;
         }
         nav .search-btn {
             padding: 0.5rem;
-            color: #64748b;
-            background: #f1f5f9;
+            color: #475569;
+            background: transparent;
             border: none;
             border-radius: 0.5rem;
             cursor: pointer;
@@ -101,7 +103,7 @@ const newNavCSS = `
         }
         nav .search-btn:hover {
             color: #0f172a;
-            background: #e2e8f0;
+            background: #f1f5f9;
         }
         nav .cta-btn {
             padding: 0.625rem 1.25rem;
@@ -118,7 +120,8 @@ const newNavCSS = `
         }
         @media (max-width: 640px) {
             nav .nav-link { display: none; }
-            nav .nav-links { gap: 0.25rem; }
+            nav .search-btn { display: none; }
+            nav .nav-links { gap: 0.5rem; }
         }
 `;
 
@@ -127,11 +130,11 @@ const newNavHTML = `
         <div class="inner">
             <a href="/" class="logo">
                 <span class="logo-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 13l-2 2H6l-2 2 3.5.5.5 3.5 2-2v-3l2-2 4.5 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1Z"/>
                     </svg>
                 </span>
-                SkyStatus
+                <span class="logo-text">SkyStatus</span>
             </a>
             <div class="nav-links">
                 <a href="/guide" class="nav-link">Guides</a>
@@ -158,26 +161,42 @@ const newNavHTMLGuideIndex = newNavHTML.replace(
 // UPDATE FUNCTIONS
 // ============================================================
 
-function updateNavCSS(content) {
-    // Remove old nav CSS
-    const oldNavCSSPattern = /nav\s*\{[^}]+background:\s*#0f172a[^}]+\}[\s\S]*?nav\s+\.cta\s*\{[^}]+\}/;
+function updateNavCSS(content, isAlreadyUpdated = false) {
+    let navStart;
     
-    // Find where nav CSS starts and ends
-    const navStart = content.indexOf('nav {');
-    if (navStart === -1) return content;
-    
-    // Find the end of nav .cta block
-    const ctaPattern = /nav\s+\.cta\s*\{[^}]+\}/;
-    const ctaMatch = content.match(ctaPattern);
-    if (!ctaMatch) return content;
-    
-    const ctaEnd = content.indexOf(ctaMatch[0]) + ctaMatch[0].length;
-    
-    // Replace old nav CSS block with new one
-    const before = content.substring(0, navStart);
-    const after = content.substring(ctaEnd);
-    
-    return before + newNavCSS.trim() + after;
+    if (isAlreadyUpdated) {
+        // Find the updated nav CSS block
+        navStart = content.indexOf('/* Updated Navigation - matches landing page */');
+        if (navStart === -1) return content;
+        
+        // Find the end of the @media block (last } before next CSS rule or end of style)
+        const afterNavStart = content.substring(navStart);
+        const mediaMatch = afterNavStart.match(/@media[^{]*\{[^}]*\}[^}]*\}/);
+        if (!mediaMatch) return content;
+        
+        const cssEnd = navStart + afterNavStart.indexOf(mediaMatch[0]) + mediaMatch[0].length;
+        
+        const before = content.substring(0, navStart);
+        const after = content.substring(cssEnd);
+        
+        return before + newNavCSS.trim() + after;
+    } else {
+        // Original logic for old nav style
+        navStart = content.indexOf('nav {');
+        if (navStart === -1) return content;
+        
+        // Find the end of nav .cta block
+        const ctaPattern = /nav\s+\.cta\s*\{[^}]+\}/;
+        const ctaMatch = content.match(ctaPattern);
+        if (!ctaMatch) return content;
+        
+        const ctaEnd = content.indexOf(ctaMatch[0]) + ctaMatch[0].length;
+        
+        const before = content.substring(0, navStart);
+        const after = content.substring(ctaEnd);
+        
+        return before + newNavCSS.trim() + after;
+    }
 }
 
 function updateNavHTML(content, isGuideIndex = false) {
@@ -191,9 +210,12 @@ function processFile(filePath, isGuideIndex = false) {
     let content = readFileSync(filePath, 'utf-8');
     let changed = false;
     
-    // Check if file has old nav style
-    if (content.includes('background: #0f172a') && content.includes('nav .cta')) {
-        content = updateNavCSS(content);
+    // Check if file has old nav style OR already updated nav style (to allow re-running)
+    const hasOldNav = content.includes('background: #0f172a') && content.includes('nav .cta');
+    const hasNewNav = content.includes('/* Updated Navigation - matches landing page */');
+    
+    if (hasOldNav || hasNewNav) {
+        content = updateNavCSS(content, hasNewNav);
         content = updateNavHTML(content, isGuideIndex);
         changed = true;
     }
