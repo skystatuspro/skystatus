@@ -1,7 +1,7 @@
 # Broken Link Checker
 # Runs weekly and on-demand to find dead links in guide pages
 
-name: 🔗 Check Links
+name: Check Links
 
 on:
   schedule:
@@ -56,12 +56,12 @@ jobs:
       - name: Check for broken links in report
         id: check-results
         run: |
-          if grep -q "🔴\|❌\|Broken\|Error" ./lychee-report.md 2>/dev/null; then
+          if grep -q "Broken\|Error\|404\|Failed" ./lychee-report.md 2>/dev/null; then
             echo "has_broken_links=true" >> $GITHUB_OUTPUT
             echo "::warning::Broken links detected! Check the report artifact."
           else
             echo "has_broken_links=false" >> $GITHUB_OUTPUT
-            echo "✅ No broken links found!"
+            echo "No broken links found!"
           fi
 
       - name: Create issue if broken links found
@@ -71,8 +71,9 @@ jobs:
           script: |
             const fs = require('fs');
             const report = fs.readFileSync('./lychee-report.md', 'utf8');
+            const today = new Date().toISOString().split('T')[0];
+            const reportTruncated = report.substring(0, 60000);
             
-            // Check if there's already an open issue
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -81,20 +82,53 @@ jobs:
             });
             
             if (issues.data.length > 0) {
-              // Update existing issue
+              const commentBody = [
+                '## Updated Link Check Results',
+                '',
+                '**Date:** ' + today,
+                '',
+                '<details>',
+                '<summary>Full Report</summary>',
+                '',
+                '```',
+                reportTruncated,
+                '```',
+                '</details>'
+              ].join('\n');
+              
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issues.data[0].number,
-                body: `## 🔄 Updated Link Check Results\n\n**Date:** ${new Date().toISOString().split('T')[0]}\n\n<details>\n<summary>Full Report</summary>\n\n\`\`\`\n${report.substring(0, 60000)}\n\`\`\`\n</details>`
+                body: commentBody
               });
             } else {
-              // Create new issue
+              const issueBody = [
+                '## Broken Links Found',
+                '',
+                'The weekly link checker found broken links in the guide pages.',
+                '',
+                '**Date:** ' + today,
+                '',
+                '<details>',
+                '<summary>Full Report</summary>',
+                '',
+                '```',
+                reportTruncated,
+                '```',
+                '</details>',
+                '',
+                '### Next Steps',
+                '1. Review the broken links above',
+                '2. Update or remove dead links',
+                '3. Close this issue when fixed'
+              ].join('\n');
+              
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: '🔗 Broken links detected in guides',
-                body: `## Broken Links Found\n\nThe weekly link checker found broken links in the guide pages.\n\n**Date:** ${new Date().toISOString().split('T')[0]}\n\n<details>\n<summary>Full Report</summary>\n\n\`\`\`\n${report.substring(0, 60000)}\n\`\`\`\n</details>\n\n### Next Steps\n1. Review the broken links above\n2. Update or remove dead links\n3. Close this issue when fixed`,
+                title: 'Broken links detected in guides',
+                body: issueBody,
                 labels: ['broken-links', 'maintenance', 'automated']
               });
             }
