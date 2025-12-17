@@ -81,6 +81,7 @@ interface CycleSettings {
   cycleStartDate?: string;  // Full date for precise XP filtering
   startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
   startingXP?: number;  // Rollover XP from previous cycle
+  pdfHeaderStatus?: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null;  // Official status from PDF header (source of truth)
 }
 
 interface PdfImportModalProps {
@@ -194,6 +195,10 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         : null;
     }
 
+    // PDF HEADER STATUS = SOURCE OF TRUTH
+    // This is the official Flying Blue status at time of PDF export
+    const pdfHeaderStatus = parseResult.status as 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null;
+
     return {
       flights,
       miles,
@@ -216,10 +221,14 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       newestDate,
       dataRangeMonths,
       requalifications,
-      // Suggested cycle settings
+      // Suggested cycle settings (from requalification events - informational only)
       suggestedCycleStart,
       suggestedCycleStartDate,  // Full date for precise filtering
       suggestedStatus,
+      // PDF HEADER = SOURCE OF TRUTH
+      pdfHeaderStatus,  // Official status from PDF header
+      pdfTotalMiles: parseResult.totalMiles,  // Official miles balance
+      pdfTotalUXP: parseResult.totalUXP,  // Official UXP balance
     };
   }, [parseResult, existingFlights, existingMiles]);
 
@@ -347,6 +356,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     }
 
     // Prepare cycle settings if detected and user opted in
+    // IMPORTANT: We pass the PDF HEADER status (source of truth), not the detected requalification status
     let cycleSettings: CycleSettings | undefined;
     if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus) {
       // Calculate rollover XP: how much XP was "left over" after reaching the threshold
@@ -360,11 +370,17 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
           )
         : 0;
       
+      // Use PDF HEADER STATUS if available (official Flying Blue status)
+      // Fall back to suggested status only if header is not available
+      const officialStatus = summary.pdfHeaderStatus || summary.suggestedStatus;
+      
       cycleSettings = {
         cycleStartMonth: summary.suggestedCycleStart,
         cycleStartDate: summary.suggestedCycleStartDate || undefined,  // Full date for precise XP filtering
-        startingStatus: summary.suggestedStatus,
+        startingStatus: officialStatus,  // USE OFFICIAL PDF STATUS
         startingXP: rolloverXP,  // Rollover from the level-up
+        // Pass PDF header info for validation in useUserData
+        pdfHeaderStatus: summary.pdfHeaderStatus,
       };
     }
 
