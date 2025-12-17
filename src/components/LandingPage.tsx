@@ -400,7 +400,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             Ready to Optimize Your Flying Blue Journey?
           </h2>
           <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of Flying Blue members who use SkyStatus to track their progress and maximize their benefits.
+            Join 140+ Flying Blue members who use SkyStatus to track their progress and maximize their benefits.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button

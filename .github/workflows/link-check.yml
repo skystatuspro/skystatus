@@ -1,0 +1,100 @@
+# Broken Link Checker
+# Runs weekly and on-demand to find dead links in guide pages
+
+name: 🔗 Check Links
+
+on:
+  schedule:
+    # Every Sunday at 8 AM Amsterdam time
+    - cron: '0 7 * * 0'
+  workflow_dispatch:
+    inputs:
+      fail_on_error:
+        description: 'Fail workflow if broken links found'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  link-check:
+    name: Check for broken links
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check links with Lychee
+        id: lychee
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: >
+            --verbose
+            --no-progress
+            --accept 200,204,206,301,302,307,308
+            --exclude-mail
+            --exclude 'linkedin.com'
+            --exclude 'schema.org'
+            --exclude 'fonts.googleapis.com'
+            --exclude 'fonts.gstatic.com'
+            --timeout 30
+            --max-retries 3
+            --retry-wait-time 5
+            './public/**/*.html'
+            './public/*.html'
+          fail: ${{ inputs.fail_on_error == 'true' }}
+          output: ./lychee-report.md
+
+      - name: Upload report as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: link-check-report
+          path: ./lychee-report.md
+          retention-days: 30
+
+      - name: Check for broken links in report
+        id: check-results
+        run: |
+          if grep -q "🔴\|❌\|Broken\|Error" ./lychee-report.md 2>/dev/null; then
+            echo "has_broken_links=true" >> $GITHUB_OUTPUT
+            echo "::warning::Broken links detected! Check the report artifact."
+          else
+            echo "has_broken_links=false" >> $GITHUB_OUTPUT
+            echo "✅ No broken links found!"
+          fi
+
+      - name: Create issue if broken links found
+        if: steps.check-results.outputs.has_broken_links == 'true' && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('./lychee-report.md', 'utf8');
+            
+            // Check if there's already an open issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'broken-links'
+            });
+            
+            if (issues.data.length > 0) {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `## 🔄 Updated Link Check Results\n\n**Date:** ${new Date().toISOString().split('T')[0]}\n\n<details>\n<summary>Full Report</summary>\n\n\`\`\`\n${report.substring(0, 60000)}\n\`\`\`\n</details>`
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🔗 Broken links detected in guides',
+                body: `## Broken Links Found\n\nThe weekly link checker found broken links in the guide pages.\n\n**Date:** ${new Date().toISOString().split('T')[0]}\n\n<details>\n<summary>Full Report</summary>\n\n\`\`\`\n${report.substring(0, 60000)}\n\`\`\`\n</details>\n\n### Next Steps\n1. Review the broken links above\n2. Update or remove dead links\n3. Close this issue when fixed`,
+                labels: ['broken-links', 'maintenance', 'automated']
+              });
+            }

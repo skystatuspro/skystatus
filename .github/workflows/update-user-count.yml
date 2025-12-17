@@ -1,0 +1,82 @@
+# Daily User Count Update
+# Fetches actual user count from Supabase and updates marketing copy
+
+name: 📊 Update User Count
+
+on:
+  schedule:
+    # Daily at 6 AM Amsterdam time (before most users wake up)
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no commit)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  update-count:
+    name: Fetch and update user count
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch user count from Supabase
+        id: fetch
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          COUNT=$(node scripts/fetch-user-count.js)
+          echo "User count: $COUNT"
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          
+          # Round to nearest 10
+          ROUNDED=$(( (COUNT / 10) * 10 ))
+          echo "Rounded: $ROUNDED"
+          echo "rounded=$ROUNDED" >> $GITHUB_OUTPUT
+
+      - name: Update files with new count
+        env:
+          SKYSTATUS_USER_COUNT: ${{ steps.fetch.outputs.count }}
+        run: |
+          node scripts/prebuild.js
+          
+          echo ""
+          echo "Files changed:"
+          git diff --name-only
+
+      - name: Commit and push changes
+        if: inputs.dry_run != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add -A
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update user count to ${{ steps.fetch.outputs.rounded }}+"
+            git push
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 📊 User Count Update" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actual count:** ${{ steps.fetch.outputs.count }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Display value:** ${{ steps.fetch.outputs.rounded }}+" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry run:** ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
