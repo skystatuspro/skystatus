@@ -131,8 +131,8 @@ function updateLastUpdatedDates() {
   let updated = 0;
   guideFiles.forEach(file => {
     const wasUpdated = updateFile(file, [
-      // "Last updated: December 2025" format
-      [/Last updated: \w+ \d{4}/g, `Last updated: ${TODAY_MONTH_YEAR}`, `Last updated → ${TODAY_MONTH_YEAR}`],
+      // "Last updated: December 2025" format → convert to specific date
+      [/Last updated: \w+ \d{4}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
       // "Last updated: 2025-12-16" format
       [/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
     ]);
@@ -141,7 +141,7 @@ function updateLastUpdatedDates() {
   
   // Also update ai-info.html
   updateFile(join(rootDir, 'public/ai-info.html'), [
-    [/Last updated: \w+ \d{4}/g, `Last updated: ${TODAY_MONTH_YEAR}`, `Last updated → ${TODAY_MONTH_YEAR}`],
+    [/Last updated: \w+ \d{4}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
     [/Last updated: \d{4}-\d{2}-\d{2}/g, `Last updated: ${TODAY_ISO}`, `Last updated → ${TODAY_ISO}`],
   ]);
   
@@ -162,8 +162,8 @@ function updateLastVerifiedDates() {
   let updated = 0;
   guideFiles.forEach(file => {
     const wasUpdated = updateFile(file, [
-      // "Last verified: December 2025" format
-      [/Last verified: \w+ \d{4}/g, `Last verified: ${TODAY_MONTH_YEAR}`, `Last verified → ${TODAY_MONTH_YEAR}`],
+      // "Last verified: December 2025" format → convert to specific date
+      [/Last verified: \w+ \d{4}/g, `Last verified: ${TODAY_ISO}`, `Last verified → ${TODAY_ISO}`],
       // "Last verified: 2025-12-16" format  
       [/Last verified: \d{4}-\d{2}-\d{2}/g, `Last verified: ${TODAY_ISO}`, `Last verified → ${TODAY_ISO}`],
     ]);
