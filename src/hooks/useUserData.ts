@@ -35,6 +35,14 @@ import {
 } from '../utils/flight-intake';
 import { calculateMultiYearStats } from '../utils/xp-logic';
 import { CurrencyCode } from '../utils/format';
+import {
+  createBackup,
+  restoreBackup,
+  hasBackup,
+  getBackupInfo,
+  clearBackup,
+  getBackupAge,
+} from '../modules/pdf-import/services/backup-service';
 
 // ============================================================================
 // TYPES
@@ -104,8 +112,12 @@ export interface UserDataActions {
       startingStatus: StatusLevel;
       startingXP?: number;
     },
-    bonusXpByMonth?: Record<string, number>
+    bonusXpByMonth?: Record<string, number>,
+    sourceFileName?: string
   ) => void;
+  handleUndoImport: () => boolean;
+  canUndoImport: boolean;
+  importBackupInfo: { timestamp: string; source: string } | null;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
   
   // Demo/Local mode
@@ -497,8 +509,9 @@ export function useUserData(): UseUserDataReturn {
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
-    bonusXpByMonth?: Record<string, number>
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
+    bonusXpByMonth?: Record<string, number>,
+    sourceFileName?: string
   ) => {
     // CRITICAL: Mark as loaded so autosave works for new users
     // Without this, importing PDF before loadUserData completes would not save
@@ -506,6 +519,23 @@ export function useUserData(): UseUserDataReturn {
       hasInitiallyLoaded.current = true;
       loadedForUserId.current = user.id;
       setHasAttemptedLoad(true);
+    }
+
+    // CREATE BACKUP before replacing data (for undo functionality)
+    try {
+      createBackup(
+        {
+          flights: flights,
+          milesRecords: baseMilesData,
+          qualificationSettings: qualificationSettings,
+          manualLedger: manualLedger,
+        },
+        sourceFileName || 'PDF Import'
+      );
+      console.log('[handlePdfImport] Backup created before import');
+    } catch (e) {
+      console.error('[handlePdfImport] Failed to create backup:', e);
+      // Continue anyway - backup failure shouldn't block import
     }
 
     // REPLACE MODE: Instead of merging, we replace all flight data
@@ -545,7 +575,46 @@ export function useUserData(): UseUserDataReturn {
     }
 
     markDataChanged();
-  }, [user, markDataChanged]);
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger]);
+
+  // UNDO IMPORT: Restore data from backup
+  const handleUndoImport = useCallback(() => {
+    const backup = restoreBackup();
+    if (!backup) {
+      console.warn('[handleUndoImport] No backup found');
+      return false;
+    }
+
+    // Restore all data from backup
+    setFlightsInternal(backup.flights as FlightRecord[]);
+    setBaseMilesDataInternal(backup.milesRecords as MilesRecord[]);
+    setQualificationSettingsInternal(backup.qualificationSettings as QualificationSettings | null);
+    setManualLedgerInternal(backup.manualLedger as ManualLedger);
+
+    // Clear the backup after successful restore
+    clearBackup();
+    
+    markDataChanged();
+    console.log('[handleUndoImport] Data restored from backup');
+    return true;
+  }, [markDataChanged]);
+
+  // Backup state - refreshed when data changes
+  const [backupState, setBackupState] = useState<{
+    canUndo: boolean;
+    info: { timestamp: string; source: string } | null;
+  }>({ canUndo: false, info: null });
+
+  // Refresh backup state after import or undo
+  useEffect(() => {
+    setBackupState({
+      canUndo: hasBackup(),
+      info: getBackupInfo(),
+    });
+  }, [flights]); // Refresh when flights change (after import/undo)
+
+  const canUndoImport = backupState.canUndo;
+  const importBackupInfo = backupState.info;
 
   // -------------------------------------------------------------------------
   // DEMO / LOCAL MODE HANDLERS
@@ -840,6 +909,9 @@ export function useUserData(): UseUserDataReturn {
       handleManualXPLedgerUpdate,
       handleXPRolloverUpdate,
       handlePdfImport,
+      handleUndoImport,
+      canUndoImport,
+      importBackupInfo,
       handleQualificationSettingsUpdate,
       handleLoadDemo,
       handleStartEmpty,

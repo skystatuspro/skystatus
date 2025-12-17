@@ -75,6 +75,9 @@ interface SettingsModalProps {
   onLoadDemo: () => void;
   onStartOver?: () => void;
   onRerunOnboarding?: () => void;
+  onUndoImport?: () => boolean;
+  canUndoImport?: boolean;
+  importBackupInfo?: { timestamp: string; source: string } | null;
   emailConsent?: boolean;
   onEmailConsentChange?: (consent: boolean) => void;
   isDemoMode?: boolean;
@@ -94,6 +97,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLoadDemo,
   onStartOver,
   onRerunOnboarding,
+  onUndoImport,
+  canUndoImport = false,
+  importBackupInfo,
   emailConsent = false,
   onEmailConsentChange,
   isDemoMode = false,
@@ -843,6 +849,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </p>
                     <p className="text-[11px] text-slate-500">
                       Restore the original sample portfolio.
+                    </p>
+                  </div>
+                </div>
+              </button>
+            )}
+
+            {/* Undo Last Import - only show if backup exists */}
+            {canUndoImport && onUndoImport && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Restore data from before your last PDF import? This will undo the import.')) {
+                    const success = onUndoImport();
+                    if (success && showToast) {
+                      showToast('Import undone - data restored', 'success');
+                    } else if (!success && showToast) {
+                      showToast('Could not restore backup', 'error');
+                    }
+                  }
+                }}
+                className="w-full rounded-2xl border border-amber-100 bg-amber-50 hover:bg-amber-100 transition-colors px-4 py-3.5 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100">
+                    <RotateCcw className="text-amber-600" size={16} />
+                  </span>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-amber-700">
+                      Undo Last Import
+                    </p>
+                    <p className="text-[11px] text-amber-500">
+                      Restore data from before your last PDF import.
                     </p>
                   </div>
                 </div>

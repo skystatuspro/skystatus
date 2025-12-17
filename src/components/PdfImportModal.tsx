@@ -24,13 +24,35 @@ import {
   ExternalLink
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+
+// Feature flag: Use new PDF parser module
+// Set to true to use the new modular parser, false for legacy
+const USE_NEW_PARSER = false;
+
+// Legacy parser imports (used when USE_NEW_PARSER = false)
 import { 
-  parseFlyingBlueText, 
-  toFlightRecords, 
-  toMilesRecords,
-  extractBonusXp,
+  parseFlyingBlueText as legacyParseFlyingBlueText, 
+  toFlightRecords as legacyToFlightRecords, 
+  toMilesRecords as legacyToMilesRecords,
+  extractBonusXp as legacyExtractBonusXp,
   ParseResult 
 } from '../utils/parseFlyingBluePdf';
+
+// New parser imports (used when USE_NEW_PARSER = true)
+import {
+  parseFlyingBlueTextCompat,
+  toFlightRecordsCompat,
+  toMilesRecordsCompat,
+  extractBonusXpCompat,
+  type LegacyParseResult,
+} from '../modules/pdf-import';
+
+// Choose which parser to use based on feature flag
+const parseFlyingBlueText = USE_NEW_PARSER ? parseFlyingBlueTextCompat : legacyParseFlyingBlueText;
+const toFlightRecords = USE_NEW_PARSER ? toFlightRecordsCompat : legacyToFlightRecords;
+const toMilesRecords = USE_NEW_PARSER ? toMilesRecordsCompat : legacyToMilesRecords;
+const extractBonusXp = USE_NEW_PARSER ? extractBonusXpCompat : legacyExtractBonusXp;
+
 import { 
   calculateRolloverXP, 
   getPreviousStatus 

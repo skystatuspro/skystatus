@@ -117,12 +117,12 @@ export default function App() {
 
     actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
 
-    // Show success toast
+    // Show success toast with undo hint
     const rolloverMsg = cycleSettings?.startingXP ? ` (${cycleSettings.startingXP} XP rollover)` : '';
     const cycleMsg = cycleSettings ? ` · Cycle: ${cycleSettings.startingStatus} from ${cycleSettings.cycleStartMonth}${rolloverMsg}` : '';
     const bonusXpTotal = bonusXpByMonth ? Object.values(bonusXpByMonth).reduce((a, b) => a + b, 0) : 0;
     const bonusMsg = bonusXpTotal > 0 ? ` (+${bonusXpTotal} bonus XP)` : '';
-    showToast(`Imported ${newFlightCount} flights and ${importedMiles.length} months of miles data${bonusMsg}${cycleMsg}`, 'success');
+    showToast(`Imported ${newFlightCount} flights and ${importedMiles.length} months of miles data${bonusMsg}${cycleMsg}. Use Data Settings to undo.`, 'success');
   };
 
   // -------------------------------------------------------------------------
@@ -615,6 +615,9 @@ export default function App() {
         onLoadDemo={actions.handleLoadDemo}
         onStartOver={actions.handleStartOver}
         onRerunOnboarding={actions.handleRerunOnboarding}
+        onUndoImport={actions.handleUndoImport}
+        canUndoImport={actions.canUndoImport}
+        importBackupInfo={actions.importBackupInfo}
         emailConsent={meta.emailConsent}
         onEmailConsentChange={actions.handleEmailConsentChange}
         isDemoMode={meta.isDemoMode || meta.isLocalMode}
