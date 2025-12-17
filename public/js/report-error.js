@@ -1,7 +1,7 @@
 /**
  * Report Error Widget for SkyStatus Guide Pages
  * Adds a floating button to report content errors
- * Submits to Supabase feedback table
+ * Submits to Supabase feedback table with mailto fallback
  */
 (function() {
   'use strict';
@@ -9,6 +9,9 @@
   // Supabase config (anon key is safe to expose)
   const SUPABASE_URL = 'https://gjpucmnghcopsatonqcy.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqcHVjbW5naGNvcHNhdG9ucWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzYwNDQsImV4cCI6MjA4MDk1MjA0NH0.4VyQQBNmDOlhzjqLpbiBPi9bpMj6eqaGO8JYuC5bqlo';
+  
+  // Fallback email
+  const FALLBACK_EMAIL = 'hello@skystatus.pro';
 
   // State
   let isOpen = false;
@@ -46,19 +49,23 @@
     }
   }
 
-  // Submit to Supabase
-  async function submitReport(message) {
+  // Build full message with context
+  function buildFullMessage(message) {
     const context = getPageContext();
-    
-    // Build detailed message with context
     let fullMessage = message;
     fullMessage += '\n\n---\n';
-    fullMessage += '📍 Page: ' + context.url + '\n';
-    fullMessage += '📑 Section: ' + (context.nearestHeading || 'Top of page') + '\n';
+    fullMessage += 'Page: ' + context.url + '\n';
+    fullMessage += 'Section: ' + (context.nearestHeading || 'Top of page') + '\n';
     if (selectedText) {
-      fullMessage += '✏️ Selected text: "' + selectedText.substring(0, 200) + '"\n';
+      fullMessage += 'Selected text: "' + selectedText.substring(0, 200) + '"\n';
     }
-    fullMessage += '🕐 Reported: ' + new Date().toISOString();
+    fullMessage += 'Reported: ' + new Date().toISOString();
+    return { fullMessage, context };
+  }
+
+  // Submit to Supabase
+  async function submitReport(message) {
+    const { fullMessage, context } = buildFullMessage(message);
 
     const payload = {
       trigger: 'guide_error_report',
@@ -81,11 +88,23 @@
         body: JSON.stringify(payload)
       });
 
-      return response.ok;
+      if (!response.ok) {
+        console.warn('Supabase returned ' + response.status + ', using email fallback');
+        return false;
+      }
+      return true;
     } catch (err) {
       console.error('Error submitting report:', err);
       return false;
     }
+  }
+
+  // Email fallback
+  function openEmailFallback(message) {
+    const { fullMessage, context } = buildFullMessage(message);
+    const subject = encodeURIComponent('Guide Error Report: ' + context.nearestHeading);
+    const body = encodeURIComponent(fullMessage);
+    window.location.href = `mailto:${FALLBACK_EMAIL}?subject=${subject}&body=${body}`;
   }
 
   // Create styles
@@ -96,15 +115,15 @@
         position: fixed;
         bottom: 24px;
         right: 24px;
-        background: #0f172a;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         color: white;
         border: none;
-        padding: 12px 16px;
+        padding: 12px 18px;
         border-radius: 50px;
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
         z-index: 9998;
         display: flex;
         align-items: center;
@@ -113,9 +132,9 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
       .report-error-btn:hover {
-        background: #1e293b;
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
       }
       .report-error-btn svg {
         width: 18px;
@@ -126,7 +145,7 @@
         position: fixed;
         bottom: 80px;
         right: 24px;
-        width: 340px;
+        width: 360px;
         max-width: calc(100vw - 48px);
         background: white;
         border-radius: 16px;
@@ -146,7 +165,7 @@
       }
       
       .report-error-header {
-        background: #0f172a;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         color: white;
         padding: 16px 20px;
         display: flex;
@@ -157,6 +176,9 @@
         margin: 0;
         font-size: 16px;
         font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       .report-error-close {
         background: none;
@@ -164,7 +186,7 @@
         color: white;
         cursor: pointer;
         padding: 4px;
-        opacity: 0.7;
+        opacity: 0.8;
         transition: opacity 0.2s;
       }
       .report-error-close:hover {
@@ -175,24 +197,24 @@
         padding: 20px;
       }
       .report-error-context {
-        background: #f1f5f9;
+        background: #fef3c7;
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 16px;
         font-size: 13px;
-        color: #475569;
+        color: #92400e;
       }
       .report-error-context strong {
-        color: #0f172a;
+        color: #78350f;
       }
       .report-error-selected {
-        background: #fef3c7;
+        background: white;
         border-left: 3px solid #f59e0b;
         padding: 8px 12px;
         margin-top: 8px;
         font-style: italic;
         font-size: 12px;
-        color: #92400e;
+        color: #78350f;
         max-height: 60px;
         overflow: hidden;
       }
@@ -201,37 +223,40 @@
         width: 100%;
         min-height: 100px;
         padding: 12px;
-        border: 1px solid #e2e8f0;
+        border: 2px solid #e2e8f0;
         border-radius: 8px;
         font-size: 14px;
         font-family: inherit;
         resize: vertical;
         margin-bottom: 16px;
+        transition: border-color 0.2s;
       }
       .report-error-textarea:focus {
         outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
       }
       
       .report-error-submit {
         width: 100%;
-        background: #3b82f6;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         color: white;
         border: none;
-        padding: 12px 20px;
+        padding: 14px 20px;
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: all 0.2s;
       }
       .report-error-submit:hover {
-        background: #2563eb;
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        transform: translateY(-1px);
       }
       .report-error-submit:disabled {
-        background: #94a3b8;
+        background: #d1d5db;
         cursor: not-allowed;
+        transform: none;
       }
       
       .report-error-success {
@@ -259,14 +284,14 @@
           display: none;
         }
         .report-error-btn {
-          padding: 14px;
+          padding: 16px;
           border-radius: 50%;
         }
         .report-error-modal {
           right: 12px;
           left: 12px;
           width: auto;
-          bottom: 70px;
+          bottom: 80px;
         }
       }
     `;
@@ -279,12 +304,12 @@
     const btn = document.createElement('button');
     btn.className = 'report-error-btn';
     btn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
-      <span>Report error</span>
+      <span>Found an error?</span>
     `;
     btn.onclick = toggleModal;
     document.body.appendChild(btn);
@@ -295,7 +320,14 @@
     modal.id = 'reportErrorModal';
     modal.innerHTML = `
       <div class="report-error-header">
-        <h3>Report an error</h3>
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          Report an error
+        </h3>
         <button class="report-error-close" onclick="window.closeReportError()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -308,7 +340,7 @@
         <textarea 
           class="report-error-textarea" 
           id="reportMessage"
-          placeholder="What's wrong? Be as specific as possible..."
+          placeholder="What's incorrect? Please be specific so we can fix it quickly."
         ></textarea>
         <button class="report-error-submit" id="reportSubmit" onclick="window.submitReportError()">
           Send Report
@@ -357,32 +389,42 @@
     const success = await submitReport(message);
 
     if (success) {
-      document.querySelector('.report-error-body').innerHTML = `
-        <div class="report-error-success">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-          <h4>Thanks for reporting!</h4>
-          <p>We'll review this and fix any errors.</p>
-        </div>
-      `;
-      setTimeout(() => {
-        window.closeReportError();
-        // Reset modal for next use
-        setTimeout(() => {
-          document.querySelector('.report-error-body').innerHTML = `
-            <div class="report-error-context" id="reportContext"></div>
-            <textarea class="report-error-textarea" id="reportMessage" placeholder="What's wrong? Be as specific as possible..."></textarea>
-            <button class="report-error-submit" id="reportSubmit" onclick="window.submitReportError()">Send Report</button>
-          `;
-        }, 300);
-      }, 2000);
+      showSuccess();
     } else {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Error - Try again';
+      // Fallback to email
+      submitBtn.textContent = 'Opening email...';
+      setTimeout(() => {
+        openEmailFallback(message);
+        showSuccess('We opened your email app. Please send the message to complete your report.');
+      }, 500);
     }
   };
+
+  function showSuccess(customMessage) {
+    document.querySelector('.report-error-body').innerHTML = `
+      <div class="report-error-success">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <h4>Thanks for reporting!</h4>
+        <p>${customMessage || "We'll review this and fix any errors."}</p>
+      </div>
+    `;
+    setTimeout(() => {
+      window.closeReportError();
+      // Reset modal for next use
+      setTimeout(resetModal, 300);
+    }, 3000);
+  }
+
+  function resetModal() {
+    document.querySelector('.report-error-body').innerHTML = `
+      <div class="report-error-context" id="reportContext"></div>
+      <textarea class="report-error-textarea" id="reportMessage" placeholder="What's incorrect? Please be specific so we can fix it quickly."></textarea>
+      <button class="report-error-submit" id="reportSubmit" onclick="window.submitReportError()">Send Report</button>
+    `;
+  }
 
   // Initialize
   function init() {
