@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Remco de Graaf">
     <title>How to Import Your Flying Blue PDF: Step-by-Step Guide</title>
     <meta name="description" content="Download your Flying Blue activity statement PDF and import it into SkyStatus Pro. Works in 7 languages, processed 100% in your browser for privacy. Free and instant.">
     <meta name="robots" content="index, follow">
@@ -12,9 +13,108 @@
     <meta property="og:title" content="Import Your Flying Blue PDF">
     <meta property="og:description" content="Step-by-step guide to importing your Flying Blue data into SkyStatus.">
     <meta property="og:image" content="https://skystatus.pro/og-image.png">
+
     <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"HowTo","name":"How to Import Your Flying Blue PDF","description":"Step-by-step guide to importing your Flying Blue activity statement into SkyStatus Pro","step":[{"@type":"HowToStep","name":"Log in to Flying Blue","text":"Go to flyingblue.com and log in"},{"@type":"HowToStep","name":"Navigate to Activity Overview","text":"Go to My Account → Activity Overview"},{"@type":"HowToStep","name":"Download PDF","text":"Click More and select Download PDF"},{"@type":"HowToStep","name":"Import to SkyStatus","text":"Open SkyStatus Pro and drag & drop your PDF"}]}
+    {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#howto",
+        "name": "How to Import Your Flying Blue PDF",
+        "description": "Step-by-step guide to downloading your Flying Blue activity statement PDF and importing it into SkyStatus Pro.",
+        "inLanguage": "en",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf"
+        },
+        "image": {
+            "@type": "ImageObject",
+            "url": "https://skystatus.pro/og-image.png"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "SkyStatus Pro",
+            "url": "https://skystatus.pro",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://skystatus.pro/logo.png"
+            }
+        },
+        "author": {
+            "@type": "Person",
+            "@id": "https://skystatus.pro/about#remco-de-graaf",
+            "name": "Remco de Graaf",
+            "url": "https://skystatus.pro/about"
+        },
+        "dateModified": "2025-12-17",
+        "step": [
+            {
+                "@type": "HowToStep",
+                "name": "Log in to Flying Blue",
+                "text": "Go to flyingblue.com and log in with your Flying Blue credentials.",
+                "url": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-1"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Navigate to Activity Overview",
+                "text": "In your account, go to My Account → Activity Overview, or look for My Miles or My XP section.",
+                "url": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-2"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Download the PDF",
+                "text": "Look for the More button or menu, then select Download PDF or Activity Statement.",
+                "url": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-3"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Open SkyStatus Pro",
+                "text": "Go to skystatus.pro and click the import button or drag and drop your PDF onto the page.",
+                "url": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-4"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Review Your Data",
+                "text": "SkyStatus will parse your PDF and show all your flights, miles earned, XP earned, and bonus activities.",
+                "url": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-5"
+            }
+        ]
+    }
     </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#faq",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Is it safe to upload my Flying Blue PDF?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. Your PDF is processed entirely in your browser using JavaScript. The file is never uploaded to any server. SkyStatus cannot see your flight data, miles balance, or personal information."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Why are some flights missing from my imported data?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Very recent flights may not yet appear in your Flying Blue activity statement. Miles are typically added within 24 hours for KLM and Air France flights. Partner flights can take longer. Download a fresh PDF after flights have posted to your account."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What languages does SkyStatus support?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "SkyStatus automatically detects and parses Flying Blue PDFs in English, Dutch, French, German, Spanish, Italian, and Portuguese."
+                }
+            }
+        ]
+    }
+    </script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b; background: #f8fafc; }
@@ -26,13 +126,15 @@
         .breadcrumb { font-size: 0.9rem; color: #64748b; margin-bottom: 1rem; }
         .breadcrumb a { color: #3b82f6; text-decoration: none; }
         h1 { font-size: 2.2rem; margin-bottom: 1rem; color: #0f172a; }
-        .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 2rem; }
+        .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 1rem; }
+        .meta a { color: #3b82f6; text-decoration: none; }
         .definition-box { background: #ecfdf5; border-left: 4px solid #10b981; padding: 1.5rem; margin-bottom: 2rem; }
         .definition-box h2 { font-size: 1rem; color: #065f46; margin-bottom: 0.5rem; font-weight: 600; }
         .definition-box p { color: #047857; margin: 0; font-size: 1.05rem; }
         h2 { font-size: 1.5rem; margin: 2rem 0 1rem 0; color: #0f172a; }
         h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem 0; color: #1e293b; }
         p { margin-bottom: 1rem; color: #475569; }
+        a { color: #3b82f6; }
         ul, ol { margin: 0 0 1.5rem 1.5rem; color: #475569; }
         li { margin-bottom: 0.5rem; }
         .step-card { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; position: relative; }
@@ -61,6 +163,10 @@
         .author-byline .author-name a { color: #3b82f6; text-decoration: none; font-weight: 600; }
         .author-byline .author-name a:hover { text-decoration: underline; }
         .author-byline .author-cred { font-size: 0.8rem; color: #64748b; }
+
+        table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+        th { background: #f1f5f9; font-weight: 600; }
     </style>
 
     <script type="application/ld+json">
@@ -83,7 +189,8 @@
         <div class="breadcrumb"><a href="/">Home</a> → <a href="/guide">Guides</a> → Import PDF</div>
         <article>
             <h1>How to Import Your Flying Blue PDF</h1>
-            <p class="meta">Last updated: 17 December 2025 · 4 min read</p>
+            <p class="meta">Last updated: 2025-12-17 · 4 min read · <a href="#sources">See sources</a></p>
+            <p class="meta">Last verified: 2025-12-17. Flying Blue menus can change. If your screen differs, look for an option like "Activity statement" or "Download".</p>
             <div class="author-byline">
                 <div class="author-avatar">R</div>
                 <div class="author-info">
@@ -100,24 +207,24 @@
             
             <h2>Step-by-Step Instructions</h2>
             
-            <div class="step-card" data-step="Step 1">
+            <div class="step-card" data-step="Step 1" id="step-1">
                 <h3>Log in to Flying Blue</h3>
-                <p>Go to <a href="https://www.flyingblue.com" target="_blank" rel="noopener">flyingblue.com</a> and log in with your Flying Blue credentials.</p>
+                <p>Go to <a href="https://www.flyingblue.com" target="_blank" rel="noopener">flyingblue.com</a> and log in with your Flying Blue credentials. You can also access your account via <a href="https://www.klm.com/information/flying-blue" target="_blank" rel="noopener">KLM</a> or <a href="https://www.airfrance.com" target="_blank" rel="noopener">Air France</a>.</p>
             </div>
             
-            <div class="step-card" data-step="Step 2">
+            <div class="step-card" data-step="Step 2" id="step-2">
                 <h3>Navigate to Activity Overview</h3>
                 <p>Once logged in, go to: <strong>My Account → Activity Overview</strong></p>
                 <p>Or look for "My Miles" or "My XP" section in your dashboard.</p>
             </div>
             
-            <div class="step-card" data-step="Step 3">
+            <div class="step-card" data-step="Step 3" id="step-3">
                 <h3>Download the PDF</h3>
                 <p>Look for the <strong>"More"</strong> button (three dots) or menu, then select <strong>"Download PDF"</strong> or <strong>"Activity Statement"</strong>.</p>
                 <p>The PDF will download to your computer.</p>
             </div>
             
-            <div class="step-card" data-step="Step 4">
+            <div class="step-card" data-step="Step 4" id="step-4">
                 <h3>Open SkyStatus Pro</h3>
                 <p>Go to <a href="https://skystatus.pro">skystatus.pro</a> and either:</p>
                 <ul>
@@ -126,41 +233,46 @@
                 </ul>
             </div>
             
-            <div class="step-card" data-step="Step 5">
+            <div class="step-card" data-step="Step 5" id="step-5">
                 <h3>Review Your Data</h3>
-                <p>SkyStatus will parse your PDF and show all your flights, miles earned, XP earned, and bonus activities. Review the imported data.</p>
+                <p>SkyStatus will parse your PDF and show all your flights, <a href="/guide/flying-blue-miles-value">miles</a> earned, <a href="/guide/what-is-flying-blue-xp">XP</a> earned, and bonus activities. Review the imported data to ensure everything looks correct.</p>
             </div>
             
             <div class="privacy-box">
                 <strong>🔒 Privacy First</strong>
-                <p style="margin-bottom: 0;">Your PDF is processed <strong>entirely in your browser</strong> using JavaScript. The file is never uploaded to any server. We cannot see your flight data, miles balance, or any personal information.</p>
+                <p style="margin-bottom: 0;">Your PDF is processed <strong>entirely in your browser</strong> using JavaScript. The file is never uploaded to any server. See our <a href="/privacy">privacy policy</a> for details.</p>
             </div>
             
             <h2>Supported Languages</h2>
-            <p>SkyStatus Pro automatically detects and parses Flying Blue PDFs in:</p>
-            <ul>
-                <li>🇬🇧 English</li>
-                <li>🇳🇱 Dutch (Nederlands)</li>
-                <li>🇫🇷 French (Français)</li>
-                <li>🇩🇪 German (Deutsch)</li>
-                <li>🇪🇸 Spanish (Español)</li>
-                <li>🇮🇹 Italian (Italiano)</li>
-                <li>🇵🇹 Portuguese (Português)</li>
-            </ul>
+            <p>SkyStatus Pro automatically detects and parses Flying Blue PDFs in these languages:</p>
+            
+            <table>
+                <tr>
+                    <th>Language</th>
+                    <th>Status</th>
+                </tr>
+                <tr><td>English</td><td>✅ Supported</td></tr>
+                <tr><td>Dutch (Nederlands)</td><td>✅ Supported</td></tr>
+                <tr><td>French (Français)</td><td>✅ Supported</td></tr>
+                <tr><td>German (Deutsch)</td><td>✅ Supported</td></tr>
+                <tr><td>Spanish (Español)</td><td>✅ Supported</td></tr>
+                <tr><td>Italian (Italiano)</td><td>✅ Supported</td></tr>
+                <tr><td>Portuguese (Português)</td><td>✅ Supported</td></tr>
+            </table>
             
             <h2>What Gets Imported</h2>
             <p>SkyStatus extracts from your PDF:</p>
             <ul>
-                <li>✅ Flight dates and routes</li>
-                <li>✅ Miles earned per flight</li>
-                <li>✅ XP earned per flight</li>
-                <li>✅ Cabin class</li>
-                <li>✅ Operating airline</li>
-                <li>✅ Bonus XP (first flight, promos, etc.)</li>
-                <li>✅ Miles from partners (credit cards, hotels)</li>
+                <li>Flight dates and routes</li>
+                <li>Miles earned per flight</li>
+                <li><a href="/guide/what-is-flying-blue-xp">XP</a> earned per flight</li>
+                <li>Cabin class</li>
+                <li>Operating airline</li>
+                <li>Bonus XP (first flight, promos, etc.)</li>
+                <li>Miles from partners (credit cards, hotels)</li>
             </ul>
             
-            <h2>Troubleshooting</h2>
+            <h2 id="troubleshooting">Troubleshooting</h2>
             
             <h3>PDF won't import</h3>
             <ul>
@@ -171,25 +283,47 @@
             
             <h3>Missing flights</h3>
             <ul>
-                <li>Very recent flights may not appear yet (allow 24-72 hours)</li>
-                <li>Partner flights can take 2-4 weeks to credit</li>
-                <li>Download a new PDF after flights have posted</li>
+                <li>Very recent flights may not yet appear in your Flying Blue activity statement.</li>
+                <li>For KLM and Air France flights, miles are typically added <a href="https://www.klm.com/information/flying-blue/earning-miles" target="_blank" rel="noopener">within 24 hours</a>.</li>
+                <li><a href="/guide/flying-blue-partner-airlines">Partner airline</a> flights can take longer to credit.</li>
+                <li>Download a new PDF after flights have posted to your account.</li>
             </ul>
             
             <div class="tip-box">
-                <strong>💡 Pro Tip:</strong> Download a new PDF periodically (monthly) to keep your data current. Each import adds new flights while preserving existing data.
+                <strong>💡 Pro Tip:</strong> Download a new PDF periodically (monthly) to keep your data current. Each import adds new flights while preserving existing data. Use your updated data to track <a href="/guide/flying-blue-xp-rollover">XP rollover</a> and plan for status.
             </div>
+
+            <h2 id="faq">FAQ</h2>
+
+            <h3>Is it safe to upload my Flying Blue PDF?</h3>
+            <p>Yes. Your PDF is processed entirely in your browser using JavaScript. The file is never uploaded to any server. SkyStatus cannot see your flight data, miles balance, or personal information. See our <a href="/privacy">privacy policy</a>.</p>
+
+            <h3>Why are some flights missing from my imported data?</h3>
+            <p>Very recent flights may not yet appear in your Flying Blue activity statement. Miles are typically added within 24 hours for KLM and Air France flights. <a href="/guide/flying-blue-partner-airlines">Partner flights</a> can take longer. Download a fresh PDF after flights have posted to your account.</p>
+
+            <h3>What languages does SkyStatus support?</h3>
+            <p>SkyStatus automatically detects and parses Flying Blue PDFs in English, Dutch, French, German, Spanish, Italian, and Portuguese.</p>
             
             <div class="cta-box">
                 <h3>Ready to Import?</h3>
                 <p>Get your Flying Blue PDF and start tracking your XP and miles in under 1 minute.</p>
                 <a href="/">Import Your PDF Free →</a>
             </div>
+
+            <h2 id="sources">Sources</h2>
+            <p style="font-size: 0.9rem; color: #64748b;">Last verified: 2025-12-17.</p>
+            <ul style="font-size: 0.9rem; color: #64748b;">
+                <li><a href="https://www.flyingblue.com" target="_blank" rel="noopener">Flying Blue</a> — Official program site, activity statement download</li>
+                <li><a href="https://www.klm.com/information/flying-blue" target="_blank" rel="noopener">KLM: Flying Blue information</a> — Account access via KLM</li>
+                <li><a href="https://www.klm.com/information/flying-blue/earning-miles" target="_blank" rel="noopener">KLM: Earning Miles</a> — Miles posting timing (within 24 hours)</li>
+            </ul>
             
             <div class="related">
                 <h3>Related Guides</h3>
                 <ul>
                     <li><a href="/guide/what-is-flying-blue-xp">What is Flying Blue XP?</a></li>
+                    <li><a href="/guide/flying-blue-miles-value">What Are Flying Blue Miles Worth?</a></li>
+                    <li><a href="/guide/flying-blue-cost-per-mile">Cost Per Mile (CPM) Explained</a></li>
                     <li><a href="/guide/flying-blue-status-levels">Flying Blue Status Levels Explained</a></li>
                     <li><a href="/guide/flying-blue-xp-rollover">How XP Rollover Works</a></li>
                     <li><a href="/guide/flying-blue-partner-airlines">Flying Blue Partner Airlines</a></li>
