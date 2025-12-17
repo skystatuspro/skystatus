@@ -617,12 +617,12 @@ export function useUserData(): UseUserDataReturn {
         // User has existing settings
         const currentUserStatus = qualificationSettings.startingStatus;
         
-        // ALWAYS update status if PDF header shows different status
-        // The PDF header is the OFFICIAL Flying Blue status
+        // CRITICAL: If PDF status MATCHES user's current status, DO NOT change cycle settings!
+        // The user's existing cycle is correct. Only update if status actually CHANGED.
         if (pdfOfficialStatus && pdfOfficialStatus !== currentUserStatus) {
-          console.log(`[handlePdfImport] Status mismatch detected: user has ${currentUserStatus}, PDF shows ${pdfOfficialStatus}`);
+          console.log(`[handlePdfImport] Status CHANGE detected: ${currentUserStatus} → ${pdfOfficialStatus}`);
           
-          // If we have full cycle info (requalification detected), use it
+          // Status changed - update settings with new cycle info if available
           if (cycleSettings.cycleStartMonth) {
             setQualificationSettingsInternal({
               cycleStartMonth: cycleSettings.cycleStartMonth,
@@ -639,24 +639,11 @@ export function useUserData(): UseUserDataReturn {
             });
             console.log(`[handlePdfImport] Updated status to ${pdfOfficialStatus}, kept existing cycle`);
           }
-        } else if (cycleSettings.cycleStartMonth && cycleSettings.cycleStartDate) {
-          // Same status but we have new cycle date info - check if more recent
-          const existingDate = qualificationSettings.cycleStartDate;
-          const newDate = cycleSettings.cycleStartDate;
-          
-          if (!existingDate || (newDate && newDate > existingDate)) {
-            setQualificationSettingsInternal({
-              cycleStartMonth: cycleSettings.cycleStartMonth,
-              cycleStartDate: cycleSettings.cycleStartDate,
-              startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
-              startingXP: cycleSettings.startingXP ?? 0,
-            });
-            console.log(`[handlePdfImport] Updated cycle date: ${existingDate || 'none'} → ${newDate}`);
-          } else {
-            console.log(`[handlePdfImport] Status unchanged (${currentUserStatus}), keeping existing settings`);
-          }
         } else {
-          console.log(`[handlePdfImport] No changes needed - status matches and no new cycle info`);
+          // Status matches - DO NOT TOUCH cycle settings!
+          // User's existing cycle (e.g., Nov 2025) is correct
+          // PDF might have old requalification events that don't apply to current cycle
+          console.log(`[handlePdfImport] Status matches (${currentUserStatus}) - keeping ALL existing cycle settings unchanged`);
         }
       }
     }
