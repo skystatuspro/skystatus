@@ -369,7 +369,23 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     // Prepare cycle settings if detected and user opted in
     // IMPORTANT: We pass the PDF HEADER status (source of truth), not the detected requalification status
     let cycleSettings: CycleSettings | undefined;
-    if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus) {
+    
+    // CRITICAL FIX: Only use requalification cycle data if it represents reaching the CURRENT status
+    // If the PDF header shows Platinum but we found an old Gold requalification event,
+    // that event is HISTORICAL and should NOT be used to set the cycle start date.
+    // The user has since upgraded to Platinum (their current status).
+    const requalificationMatchesCurrentStatus = 
+      summary.suggestedStatus === summary.pdfHeaderStatus;
+    
+    console.log('[PDF Import] Requalification analysis:', {
+      suggestedStatus: summary.suggestedStatus,
+      pdfHeaderStatus: summary.pdfHeaderStatus,
+      requalificationMatchesCurrent: requalificationMatchesCurrentStatus,
+      suggestedCycleStart: summary.suggestedCycleStart,
+    });
+    
+    if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus && requalificationMatchesCurrentStatus) {
+      // Requalification event represents reaching the CURRENT status - safe to use cycle data
       // Calculate rollover XP: how much XP was "left over" after reaching the threshold
       const previousStatus = getPreviousStatus(summary.suggestedStatus);
       const rolloverXP = summary.suggestedCycleStartDate 
@@ -393,15 +409,18 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         // Pass PDF header info for validation in useUserData
         pdfHeaderStatus: summary.pdfHeaderStatus,
       };
+      console.log('[PDF Import] Using requalification cycle data:', cycleSettings);
     } 
-    // ALWAYS pass PDF header status even without requalification event
+    // ALWAYS pass PDF header status even without matching requalification event
     // This allows fixing incorrect user settings (e.g., Explorer -> Platinum)
+    // BUT we don't set cycleStartMonth from old/mismatched requalification events
     else if (summary.pdfHeaderStatus) {
       cycleSettings = {
-        cycleStartMonth: '', // Empty - don't change existing cycle month
+        cycleStartMonth: '', // Empty - don't change existing cycle month (no reliable data)
         startingStatus: summary.pdfHeaderStatus,
         pdfHeaderStatus: summary.pdfHeaderStatus,
       };
+      console.log('[PDF Import] Using PDF header status only (requalification was historical):', cycleSettings);
     }
 
     // Extract bonus XP from PDF (first flight bonus, hotel XP, etc.)
