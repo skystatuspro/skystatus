@@ -31,6 +31,7 @@ jobs:
             # Core status & XP pages
             "https://www.flyingblue.com/en/programme/more-info/status|Flying Blue Status & XP"
             "https://www.klm.com/information/flying-blue/membership-levels|KLM Membership Levels"
+            "https://wwws.airfrance.fr/en/information/flyingblue/statuts-flying-blue|Air France Flying Blue Levels"
             "https://www.flyingblue.com/en/landing-page/informative/ultimate-information|Ultimate Status Info"
             "https://www.flyingblue.com/en/programme/more-info/tier-benefits|Tier Benefits"
             
