@@ -464,44 +464,50 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for actual flight date in next lines
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
-            // Allow leading whitespace - PDF often has indentation
+            // PDF extraction often puts "op" on one line and the date on the next
             let flightDate = transDate;
             let foundFlightDate = false;
-            console.log(`[PDF Parser] Looking for flight date after segment at line ${j}, checking lines ${j+1} to ${Math.min(j + 5, lines.length) - 1}:`);
-            for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const line = lines[k];
-              console.log(`  Line ${k}: "${line.substring(0, 80)}${line.length > 80 ? '...' : ''}"`);
+            for (let k = j + 1; k < Math.min(j + 8, lines.length); k++) {
+              const line = lines[k].trim();
               
-              // Primary: Match "op/on/le/am" (with optional leading whitespace), followed by a date
-              const opMatch = line.match(/^\s*(?:op|on|le|am)\s+(.+)/i);
+              // Pattern 1: "op" alone on a line - date is on NEXT line
+              if (/^(?:op|on|le|am)$/i.test(line) && k + 1 < lines.length) {
+                const nextLine = lines[k + 1];
+                // Next line starts with a date: "29 nov 2025" or "6 jun 2025 ..."
+                const dateMatch = nextLine.match(/^\s*(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
+                if (dateMatch) {
+                  const [, day, month, year] = dateMatch;
+                  const parsed = parseDate(`${day} ${month} ${year}`);
+                  if (parsed) {
+                    flightDate = parsed;
+                    foundFlightDate = true;
+                    break;
+                  }
+                }
+              }
+              
+              // Pattern 2: "op 29 nov 2025" all on one line
+              const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
-                console.log(`    → Matched "op" pattern, captured: "${opMatch[1]}"`);
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
-                  console.log(`    → Parsed to date: ${parsed}`);
                   flightDate = parsed;
                   foundFlightDate = true;
                   break;
-                } else {
-                  console.log(`    → Could not parse date from: "${opMatch[1]}"`);
                 }
               }
-              // Fallback: Look for "op [day] [month] [year]" pattern anywhere in line
-              // This handles cases where text isn't cleanly split into lines
+              
+              // Pattern 3: Date pattern anywhere in line (fallback)
               const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
               if (datePattern) {
                 const [, day, month, year] = datePattern;
                 const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
-                  console.log(`    → Fallback matched: ${day} ${month} ${year} → ${parsed}`);
                   flightDate = parsed;
                   foundFlightDate = true;
                   break;
                 }
               }
-            }
-            if (!foundFlightDate) {
-              console.log(`  → No flight date found, using transaction date: ${transDate}`);
             }
             
             tripSegments.push({
@@ -551,40 +557,49 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for flight date
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
-            // Allow leading whitespace - PDF often has indentation
+            // PDF extraction often puts "op" on one line and the date on the next
             let flightDate = transDate;
             let foundFlightDate = false;
-            console.log(`[PDF Parser] Looking for partner flight date after line ${j}, checking next 4 lines`);
-            for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const line = lines[k];
-              console.log(`  Line ${k}: "${line.substring(0, 80)}${line.length > 80 ? '...' : ''}"`);
+            for (let k = j + 1; k < Math.min(j + 8, lines.length); k++) {
+              const line = lines[k].trim();
               
-              // Primary: Match "op/on/le/am" (with optional leading whitespace)
-              const opMatch = line.match(/^\s*(?:op|on|le|am)\s+(.+)/i);
+              // Pattern 1: "op" alone on a line - date is on NEXT line
+              if (/^(?:op|on|le|am)$/i.test(line) && k + 1 < lines.length) {
+                const nextLine = lines[k + 1];
+                const dateMatch = nextLine.match(/^\s*(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
+                if (dateMatch) {
+                  const [, day, month, year] = dateMatch;
+                  const parsed = parseDate(`${day} ${month} ${year}`);
+                  if (parsed) {
+                    flightDate = parsed;
+                    foundFlightDate = true;
+                    break;
+                  }
+                }
+              }
+              
+              // Pattern 2: "op 29 nov 2025" all on one line
+              const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
-                  console.log(`    → Parsed flight date: ${parsed}`);
                   flightDate = parsed;
                   foundFlightDate = true;
                   break;
                 }
               }
-              // Fallback: Look for "op [day] [month] [year]" pattern anywhere
+              
+              // Pattern 3: Date pattern anywhere (fallback)
               const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
               if (datePattern) {
                 const [, day, month, year] = datePattern;
                 const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
-                  console.log(`    → Fallback parsed: ${parsed}`);
                   flightDate = parsed;
                   foundFlightDate = true;
                   break;
                 }
               }
-            }
-            if (!foundFlightDate) {
-              console.log(`  → No flight date found for partner segment, using: ${transDate}`);
             }
             
             tripSegments.push({
