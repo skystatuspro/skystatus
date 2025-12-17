@@ -1,7 +1,7 @@
 // src/components/Dashboard/index.tsx
 // Main Dashboard component - Command Center
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, lazy, Suspense } from 'react';
 import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
@@ -28,12 +28,24 @@ import {
   HelpCircle,
   Crown,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
-import PdfImportModal from '../PdfImportModal';
 import { FAQModal } from '../FAQModal';
 import { FeedbackCard } from '../FeedbackCard';
 import { shouldShowDashboardFeedback, incrementSessionCount } from '../../lib/feedbackService';
+
+// Lazy load PdfImportModal to reduce initial bundle
+const PdfImportModal = lazy(() => import('../PdfImportModal'));
+
+const ModalLoadingFallback = () => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
+      <Loader2 size={24} className="animate-spin text-blue-500" />
+      <span className="text-slate-600">Loading...</span>
+    </div>
+  </div>
+);
 
 // Subcomponents
 import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveCycle, calculateUltimateChance } from './helpers';
@@ -313,16 +325,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
 
-        {onPdfImport && (
-          <PdfImportModal
-            isOpen={showPdfImport}
-            onClose={() => setShowPdfImport(false)}
-            onImport={(flights, miles) => {
-              onPdfImport(flights, miles);
-            }}
-            existingFlights={state.flights}
-            existingMiles={state.milesData}
-          />
+        {onPdfImport && showPdfImport && (
+          <Suspense fallback={<ModalLoadingFallback />}>
+            <PdfImportModal
+              isOpen={showPdfImport}
+              onClose={() => setShowPdfImport(false)}
+              onImport={(flights, miles) => {
+                onPdfImport(flights, miles);
+              }}
+              existingFlights={state.flights}
+              existingMiles={state.milesData}
+            />
+          </Suspense>
         )}
 
         <FAQModal isOpen={showFaqModal} onClose={() => setShowFaqModal(false)} />
@@ -710,16 +724,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <>
       {commandCenterContent}
 
-      {onPdfImport && (
-        <PdfImportModal
-          isOpen={showPdfImport}
-          onClose={() => setShowPdfImport(false)}
-          onImport={(flights, miles) => {
-            onPdfImport(flights, miles);
-          }}
-          existingFlights={state.flights}
-          existingMiles={state.milesData}
-        />
+      {onPdfImport && showPdfImport && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <PdfImportModal
+            isOpen={showPdfImport}
+            onClose={() => setShowPdfImport(false)}
+            onImport={(flights, miles) => {
+              onPdfImport(flights, miles);
+            }}
+            existingFlights={state.flights}
+            existingMiles={state.milesData}
+          />
+        </Suspense>
       )}
     </>
   );
