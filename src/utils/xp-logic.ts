@@ -1159,11 +1159,23 @@ export const calculateQualificationCycles = (
   //   - Oct 8 flight → NEW cycle (counts!)
   //   - Official cycle: Nov 1, 2025 - Oct 31, 2026
   //
-  // IMPORTANT: We ONLY filter if we have the exact qualification date (cycleStartDate)
-  // If only cycleStartMonth is set, we cannot safely filter because we don't know
-  // when the user qualified. They should re-import their PDF to get the exact date.
+  // CRITICAL FIX: We now have a fallback if cycleStartDate is missing.
+  // If only cycleStartMonth is set, we use the last day of the previous month.
   
-  const excludeBeforeDate = qualificationSettings?.cycleStartDate;
+  // Get excludeBeforeDate from settings, with fallback to day before cycle start month
+  let excludeBeforeDate = qualificationSettings?.cycleStartDate;
+
+  // CRITICAL FIX: If no exact cycleStartDate but we have cycleStartMonth,
+  // use the last day of the month BEFORE the cycle starts as the cutoff.
+  // This ensures flights from before the cycle are excluded.
+  // Example: cycleStartMonth = "2025-11" → excludeBeforeDate = "2025-10-31"
+  if (!excludeBeforeDate && qualificationSettings?.cycleStartMonth) {
+    const [year, month] = qualificationSettings.cycleStartMonth.split('-').map(Number);
+    // Day 0 of month X = last day of month X-1
+    const lastDayPrevMonth = new Date(year, month - 1, 0);
+    excludeBeforeDate = lastDayPrevMonth.toISOString().slice(0, 10);
+    console.log(`[XP Engine] Using fallback excludeBeforeDate: ${excludeBeforeDate} (based on cycleStartMonth: ${qualificationSettings.cycleStartMonth})`);
+  }
   
   // Debug logging
   console.log('[XP Engine] Qualification settings:', {
