@@ -521,7 +521,7 @@ export function useUserData(): UseUserDataReturn {
       setHasAttemptedLoad(true);
     }
 
-    // CREATE BACKUP before replacing data (for undo functionality)
+    // CREATE BACKUP before modifying data (for undo functionality)
     try {
       createBackup(
         {
@@ -538,40 +538,95 @@ export function useUserData(): UseUserDataReturn {
       // Continue anyway - backup failure shouldn't block import
     }
 
-    // REPLACE MODE: Instead of merging, we replace all flight data
-    // This ensures XP calculations are always correct by starting fresh
-    // User's manual corrections are cleared since they'll be recalculated from the PDF
+    // =========================================================================
+    // MERGE MODE: Add new data while preserving existing data
+    // =========================================================================
     
-    // Replace all flights with imported flights
-    setFlightsInternal(importedFlights);
-
-    // Replace all miles data
-    setBaseMilesDataInternal(importedMiles);
-
-    // REPLACE MODE: Clear manual ledger and rebuild from PDF data only
-    // XP corrections are no longer needed since we recalculate everything from scratch
-    // Only keep bonus XP from the PDF (first flight bonuses, hotel XP, etc.)
+    // 1. MERGE FLIGHTS: Add new flights, keep existing ones
+    // Match duplicates by date + route (same logic as PdfImportModal)
+    const existingFlightKeys = new Set(
+      flights.map(f => `${f.date}|${f.route}`)
+    );
     
-    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      // Start fresh with only bonus XP from PDF
-      const freshLedger: ManualLedger = {};
-      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-        freshLedger[month] = { amexXp: 0, bonusSafXp: 0, miscXp: xp, correctionXp: 0 };
-      }
-      setManualLedgerInternal(freshLedger);
-    } else {
-      // No bonus XP - clear the manual ledger entirely
-      setManualLedgerInternal({});
+    const newFlights = importedFlights.filter(f => {
+      const key = `${f.date}|${f.route}`;
+      return !existingFlightKeys.has(key);
+    });
+    
+    // Combine: existing flights + new flights from PDF
+    const mergedFlights = [...flights, ...newFlights];
+    // Sort by date descending (newest first)
+    mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
+    setFlightsInternal(mergedFlights);
+    
+    console.log(`[handlePdfImport] Merged flights: ${flights.length} existing + ${newFlights.length} new = ${mergedFlights.length} total`);
+
+    // 2. MERGE MILES: Update existing months, add new months
+    const existingMilesByMonth = new Map(
+      baseMilesData.map(m => [m.month, m])
+    );
+    
+    for (const importedMonth of importedMiles) {
+      // Always use PDF data for months it contains (more accurate)
+      existingMilesByMonth.set(importedMonth.month, importedMonth);
     }
+    
+    const mergedMiles = Array.from(existingMilesByMonth.values());
+    // Sort by month descending
+    mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
+    setBaseMilesDataInternal(mergedMiles);
+    
+    console.log(`[handlePdfImport] Merged miles: ${baseMilesData.length} existing months, ${importedMiles.length} from PDF = ${mergedMiles.length} total`);
 
-    // Handle cycle settings (including precise start date for XP filtering)
+    // 3. MERGE MANUAL LEDGER: Add bonus XP from PDF, preserve existing entries
+    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
+      const mergedLedger = { ...manualLedger };
+      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+        if (mergedLedger[month]) {
+          // Month exists - add to miscXp
+          mergedLedger[month] = {
+            ...mergedLedger[month],
+            miscXp: (mergedLedger[month].miscXp || 0) + xp,
+          };
+        } else {
+          // New month
+          mergedLedger[month] = { amexXp: 0, bonusSafXp: 0, miscXp: xp, correctionXp: 0 };
+        }
+      }
+      setManualLedgerInternal(mergedLedger);
+    }
+    // If no bonus XP, keep existing ledger unchanged
+
+    // 4. QUALIFICATION SETTINGS: Only update if user doesn't have settings yet
+    // OR if the PDF detected a more recent requalification
     if (cycleSettings) {
-      setQualificationSettingsInternal({
-        cycleStartMonth: cycleSettings.cycleStartMonth,
-        cycleStartDate: cycleSettings.cycleStartDate,  // Full date for precise XP calculation
-        startingStatus: cycleSettings.startingStatus,
-        startingXP: cycleSettings.startingXP ?? 0,  // Use calculated rollover or 0
-      });
+      if (!qualificationSettings) {
+        // No existing settings - use PDF settings
+        setQualificationSettingsInternal({
+          cycleStartMonth: cycleSettings.cycleStartMonth,
+          cycleStartDate: cycleSettings.cycleStartDate,
+          startingStatus: cycleSettings.startingStatus,
+          startingXP: cycleSettings.startingXP ?? 0,
+        });
+        console.log('[handlePdfImport] Set qualification settings from PDF (no existing settings)');
+      } else {
+        // User has settings - only update if PDF cycle is MORE RECENT
+        const existingStart = qualificationSettings.cycleStartMonth;
+        const pdfStart = cycleSettings.cycleStartMonth;
+        
+        if (pdfStart > existingStart) {
+          // PDF has a more recent cycle - update
+          setQualificationSettingsInternal({
+            cycleStartMonth: cycleSettings.cycleStartMonth,
+            cycleStartDate: cycleSettings.cycleStartDate,
+            startingStatus: cycleSettings.startingStatus,
+            startingXP: cycleSettings.startingXP ?? 0,
+          });
+          console.log(`[handlePdfImport] Updated qualification settings: ${existingStart} → ${pdfStart}`);
+        } else {
+          console.log(`[handlePdfImport] Kept existing qualification settings (${existingStart} >= PDF ${pdfStart})`);
+        }
+      }
     }
 
     markDataChanged();

@@ -117,12 +117,13 @@ export default function App() {
 
     actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
 
-    // Show success toast with undo hint
+    // Show success toast - note: actual merge happens in handlePdfImport
+    // newFlightCount here is what PDF contained, actual added may be less due to duplicates
     const rolloverMsg = cycleSettings?.startingXP ? ` (${cycleSettings.startingXP} XP rollover)` : '';
     const cycleMsg = cycleSettings ? ` · Cycle: ${cycleSettings.startingStatus} from ${cycleSettings.cycleStartMonth}${rolloverMsg}` : '';
     const bonusXpTotal = bonusXpByMonth ? Object.values(bonusXpByMonth).reduce((a, b) => a + b, 0) : 0;
     const bonusMsg = bonusXpTotal > 0 ? ` (+${bonusXpTotal} bonus XP)` : '';
-    showToast(`Imported ${newFlightCount} flights and ${importedMiles.length} months of miles data${bonusMsg}${cycleMsg}. Use Data Settings to undo.`, 'success');
+    showToast(`Merged ${newFlightCount} flights from PDF${bonusMsg}${cycleMsg}. Duplicates skipped. Use Data Settings to undo.`, 'success');
   };
 
   // -------------------------------------------------------------------------
