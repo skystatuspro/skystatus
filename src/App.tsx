@@ -551,9 +551,9 @@ export default function App() {
       <PdfImportModal
         isOpen={showOnboardingPdfModal}
         onClose={() => setShowOnboardingPdfModal(false)}
-        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings) => {
+        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth) => {
           // Save the flights
-          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings);
+          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
           
           // Calculate summary for onboarding display
           const totalXP = importedFlights.reduce((sum, f) => sum + (f.earnedXP || 0), 0);
@@ -577,8 +577,8 @@ export default function App() {
       <PdfImportModal
         isOpen={showPdfImportModal}
         onClose={() => setShowPdfImportModal(false)}
-        onImport={(importedFlights, importedMiles) => {
-          handlePdfImportWithToast(importedFlights, importedMiles);
+        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth) => {
+          handlePdfImportWithToast(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
         }}
         existingFlights={state.flights}
         existingMiles={state.baseMilesData}
