@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, FileText, HelpCircle, BookOpen, ArrowRight, Hash, Command } from 'lucide-react';
+import { Search, X, FileText, HelpCircle, BookOpen, ArrowRight, Hash, ArrowLeft, ExternalLink, Loader2 } from 'lucide-react';
 
 // ============================================================
 // TYPES
@@ -39,7 +39,7 @@ interface SearchModalProps {
 }
 
 // ============================================================
-// SIMPLE FUZZY SEARCH (no external dependency)
+// SIMPLE FUZZY SEARCH
 // ============================================================
 
 function fuzzyMatch(text: string, query: string): number {
@@ -51,16 +51,13 @@ function fuzzyMatch(text: string, query: string): number {
   
   let score = 0;
   
-  // Exact phrase match (highest score)
   if (textLower.includes(queryLower)) {
     score += 100;
   }
   
-  // Word matches
   words.forEach(word => {
     if (textLower.includes(word)) {
       score += 20;
-      // Bonus for word at start
       if (textLower.startsWith(word) || textLower.includes(' ' + word)) {
         score += 10;
       }
@@ -76,12 +73,10 @@ function searchItems(items: SearchItem[], query: string): SearchResult[] {
   const results: SearchResult[] = [];
   
   items.forEach(item => {
-    // Score different fields with different weights
     const titleScore = fuzzyMatch(item.title, query) * 3;
     const descScore = fuzzyMatch(item.description, query) * 2;
     const contentScore = fuzzyMatch(item.content, query) * 0.5;
     
-    // Check headings for section matches
     let headingScore = 0;
     let matchedHeading: SearchHeading | undefined;
     
@@ -104,24 +99,29 @@ function searchItems(items: SearchItem[], query: string): SearchResult[] {
     }
   });
   
-  // Sort by score descending
-  return results.sort((a, b) => b.score - a.score).slice(0, 10);
+  return results.sort((a, b) => b.score - a.score).slice(0, 12);
 }
 
 // ============================================================
 // SEARCH MODAL COMPONENT
 // ============================================================
 
-export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNavigate }) => {
+export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searchIndex, setSearchIndex] = useState<SearchIndex | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Preview state
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // Load search index on first open
+  // Load search index
   useEffect(() => {
     if (isOpen && !searchIndex) {
       setLoading(true);
@@ -138,12 +138,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
     }
   }, [isOpen, searchIndex]);
 
-  // Focus input when opened
+  // Focus input when opened or returning from preview
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen && !previewUrl && inputRef.current) {
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [isOpen]);
+  }, [isOpen, previewUrl]);
 
   // Search when query changes
   useEffect(() => {
@@ -156,8 +156,26 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
     }
   }, [query, searchIndex]);
 
+  // Reset state when closing
+  useEffect(() => {
+    if (!isOpen) {
+      setPreviewUrl(null);
+      setPreviewTitle('');
+      setQuery('');
+      setResults([]);
+    }
+  }, [isOpen]);
+
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (previewUrl) {
+      if (e.key === 'Escape') {
+        setPreviewUrl(null);
+        setPreviewTitle('');
+      }
+      return;
+    }
+    
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -177,9 +195,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
         onClose();
         break;
     }
-  }, [results, selectedIndex, onClose]);
+  }, [results, selectedIndex, onClose, previewUrl]);
 
-  // Scroll selected item into view
+  // Scroll selected into view
   useEffect(() => {
     if (resultsRef.current) {
       const selected = resultsRef.current.querySelector('[data-selected="true"]');
@@ -191,35 +209,39 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
 
   const handleSelect = (result: SearchResult) => {
     let url = result.url;
-    
-    // Add heading anchor if matched
     if (result.matchedHeading?.id) {
       url += `#${result.matchedHeading.id}`;
     }
     
-    if (onNavigate) {
-      onNavigate(url);
-    } else {
-      window.location.href = url;
+    setPreviewTitle(result.title);
+    setPreviewUrl(url);
+    setPreviewLoading(true);
+  };
+
+  const handleBackToResults = () => {
+    setPreviewUrl(null);
+    setPreviewTitle('');
+  };
+
+  const handleOpenExternal = () => {
+    if (previewUrl) {
+      window.open(previewUrl, '_blank');
     }
-    
-    onClose();
-    setQuery('');
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'guide': return <BookOpen size={16} className="text-blue-500" />;
-      case 'faq': return <HelpCircle size={16} className="text-emerald-500" />;
-      default: return <FileText size={16} className="text-slate-400" />;
+      case 'guide': return <BookOpen size={18} />;
+      case 'faq': return <HelpCircle size={18} />;
+      default: return <FileText size={18} />;
     }
   };
 
-  const getTypeLabel = (type: string) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'guide': return 'Guide';
-      case 'faq': return 'FAQ';
-      default: return 'Page';
+      case 'guide': return 'bg-blue-500';
+      case 'faq': return 'bg-emerald-500';
+      default: return 'bg-slate-500';
     }
   };
 
@@ -229,146 +251,265 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+        className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[100]"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="fixed inset-x-4 top-[10vh] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl z-[101]">
-        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div 
+        className="fixed inset-4 md:inset-x-auto md:top-[5vh] md:bottom-[5vh] md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-3xl z-[101] flex flex-col"
+        onKeyDown={handleKeyDown}
+      >
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full border border-slate-200/50">
           
-          {/* Search Input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
-            <Search size={20} className="text-slate-400 flex-shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search guides, FAQ, and more..."
-              className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 text-lg"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-            />
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Results */}
-          <div 
-            ref={resultsRef}
-            className="max-h-[60vh] overflow-y-auto"
-          >
-            {loading && (
-              <div className="px-4 py-8 text-center text-slate-500">
-                Loading search index...
+          {/* Header */}
+          {previewUrl ? (
+            // Preview header
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200 bg-slate-50">
+              <button
+                onClick={handleBackToResults}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition-colors"
+              >
+                <ArrowLeft size={16} />
+                Back
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 truncate">{previewTitle}</p>
               </div>
-            )}
-
-            {!loading && query && results.length === 0 && (
-              <div className="px-4 py-8 text-center">
-                <p className="text-slate-500">No results found for "{query}"</p>
-                <p className="text-sm text-slate-400 mt-1">Try different keywords</p>
+              <button
+                onClick={handleOpenExternal}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <ExternalLink size={14} />
+                Open
+              </button>
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          ) : (
+            // Search header
+            <div className="flex items-center gap-4 px-5 py-4 border-b border-slate-200">
+              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/25">
+                <Search size={20} className="text-white" />
               </div>
-            )}
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search guides, FAQ, and more..."
+                className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 text-lg font-medium"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery('')}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <div className="w-px h-6 bg-slate-200" />
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
 
-            {!loading && results.length > 0 && (
-              <div className="py-2">
-                {results.map((result, index) => (
-                  <button
-                    key={result.id}
-                    data-selected={index === selectedIndex}
-                    onClick={() => handleSelect(result)}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                    className={`w-full px-4 py-3 flex items-start gap-3 text-left transition-colors ${
-                      index === selectedIndex 
-                        ? 'bg-blue-50' 
-                        : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="mt-0.5 flex-shrink-0">
-                      {getTypeIcon(result.type)}
+          {/* Content area */}
+          <div className="flex-1 overflow-hidden">
+            {previewUrl ? (
+              // Preview iframe
+              <div className="h-full relative">
+                {previewLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                    <div className="flex items-center gap-3 text-slate-500">
+                      <Loader2 size={24} className="animate-spin" />
+                      <span>Loading...</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-900 truncate">
-                          {result.title}
-                        </span>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
-                          {getTypeLabel(result.type)}
-                        </span>
-                      </div>
-                      
-                      {result.matchedHeading && (
-                        <div className="flex items-center gap-1.5 mt-1 text-sm text-blue-600">
-                          <Hash size={12} />
-                          <span>{result.matchedHeading.text}</span>
-                        </div>
-                      )}
-                      
-                      <p className="text-sm text-slate-500 mt-0.5 line-clamp-1">
-                        {result.description}
+                  </div>
+                )}
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-full border-0"
+                  onLoad={() => setPreviewLoading(false)}
+                  title={previewTitle}
+                />
+              </div>
+            ) : (
+              // Search results
+              <div ref={resultsRef} className="h-full overflow-y-auto">
+                {loading && (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="flex items-center gap-3 text-slate-500">
+                      <Loader2 size={24} className="animate-spin" />
+                      <span>Loading search index...</span>
+                    </div>
+                  </div>
+                )}
+
+                {!loading && query && results.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 px-4">
+                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                      <Search size={28} className="text-slate-400" />
+                    </div>
+                    <p className="text-slate-900 font-semibold mb-1">No results found</p>
+                    <p className="text-slate-500 text-sm">Try different keywords for "{query}"</p>
+                  </div>
+                )}
+
+                {!loading && results.length > 0 && (
+                  <div className="p-3">
+                    <p className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {results.length} result{results.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="space-y-1">
+                      {results.map((result, index) => (
+                        <button
+                          key={result.id}
+                          data-selected={index === selectedIndex}
+                          onClick={() => handleSelect(result)}
+                          onMouseEnter={() => setSelectedIndex(index)}
+                          className={`w-full p-4 flex items-start gap-4 text-left rounded-xl transition-all ${
+                            index === selectedIndex 
+                              ? 'bg-gradient-to-r from-blue-50 to-indigo-50 ring-1 ring-blue-200' 
+                              : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white ${getTypeColor(result.type)}`}>
+                            {getTypeIcon(result.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <h4 className="font-semibold text-slate-900 leading-snug line-clamp-2">
+                                {result.title}
+                              </h4>
+                              <span className={`flex-shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md ${
+                                result.type === 'guide' ? 'bg-blue-100 text-blue-700' :
+                                result.type === 'faq' ? 'bg-emerald-100 text-emerald-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {result.type}
+                              </span>
+                            </div>
+                            
+                            {result.matchedHeading && (
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <Hash size={12} className="text-blue-500" />
+                                <span className="text-sm text-blue-600 font-medium">{result.matchedHeading.text}</span>
+                              </div>
+                            )}
+                            
+                            <p className="text-sm text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
+                              {result.description}
+                            </p>
+                          </div>
+                          
+                          <ArrowRight 
+                            size={18} 
+                            className={`flex-shrink-0 mt-2.5 transition-all ${
+                              index === selectedIndex ? 'text-blue-500 translate-x-0 opacity-100' : 'text-slate-300 -translate-x-1 opacity-0'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty state with suggestions */}
+                {!loading && !query && (
+                  <div className="p-6">
+                    <div className="mb-6">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                        Popular searches
                       </p>
+                      <div className="flex flex-wrap gap-2">
+                        {['XP explained', 'Gold status', 'Mileage run', 'PDF import', 'Rollover', 'Ultimate'].map(term => (
+                          <button
+                            key={term}
+                            onClick={() => setQuery(term)}
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors"
+                          >
+                            {term}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     
-                    <ArrowRight 
-                      size={16} 
-                      className={`flex-shrink-0 mt-1 transition-opacity ${
-                        index === selectedIndex ? 'opacity-100 text-blue-500' : 'opacity-0'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Empty state with suggestions */}
-            {!loading && !query && (
-              <div className="px-4 py-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
-                  Popular searches
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {['XP explained', 'Gold status', 'Mileage run', 'PDF import', 'Rollover'].map(term => (
-                    <button
-                      key={term}
-                      onClick={() => setQuery(term)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm text-slate-600 transition-colors"
-                    >
-                      {term}
-                    </button>
-                  ))}
-                </div>
+                    <div className="border-t border-slate-100 pt-6">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+                        Browse by category
+                      </p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <button
+                          onClick={() => setQuery('status')}
+                          className="flex flex-col items-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
+                        >
+                          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                            <BookOpen size={20} className="text-white" />
+                          </div>
+                          <span className="text-sm font-medium text-blue-900">Guides</span>
+                        </button>
+                        <button
+                          onClick={() => setQuery('how do I')}
+                          className="flex flex-col items-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors"
+                        >
+                          <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                            <HelpCircle size={20} className="text-white" />
+                          </div>
+                          <span className="text-sm font-medium text-emerald-900">FAQ</span>
+                        </button>
+                        <button
+                          onClick={() => setQuery('XP')}
+                          className="flex flex-col items-center gap-2 p-4 bg-violet-50 hover:bg-violet-100 rounded-xl transition-colors"
+                        >
+                          <div className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center">
+                            <FileText size={20} className="text-white" />
+                          </div>
+                          <span className="text-sm font-medium text-violet-900">XP & Miles</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono">↑</kbd>
-                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono">↓</kbd>
-                <span>Navigate</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono">↵</kbd>
-                <span>Select</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono">esc</kbd>
-                <span>Close</span>
+          {/* Footer - only show when not in preview */}
+          {!previewUrl && (
+            <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-4 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono shadow-sm">↑</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono shadow-sm">↓</kbd>
+                  <span className="text-slate-400">navigate</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono shadow-sm">↵</kbd>
+                  <span className="text-slate-400">open</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono shadow-sm">esc</kbd>
+                  <span className="text-slate-400">close</span>
+                </span>
+              </div>
+              <span className="text-xs text-slate-400">
+                {searchIndex?.items.length || 0} items indexed
               </span>
             </div>
-            <span>{searchIndex?.items.length || 0} items indexed</span>
-          </div>
+          )}
         </div>
       </div>
     </>
@@ -376,7 +517,25 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onNav
 };
 
 // ============================================================
-// SEARCH TRIGGER BUTTON (for embedding in nav/header)
+// KEYBOARD SHORTCUT HOOK
+// ============================================================
+
+export function useSearchShortcut(callback: () => void) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        callback();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [callback]);
+}
+
+// ============================================================
+// SEARCH TRIGGER (optional, for use elsewhere)
 // ============================================================
 
 interface SearchTriggerProps {
@@ -393,30 +552,10 @@ export const SearchTrigger: React.FC<SearchTriggerProps> = ({ onClick, className
       <Search size={16} />
       <span className="hidden sm:inline">Search...</span>
       <kbd className="hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-mono text-slate-400">
-        <Command size={10} />
-        <span>K</span>
+        ⌘K
       </kbd>
     </button>
   );
 };
-
-// ============================================================
-// KEYBOARD SHORTCUT HOOK
-// ============================================================
-
-export function useSearchShortcut(callback: () => void) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        callback();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [callback]);
-}
 
 export default SearchModal;
