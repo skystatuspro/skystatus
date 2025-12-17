@@ -597,55 +597,26 @@ export function useUserData(): UseUserDataReturn {
     }
     // If no bonus XP, keep existing ledger unchanged
 
-    // 4. QUALIFICATION SETTINGS: Smart merge with PDF header as source of truth
-    // The PDF header status is the OFFICIAL Flying Blue status at time of export
+    // 4. QUALIFICATION SETTINGS: NEVER overwrite existing settings
+    // The user's current settings are the source of truth - they know their cycle better than the PDF
+    // Only set settings if user has NONE (first time import)
     if (cycleSettings) {
-      const statusRank: Record<string, number> = {
-        'Explorer': 0,
-        'Silver': 1,
-        'Gold': 2,
-        'Platinum': 3,
-      };
-      
-      // PDF header status is the official current status (if available)
-      const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
-      
       if (!qualificationSettings) {
-        // No existing settings - use PDF settings
+        // No existing settings - use PDF settings (first time setup)
+        const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
         setQualificationSettingsInternal({
           cycleStartMonth: cycleSettings.cycleStartMonth,
           cycleStartDate: cycleSettings.cycleStartDate,
-          startingStatus: cycleSettings.startingStatus,
+          // Prefer PDF header status over detected requalification status
+          startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
           startingXP: cycleSettings.startingXP ?? 0,
         });
         console.log('[handlePdfImport] Set qualification settings from PDF (no existing settings)');
       } else {
-        // User has existing settings - be very careful about overwriting
-        const existingStatus = qualificationSettings.startingStatus;
-        const existingStart = qualificationSettings.cycleStartMonth;
-        const pdfStart = cycleSettings.cycleStartMonth;
-        
-        // RULE 1: If PDF header shows a LOWER status than current, NEVER overwrite
-        // This means the PDF data is incomplete or old
-        if (pdfOfficialStatus && statusRank[pdfOfficialStatus] < statusRank[existingStatus]) {
-          console.log(`[handlePdfImport] PDF header shows ${pdfOfficialStatus} but user is ${existingStatus} - keeping existing settings`);
-        }
-        // RULE 2: If PDF header matches current status, keep existing settings (they're correct)
-        else if (pdfOfficialStatus && pdfOfficialStatus === existingStatus) {
-          console.log(`[handlePdfImport] PDF header confirms status is ${existingStatus} - keeping existing settings`);
-        }
-        // RULE 3: If PDF cycle is more recent AND status is same or higher, update
-        else if (pdfStart > existingStart) {
-          setQualificationSettingsInternal({
-            cycleStartMonth: cycleSettings.cycleStartMonth,
-            cycleStartDate: cycleSettings.cycleStartDate,
-            startingStatus: cycleSettings.startingStatus,
-            startingXP: cycleSettings.startingXP ?? 0,
-          });
-          console.log(`[handlePdfImport] Updated qualification settings: ${existingStart} → ${pdfStart}`);
-        } else {
-          console.log(`[handlePdfImport] Kept existing qualification settings (${existingStart} >= PDF ${pdfStart})`);
-        }
+        // User already has settings - DO NOT CHANGE THEM
+        // Their existing cycle/status is correct, PDF import should only add flights
+        console.log('[handlePdfImport] User has existing qualification settings - keeping unchanged');
+        console.log(`  Existing: ${qualificationSettings.startingStatus} from ${qualificationSettings.cycleStartMonth}`);
       }
     }
 

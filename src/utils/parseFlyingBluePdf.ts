@@ -464,12 +464,12 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for actual flight date in next lines
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
-            // Must be at start of line to avoid matching "op basis van"
+            // Allow leading whitespace - PDF often has indentation
             let flightDate = transDate;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
               const line = lines[k];
-              // Primary: Match "op/on/le/am" at start of line, followed by a date
-              const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
+              // Primary: Match "op/on/le/am" (with optional leading whitespace), followed by a date
+              const opMatch = line.match(/^\s*(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
@@ -477,7 +477,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
                   break;
                 }
               }
-              // Fallback: Look for "op [day] [month] [year]" pattern anywhere
+              // Fallback: Look for "op [day] [month] [year]" pattern anywhere in line
               // This handles cases where text isn't cleanly split into lines
               const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
               if (datePattern) {
@@ -537,12 +537,12 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for flight date
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
-            // Must be at start of line to avoid matching "op basis van"
+            // Allow leading whitespace - PDF often has indentation
             let flightDate = transDate;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
               const line = lines[k];
-              // Primary: Match "op/on/le/am" at start of line
-              const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
+              // Primary: Match "op/on/le/am" (with optional leading whitespace)
+              const opMatch = line.match(/^\s*(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
