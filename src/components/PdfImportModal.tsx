@@ -349,8 +349,17 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     // Extract bonus XP from PDF (first flight bonus, hotel XP, etc.)
     const bonusXpByMonth = extractBonusXp(parseResult.miles);
 
-    // Import new flights and all miles (miles will be merged)
-    onImport(summary.newFlights, summary.miles, xpCorrection, cycleSettings, bonusXpByMonth);
+    // MERGE MODE: Combine existing flights with new flights
+    // existingFlights are passed in as props, newFlights are deduplicated already
+    const mergedFlights = [...existingFlights, ...summary.newFlights];
+    
+    // For miles: PDF contains complete history, so we use all miles from PDF
+    // But we need to preserve months that exist in our data but not in the PDF
+    const pdfMonths = new Set(summary.miles.map(m => m.month));
+    const milesOnlyInExisting = existingMiles.filter(m => !pdfMonths.has(m.month));
+    const mergedMiles = [...milesOnlyInExisting, ...summary.miles];
+    
+    onImport(mergedFlights, mergedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
     
     // Track successful PDF import
     trackPdf(summary.newFlights.length, summary.miles.length, parseResult.language);
