@@ -355,22 +355,45 @@ function updateRatingCount() {
 }
 
 // ============================================================
+// 10. BUILD SEARCH INDEX
+// ============================================================
+
+async function buildSearchIndex() {
+  log('🔍', 'Building search index...');
+  
+  try {
+    const { buildSearchIndex: build } = await import('./build-search-index.js');
+    // The module runs on import, but we call it explicitly for clarity
+    if (typeof build === 'function') {
+      build();
+    }
+  } catch (err) {
+    log('⚠️', `Search index build failed: ${err.message}`);
+  }
+}
+
+// ============================================================
 // MAIN EXECUTION
 // ============================================================
 
-console.log('\n🚀 SkyStatus Pre-build Script\n');
-console.log(`   Date: ${TODAY_ISO}`);
-console.log(`   Year: ${CURRENT_YEAR}`);
-console.log(`   User count: ${USER_COUNT || 'not set'}\n`);
+async function main() {
+  console.log('\n🚀 SkyStatus Pre-build Script\n');
+  console.log(`   Date: ${TODAY_ISO}`);
+  console.log(`   Year: ${CURRENT_YEAR}`);
+  console.log(`   User count: ${USER_COUNT || 'not set'}\n`);
 
-updateCopyrightYears();
-updateSchemaDateModified();
-updateLastUpdatedDates();
-updateLastVerifiedDates();
-updateYearInTitles();
-generateSitemap();
-updateUserCount();
-updateRatingCount();
-updateAiInfo();
+  updateCopyrightYears();
+  updateSchemaDateModified();
+  updateLastUpdatedDates();
+  updateLastVerifiedDates();
+  updateYearInTitles();
+  generateSitemap();
+  updateUserCount();
+  updateRatingCount();
+  updateAiInfo();
+  await buildSearchIndex();
 
-console.log('\n✨ Pre-build complete!\n');
+  console.log('\n✨ Pre-build complete!\n');
+}
+
+main().catch(console.error);
