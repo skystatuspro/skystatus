@@ -26,14 +26,28 @@ jobs:
         id: check
         run: |
           # Pages to monitor (key official sources referenced in guides)
+          # UITGEBREID met extra pagina's die in de guides worden gelinkt
           PAGES=(
+            # Core status & XP pages
             "https://www.flyingblue.com/en/programme/more-info/status|Flying Blue Status & XP"
             "https://www.klm.com/information/flying-blue/membership-levels|KLM Membership Levels"
             "https://www.flyingblue.com/en/landing-page/informative/ultimate-information|Ultimate Status Info"
+            "https://www.flyingblue.com/en/programme/more-info/tier-benefits|Tier Benefits"
+            
+            # Miles acquisition
             "https://www.flyingblue.com/en/flyingblue-extra|Flying Blue Extra"
             "https://www.flyingblue.com/en/mileshub/buy|Miles Hub Buy"
             "https://www.flyingblue.com/en/mileshub/subscription|Miles Subscription"
+            "https://www.flyingblue.com/en/news/subscribe-to-miles|Subscribe to Miles Info"
+            "https://www.flyingblue.com/en/mileshub/convert|Transfer Partners"
+            
+            # Miles spending
             "https://www.flyingblue.com/en/spend/flights/rewards|Award Flights"
+            "https://www.flyingblue.com/en/flights/promo-rewards|Promo Rewards"
+            
+            # Rules & news
+            "https://www.flyingblue.com/en/news/surplus-xp-capping|XP Rollover Capping"
+            "https://www.flyingblue.com/en/news/extend-miles|Extend Miles"
           )
           
           CHANGES=""
@@ -112,32 +126,37 @@ jobs:
             
             const body = `## ⚠️ Flying Blue Page Changes Detected
 
-            **Date:** ${today}
+**Date:** ${today}
 
-            The following official Flying Blue pages have changed:
+The following official Flying Blue pages have changed:
 
-            ${changedPages}
+${changedPages}
 
-            ### Action Required
-            1. Visit each changed page and review the updates
-            2. Check if any guide content needs to be updated:
-               - XP requirements or earning rates
-               - Status benefits
-               - Pricing information
-               - Program rules
-            3. Update relevant guide pages if needed
-            4. Run a build to update "Last verified" dates
-            5. Close this issue when reviewed
+### Action Required
+1. Visit each changed page and review the updates
+2. Check if any guide content needs to be updated:
+   - XP requirements or earning rates
+   - Status benefits
+   - Pricing information
+   - Program rules
+   - Rollover mechanics
+3. Update relevant guide pages if needed
+4. Run a build to update "Last verified" dates
+5. Close this issue when reviewed
 
-            ### Potentially Affected Guides
-            - \`/guide/what-is-flying-blue-xp\`
-            - \`/guide/flying-blue-status-levels\`
-            - \`/guide/flying-blue-gold-status\`
-            - \`/guide/flying-blue-platinum-status\`
-            - \`/guide/flying-blue-ultimate-status\`
-            - \`/guide/flying-blue-subscription\`
-            - \`/guide/should-you-buy-flying-blue-miles\`
-            `;
+### Potentially Affected Guides
+- \`/guide/what-is-flying-blue-xp\`
+- \`/guide/flying-blue-status-levels\`
+- \`/guide/flying-blue-gold-status\`
+- \`/guide/flying-blue-platinum-status\`
+- \`/guide/flying-blue-ultimate-status\`
+- \`/guide/flying-blue-uxp-explained\`
+- \`/guide/flying-blue-xp-rollover\`
+- \`/guide/flying-blue-subscription\`
+- \`/guide/should-you-buy-flying-blue-miles\`
+- \`/guide/flying-blue-cost-per-mile\`
+- \`/guide/flying-blue-miles-value\`
+`;
             
             if (issues.data.length > 0) {
               // Comment on existing issue

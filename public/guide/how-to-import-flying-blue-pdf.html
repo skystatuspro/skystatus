@@ -13,7 +13,95 @@
     <meta property="og:description" content="Step-by-step guide to importing your Flying Blue data into SkyStatus.">
     <meta property="og:image" content="https://skystatus.pro/og-image.png">
     <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"HowTo","name":"How to Import Your Flying Blue PDF","description":"Step-by-step guide to importing your Flying Blue activity statement into SkyStatus Pro","step":[{"@type":"HowToStep","name":"Log in to Flying Blue","text":"Go to flyingblue.com and log in"},{"@type":"HowToStep","name":"Navigate to Activity Overview","text":"Go to My Account → Activity Overview"},{"@type":"HowToStep","name":"Download PDF","text":"Click More and select Download PDF"},{"@type":"HowToStep","name":"Import to SkyStatus","text":"Open SkyStatus Pro and drag & drop your PDF"}]}
+    {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#howto",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf"
+        },
+        "name": "How to Import Your Flying Blue PDF",
+        "description": "Step-by-step guide to importing your Flying Blue activity statement into SkyStatus Pro",
+        "image": "https://skystatus.pro/og-image.png",
+        "totalTime": "PT5M",
+        "author": {
+            "@type": "Person",
+            "name": "Remco de Graaf",
+            "url": "https://skystatus.pro/about"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "@id": "https://skystatus.pro/#organization",
+            "name": "SkyStatus Pro",
+            "url": "https://skystatus.pro",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://skystatus.pro/logo.png"
+            }
+        },
+        "dateModified": "2025-12-17",
+        "step": [
+            {
+                "@type": "HowToStep",
+                "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-1",
+                "name": "Log in to Flying Blue",
+                "text": "Go to flyingblue.com and log in to your account"
+            },
+            {
+                "@type": "HowToStep",
+                "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-2",
+                "name": "Navigate to Activity Overview",
+                "text": "Go to My Account → Activity Overview"
+            },
+            {
+                "@type": "HowToStep",
+                "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-3",
+                "name": "Download PDF",
+                "text": "Click 'More' and select 'Download PDF'"
+            },
+            {
+                "@type": "HowToStep",
+                "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#step-4",
+                "name": "Import to SkyStatus",
+                "text": "Open SkyStatus Pro and drag & drop your PDF"
+            }
+        ]
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": "https://skystatus.pro/guide/how-to-import-flying-blue-pdf#faq",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Is it safe to upload my Flying Blue PDF?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, your PDF is processed 100% in your browser. No data is sent to any server. SkyStatus Pro uses client-side JavaScript to parse your PDF locally."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What languages are supported?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "SkyStatus Pro supports Flying Blue PDFs in 7 languages: English, French, German, Dutch, Spanish, Italian, and Portuguese."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What if my flights are missing from the PDF?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Flying Blue activity statements only include flights from the past 24 months. For older flights, you can manually add them in SkyStatus Pro."
+                }
+            }
+        ]
+    }
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -195,6 +283,14 @@
                     <li><a href="/guide/flying-blue-partner-airlines">Flying Blue Partner Airlines</a></li>
                 </ul>
             </div>
+            
+            <h2 id="sources">Sources</h2>
+            <p style="font-size: 0.9rem; color: #64748b;">Last verified: 2025-12-17.</p>
+            <ul style="font-size: 0.9rem; color: #64748b;">
+                <li><a href="https://www.flyingblue.com" target="_blank" rel="noopener">Flying Blue Official Website</a> — Account login and PDF download</li>
+                <li><a href="https://www.klm.com/information/flying-blue/earning-miles" target="_blank" rel="noopener">KLM: Earning Miles</a> — Activity statement information</li>
+                <li><a href="/privacy">SkyStatus Privacy Policy</a> — Details on local-only PDF processing</li>
+            </ul>
             
             <p class="source-note">Import process may vary based on PDF format changes by Flying Blue. SkyStatus is not affiliated with Air France-KLM or Flying Blue.</p>
         </article>
