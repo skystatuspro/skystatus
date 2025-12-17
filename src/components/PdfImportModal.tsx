@@ -197,7 +197,18 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
     // PDF HEADER STATUS = SOURCE OF TRUTH
     // This is the official Flying Blue status at time of PDF export
-    const pdfHeaderStatus = parseResult.status as 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null;
+    // Normalize from uppercase (PLATINUM) to capitalized (Platinum)
+    const rawStatus = parseResult.status?.toUpperCase();
+    const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
+      'EXPLORER': 'Explorer',
+      'SILVER': 'Silver',
+      'GOLD': 'Gold',
+      'PLATINUM': 'Platinum',
+      'ULTIMATE': 'Platinum', // Map Ultimate to Platinum
+    };
+    const pdfHeaderStatus = rawStatus ? (statusMap[rawStatus] || null) : null;
+    
+    console.log('[PDF Import] Header status:', { rawStatus, pdfHeaderStatus });
 
     return {
       flights,
@@ -380,6 +391,15 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         startingStatus: officialStatus,  // USE OFFICIAL PDF STATUS
         startingXP: rolloverXP,  // Rollover from the level-up
         // Pass PDF header info for validation in useUserData
+        pdfHeaderStatus: summary.pdfHeaderStatus,
+      };
+    } 
+    // ALWAYS pass PDF header status even without requalification event
+    // This allows fixing incorrect user settings (e.g., Explorer -> Platinum)
+    else if (summary.pdfHeaderStatus) {
+      cycleSettings = {
+        cycleStartMonth: '', // Empty - don't change existing cycle month
+        startingStatus: summary.pdfHeaderStatus,
         pdfHeaderStatus: summary.pdfHeaderStatus,
       };
     }

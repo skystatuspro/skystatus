@@ -597,39 +597,66 @@ export function useUserData(): UseUserDataReturn {
     }
     // If no bonus XP, keep existing ledger unchanged
 
-    // 4. QUALIFICATION SETTINGS: Only update on actual status CHANGE
-    // Compare PDF header status (source of truth) with user's current status
+    // 4. QUALIFICATION SETTINGS: Update based on PDF header status (source of truth)
     if (cycleSettings) {
       const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
       
       if (!qualificationSettings) {
         // No existing settings - use PDF settings (first time setup)
-        setQualificationSettingsInternal({
-          cycleStartMonth: cycleSettings.cycleStartMonth,
-          cycleStartDate: cycleSettings.cycleStartDate,
-          // Prefer PDF header status over detected requalification status
-          startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
-          startingXP: cycleSettings.startingXP ?? 0,
-        });
-        console.log('[handlePdfImport] Set qualification settings from PDF (first time setup)');
-      } else {
-        // User has existing settings - only update if status CHANGED
-        const currentUserStatus = qualificationSettings.startingStatus;
-        
-        if (pdfOfficialStatus && pdfOfficialStatus !== currentUserStatus) {
-          // STATUS CHANGE detected! PDF header shows different status than user has
-          // This means user upgraded or downgraded - update the cycle
+        // Only set if we have actual cycle info, not just header status
+        if (cycleSettings.cycleStartMonth) {
           setQualificationSettingsInternal({
             cycleStartMonth: cycleSettings.cycleStartMonth,
             cycleStartDate: cycleSettings.cycleStartDate,
-            startingStatus: pdfOfficialStatus,
+            startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
             startingXP: cycleSettings.startingXP ?? 0,
           });
-          console.log(`[handlePdfImport] Status CHANGE detected: ${currentUserStatus} → ${pdfOfficialStatus}`);
-          console.log(`  New cycle: ${cycleSettings.cycleStartMonth}`);
+          console.log('[handlePdfImport] Set qualification settings from PDF (first time setup)');
+        }
+      } else {
+        // User has existing settings
+        const currentUserStatus = qualificationSettings.startingStatus;
+        
+        // ALWAYS update status if PDF header shows different status
+        // The PDF header is the OFFICIAL Flying Blue status
+        if (pdfOfficialStatus && pdfOfficialStatus !== currentUserStatus) {
+          console.log(`[handlePdfImport] Status mismatch detected: user has ${currentUserStatus}, PDF shows ${pdfOfficialStatus}`);
+          
+          // If we have full cycle info (requalification detected), use it
+          if (cycleSettings.cycleStartMonth) {
+            setQualificationSettingsInternal({
+              cycleStartMonth: cycleSettings.cycleStartMonth,
+              cycleStartDate: cycleSettings.cycleStartDate,
+              startingStatus: pdfOfficialStatus,
+              startingXP: cycleSettings.startingXP ?? 0,
+            });
+            console.log(`[handlePdfImport] Updated to ${pdfOfficialStatus} with cycle from ${cycleSettings.cycleStartMonth}`);
+          } else {
+            // Only have status, keep existing cycle but update status
+            setQualificationSettingsInternal({
+              ...qualificationSettings,
+              startingStatus: pdfOfficialStatus,
+            });
+            console.log(`[handlePdfImport] Updated status to ${pdfOfficialStatus}, kept existing cycle`);
+          }
+        } else if (cycleSettings.cycleStartMonth && cycleSettings.cycleStartDate) {
+          // Same status but we have new cycle date info - check if more recent
+          const existingDate = qualificationSettings.cycleStartDate;
+          const newDate = cycleSettings.cycleStartDate;
+          
+          if (!existingDate || (newDate && newDate > existingDate)) {
+            setQualificationSettingsInternal({
+              cycleStartMonth: cycleSettings.cycleStartMonth,
+              cycleStartDate: cycleSettings.cycleStartDate,
+              startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
+              startingXP: cycleSettings.startingXP ?? 0,
+            });
+            console.log(`[handlePdfImport] Updated cycle date: ${existingDate || 'none'} → ${newDate}`);
+          } else {
+            console.log(`[handlePdfImport] Status unchanged (${currentUserStatus}), keeping existing settings`);
+          }
         } else {
-          // Same status - keep existing settings unchanged
-          console.log(`[handlePdfImport] Status unchanged (${currentUserStatus}) - keeping existing cycle settings`);
+          console.log(`[handlePdfImport] No changes needed - status matches and no new cycle info`);
         }
       }
     }
