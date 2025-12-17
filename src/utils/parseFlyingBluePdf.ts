@@ -466,6 +466,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
             // Allow leading whitespace - PDF often has indentation
             let flightDate = transDate;
+            let foundFlightDate = false;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
               const line = lines[k];
               // Primary: Match "op/on/le/am" (with optional leading whitespace), followed by a date
@@ -473,7 +474,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
+                  console.log(`[PDF Parser] Found flight date: "${line}" → ${parsed} (was ${transDate})`);
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
@@ -484,10 +487,15 @@ export function parseFlyingBlueText(text: string): ParseResult {
                 const [, day, month, year] = datePattern;
                 const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
+                  console.log(`[PDF Parser] Found flight date (fallback): "${line}" → ${parsed}`);
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
+            }
+            if (!foundFlightDate) {
+              console.log(`[PDF Parser] No flight date found for segment, using transaction date: ${transDate}`);
             }
             
             tripSegments.push({
@@ -539,6 +547,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
             // Allow leading whitespace - PDF often has indentation
             let flightDate = transDate;
+            let foundFlightDate = false;
             for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
               const line = lines[k];
               // Primary: Match "op/on/le/am" (with optional leading whitespace)
@@ -546,7 +555,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
+                  console.log(`[PDF Parser] Found flight date: "${line}" → ${parsed} (was ${transDate})`);
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
@@ -556,10 +567,15 @@ export function parseFlyingBlueText(text: string): ParseResult {
                 const [, day, month, year] = datePattern;
                 const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
+                  console.log(`[PDF Parser] Found flight date (fallback): "${line}" → ${parsed}`);
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
+            }
+            if (!foundFlightDate) {
+              console.log(`[PDF Parser] No flight date found for partner segment, using transaction date: ${transDate}`);
             }
             
             tripSegments.push({
