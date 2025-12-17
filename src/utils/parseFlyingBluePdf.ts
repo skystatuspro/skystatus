@@ -730,8 +730,8 @@ export function parseFlyingBlueText(text: string): ParseResult {
       
       // === REQUALIFICATION EVENTS ===
       // Detect status renewal/requalification in all supported languages
-      // EN: "XP Counter offset", "Requalification", "Status renewed"
-      // NL: "XP teller offset", "Herkwalificatie", "Gekwalificeerd", "Status verlengd"
+      // EN: "XP Counter offset", "Requalification", "Status renewed", "Qualification period ended"
+      // NL: "Aftrek XP-teller", "XP teller offset", "Herkwalificatie", "Gekwalificeerd", "Status verlengd"
       // FR: "Requalification", "Qualifié", "Statut renouvelé"
       // DE: "Qualifikation", "Qualifiziert", "Status erneuert"
       // IT: "Riqualificazione", "Qualificato", "Stato rinnovato"
@@ -739,13 +739,16 @@ export function parseFlyingBlueText(text: string): ParseResult {
       // PT: "Requalificação", "Qualificado", "Estado renovado"
       else if (
         /XP.?(?:Counter|teller|compteur|Zähler|contatore|contador).?(?:offset|reset|compensat)/i.test(content) ||
+        /[Aa]ftrek.?XP.?teller/i.test(content) ||  // NL: "Aftrek XP-teller" (XP deduction)
+        /[Qq]ualification.?period.?ended/i.test(content) ||  // EN: "Qualification period ended"
         /[Rr]e?qualifi(?:cation|catie|cazione|cación|cação|ed|é|ziert|cato|cado)/i.test(content) ||
         /[Hh]erkwalifi/i.test(content) ||
         /[Gg]ekwalificeerd/i.test(content) ||
         /[Qq]ualifi(?:é|ziert|cato|cado)/i.test(content) ||
         /[Ss]tatus.*(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado)/i.test(content) ||
         /(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado).*[Ss]tatus/i.test(content) ||
-        /[Ss]tat(?:o|ut|us).*(?:rinnovato|renouvelé|erneuert|renovado)/i.test(content)
+        /[Ss]tat(?:o|ut|us).*(?:rinnovato|renouvelé|erneuert|renovado)/i.test(content) ||
+        /(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s+reached/i.test(content)  // "Platinum reached" etc.
       ) {
         // Detect requalification/status renewal events
         const statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
