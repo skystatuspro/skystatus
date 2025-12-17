@@ -84,6 +84,17 @@ export const Layout: React.FC<LayoutProps> = ({
   const { viewMode, isSimpleMode, setViewMode } = useViewMode();
   const { trackViewMode, trackNav, trackUserSignOut, trackSearch } = useAnalytics();
 
+  // Check for ?search=1 parameter on mount (from static pages)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('search') === '1') {
+      setIsSearchOpen(true);
+      trackSearch('button');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [trackSearch]);
+
   // Cmd+K shortcut for search (with tracking)
   useSearchShortcut(() => setIsSearchOpen(true), trackSearch);
 
