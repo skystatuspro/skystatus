@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext';
 import { useUserData } from './hooks/useUserData';
@@ -8,59 +8,28 @@ import { CookieConsentProvider } from './lib/CookieContext';
 import { CookieConsentUI } from './components/CookieConsent';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
+import { MilesEngine } from './components/MilesEngine';
+import { XPEngine } from './components/XPEngine';
+import { RedemptionCalc } from './components/RedemptionCalc';
+import { Analytics } from './components/Analytics';
+import { FlightLedger } from './components/FlightLedger';
+import { FlightIntake } from './components/FlightIntake';
+import { MilesIntake } from './components/MilesIntake';
+import { MileageRun } from './components/MileageRun/index';
+import { Profile } from './components/Profile';
+import { SettingsModal } from './components/SettingsModal';
+import { WelcomeModal } from './components/WelcomeModal';
+import { OnboardingFlow, OnboardingData } from './components/OnboardingFlow';
 import { LoginPage } from './components/LoginPage';
+import PdfImportModal from './components/PdfImportModal';
+import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage, CookiePolicy } from './components/LegalPages';
+import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
+import { CalculatorPage } from './components/CalculatorPage';
 import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel } from './types';
-
-// Lazy-loaded components (reduces initial bundle by ~40%)
-const MilesEngine = lazy(() => import('./components/MilesEngine').then(m => ({ default: m.MilesEngine })));
-const XPEngine = lazy(() => import('./components/XPEngine').then(m => ({ default: m.XPEngine })));
-const RedemptionCalc = lazy(() => import('./components/RedemptionCalc').then(m => ({ default: m.RedemptionCalc })));
-const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
-const FlightLedger = lazy(() => import('./components/FlightLedger').then(m => ({ default: m.FlightLedger })));
-const FlightIntake = lazy(() => import('./components/FlightIntake').then(m => ({ default: m.FlightIntake })));
-const MilesIntake = lazy(() => import('./components/MilesIntake').then(m => ({ default: m.MilesIntake })));
-const MileageRun = lazy(() => import('./components/MileageRun/index').then(m => ({ default: m.MileageRun })));
-const Profile = lazy(() => import('./components/Profile').then(m => ({ default: m.Profile })));
-const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
-const WelcomeModal = lazy(() => import('./components/WelcomeModal').then(m => ({ default: m.WelcomeModal })));
-const OnboardingFlow = lazy(() => import('./components/OnboardingFlow').then(m => ({ default: m.OnboardingFlow })));
-const PdfImportModal = lazy(() => import('./components/PdfImportModal'));
-const FAQPage = lazy(() => import('./components/FAQPage').then(m => ({ default: m.FAQPage })));
-const CalculatorPage = lazy(() => import('./components/CalculatorPage').then(m => ({ default: m.CalculatorPage })));
-
-// Legal pages lazy loaded individually
-const PrivacyPolicy = lazy(() => import('./components/LegalPages').then(m => ({ default: m.PrivacyPolicy })));
-const TermsOfService = lazy(() => import('./components/LegalPages').then(m => ({ default: m.TermsOfService })));
-const AboutPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.AboutPage })));
-const ContactPage = lazy(() => import('./components/LegalPages').then(m => ({ default: m.ContactPage })));
-const CookiePolicy = lazy(() => import('./components/LegalPages').then(m => ({ default: m.CookiePolicy })));
-
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="flex flex-col items-center gap-3">
-      <Loader2 size={32} className="animate-spin text-blue-500" />
-      <span className="text-sm text-slate-500">Loading...</span>
-    </div>
-  </div>
-);
-
-// Modal loading fallback (smaller)
-const ModalLoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
-      <Loader2 size={24} className="animate-spin text-blue-500" />
-      <span className="text-slate-600">Loading...</span>
-    </div>
-  </div>
-);
-
-// Type import for OnboardingData
-import type { OnboardingData } from './components/OnboardingFlow';
 
 // Inner component that uses page tracking (must be inside CookieConsentProvider)
 function PageTracker() {
@@ -165,60 +134,46 @@ export default function App() {
     setLegalPage(null);
   };
 
-  // Legal pages - wrap with cookie consent and Suspense
+  // Legal pages - wrap with cookie consent
   if (legalPage === 'privacy') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <PrivacyPolicy onBack={handleLegalBack} />
-      </Suspense>
+      <PrivacyPolicy onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
   if (legalPage === 'terms') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <TermsOfService onBack={handleLegalBack} />
-      </Suspense>
+      <TermsOfService onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
   if (legalPage === 'faq') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <FAQPage onBack={handleLegalBack} />
-      </Suspense>
+      <FAQPage onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
   if (legalPage === 'about') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <AboutPage onBack={handleLegalBack} />
-      </Suspense>
+      <AboutPage onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
   if (legalPage === 'contact') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <ContactPage onBack={handleLegalBack} />
-      </Suspense>
+      <ContactPage onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
   if (legalPage === 'cookies') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <CookiePolicy onBack={handleLegalBack} />
-      </Suspense>
+      <CookiePolicy onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
   if (legalPage === 'calculator') return (
     <CookieConsentProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <CalculatorPage onBack={handleLegalBack} />
-      </Suspense>
+      <CalculatorPage onBack={handleLegalBack} />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
@@ -531,9 +486,7 @@ export default function App() {
           </div>
         )}
 
-        <Suspense fallback={<LoadingFallback />}>
-          {renderContent()}
-        </Suspense>
+        {renderContent()}
       </Layout>
 
       {/* WelcomeModal disabled - landing page and demo mode selector handle this now */}
@@ -547,107 +500,95 @@ export default function App() {
 
       {/* Onboarding Flow for logged-in users */}
       {user && !meta.onboardingCompleted && !meta.isDemoMode && !meta.isLocalMode && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <OnboardingFlow
-            userEmail={user.email || ''}
-            isReturningUser={state.flights.length > 0}
-            existingData={{
-              currency: state.currency,
-              homeAirport: state.homeAirport,
-              currentStatus: state.currentStatus,
+        <OnboardingFlow
+          userEmail={user.email || ''}
+          isReturningUser={state.flights.length > 0}
+          existingData={{
+            currency: state.currency,
+            homeAirport: state.homeAirport,
+            currentStatus: state.currentStatus,
+            currentXP: state.qualificationSettings?.startingXP || 0,
+            currentUXP: state.currentUXP,
+            rolloverXP: state.xpRollover,
+            milesBalance: state.milesBalance,
+            ultimateCycleType: state.qualificationSettings?.ultimateCycleType || 'qualification',
+            targetCPM: state.targetCPM,
+            emailConsent: meta.emailConsent,
+          }}
+          onComplete={(data: OnboardingData) => {
+            actions.handleOnboardingComplete(data);
+            // Show appropriate toast
+            if (data.pdfImported) {
+              showToast(`Imported ${data.pdfFlightsCount} flights.`, 'success');
+            } else if (state.flights.length > 0) {
+              showToast('Settings updated!', 'success');
+            } else {
+              showToast('Welcome to SkyStatus Pro!', 'success');
+            }
+          }}
+          onPdfImport={() => setShowOnboardingPdfModal(true)}
+          pdfImportResult={onboardingPdfResult}
+          onSkip={() => {
+            // Quick skip - just mark onboarding complete with current/default values
+            actions.handleOnboardingComplete({
+              currency: state.currency || 'EUR',
+              homeAirport: state.homeAirport || null,
+              currentStatus: state.currentStatus || 'Explorer',
               currentXP: state.qualificationSettings?.startingXP || 0,
-              currentUXP: state.currentUXP,
-              rolloverXP: state.xpRollover,
-              milesBalance: state.milesBalance,
+              currentUXP: state.currentUXP || 0,
+              rolloverXP: state.xpRollover || 0,
+              milesBalance: state.milesBalance || 0,
               ultimateCycleType: state.qualificationSettings?.ultimateCycleType || 'qualification',
-              targetCPM: state.targetCPM,
-              emailConsent: meta.emailConsent,
-            }}
-            onComplete={(data: OnboardingData) => {
-              actions.handleOnboardingComplete(data);
-              // Show appropriate toast
-              if (data.pdfImported) {
-                showToast(`Imported ${data.pdfFlightsCount} flights.`, 'success');
-              } else if (state.flights.length > 0) {
-                showToast('Settings updated!', 'success');
-              } else {
-                showToast('Welcome to SkyStatus Pro!', 'success');
-              }
-            }}
-            onPdfImport={() => setShowOnboardingPdfModal(true)}
-            pdfImportResult={onboardingPdfResult}
-            onSkip={() => {
-              // Quick skip - just mark onboarding complete with current/default values
-              actions.handleOnboardingComplete({
-                currency: state.currency || 'EUR',
-                homeAirport: state.homeAirport || null,
-                currentStatus: state.currentStatus || 'Explorer',
-                currentXP: state.qualificationSettings?.startingXP || 0,
-                currentUXP: state.currentUXP || 0,
-                rolloverXP: state.xpRollover || 0,
-                milesBalance: state.milesBalance || 0,
-                ultimateCycleType: state.qualificationSettings?.ultimateCycleType || 'qualification',
-                targetCPM: state.targetCPM || 0.012,
-                emailConsent: meta.emailConsent || false,
-                isReturningUser: state.flights.length > 0,
-              });
-            }}
-          />
-        </Suspense>
+              targetCPM: state.targetCPM || 0.012,
+              emailConsent: meta.emailConsent || false,
+              isReturningUser: state.flights.length > 0,
+            });
+          }}
+        />
       )}
 
       {/* PDF Import Modal for Onboarding */}
-      {showOnboardingPdfModal && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <PdfImportModal
-            isOpen={showOnboardingPdfModal}
-            onClose={() => setShowOnboardingPdfModal(false)}
-            onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings) => {
-              // Save the flights
-              actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings);
-              
-              // Calculate summary for onboarding display
-              const totalXP = importedFlights.reduce((sum, f) => sum + (f.earnedXP || 0), 0);
-              const milesBalance = importedMiles.reduce((sum, m) => 
-                sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
-              );
-              
-              setOnboardingPdfResult({
-                flightsCount: importedFlights.length,
-                xpDetected: totalXP,
-                statusDetected: cycleSettings?.startingStatus || null,
-                milesBalance: Math.max(0, milesBalance),
-              });
-              
-              setShowOnboardingPdfModal(false);
-            }}
-            existingFlights={state.flights}
-            existingMiles={state.baseMilesData}
-          />
-        </Suspense>
-      )}
+      <PdfImportModal
+        isOpen={showOnboardingPdfModal}
+        onClose={() => setShowOnboardingPdfModal(false)}
+        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings) => {
+          // Save the flights
+          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings);
+          
+          // Calculate summary for onboarding display
+          const totalXP = importedFlights.reduce((sum, f) => sum + (f.earnedXP || 0), 0);
+          const milesBalance = importedMiles.reduce((sum, m) => 
+            sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+          );
+          
+          setOnboardingPdfResult({
+            flightsCount: importedFlights.length,
+            xpDetected: totalXP,
+            statusDetected: cycleSettings?.startingStatus || null,
+            milesBalance: Math.max(0, milesBalance),
+          });
+          
+          setShowOnboardingPdfModal(false);
+        }}
+        existingFlights={state.flights}
+        existingMiles={state.baseMilesData}
+      />
 
-      {showPdfImportModal && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <PdfImportModal
-            isOpen={showPdfImportModal}
-            onClose={() => setShowPdfImportModal(false)}
-            onImport={(importedFlights, importedMiles) => {
-              handlePdfImportWithToast(importedFlights, importedMiles);
-            }}
-            existingFlights={state.flights}
-            existingMiles={state.baseMilesData}
-          />
-        </Suspense>
-      )}
+      <PdfImportModal
+        isOpen={showPdfImportModal}
+        onClose={() => setShowPdfImportModal(false)}
+        onImport={(importedFlights, importedMiles) => {
+          handlePdfImportWithToast(importedFlights, importedMiles);
+        }}
+        existingFlights={state.flights}
+        existingMiles={state.baseMilesData}
+      />
 
-      {isSettingsOpen && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            data={{
-              baseMilesData: state.baseMilesData,
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        data={{
+          baseMilesData: state.baseMilesData,
           baseXpData: state.baseXpData,
           redemptions: state.redemptions,
           flights: state.flights,
@@ -683,8 +624,6 @@ export default function App() {
         markDataChanged={actions.markDataChanged}
         showToast={showToast}
       />
-        </Suspense>
-      )}
 
       <ToastContainer />
       <CookieConsentUI />

@@ -1,4 +1,4 @@
-import React, { useRef, useState, lazy, Suspense } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Database,
   X,
@@ -16,23 +16,11 @@ import {
   Mail,
   Calendar,
   Award,
-  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
+import PdfImportModal from './PdfImportModal';
 import { CurrencyCode, SUPPORTED_CURRENCIES } from '../utils/format';
-
-// Lazy load PdfImportModal to reduce initial bundle
-const PdfImportModal = lazy(() => import('./PdfImportModal'));
-
-const ModalLoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
-      <Loader2 size={24} className="animate-spin text-blue-500" />
-      <span className="text-slate-600">Loading...</span>
-    </div>
-  </div>
-);
 
 import {
   MilesRecord,
@@ -933,17 +921,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       </div>
 
       {/* PDF Import Modal */}
-      {showPdfImport && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <PdfImportModal
-            isOpen={showPdfImport}
-            onClose={() => setShowPdfImport(false)}
-            onImport={handlePdfImport}
-            existingFlights={data.flights}
-            existingMiles={data.baseMilesData}
-          />
-        </Suspense>
-      )}
+      <PdfImportModal
+        isOpen={showPdfImport}
+        onClose={() => setShowPdfImport(false)}
+        onImport={handlePdfImport}
+        existingFlights={data.flights}
+        existingMiles={data.baseMilesData}
+      />
     </div>
   );
 };

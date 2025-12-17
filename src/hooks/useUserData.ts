@@ -508,19 +508,19 @@ export function useUserData(): UseUserDataReturn {
       setHasAttemptedLoad(true);
     }
 
-    // MERGE MODE: PdfImportModal now handles merging flights and miles
-    // importedFlights already contains both existing + new flights (deduplicated)
-    // importedMiles already contains merged miles data
+    // REPLACE MODE: Instead of merging, we replace all flight data
+    // This ensures XP calculations are always correct by starting fresh
+    // User's manual corrections are cleared since they'll be recalculated from the PDF
     
-    // Set the merged flights
+    // Replace all flights with imported flights
     setFlightsInternal(importedFlights);
 
-    // Set the merged miles data
+    // Replace all miles data
     setBaseMilesDataInternal(importedMiles);
 
-    // Manual ledger handling: Rebuild from PDF bonus XP
-    // Note: This clears any manual XP corrections. In the future, we could merge
-    // existing manual entries, but for now we rebuild from PDF data.
+    // REPLACE MODE: Clear manual ledger and rebuild from PDF data only
+    // XP corrections are no longer needed since we recalculate everything from scratch
+    // Only keep bonus XP from the PDF (first flight bonuses, hotel XP, etc.)
     
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
       // Start fresh with only bonus XP from PDF
