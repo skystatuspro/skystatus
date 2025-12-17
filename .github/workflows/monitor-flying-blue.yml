@@ -2,7 +2,7 @@
 # Checks if official Flying Blue pages have changed
 # Creates an issue when changes are detected so guide content can be reviewed
 
-name: 🔍 Monitor Flying Blue
+name: Monitor Flying Blue
 
 on:
   schedule:
@@ -25,78 +25,48 @@ jobs:
       - name: Check Flying Blue pages for changes
         id: check
         run: |
-          # Pages to monitor (key official sources referenced in guides)
-          # UITGEBREID met extra pagina's die in de guides worden gelinkt
           PAGES=(
-            # Core status & XP pages
             "https://www.flyingblue.com/en/programme/more-info/status|Flying Blue Status & XP"
             "https://www.klm.com/information/flying-blue/membership-levels|KLM Membership Levels"
             "https://wwws.airfrance.fr/en/information/flyingblue/statuts-flying-blue|Air France Flying Blue Levels"
             "https://www.flyingblue.com/en/landing-page/informative/ultimate-information|Ultimate Status Info"
             "https://www.flyingblue.com/en/programme/more-info/tier-benefits|Tier Benefits"
-            
-            # Miles acquisition
             "https://www.flyingblue.com/en/flyingblue-extra|Flying Blue Extra"
             "https://www.flyingblue.com/en/mileshub/buy|Miles Hub Buy"
             "https://www.flyingblue.com/en/mileshub/subscription|Miles Subscription"
             "https://www.flyingblue.com/en/news/subscribe-to-miles|Subscribe to Miles Info"
             "https://www.flyingblue.com/en/mileshub/convert|Transfer Partners"
-            
-            # Miles spending
             "https://www.flyingblue.com/en/spend/flights/rewards|Award Flights"
             "https://www.flyingblue.com/en/flights/promo-rewards|Promo Rewards"
-            
-            # Rules & news
             "https://www.flyingblue.com/en/news/surplus-xp-capping|XP Rollover Capping"
             "https://www.flyingblue.com/en/news/extend-miles|Extend Miles"
           )
           
-          CHANGES=""
-          CHANGED_COUNT=0
+          CHANGED=""
           
           for entry in "${PAGES[@]}"; do
             URL="${entry%%|*}"
             NAME="${entry##*|}"
-            HASH_FILE=".fb-cache/$(echo "$URL" | md5sum | cut -d' ' -f1).hash"
+            HASH_FILE=".fb-cache/$(echo "$URL" | md5sum | cut -d' ' -f1).txt"
             
-            echo "Checking: $NAME"
-            echo "  URL: $URL"
-            
-            # Fetch page and create hash (strip dynamic content)
-            NEW_HASH=$(curl -sL --max-time 30 "$URL" 2>/dev/null | \
-              grep -v -E 'session|csrf|timestamp|nonce|__cf|cloudflare|gtm|analytics' | \
-              sha256sum | cut -d' ' -f1)
-            
-            if [ -z "$NEW_HASH" ]; then
-              echo "  ⚠️ Could not fetch page"
-              continue
-            fi
+            CURRENT_HASH=$(curl -sL "$URL" 2>/dev/null | grep -v 'data-\|timestamp\|csrf\|nonce' | md5sum | cut -d' ' -f1)
             
             if [ -f "$HASH_FILE" ]; then
-              OLD_HASH=$(cat "$HASH_FILE")
-              if [ "$NEW_HASH" != "$OLD_HASH" ]; then
-                echo "  🔄 CHANGED!"
-                CHANGES="${CHANGES}\n- **${NAME}**: ${URL}"
-                CHANGED_COUNT=$((CHANGED_COUNT + 1))
-              else
-                echo "  ✓ No change"
+              STORED_HASH=$(cat "$HASH_FILE")
+              if [ "$CURRENT_HASH" != "$STORED_HASH" ]; then
+                CHANGED="${CHANGED}- **${NAME}**: ${URL}\n"
+                echo "$CURRENT_HASH" > "$HASH_FILE"
               fi
             else
-              echo "  📝 First check (baseline)"
+              echo "$CURRENT_HASH" > "$HASH_FILE"
             fi
-            
-            # Save new hash
-            echo "$NEW_HASH" > "$HASH_FILE"
           done
           
-          echo ""
-          echo "Summary: $CHANGED_COUNT page(s) changed"
-          
-          if [ $CHANGED_COUNT -gt 0 ]; then
+          if [ -n "$CHANGED" ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            # Escape newlines for GitHub Actions
-            CHANGES_ESCAPED=$(echo -e "$CHANGES" | sed ':a;N;$!ba;s/\n/\\n/g')
-            echo "changed_pages=$CHANGES_ESCAPED" >> $GITHUB_OUTPUT
+            echo "changed_pages<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$CHANGED" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
@@ -114,10 +84,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const changedPages = `${{ steps.check.outputs.changed_pages }}`.replace(/\\n/g, '\n');
+            const changedPages = process.env.CHANGED_PAGES.replace(/\\n/g, '\n');
             const today = new Date().toISOString().split('T')[0];
             
-            // Check for existing open issue
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -125,55 +94,38 @@ jobs:
               labels: 'flying-blue-update'
             });
             
-            const body = `## ⚠️ Flying Blue Page Changes Detected
-
-**Date:** ${today}
-
-The following official Flying Blue pages have changed:
-
-${changedPages}
-
-### Action Required
-1. Visit each changed page and review the updates
-2. Check if any guide content needs to be updated:
-   - XP requirements or earning rates
-   - Status benefits
-   - Pricing information
-   - Program rules
-   - Rollover mechanics
-3. Update relevant guide pages if needed
-4. Run a build to update "Last verified" dates
-5. Close this issue when reviewed
-
-### Potentially Affected Guides
-- \`/guide/what-is-flying-blue-xp\`
-- \`/guide/flying-blue-status-levels\`
-- \`/guide/flying-blue-gold-status\`
-- \`/guide/flying-blue-platinum-status\`
-- \`/guide/flying-blue-ultimate-status\`
-- \`/guide/flying-blue-uxp-explained\`
-- \`/guide/flying-blue-xp-rollover\`
-- \`/guide/flying-blue-subscription\`
-- \`/guide/should-you-buy-flying-blue-miles\`
-- \`/guide/flying-blue-cost-per-mile\`
-- \`/guide/flying-blue-miles-value\`
-`;
+            const body = [
+              '## Flying Blue Page Changes Detected',
+              '',
+              '**Date:** ' + today,
+              '',
+              'The following official Flying Blue pages have changed:',
+              '',
+              changedPages,
+              '',
+              '### Action Required',
+              '1. Visit each changed page and review the updates',
+              '2. Check if any guide content needs to be updated',
+              '3. Update relevant guide pages if needed',
+              '4. Run a build to update "Last verified" dates',
+              '5. Close this issue when reviewed'
+            ].join('\n');
             
             if (issues.data.length > 0) {
-              // Comment on existing issue
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issues.data[0].number,
-                body: `## 🔄 New Changes Detected\n\n${body}`
+                body: body
               });
             } else {
-              // Create new issue
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: `⚠️ Flying Blue pages changed - review guides (${today})`,
+                title: 'Flying Blue pages changed - review guides',
                 body: body,
-                labels: ['flying-blue-update', 'content-review', 'automated']
+                labels: ['flying-blue-update']
               });
             }
+        env:
+          CHANGED_PAGES: ${{ steps.check.outputs.changed_pages }}
