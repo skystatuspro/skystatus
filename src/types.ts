@@ -22,6 +22,7 @@ export interface FlightRecord {
   date: string;           // YYYY-MM-DD format
   route: string;          // e.g., "AMS-CDG"
   airline: string;        // e.g., "KL", "AF", "DL"
+  flightNumber?: string;  // e.g., "KL1234", "AF5678"
   cabin: 'Economy' | 'Premium Economy' | 'Business' | 'First';
   ticketPrice?: number;
   earnedMiles?: number;
