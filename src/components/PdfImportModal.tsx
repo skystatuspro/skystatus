@@ -190,42 +190,27 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       rolloverXP: r.rolloverXP
     })));
     
-    // Find the most recent requalification
-    // Priority 1: Most recent with matching status to PDF header
-    // Priority 2: Most recent with xpDeducted matching current status threshold
-    // Priority 3: Just the most recent one
-    const pdfHeaderStatusRaw = parseResult.status?.toUpperCase();
-    // Note: xpDeducted is stored as POSITIVE value (300, not -300)
-    const xpThresholds: Record<string, number> = {
-      'PLATINUM': 300,
-      'GOLD': 180,
-      'SILVER': 100,
-    };
-    const expectedXpDeducted = pdfHeaderStatusRaw ? xpThresholds[pdfHeaderStatusRaw] : null;
+    // ALWAYS use the most recent requalification for cycle date
+    // The PDF header status is the source of truth for current status
+    // We don't need to match toStatus - it's often not parsed correctly
+    const mostRecentRequalification = sortedRequalifications[0] || null;
     
-    let mostRecentRequalification = sortedRequalifications.find(r => 
-      r.toStatus?.toUpperCase() === pdfHeaderStatusRaw
-    );
-    
-    if (!mostRecentRequalification && expectedXpDeducted) {
-      // Try to find by XP deducted amount
-      mostRecentRequalification = sortedRequalifications.find(r => 
-        r.xpDeducted === expectedXpDeducted
-      );
-      if (mostRecentRequalification) {
-        console.log('[PDF Import] Found requalification by xpDeducted match:', mostRecentRequalification);
-      }
-    }
-    
-    if (!mostRecentRequalification) {
-      // Fall back to just the most recent
-      mostRecentRequalification = sortedRequalifications[0] || null;
-    }
+    console.log('[PDF Import] Using most recent requalification:', mostRecentRequalification);
     
     let suggestedCycleStart: string | null = null;
     let suggestedCycleStartDate: string | null = null;  // Full date for precise filtering
     let suggestedStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null = null;
     let suggestedRolloverXP: number | null = null;  // Rollover XP from previous cycle
+    
+    // Get PDF header status for suggested status
+    const pdfHeaderStatusRaw = parseResult.status?.toUpperCase();
+    const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
+      'EXPLORER': 'Explorer',
+      'SILVER': 'Silver', 
+      'GOLD': 'Gold',
+      'PLATINUM': 'Platinum',
+      'ULTIMATE': 'Platinum',
+    };
     
     if (mostRecentRequalification) {
       // Keep the full date for precise XP calculation (flights AFTER this date count)
@@ -237,23 +222,8 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       const nextMonth = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
       suggestedCycleStart = nextMonth.toISOString().substring(0, 7); // YYYY-MM
       
-      // Map status - prefer toStatus, fall back to PDF header status
-      const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
-        'EXPLORER': 'Explorer',
-        'SILVER': 'Silver', 
-        'GOLD': 'Gold',
-        'PLATINUM': 'Platinum',
-        'ULTIMATE': 'Platinum', // Map Ultimate to Platinum for now
-      };
-      
-      // Use toStatus if available, otherwise infer from PDF header
-      if (mostRecentRequalification.toStatus) {
-        suggestedStatus = statusMap[mostRecentRequalification.toStatus] || null;
-      } else if (pdfHeaderStatusRaw && expectedXpDeducted && mostRecentRequalification.xpDeducted === expectedXpDeducted) {
-        // Infer status from xpDeducted matching PDF header
-        suggestedStatus = statusMap[pdfHeaderStatusRaw] || null;
-        console.log('[PDF Import] Inferred status from xpDeducted:', suggestedStatus);
-      }
+      // Use PDF header status as the suggested status (it's the source of truth)
+      suggestedStatus = pdfHeaderStatusRaw ? (statusMap[pdfHeaderStatusRaw] || null) : null;
       
       // Get rollover XP if available
       suggestedRolloverXP = mostRecentRequalification.rolloverXP ?? null;
