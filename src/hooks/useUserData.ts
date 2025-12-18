@@ -747,8 +747,6 @@ export function useUserData(): UseUserDataReturn {
       return;
     }
 
-    console.log('[handleStartOver] Wiping all data...');
-
     // Reset ALL data state
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
@@ -768,7 +766,6 @@ export function useUserData(): UseUserDataReturn {
     // IMPORTANT: Use null instead of undefined - undefined is not serialized to JSON!
     if (user) {
       try {
-        console.log('[handleStartOver] Clearing database for user:', user.id);
         await Promise.all([
           saveFlights(user.id, []),
           saveMilesRecords(user.id, []),
@@ -787,9 +784,8 @@ export function useUserData(): UseUserDataReturn {
             target_cpm: 0.012,
           }),
         ]);
-        console.log('[handleStartOver] Database cleared successfully');
       } catch (error) {
-        console.error('[handleStartOver] Error clearing user data:', error);
+        console.error('Error clearing user data:', error);
       }
     }
 
@@ -972,7 +968,6 @@ export function useUserData(): UseUserDataReturn {
   }): Promise<boolean> => {
     // Local/demo mode: just update state directly
     if (!user || isDemoMode || isLocalMode) {
-      console.log('[handleJsonImport] Local/demo mode - updating state only');
       if (importData.flights) setFlightsInternal(importData.flights);
       if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
       if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
@@ -983,7 +978,6 @@ export function useUserData(): UseUserDataReturn {
       return true;
     }
 
-    console.log('[handleJsonImport] Starting database import for user:', user.id);
     setIsSaving(true);
 
     // CRITICAL: Mark as loaded to prevent loadUserData from overwriting our import
@@ -1010,20 +1004,16 @@ export function useUserData(): UseUserDataReturn {
       const savePromises: Promise<boolean>[] = [];
 
       if (importData.flights) {
-        console.log('[handleJsonImport] Replacing all flights with', importData.flights.length, 'new flights');
         // Use replaceAllFlights to delete all existing and insert with fresh IDs
         savePromises.push(replaceAllFlights(user.id, importData.flights));
       }
       if (importData.baseMilesData) {
-        console.log('[handleJsonImport] Saving', importData.baseMilesData.length, 'miles records');
         savePromises.push(saveMilesRecords(user.id, importData.baseMilesData));
       }
       if (importData.redemptions) {
-        console.log('[handleJsonImport] Saving', importData.redemptions.length, 'redemptions');
         savePromises.push(saveRedemptions(user.id, importData.redemptions));
       }
       if (importData.manualLedger && Object.keys(xpLedgerToSave).length > 0) {
-        console.log('[handleJsonImport] Saving', Object.keys(xpLedgerToSave).length, 'XP ledger months');
         savePromises.push(saveXPLedger(user.id, xpLedgerToSave));
       }
 
@@ -1042,25 +1032,20 @@ export function useUserData(): UseUserDataReturn {
         profileUpdates.xp_rollover = importData.xpRollover;
       }
       if (Object.keys(profileUpdates).length > 0) {
-        console.log('[handleJsonImport] Saving profile updates:', profileUpdates);
         savePromises.push(updateProfile(user.id, profileUpdates));
       }
 
       // Wait for ALL saves to complete
-      console.log('[handleJsonImport] Waiting for', savePromises.length, 'save operations...');
       const results = await Promise.all(savePromises);
       const allSucceeded = results.every(r => r);
 
       if (!allSucceeded) {
-        console.error('[handleJsonImport] Some saves failed:', results);
+        console.error('JSON import: some saves failed');
         return false;
       }
 
-      console.log('[handleJsonImport] All saves completed successfully');
-
       // CRITICAL: Reload data from database to ensure state matches database
       // This prevents any race conditions with loadUserData
-      console.log('[handleJsonImport] Reloading data from database to verify...');
       const freshData = await fetchAllUserData(user.id);
 
       // Update state from database (single source of truth)
@@ -1093,10 +1078,9 @@ export function useUserData(): UseUserDataReturn {
         }
       }
 
-      console.log('[handleJsonImport] State updated from database. Flights:', freshData.flights.length);
       return true;
     } catch (error) {
-      console.error('[handleJsonImport] Error:', error);
+      console.error('JSON import error:', error);
       return false;
     } finally {
       setIsSaving(false);
