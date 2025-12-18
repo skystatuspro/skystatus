@@ -133,6 +133,11 @@ export const SimpleFlightIntake: React.FC<SimpleFlightIntakeProps> = ({
   const handleSubmit = () => {
     if (!canSubmit) return;
 
+    // UXP is ONLY earned on KLM and Air France flights (NOT Transavia/HV or partners)
+    // SAF XP also counts towards UXP for KL/AF
+    const uxpAirlines = ['KL', 'KLM', 'AF'];
+    const isUxpEligible = uxpAirlines.includes(airline.toUpperCase());
+
     const flights: FlightIntakePayload[] = segments.map((seg, idx) => ({
       date,
       route: `${seg.from}-${seg.to}`,
@@ -147,6 +152,8 @@ export const SimpleFlightIntake: React.FC<SimpleFlightIntakeProps> = ({
       earnedXP: seg.xp,
       safXp: idx === 0 ? safXp : 0, // SAF only on first segment
       flightNumber: '',
+      // UXP = XP + SAF XP for KL/AF flights only, 0 for all others (including HV)
+      uxp: isUxpEligible ? seg.xp + (idx === 0 ? safXp : 0) : 0,
     }));
 
     onApply(flights);
