@@ -626,6 +626,7 @@ export default function App() {
         onExitDemo={actions.handleExitDemoMode}
         isLoggedIn={!!user}
         markDataChanged={actions.markDataChanged}
+        forceSave={actions.forceSave}
         showToast={showToast}
       />
 

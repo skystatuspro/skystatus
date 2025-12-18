@@ -85,6 +85,7 @@ interface SettingsModalProps {
   onExitDemo?: () => void;
   isLoggedIn?: boolean;
   markDataChanged?: () => void;
+  forceSave?: () => Promise<void>;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -107,6 +108,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onExitDemo,
   isLoggedIn = false,
   markDataChanged,
+  forceSave,
   showToast,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -222,8 +224,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       // - targetCPM
       // - onboardingCompleted
 
-      // Trigger auto-save to persist all changes to database
+      // Mark data as changed for any listeners
       if (markDataChanged) markDataChanged();
+      
+      // CRITICAL: Force immediate save to database (don't wait for debounce)
+      // This ensures data is persisted before user can navigate away
+      if (forceSave) {
+        await forceSave();
+      }
       
       // Track the import for analytics
       trackImport(
@@ -240,8 +248,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (importedCounts.manualLedgerMonths > 0) parts.push(`${importedCounts.manualLedgerMonths} manual ledger months`);
 
       const message = parts.length > 0
-        ? `Import completed! Restored: ${parts.join(', ')}. Existing data was replaced.`
-        : 'Import completed. Data restored successfully.';
+        ? `Import completed! Restored: ${parts.join(', ')}. Data saved.`
+        : 'Import completed. Data restored and saved successfully.';
       
       if (showToast) {
         showToast(message, 'success');

@@ -132,6 +132,7 @@ export interface UserDataActions {
   // Utility
   markDataChanged: () => void;
   calculateGlobalCPM: () => number;
+  forceSave: () => Promise<void>;
 }
 
 export interface UserDataMeta {
@@ -996,6 +997,7 @@ export function useUserData(): UseUserDataReturn {
       handleSetDemoStatus,
       markDataChanged,
       calculateGlobalCPM,
+      forceSave: saveUserData,
       handleOnboardingComplete,
       handleRerunOnboarding,
       handleEmailConsentChange,
