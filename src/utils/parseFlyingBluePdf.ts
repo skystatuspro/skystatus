@@ -363,14 +363,26 @@ export function parseFlyingBlueText(text: string): ParseResult {
     const line = lines[i];
     
     // Universal date detection: try to find a date at the start of the line
-    // Instead of specific regex patterns, we split on the first likely content boundary
-    // and test if the first part parses as a valid date
+    // Handle cases where date and content are joined without space (e.g., "8 okt 2025Aftrek")
     let transDate: string | null = null;
     let content: string = '';
     
-    // Try progressively longer prefixes to find a valid date
-    // This handles any date format without specific patterns
-    if (looksLikeDate(line)) {
+    // IMPROVED: Use regex to extract date even when joined with content
+    // Pattern: day month year (with optional content immediately after year)
+    const dateContentMatch = line.match(/^(\d{1,2})\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)\s+(\d{4})(.*)$/i);
+    
+    if (dateContentMatch) {
+      const [, day, monthStr, year, rest] = dateContentMatch;
+      const parsed = parseDate(`${day} ${monthStr} ${year}`);
+      if (parsed) {
+        transDate = parsed;
+        // Content is everything after the year (may start without space)
+        content = rest.trim();
+      }
+    }
+    
+    // Fallback to original logic if the new pattern didn't match
+    if (!transDate && looksLikeDate(line)) {
       const words = line.split(/\s+/);
       
       // Try combining first 2, 3, 4, or 5 words as a date
