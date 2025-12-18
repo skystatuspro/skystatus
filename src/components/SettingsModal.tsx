@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, lazy, Suspense } from 'react';
 import {
   Database,
   X,
@@ -16,11 +16,23 @@ import {
   Mail,
   Calendar,
   Award,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
-import PdfImportModal from './PdfImportModal';
 import { CurrencyCode, SUPPORTED_CURRENCIES } from '../utils/format';
+
+// Lazy load PdfImportModal to reduce initial bundle
+const PdfImportModal = lazy(() => import('./PdfImportModal'));
+
+const ModalLoadingFallback = () => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
+      <Loader2 size={24} className="animate-spin text-blue-500" />
+      <span className="text-slate-600">Loading...</span>
+    </div>
+  </div>
+);
 
 import {
   MilesRecord,
@@ -63,6 +75,9 @@ interface SettingsModalProps {
   onLoadDemo: () => void;
   onStartOver?: () => void;
   onRerunOnboarding?: () => void;
+  onUndoImport?: () => boolean;
+  canUndoImport?: boolean;
+  importBackupInfo?: { timestamp: string; source: string } | null;
   emailConsent?: boolean;
   onEmailConsentChange?: (consent: boolean) => void;
   isDemoMode?: boolean;
@@ -82,6 +97,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLoadDemo,
   onStartOver,
   onRerunOnboarding,
+  onUndoImport,
+  canUndoImport = false,
+  importBackupInfo,
   emailConsent = false,
   onEmailConsentChange,
   isDemoMode = false,
@@ -301,7 +319,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   // Handler for PDF import
-  const handlePdfImport = (flights: FlightRecord[], miles: MilesRecord[]) => {
+  const handlePdfImport = (
+    flights: FlightRecord[], 
+    miles: MilesRecord[],
+    xpCorrection?: { month: string; correctionXp: number; reason: string },
+    cycleSettings?: { 
+      cycleStartMonth: string; 
+      cycleStartDate?: string;
+      startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+      startingXP?: number;
+    },
+    bonusXpByMonth?: Record<string, number>
+  ) => {
     // Merge flights (by date + route)
     const existingFlightKeys = new Set(data.flights.map(f => `${f.date}-${f.route}`));
     const newFlights = flights.filter(f => !existingFlightKeys.has(`${f.date}-${f.route}`));
@@ -333,6 +362,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setters.setBaseMilesData(mergedMiles);
     }
 
+    // Apply cycle settings (status detection from PDF)
+    if (cycleSettings) {
+      setters.setQualificationSettings({
+        cycleStartMonth: cycleSettings.cycleStartMonth,
+        cycleStartDate: cycleSettings.cycleStartDate,
+        startingStatus: cycleSettings.startingStatus,
+        startingXP: cycleSettings.startingXP ?? 0,
+      });
+    }
+
+    // Apply bonus XP from PDF (first flight bonus, hotel XP, etc.)
+    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
+      setters.setManualLedger(prev => {
+        const updated = { ...prev };
+        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+          updated[month] = { 
+            ...(updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 }),
+            miscXp: xp 
+          };
+        }
+        return updated;
+      });
+    }
+
     // Trigger auto-save
     if (markDataChanged) markDataChanged();
 
@@ -343,6 +396,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const parts = [];
     if (newFlights.length > 0) parts.push(`${newFlights.length} flights`);
     if (newMilesCount > 0) parts.push(`${newMilesCount} months of miles`);
+    if (cycleSettings) parts.push(`cycle: ${cycleSettings.startingStatus}`);
     if (parts.length > 0) message += ` Added: ${parts.join(', ')}`;
     
     if (showToast) {
@@ -801,6 +855,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             )}
 
+            {/* Undo Last Import - only show if backup exists */}
+            {canUndoImport && onUndoImport && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Restore data from before your last PDF import? This will undo the import.')) {
+                    const success = onUndoImport();
+                    if (success && showToast) {
+                      showToast('Import undone - data restored', 'success');
+                    } else if (!success && showToast) {
+                      showToast('Could not restore backup', 'error');
+                    }
+                  }
+                }}
+                className="w-full rounded-2xl border border-amber-100 bg-amber-50 hover:bg-amber-100 transition-colors px-4 py-3.5 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100">
+                    <RotateCcw className="text-amber-600" size={16} />
+                  </span>
+                  <div className="text-left">
+                    <p className="text-xs font-semibold text-amber-700">
+                      Undo Last Import
+                    </p>
+                    <p className="text-[11px] text-amber-500">
+                      Restore data from before your last PDF import.
+                    </p>
+                  </div>
+                </div>
+              </button>
+            )}
+
             <button
               onClick={handleStartOver}
               className="w-full rounded-2xl border border-red-100 bg-red-50 hover:bg-red-100 transition-colors px-4 py-3.5 flex items-center justify-between"
@@ -921,13 +1006,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       </div>
 
       {/* PDF Import Modal */}
-      <PdfImportModal
-        isOpen={showPdfImport}
-        onClose={() => setShowPdfImport(false)}
-        onImport={handlePdfImport}
-        existingFlights={data.flights}
-        existingMiles={data.baseMilesData}
-      />
+      {showPdfImport && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <PdfImportModal
+            isOpen={showPdfImport}
+            onClose={() => setShowPdfImport(false)}
+            onImport={handlePdfImport}
+            existingFlights={data.flights}
+            existingMiles={data.baseMilesData}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

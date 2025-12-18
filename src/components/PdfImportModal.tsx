@@ -24,13 +24,35 @@ import {
   ExternalLink
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+
+// Feature flag: Use new PDF parser module
+// Set to true to use the new modular parser, false for legacy
+const USE_NEW_PARSER = false;
+
+// Legacy parser imports (used when USE_NEW_PARSER = false)
 import { 
-  parseFlyingBlueText, 
-  toFlightRecords, 
-  toMilesRecords,
-  extractBonusXp,
+  parseFlyingBlueText as legacyParseFlyingBlueText, 
+  toFlightRecords as legacyToFlightRecords, 
+  toMilesRecords as legacyToMilesRecords,
+  extractBonusXp as legacyExtractBonusXp,
   ParseResult 
 } from '../utils/parseFlyingBluePdf';
+
+// New parser imports (used when USE_NEW_PARSER = true)
+import {
+  parseFlyingBlueTextCompat,
+  toFlightRecordsCompat,
+  toMilesRecordsCompat,
+  extractBonusXpCompat,
+  type LegacyParseResult,
+} from '../modules/pdf-import';
+
+// Choose which parser to use based on feature flag
+const parseFlyingBlueText = USE_NEW_PARSER ? parseFlyingBlueTextCompat : legacyParseFlyingBlueText;
+const toFlightRecords = USE_NEW_PARSER ? toFlightRecordsCompat : legacyToFlightRecords;
+const toMilesRecords = USE_NEW_PARSER ? toMilesRecordsCompat : legacyToMilesRecords;
+const extractBonusXp = USE_NEW_PARSER ? extractBonusXpCompat : legacyExtractBonusXp;
+
 import { 
   calculateRolloverXP, 
   getPreviousStatus 
@@ -59,6 +81,7 @@ interface CycleSettings {
   cycleStartDate?: string;  // Full date for precise XP filtering
   startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
   startingXP?: number;  // Rollover XP from previous cycle
+  pdfHeaderStatus?: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null;  // Official status from PDF header (source of truth)
 }
 
 interface PdfImportModalProps {
@@ -172,6 +195,21 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         : null;
     }
 
+    // PDF HEADER STATUS = SOURCE OF TRUTH
+    // This is the official Flying Blue status at time of PDF export
+    // Normalize from uppercase (PLATINUM) to capitalized (Platinum)
+    const rawStatus = parseResult.status?.toUpperCase();
+    const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
+      'EXPLORER': 'Explorer',
+      'SILVER': 'Silver',
+      'GOLD': 'Gold',
+      'PLATINUM': 'Platinum',
+      'ULTIMATE': 'Platinum', // Map Ultimate to Platinum
+    };
+    const pdfHeaderStatus = rawStatus ? (statusMap[rawStatus] || null) : null;
+    
+    console.log('[PDF Import] Header status:', { rawStatus, pdfHeaderStatus });
+
     return {
       flights,
       miles,
@@ -194,10 +232,14 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       newestDate,
       dataRangeMonths,
       requalifications,
-      // Suggested cycle settings
+      // Suggested cycle settings (from requalification events - informational only)
       suggestedCycleStart,
       suggestedCycleStartDate,  // Full date for precise filtering
       suggestedStatus,
+      // PDF HEADER = SOURCE OF TRUTH
+      pdfHeaderStatus,  // Official status from PDF header
+      pdfTotalMiles: parseResult.totalMiles,  // Official miles balance
+      pdfTotalUXP: parseResult.totalUXP,  // Official UXP balance
     };
   }, [parseResult, existingFlights, existingMiles]);
 
@@ -325,8 +367,25 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     }
 
     // Prepare cycle settings if detected and user opted in
+    // IMPORTANT: We pass the PDF HEADER status (source of truth), not the detected requalification status
     let cycleSettings: CycleSettings | undefined;
-    if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus) {
+    
+    // CRITICAL FIX: Only use requalification cycle data if it represents reaching the CURRENT status
+    // If the PDF header shows Platinum but we found an old Gold requalification event,
+    // that event is HISTORICAL and should NOT be used to set the cycle start date.
+    // The user has since upgraded to Platinum (their current status).
+    const requalificationMatchesCurrentStatus = 
+      summary.suggestedStatus === summary.pdfHeaderStatus;
+    
+    console.log('[PDF Import] Requalification analysis:', {
+      suggestedStatus: summary.suggestedStatus,
+      pdfHeaderStatus: summary.pdfHeaderStatus,
+      requalificationMatchesCurrent: requalificationMatchesCurrentStatus,
+      suggestedCycleStart: summary.suggestedCycleStart,
+    });
+    
+    if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus && requalificationMatchesCurrentStatus) {
+      // Requalification event represents reaching the CURRENT status - safe to use cycle data
       // Calculate rollover XP: how much XP was "left over" after reaching the threshold
       const previousStatus = getPreviousStatus(summary.suggestedStatus);
       const rolloverXP = summary.suggestedCycleStartDate 
@@ -338,12 +397,30 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
           )
         : 0;
       
+      // Use PDF HEADER STATUS if available (official Flying Blue status)
+      // Fall back to suggested status only if header is not available
+      const officialStatus = summary.pdfHeaderStatus || summary.suggestedStatus;
+      
       cycleSettings = {
         cycleStartMonth: summary.suggestedCycleStart,
         cycleStartDate: summary.suggestedCycleStartDate || undefined,  // Full date for precise XP filtering
-        startingStatus: summary.suggestedStatus,
+        startingStatus: officialStatus,  // USE OFFICIAL PDF STATUS
         startingXP: rolloverXP,  // Rollover from the level-up
+        // Pass PDF header info for validation in useUserData
+        pdfHeaderStatus: summary.pdfHeaderStatus,
       };
+      console.log('[PDF Import] Using requalification cycle data:', cycleSettings);
+    } 
+    // ALWAYS pass PDF header status even without matching requalification event
+    // This allows fixing incorrect user settings (e.g., Explorer -> Platinum)
+    // BUT we don't set cycleStartMonth from old/mismatched requalification events
+    else if (summary.pdfHeaderStatus) {
+      cycleSettings = {
+        cycleStartMonth: '', // Empty - don't change existing cycle month (no reliable data)
+        startingStatus: summary.pdfHeaderStatus,
+        pdfHeaderStatus: summary.pdfHeaderStatus,
+      };
+      console.log('[PDF Import] Using PDF header status only (requalification was historical):', cycleSettings);
     }
 
     // Extract bonus XP from PDF (first flight bonus, hotel XP, etc.)

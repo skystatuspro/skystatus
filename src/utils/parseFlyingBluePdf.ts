@@ -464,27 +464,47 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for actual flight date in next lines
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
-            // Must be at start of line to avoid matching "op basis van"
+            // PDF extraction often puts "op" on one line and the date on the next
             let flightDate = transDate;
-            for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const line = lines[k];
-              // Primary: Match "op/on/le/am" at start of line, followed by a date
+            let foundFlightDate = false;
+            for (let k = j + 1; k < Math.min(j + 8, lines.length); k++) {
+              const line = lines[k].trim();
+              
+              // Pattern 1: "op" alone on a line - date is on NEXT line
+              if (/^(?:op|on|le|am)$/i.test(line) && k + 1 < lines.length) {
+                const nextLine = lines[k + 1];
+                // Next line starts with a date: "29 nov 2025" or "6 jun 2025 ..."
+                const dateMatch = nextLine.match(/^\s*(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
+                if (dateMatch) {
+                  const [, day, month, year] = dateMatch;
+                  const parsed = parseDate(`${day} ${month} ${year}`);
+                  if (parsed) {
+                    flightDate = parsed;
+                    foundFlightDate = true;
+                    break;
+                  }
+                }
+              }
+              
+              // Pattern 2: "op 29 nov 2025" all on one line
               const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
-              // Fallback: Look for "op [day] [month] [year]" pattern anywhere
-              // This handles cases where text isn't cleanly split into lines
+              
+              // Pattern 3: Date pattern anywhere in line (fallback)
               const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
               if (datePattern) {
                 const [, day, month, year] = datePattern;
                 const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
@@ -537,26 +557,46 @@ export function parseFlyingBlueText(text: string): ParseResult {
             
             // Look for flight date
             // "op" (NL), "on" (EN), "le" (FR), "am" (DE) followed by a date
-            // Must be at start of line to avoid matching "op basis van"
+            // PDF extraction often puts "op" on one line and the date on the next
             let flightDate = transDate;
-            for (let k = j + 1; k < Math.min(j + 5, lines.length); k++) {
-              const line = lines[k];
-              // Primary: Match "op/on/le/am" at start of line
+            let foundFlightDate = false;
+            for (let k = j + 1; k < Math.min(j + 8, lines.length); k++) {
+              const line = lines[k].trim();
+              
+              // Pattern 1: "op" alone on a line - date is on NEXT line
+              if (/^(?:op|on|le|am)$/i.test(line) && k + 1 < lines.length) {
+                const nextLine = lines[k + 1];
+                const dateMatch = nextLine.match(/^\s*(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
+                if (dateMatch) {
+                  const [, day, month, year] = dateMatch;
+                  const parsed = parseDate(`${day} ${month} ${year}`);
+                  if (parsed) {
+                    flightDate = parsed;
+                    foundFlightDate = true;
+                    break;
+                  }
+                }
+              }
+              
+              // Pattern 2: "op 29 nov 2025" all on one line
               const opMatch = line.match(/^(?:op|on|le|am)\s+(.+)/i);
               if (opMatch) {
                 const parsed = parseDate(opMatch[1]);
                 if (parsed) {
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }
-              // Fallback: Look for "op [day] [month] [year]" pattern anywhere
+              
+              // Pattern 3: Date pattern anywhere (fallback)
               const datePattern = line.match(/(?:op|on|le|am)\s+(\d{1,2})\s+([a-zA-Zéûôàèùäöüß]+)\s+(\d{4})/i);
               if (datePattern) {
                 const [, day, month, year] = datePattern;
                 const parsed = parseDate(`${day} ${month} ${year}`);
                 if (parsed) {
                   flightDate = parsed;
+                  foundFlightDate = true;
                   break;
                 }
               }

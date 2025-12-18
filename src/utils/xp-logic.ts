@@ -399,23 +399,24 @@ interface MonthData {
 
 const aggregateFlightsByMonth = (
   flights: FlightRecord[],
-  excludeBeforeDate?: string  // Exclude flights on or before this date (YYYY-MM-DD) - only in that month
+  excludeBeforeDate?: string  // Exclude flights on or before this date (YYYY-MM-DD)
 ): Map<string, FlightMonthAggregate> => {
   const map = new Map<string, FlightMonthAggregate>();
   const today = getTodayISO();
   
-  // Only filter flights in the start month itself
-  const excludeMonth = excludeBeforeDate?.slice(0, 7);
+  let filteredCount = 0;
+  let includedCount = 0;
 
   for (const flight of flights) {
     const monthKey = flight.date.slice(0, 7);
     
-    // Skip flights on or before the cycle start date, but ONLY within the start month
-    // The XP from these flights is already accounted for in startingXP (rollover)
-    // Changed from < to <= because requalification date flights belong to the OLD cycle
-    if (excludeBeforeDate && monthKey === excludeMonth && flight.date <= excludeBeforeDate) {
+    // Skip ALL flights on or before the cycle start date
+    // These flights belong to the PREVIOUS cycle and their XP is in startingXP (rollover)
+    if (excludeBeforeDate && flight.date <= excludeBeforeDate) {
+      filteredCount++;
       continue;
     }
+    includedCount++;
     
     const flightIsFlown = flight.date < today;
 
@@ -455,6 +456,7 @@ const aggregateFlightsByMonth = (
     });
   }
 
+  console.log(`[XP Engine] Flight filtering: ${filteredCount} excluded (before cutoff), ${includedCount} included`);
   return map;
 };
 
@@ -462,14 +464,40 @@ const buildMonthDataList = (
   flights: FlightRecord[],
   manualLedger: ManualLedger,
   legacyData: XPRecord[],
-  excludeBeforeDate?: string  // Exclude flights before this date (YYYY-MM-DD)
+  excludeBeforeDate?: string,  // Exclude ALL flights on or before this date (YYYY-MM-DD)
+  excludeBeforeMonth?: string  // Exclude ALL manual/legacy data from months before this (YYYY-MM)
 ): MonthData[] => {
   const flightAgg = aggregateFlightsByMonth(flights, excludeBeforeDate);
   const monthKeys = new Set<string>();
 
   flightAgg.forEach((_, k) => monthKeys.add(k));
-  Object.keys(manualLedger || {}).forEach((k) => monthKeys.add(k));
-  legacyData.forEach((r) => monthKeys.add(r.month));
+  
+  // Filter manualLedger months based on cycleStartMonth
+  // Only include months >= excludeBeforeMonth (if specified)
+  Object.keys(manualLedger || {}).forEach((k) => {
+    if (!excludeBeforeMonth || k >= excludeBeforeMonth) {
+      monthKeys.add(k);
+    }
+  });
+  
+  // Filter legacy data months the same way
+  legacyData.forEach((r) => {
+    if (!excludeBeforeMonth || r.month >= excludeBeforeMonth) {
+      monthKeys.add(r.month);
+    }
+  });
+  
+  // Log filtering info
+  if (excludeBeforeMonth) {
+    const filteredManualMonths = Object.keys(manualLedger || {}).filter(k => k < excludeBeforeMonth);
+    const filteredLegacyMonths = legacyData.filter(r => r.month < excludeBeforeMonth).map(r => r.month);
+    if (filteredManualMonths.length > 0 || filteredLegacyMonths.length > 0) {
+      console.log(`[XP Engine] Filtered out months before ${excludeBeforeMonth}:`, {
+        manualLedgerMonths: filteredManualMonths,
+        legacyMonths: filteredLegacyMonths,
+      });
+    }
+  }
 
   const sortedMonths = Array.from(monthKeys).sort();
 
@@ -1122,14 +1150,40 @@ export const calculateQualificationCycles = (
     ultimateCycleType?: 'qualification' | 'calendar';
   } | null
 ): MultiCycleStats => {
-  // If cycleStartDate is provided, use it; otherwise flights from entire month are included
+  // cycleStartDate = the date you QUALIFIED (e.g., 2025-10-07)
+  // Flights AFTER this date count towards the NEW cycle
+  // Flights ON or BEFORE this date belong to the OLD cycle
+  //
+  // Example: Qualified on Oct 7, 2025
+  //   - Oct 7 flight → OLD cycle (this was the qualifying flight)
+  //   - Oct 8 flight → NEW cycle (counts!)
+  //   - Official cycle: Nov 1, 2025 - Oct 31, 2026
+  //
+  // IMPORTANT: We ONLY filter if we have the exact qualification date (cycleStartDate)
+  // If only cycleStartMonth is set, we cannot safely filter because we don't know
+  // when the user qualified. They should re-import their PDF to get the exact date.
+  
   const excludeBeforeDate = qualificationSettings?.cycleStartDate;
+  
+  // Debug logging
+  console.log('[XP Engine] Qualification settings:', {
+    cycleStartMonth: qualificationSettings?.cycleStartMonth,
+    cycleStartDate: qualificationSettings?.cycleStartDate,
+    startingStatus: qualificationSettings?.startingStatus,
+    startingXP: qualificationSettings?.startingXP,
+    excludeBeforeDate,
+  });
+  
+  // excludeBeforeMonth: filter out manual ledger and legacy data from months before cycle start
+  // This ensures XP from previous cycles doesn't count towards the current cycle
+  const excludeBeforeMonth = qualificationSettings?.cycleStartMonth;
   
   const monthDataList = buildMonthDataList(
     flights ?? [],
     manualLedger ?? {},
     legacyData,
-    excludeBeforeDate
+    excludeBeforeDate,
+    excludeBeforeMonth
   );
 
   const currentMonth = getCurrentMonth();

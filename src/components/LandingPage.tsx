@@ -12,8 +12,10 @@ import {
   Upload, 
   Award, 
   BookOpen, 
-  ArrowRight
+  ArrowRight,
+  Search
 } from 'lucide-react';
+import { SearchModal, useSearchShortcut } from './SearchModal';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -21,8 +23,16 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }) => {
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  
+  // Cmd+K shortcut for search
+  useSearchShortcut(() => setIsSearchOpen(true));
+
   return (
     <div className="min-h-screen bg-white">
+      {/* Search Modal */}
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -45,6 +55,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             >
               Help & FAQ
             </a>
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="hidden sm:flex p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Search (⌘K)"
+            >
+              <Search size={18} />
+            </button>
             <button
               onClick={onDemo}
               className="hidden sm:block px-4 py-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
@@ -400,7 +417,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onDemo }
             Ready to Optimize Your Flying Blue Journey?
           </h2>
           <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of Flying Blue members who use SkyStatus to track their progress and maximize their benefits.
+            Join 140+ Flying Blue members who use SkyStatus to track their progress and maximize their benefits.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button

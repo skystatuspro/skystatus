@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "prebuild": "node scripts/prebuild.js",
+    "build": "npm run prebuild && vite build",
     "preview": "vite preview",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
     "release:patch": "standard-version --release-as patch",
-    "sync-version": "node scripts/sync-version.js"
+    "sync-version": "node scripts/sync-version.js",
+    "update-dates": "node scripts/prebuild.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

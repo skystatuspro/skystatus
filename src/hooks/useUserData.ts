@@ -35,6 +35,14 @@ import {
 } from '../utils/flight-intake';
 import { calculateMultiYearStats } from '../utils/xp-logic';
 import { CurrencyCode } from '../utils/format';
+import {
+  createBackup,
+  restoreBackup,
+  hasBackup,
+  getBackupInfo,
+  clearBackup,
+  getBackupAge,
+} from '../modules/pdf-import/services/backup-service';
 
 // ============================================================================
 // TYPES
@@ -104,8 +112,12 @@ export interface UserDataActions {
       startingStatus: StatusLevel;
       startingXP?: number;
     },
-    bonusXpByMonth?: Record<string, number>
+    bonusXpByMonth?: Record<string, number>,
+    sourceFileName?: string
   ) => void;
+  handleUndoImport: () => boolean;
+  canUndoImport: boolean;
+  importBackupInfo: { timestamp: string; source: string } | null;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
   
   // Demo/Local mode
@@ -497,8 +509,9 @@ export function useUserData(): UseUserDataReturn {
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
-    bonusXpByMonth?: Record<string, number>
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
+    bonusXpByMonth?: Record<string, number>,
+    sourceFileName?: string
   ) => {
     // CRITICAL: Mark as loaded so autosave works for new users
     // Without this, importing PDF before loadUserData completes would not save
@@ -508,44 +521,174 @@ export function useUserData(): UseUserDataReturn {
       setHasAttemptedLoad(true);
     }
 
-    // REPLACE MODE: Instead of merging, we replace all flight data
-    // This ensures XP calculations are always correct by starting fresh
-    // User's manual corrections are cleared since they'll be recalculated from the PDF
-    
-    // Replace all flights with imported flights
-    setFlightsInternal(importedFlights);
-
-    // Replace all miles data
-    setBaseMilesDataInternal(importedMiles);
-
-    // REPLACE MODE: Clear manual ledger and rebuild from PDF data only
-    // XP corrections are no longer needed since we recalculate everything from scratch
-    // Only keep bonus XP from the PDF (first flight bonuses, hotel XP, etc.)
-    
-    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      // Start fresh with only bonus XP from PDF
-      const freshLedger: ManualLedger = {};
-      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-        freshLedger[month] = { amexXp: 0, bonusSafXp: 0, miscXp: xp, correctionXp: 0 };
-      }
-      setManualLedgerInternal(freshLedger);
-    } else {
-      // No bonus XP - clear the manual ledger entirely
-      setManualLedgerInternal({});
+    // CREATE BACKUP before modifying data (for undo functionality)
+    try {
+      createBackup(
+        {
+          flights: flights,
+          milesRecords: baseMilesData,
+          qualificationSettings: qualificationSettings,
+          manualLedger: manualLedger,
+        },
+        sourceFileName || 'PDF Import'
+      );
+      console.log('[handlePdfImport] Backup created before import');
+    } catch (e) {
+      console.error('[handlePdfImport] Failed to create backup:', e);
+      // Continue anyway - backup failure shouldn't block import
     }
 
-    // Handle cycle settings (including precise start date for XP filtering)
+    // =========================================================================
+    // MERGE MODE: Add new data while preserving existing data
+    // =========================================================================
+    
+    // 1. MERGE FLIGHTS: Add new flights, keep existing ones
+    // Match duplicates by date + route (same logic as PdfImportModal)
+    const existingFlightKeys = new Set(
+      flights.map(f => `${f.date}|${f.route}`)
+    );
+    
+    const newFlights = importedFlights.filter(f => {
+      const key = `${f.date}|${f.route}`;
+      return !existingFlightKeys.has(key);
+    });
+    
+    // Combine: existing flights + new flights from PDF
+    const mergedFlights = [...flights, ...newFlights];
+    // Sort by date descending (newest first)
+    mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
+    setFlightsInternal(mergedFlights);
+    
+    console.log(`[handlePdfImport] Merged flights: ${flights.length} existing + ${newFlights.length} new = ${mergedFlights.length} total`);
+
+    // 2. MERGE MILES: Update existing months, add new months
+    const existingMilesByMonth = new Map(
+      baseMilesData.map(m => [m.month, m])
+    );
+    
+    for (const importedMonth of importedMiles) {
+      // Always use PDF data for months it contains (more accurate)
+      existingMilesByMonth.set(importedMonth.month, importedMonth);
+    }
+    
+    const mergedMiles = Array.from(existingMilesByMonth.values());
+    // Sort by month descending
+    mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
+    setBaseMilesDataInternal(mergedMiles);
+    
+    console.log(`[handlePdfImport] Merged miles: ${baseMilesData.length} existing months, ${importedMiles.length} from PDF = ${mergedMiles.length} total`);
+
+    // 3. MERGE MANUAL LEDGER: Add bonus XP from PDF, preserve existing entries
+    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
+      const mergedLedger = { ...manualLedger };
+      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+        if (mergedLedger[month]) {
+          // Month exists - add to miscXp
+          mergedLedger[month] = {
+            ...mergedLedger[month],
+            miscXp: (mergedLedger[month].miscXp || 0) + xp,
+          };
+        } else {
+          // New month
+          mergedLedger[month] = { amexXp: 0, bonusSafXp: 0, miscXp: xp, correctionXp: 0 };
+        }
+      }
+      setManualLedgerInternal(mergedLedger);
+    }
+    // If no bonus XP, keep existing ledger unchanged
+
+    // 4. QUALIFICATION SETTINGS: Update based on PDF header status (source of truth)
     if (cycleSettings) {
-      setQualificationSettingsInternal({
-        cycleStartMonth: cycleSettings.cycleStartMonth,
-        cycleStartDate: cycleSettings.cycleStartDate,  // Full date for precise XP calculation
-        startingStatus: cycleSettings.startingStatus,
-        startingXP: cycleSettings.startingXP ?? 0,  // Use calculated rollover or 0
-      });
+      const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
+      
+      if (!qualificationSettings) {
+        // No existing settings - use PDF settings (first time setup)
+        // Only set if we have actual cycle info, not just header status
+        if (cycleSettings.cycleStartMonth) {
+          setQualificationSettingsInternal({
+            cycleStartMonth: cycleSettings.cycleStartMonth,
+            cycleStartDate: cycleSettings.cycleStartDate,
+            startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
+            startingXP: cycleSettings.startingXP ?? 0,
+          });
+          console.log('[handlePdfImport] Set qualification settings from PDF (first time setup)');
+        }
+      } else {
+        // User has existing settings
+        const currentUserStatus = qualificationSettings.startingStatus;
+        
+        // CRITICAL: If PDF status MATCHES user's current status, DO NOT change cycle settings!
+        // The user's existing cycle is correct. Only update if status actually CHANGED.
+        if (pdfOfficialStatus && pdfOfficialStatus !== currentUserStatus) {
+          console.log(`[handlePdfImport] Status CHANGE detected: ${currentUserStatus} → ${pdfOfficialStatus}`);
+          
+          // Status changed - update settings with new cycle info if available
+          if (cycleSettings.cycleStartMonth) {
+            setQualificationSettingsInternal({
+              cycleStartMonth: cycleSettings.cycleStartMonth,
+              cycleStartDate: cycleSettings.cycleStartDate,
+              startingStatus: pdfOfficialStatus,
+              startingXP: cycleSettings.startingXP ?? 0,
+            });
+            console.log(`[handlePdfImport] Updated to ${pdfOfficialStatus} with cycle from ${cycleSettings.cycleStartMonth}`);
+          } else {
+            // Only have status, keep existing cycle but update status
+            setQualificationSettingsInternal({
+              ...qualificationSettings,
+              startingStatus: pdfOfficialStatus,
+            });
+            console.log(`[handlePdfImport] Updated status to ${pdfOfficialStatus}, kept existing cycle`);
+          }
+        } else {
+          // Status matches - DO NOT TOUCH cycle settings!
+          // User's existing cycle (e.g., Nov 2025) is correct
+          // PDF might have old requalification events that don't apply to current cycle
+          console.log(`[handlePdfImport] Status matches (${currentUserStatus}) - keeping ALL existing cycle settings unchanged`);
+        }
+      }
     }
 
     markDataChanged();
-  }, [user, markDataChanged]);
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger]);
+
+  // UNDO IMPORT: Restore data from backup
+  const handleUndoImport = useCallback(() => {
+    const backup = restoreBackup();
+    if (!backup) {
+      console.warn('[handleUndoImport] No backup found');
+      return false;
+    }
+
+    // Restore all data from backup
+    setFlightsInternal(backup.flights as FlightRecord[]);
+    setBaseMilesDataInternal(backup.milesRecords as MilesRecord[]);
+    setQualificationSettingsInternal(backup.qualificationSettings as QualificationSettings | null);
+    setManualLedgerInternal(backup.manualLedger as ManualLedger);
+
+    // Clear the backup after successful restore
+    clearBackup();
+    
+    markDataChanged();
+    console.log('[handleUndoImport] Data restored from backup');
+    return true;
+  }, [markDataChanged]);
+
+  // Backup state - refreshed when data changes
+  const [backupState, setBackupState] = useState<{
+    canUndo: boolean;
+    info: { timestamp: string; source: string } | null;
+  }>({ canUndo: false, info: null });
+
+  // Refresh backup state after import or undo
+  useEffect(() => {
+    setBackupState({
+      canUndo: hasBackup(),
+      info: getBackupInfo(),
+    });
+  }, [flights]); // Refresh when flights change (after import/undo)
+
+  const canUndoImport = backupState.canUndo;
+  const importBackupInfo = backupState.info;
 
   // -------------------------------------------------------------------------
   // DEMO / LOCAL MODE HANDLERS
@@ -840,6 +983,9 @@ export function useUserData(): UseUserDataReturn {
       handleManualXPLedgerUpdate,
       handleXPRolloverUpdate,
       handlePdfImport,
+      handleUndoImport,
+      canUndoImport,
+      importBackupInfo,
       handleQualificationSettingsUpdate,
       handleLoadDemo,
       handleStartEmpty,

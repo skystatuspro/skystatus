@@ -563,7 +563,7 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
                 of your qualification cycle with real-time tracking and smart projections.
               </p>
               <p className="leading-relaxed">
-                What started as a personal tool has grown into something used by <strong className="text-slate-900">200+ Flying Blue 
+                What started as a personal tool has grown into something used by <strong className="text-slate-900">140+ Flying Blue 
                 members</strong> across Europe and beyond. Every feature has been shaped by real user 
                 feedback from people who care about their status as much as you do.
               </p>
@@ -577,7 +577,7 @@ export const AboutPage: React.FC<LegalPageProps> = ({ onBack }) => {
               <h3 className="font-bold text-slate-900">Trusted by the Community</h3>
             </div>
             <p className="text-slate-600">
-              200+ Flying Blue members use SkyStatus to track their status qualification. 
+              140+ Flying Blue members use SkyStatus to track their status qualification. 
               This ranges from casual travelers reaching for Silver to frequent flyers maintaining Ultimate.
             </p>
           </div>
