@@ -325,6 +325,7 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
+              pdfBaseline: state.pdfBaseline,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -426,6 +427,7 @@ export default function App() {
             flights={state.flights}
             manualLedger={state.manualLedger}
             qualificationSettings={state.qualificationSettings}
+            pdfBaseline={state.pdfBaseline}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
           />
         );

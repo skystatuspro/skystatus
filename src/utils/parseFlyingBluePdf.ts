@@ -307,7 +307,10 @@ export function parseFlyingBlueText(text: string): ParseResult {
   let totalUXP: number | null = null;
   
   // Look for header info in first few lines
-  for (let i = 0; i < Math.min(10, lines.length); i++) {
+  // Debug: log first 15 lines to understand PDF structure
+  console.log('[Parser] First 15 lines of PDF:', lines.slice(0, 15));
+  
+  for (let i = 0; i < Math.min(20, lines.length); i++) {
     const line = lines[i];
     
     // Member number pattern: "Flying Blue-nummer: 1234567890"
@@ -316,9 +319,24 @@ export function parseFlyingBlueText(text: string): ParseResult {
       memberNumber = memberMatch[1];
     }
     
-    // Status pattern
-    if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
+    // Status pattern - multiple approaches:
+    // 1. Exact match on line (original)
+    if (!status && /^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
       status = line.toUpperCase();
+      console.log('[Parser] Status found (exact line match):', status);
+    }
+    
+    // 2. Status as part of a line (e.g., "Status: Platinum" or "Platinum member")
+    if (!status) {
+      const statusInLineMatch = line.match(/\b(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\b/i);
+      if (statusInLineMatch) {
+        // Avoid false positives from transaction lines
+        const isTransactionLine = /^\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i.test(line);
+        if (!isTransactionLine) {
+          status = statusInLineMatch[1].toUpperCase();
+          console.log('[Parser] Status found (in-line match):', status, 'from line:', line);
+        }
+      }
     }
     
     // Totals pattern: "248928 Miles 183 XP 40 UXP"
@@ -327,6 +345,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
       totalMiles = parseInt(totalsMatch[1].replace(/[\s.,]/g, ''), 10);
       totalXP = parseInt(totalsMatch[2], 10);
       totalUXP = parseInt(totalsMatch[3], 10);
+      console.log('[Parser] Totals found:', { totalMiles, totalXP, totalUXP });
     }
     
     // Name is typically the first line (all caps)
@@ -334,6 +353,8 @@ export function parseFlyingBlueText(text: string): ParseResult {
       memberName = line;
     }
   }
+  
+  console.log('[Parser] Header parsing result:', { memberName, memberNumber, status, totalMiles, totalXP, totalUXP });
   
   // Parse flights and miles
   const flights: ParsedFlight[] = [];
