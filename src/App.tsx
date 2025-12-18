@@ -28,6 +28,7 @@ import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
 import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
+import { MaintenanceNotice } from './components/MaintenanceNotice';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel } from './types';
 
@@ -634,6 +635,9 @@ export default function App() {
 
       <ToastContainer />
       <CookieConsentUI />
+      
+      {/* Maintenance Notice for PDF Import Issues */}
+      <MaintenanceNotice isActiveUser={!!user || meta.isLocalMode} />
       
       {/* Demo Mode Bar */}
       <DemoBar
