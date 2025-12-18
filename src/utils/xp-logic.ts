@@ -1152,6 +1152,14 @@ export const calculateQualificationCycles = (
   } | null,
   pdfBaseline?: PdfBaseline | null  // PDF header values as source of truth
 ): MultiCycleStats => {
+  // Debug: log every call to understand which component is calling
+  console.log('[XP Engine] calculateQualificationCycles called:', {
+    hasPdfBaseline: !!pdfBaseline,
+    pdfBaselineXP: pdfBaseline?.xp,
+    flightsCount: flights?.length ?? 0,
+    cycleStartMonth: qualificationSettings?.cycleStartMonth,
+  });
+  
   // cycleStartDate = the date you QUALIFIED (e.g., 2025-10-07)
   // Flights AFTER this date count towards the NEW cycle
   // Flights ON or BEFORE this date belong to the OLD cycle
@@ -1221,10 +1229,22 @@ export const calculateQualificationCycles = (
 
     // Apply PDF baseline to empty cycle if available
     if (pdfBaseline) {
-      cycle.actualXP = pdfBaseline.xp;
-      cycle.actualUXP = pdfBaseline.uxp;
+      // Find flights added after PDF export
+      const flightsAfterExport = (flights ?? []).filter(f => 
+        f.importSource !== 'pdf' && f.date > pdfBaseline.pdfExportDate
+      );
+      
+      const deltaXP = flightsAfterExport.reduce((sum, f) => 
+        sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+      );
+      const deltaUXP = flightsAfterExport.reduce((sum, f) => 
+        sum + (f.uxp || 0), 0
+      );
+      
+      cycle.actualXP = pdfBaseline.xp + deltaXP;
+      cycle.actualUXP = pdfBaseline.uxp + deltaUXP;
       cycle.actualStatus = pdfBaseline.status as StatusLevel;
-      cycle.currentXP = pdfBaseline.xp;
+      cycle.currentXP = cycle.actualXP;
       
       const statusThresholds: Record<StatusLevel, number> = {
         Explorer: SILVER_THRESHOLD,
@@ -1237,8 +1257,9 @@ export const calculateQualificationCycles = (
       cycle.currentXPToNext = cycle.actualXPToNext;
       
       console.log('[XP Engine] PDF baseline applied (empty cycle):', {
-        xp: cycle.actualXP,
-        uxp: cycle.actualUXP,
+        baselineXP: pdfBaseline.xp,
+        deltaXP,
+        finalXP: cycle.actualXP,
         status: cycle.actualStatus,
       });
     }
@@ -1438,8 +1459,8 @@ export const calculateQualificationCycles = (
 
   // ============================================================================
   // PDF BASELINE OVERRIDE
-  // When a PDF baseline is provided, use it as the SINGLE SOURCE OF TRUTH
-  // The PDF header values ARE the correct values - no calculations needed
+  // PDF header = source of truth at export date
+  // Add XP/UXP from flights added AFTER the PDF export date
   // ============================================================================
   console.log('[XP Engine] PDF baseline check:', {
     hasPdfBaseline: !!pdfBaseline,
@@ -1450,15 +1471,26 @@ export const calculateQualificationCycles = (
   if (pdfBaseline && cycles.length > 0) {
     const activeCycle = cycles[cycles.length - 1];
     
-    // Simply use the PDF header values - they ARE the truth
-    activeCycle.actualXP = pdfBaseline.xp;
-    activeCycle.actualUXP = pdfBaseline.uxp;
+    // Find flights that are NOT from PDF and have date AFTER PDF export
+    // These are manual additions that should be added to the baseline
+    const flightsAfterExport = (flights ?? []).filter(f => 
+      f.importSource !== 'pdf' && f.date > pdfBaseline.pdfExportDate
+    );
+    
+    const deltaXP = flightsAfterExport.reduce((sum, f) => 
+      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+    );
+    const deltaUXP = flightsAfterExport.reduce((sum, f) => 
+      sum + (f.uxp || 0), 0
+    );
+    
+    // Baseline + delta
+    activeCycle.actualXP = pdfBaseline.xp + deltaXP;
+    activeCycle.actualUXP = pdfBaseline.uxp + deltaUXP;
     activeCycle.actualStatus = pdfBaseline.status as StatusLevel;
+    activeCycle.currentXP = activeCycle.actualXP;
     
-    // Update currentXP for backwards compatibility
-    activeCycle.currentXP = pdfBaseline.xp;
-    
-    // Recalculate XP needed to maintain/reach next status
+    // Recalculate XP needed
     const statusThresholds: Record<StatusLevel, number> = {
       Explorer: SILVER_THRESHOLD,
       Silver: GOLD_THRESHOLD,
@@ -1470,10 +1502,11 @@ export const calculateQualificationCycles = (
     activeCycle.currentXPToNext = activeCycle.actualXPToNext;
     
     console.log('[XP Engine] PDF baseline applied:', {
-      xp: activeCycle.actualXP,
-      uxp: activeCycle.actualUXP,
+      baselineXP: pdfBaseline.xp,
+      deltaXP,
+      deltaFlights: flightsAfterExport.length,
+      finalXP: activeCycle.actualXP,
       status: activeCycle.actualStatus,
-      xpToNext: activeCycle.actualXPToNext,
     });
   }
 
