@@ -350,11 +350,12 @@ export function useUserData(): UseUserDataReturn {
           target_cpm: targetCPM,
           xp_rollover: xpRollover,
           currency: currency,
-          qualification_start_month: qualificationSettings?.cycleStartMonth,
-          qualification_start_date: qualificationSettings?.cycleStartDate,  // Full date for precise XP filtering
-          starting_status: qualificationSettings?.startingStatus,
-          starting_xp: qualificationSettings?.startingXP,
-          ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
+          // IMPORTANT: Use ?? null to ensure undefined values are sent as null to clear DB fields
+          qualification_start_month: qualificationSettings?.cycleStartMonth ?? null,
+          qualification_start_date: qualificationSettings?.cycleStartDate ?? null,
+          starting_status: qualificationSettings?.startingStatus ?? null,
+          starting_xp: qualificationSettings?.startingXP ?? 0,
+          ultimate_cycle_type: qualificationSettings?.ultimateCycleType ?? null,
         }),
       ]);
     } catch (error) {
