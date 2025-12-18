@@ -239,18 +239,10 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
     // PDF HEADER STATUS = SOURCE OF TRUTH
     // This is the official Flying Blue status at time of PDF export
-    // Normalize from uppercase (PLATINUM) to capitalized (Platinum)
-    const rawStatus = parseResult.status?.toUpperCase();
-    const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
-      'EXPLORER': 'Explorer',
-      'SILVER': 'Silver',
-      'GOLD': 'Gold',
-      'PLATINUM': 'Platinum',
-      'ULTIMATE': 'Platinum', // Map Ultimate to Platinum
-    };
-    const pdfHeaderStatus = rawStatus ? (statusMap[rawStatus] || null) : null;
+    // Use the statusMap already defined above
+    const pdfHeaderStatus = pdfHeaderStatusRaw ? (statusMap[pdfHeaderStatusRaw] || null) : null;
     
-    console.log('[PDF Import] Header status:', { rawStatus, pdfHeaderStatus });
+    console.log('[PDF Import] Header status:', { rawStatus: pdfHeaderStatusRaw, pdfHeaderStatus });
 
     return {
       flights,
