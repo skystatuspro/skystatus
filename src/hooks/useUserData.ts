@@ -968,6 +968,7 @@ export function useUserData(): UseUserDataReturn {
     manualLedger?: ManualLedger;
     qualificationSettings?: QualificationSettings;
     xpRollover?: number;
+    homeAirport?: string | null;
   }): Promise<boolean> => {
     // Local/demo mode: just update state directly
     if (!user || isDemoMode || isLocalMode) {
@@ -978,6 +979,7 @@ export function useUserData(): UseUserDataReturn {
       if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
       if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
       if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
+      if (importData.homeAirport !== undefined) setHomeAirportInternal(importData.homeAirport);
       return true;
     }
 
@@ -1034,6 +1036,9 @@ export function useUserData(): UseUserDataReturn {
       }
       if (typeof importData.xpRollover === 'number') {
         profileUpdates.xp_rollover = importData.xpRollover;
+      }
+      if (importData.homeAirport !== undefined) {
+        profileUpdates.home_airport = importData.homeAirport;
       }
       if (Object.keys(profileUpdates).length > 0) {
         savePromises.push(updateProfile(user.id, profileUpdates));

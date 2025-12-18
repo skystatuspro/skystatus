@@ -58,6 +58,7 @@ interface SettingsModalProps {
     currency: CurrencyCode;
     manualLedger: ManualLedger;
     qualificationSettings: QualificationSettings | null;
+    homeAirport: string | null;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;

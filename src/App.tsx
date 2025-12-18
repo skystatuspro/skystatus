@@ -599,6 +599,7 @@ export default function App() {
           currency: state.currency,
           manualLedger: state.manualLedger,
           qualificationSettings: state.qualificationSettings,
+          homeAirport: state.homeAirport,
         }}
         setters={{
           setBaseMilesData: actions.setBaseMilesData,
