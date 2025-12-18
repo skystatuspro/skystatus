@@ -306,6 +306,7 @@ export function useUserData(): UseUserDataReturn {
             cycleStartDate: data.profile.qualificationStartDate || undefined,  // Full date for precise XP filtering
             startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
             startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
+            startingUXP: data.profile.startingUXP || 0,
             ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
           });
         }
@@ -355,6 +356,7 @@ export function useUserData(): UseUserDataReturn {
           qualification_start_date: qualificationSettings?.cycleStartDate ?? null,
           starting_status: qualificationSettings?.startingStatus ?? null,
           starting_xp: qualificationSettings?.startingXP ?? 0,
+          starting_uxp: qualificationSettings?.startingUXP ?? 0,
           ultimate_cycle_type: qualificationSettings?.ultimateCycleType ?? null,
         }),
       ]);
@@ -1027,6 +1029,7 @@ export function useUserData(): UseUserDataReturn {
         profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate || null;
         profileUpdates.starting_status = importData.qualificationSettings.startingStatus || null;
         profileUpdates.starting_xp = importData.qualificationSettings.startingXP ?? 0;
+        profileUpdates.starting_uxp = importData.qualificationSettings.startingUXP ?? 0;
         profileUpdates.ultimate_cycle_type = importData.qualificationSettings.ultimateCycleType || null;
       }
       if (typeof importData.xpRollover === 'number') {

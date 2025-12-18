@@ -511,6 +511,7 @@ export async function updateProfile(userId: string, updates: {
   xp_rollover?: number;
   starting_status?: string | null;
   starting_xp?: number;
+  starting_uxp?: number;  // UXP carried over from previous cycle
   ultimate_cycle_type?: string | null;
   currency?: string;
   onboarding_completed?: boolean;
@@ -660,6 +661,7 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       xpRollover: profile.xp_rollover || 0,
       startingStatus: profile.starting_status || null,
       startingXP: profile.starting_xp || null,
+      startingUXP: profile.starting_uxp || 0,
       ultimateCycleType: profile.ultimate_cycle_type || null,
       currency: profile.currency || 'EUR',
       onboardingCompleted: profile.onboarding_completed || false,
