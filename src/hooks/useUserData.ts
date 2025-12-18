@@ -747,6 +747,8 @@ export function useUserData(): UseUserDataReturn {
       return;
     }
 
+    console.log('[handleStartOver] Wiping all data...');
+
     // Reset ALL data state
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
@@ -763,8 +765,10 @@ export function useUserData(): UseUserDataReturn {
     setIsLocalMode(false);
 
     // Explicitly save empty data to database when user confirms wipe
+    // IMPORTANT: Use null instead of undefined - undefined is not serialized to JSON!
     if (user) {
       try {
+        console.log('[handleStartOver] Clearing database for user:', user.id);
         await Promise.all([
           saveFlights(user.id, []),
           saveMilesRecords(user.id, []),
@@ -772,18 +776,20 @@ export function useUserData(): UseUserDataReturn {
           saveXPLedger(user.id, {}),
           updateProfile(user.id, {
             xp_rollover: 0,
-            qualification_start_month: undefined,
-            starting_status: undefined,
-            starting_xp: undefined,
-            ultimate_cycle_type: undefined,
-            home_airport: undefined,
+            qualification_start_month: null,
+            qualification_start_date: null,  // CRITICAL: Also clear this!
+            starting_status: null,
+            starting_xp: 0,
+            ultimate_cycle_type: null,
+            home_airport: null,
             miles_balance: 0,
             current_uxp: 0,
             target_cpm: 0.012,
           }),
         ]);
+        console.log('[handleStartOver] Database cleared successfully');
       } catch (error) {
-        console.error('Error clearing user data:', error);
+        console.error('[handleStartOver] Error clearing user data:', error);
       }
     }
 
