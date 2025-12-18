@@ -181,7 +181,46 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     // Find suggested cycle settings from most recent requalification
     // Sort requalifications by date descending and take the most recent
     const sortedRequalifications = [...requalifications].sort((a, b) => b.date.localeCompare(a.date));
-    const mostRecentRequalification = sortedRequalifications[0] || null;
+    
+    // DEBUG: Log all requalifications
+    console.log('[PDF Import] Sorted requalifications (newest first):', sortedRequalifications.map(r => ({
+      date: r.date,
+      toStatus: r.toStatus,
+      xpDeducted: r.xpDeducted,
+      rolloverXP: r.rolloverXP
+    })));
+    
+    // Find the most recent requalification
+    // Priority 1: Most recent with matching status to PDF header
+    // Priority 2: Most recent with xpDeducted matching current status threshold
+    // Priority 3: Just the most recent one
+    const pdfHeaderStatusRaw = parseResult.status?.toUpperCase();
+    // Note: xpDeducted is stored as POSITIVE value (300, not -300)
+    const xpThresholds: Record<string, number> = {
+      'PLATINUM': 300,
+      'GOLD': 180,
+      'SILVER': 100,
+    };
+    const expectedXpDeducted = pdfHeaderStatusRaw ? xpThresholds[pdfHeaderStatusRaw] : null;
+    
+    let mostRecentRequalification = sortedRequalifications.find(r => 
+      r.toStatus?.toUpperCase() === pdfHeaderStatusRaw
+    );
+    
+    if (!mostRecentRequalification && expectedXpDeducted) {
+      // Try to find by XP deducted amount
+      mostRecentRequalification = sortedRequalifications.find(r => 
+        r.xpDeducted === expectedXpDeducted
+      );
+      if (mostRecentRequalification) {
+        console.log('[PDF Import] Found requalification by xpDeducted match:', mostRecentRequalification);
+      }
+    }
+    
+    if (!mostRecentRequalification) {
+      // Fall back to just the most recent
+      mostRecentRequalification = sortedRequalifications[0] || null;
+    }
     
     let suggestedCycleStart: string | null = null;
     let suggestedCycleStartDate: string | null = null;  // Full date for precise filtering
@@ -198,7 +237,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       const nextMonth = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
       suggestedCycleStart = nextMonth.toISOString().substring(0, 7); // YYYY-MM
       
-      // Map status
+      // Map status - prefer toStatus, fall back to PDF header status
       const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
         'EXPLORER': 'Explorer',
         'SILVER': 'Silver', 
@@ -206,14 +245,20 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         'PLATINUM': 'Platinum',
         'ULTIMATE': 'Platinum', // Map Ultimate to Platinum for now
       };
-      suggestedStatus = mostRecentRequalification.toStatus 
-        ? statusMap[mostRecentRequalification.toStatus] || null
-        : null;
+      
+      // Use toStatus if available, otherwise infer from PDF header
+      if (mostRecentRequalification.toStatus) {
+        suggestedStatus = statusMap[mostRecentRequalification.toStatus] || null;
+      } else if (pdfHeaderStatusRaw && expectedXpDeducted && mostRecentRequalification.xpDeducted === expectedXpDeducted) {
+        // Infer status from xpDeducted matching PDF header
+        suggestedStatus = statusMap[pdfHeaderStatusRaw] || null;
+        console.log('[PDF Import] Inferred status from xpDeducted:', suggestedStatus);
+      }
       
       // Get rollover XP if available
       suggestedRolloverXP = mostRecentRequalification.rolloverXP ?? null;
       
-      console.log('[PDF Import] Requalification detected:', {
+      console.log('[PDF Import] Best requalification match:', {
         requalDate: mostRecentRequalification.date,
         officialCycleStart: suggestedCycleStart,
         status: suggestedStatus,
@@ -399,19 +444,45 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     // =========================================================================
     let cycleInfo: { cycleStartMonth: string; cycleStartDate?: string; rolloverXP?: number } | undefined;
     
-    // Only use cycle info if the detected requalification matches the current status
+    // Check if we have a valid cycle suggestion
+    // OLD LOGIC: Required suggestedStatus to match pdfHeaderStatus
+    // NEW LOGIC: Trust PDF header as source of truth for status, use requalification for cycle date
     const requalificationMatchesCurrentStatus = 
       summary.suggestedStatus === summary.pdfHeaderStatus;
     
-    if (applyCycleSettings && summary.suggestedCycleStart && requalificationMatchesCurrentStatus) {
+    // More flexible check: Use cycle info if:
+    // 1. We have a suggested cycle start date, AND
+    // 2. Either the status matches, OR the requalification has a valid date close to PDF export
+    const hasValidCycleInfo = summary.suggestedCycleStart && (
+      requalificationMatchesCurrentStatus || 
+      // Fallback: If PDF header status is Platinum and we have ANY requalification,
+      // and the most recent requalification has xpDeducted of 300 (Platinum level),
+      // then it's likely the Platinum requalification even if toStatus wasn't parsed
+      (summary.pdfHeaderStatus === 'Platinum' && summary.requalifications.length > 0 && 
+        summary.requalifications.some(r => r.xpDeducted === 300 || r.toStatus?.toUpperCase() === 'PLATINUM'))
+    );
+    
+    // DEBUG: Log all requalifications to understand cycle detection
+    console.log('[PDF Import] All requalifications:', summary.requalifications);
+    console.log('[PDF Import] Cycle match check:', {
+      suggestedStatus: summary.suggestedStatus,
+      pdfHeaderStatus: summary.pdfHeaderStatus,
+      requalificationMatchesCurrentStatus,
+      hasValidCycleInfo,
+      suggestedCycleStart: summary.suggestedCycleStart,
+    });
+    
+    if (applyCycleSettings && hasValidCycleInfo) {
       cycleInfo = {
-        cycleStartMonth: summary.suggestedCycleStart,
+        cycleStartMonth: summary.suggestedCycleStart!,
         cycleStartDate: summary.suggestedCycleStartDate || undefined,
         rolloverXP: summary.suggestedRolloverXP ?? 0,
       };
       console.log('[PDF Import] Cycle info detected:', cycleInfo);
     } else {
       console.log('[PDF Import] No matching cycle info - user may need to set qualification date manually');
+      console.log('[PDF Import] Reason: applyCycleSettings=', applyCycleSettings, 
+        ', hasValidCycleInfo=', hasValidCycleInfo);
     }
 
     // =========================================================================
