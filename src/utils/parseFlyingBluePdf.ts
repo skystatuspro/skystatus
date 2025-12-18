@@ -762,6 +762,8 @@ export function parseFlyingBlueText(text: string): ParseResult {
         const xpMatch = content.match(/(-\d+)\s*XP/i);
         const xpDeducted = xpMatch ? Math.abs(parseInt(xpMatch[1], 10)) : null;
         
+        console.log('[Parser] XP Deduction detected:', { date: transDate, xpDeducted, content: content.substring(0, 60) });
+        
         // Look for status in the same line first
         let statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s*(?:reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido)/i);
         
@@ -776,25 +778,34 @@ export function parseFlyingBlueText(text: string): ParseResult {
             if (looksLikeNewTransaction(nextLine)) break;
             
             statusMatch = nextLine.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s*(?:reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido)/i);
-            if (statusMatch) break;
+            if (statusMatch) {
+              console.log('[Parser] Status found in look-ahead:', statusMatch[1]);
+              break;
+            }
           }
         }
         
-        // Check if we already have a requalification for this date (from "reached" line)
+        const detectedStatus = statusMatch ? statusMatch[1].toUpperCase() : null;
+        console.log('[Parser] Final detected status:', detectedStatus);
+        
+        // Check if we already have a requalification for this date (from Surplus XP line)
         const existing = requalifications.find(r => r.date === transDate);
         if (existing) {
           existing.xpDeducted = xpDeducted;
           if (statusMatch && !existing.toStatus) {
-            existing.toStatus = statusMatch[1].toUpperCase();
+            existing.toStatus = detectedStatus;
           }
+          console.log('[Parser] Updated existing requalification:', existing);
         } else {
-          requalifications.push({
+          const newEntry = {
             date: transDate,
             fromStatus: null,
-            toStatus: statusMatch ? statusMatch[1].toUpperCase() : null,
+            toStatus: detectedStatus,
             xpDeducted,
             rolloverXP: null,
-          });
+          };
+          requalifications.push(newEntry);
+          console.log('[Parser] Created new requalification:', newEntry);
         }
       }
       
@@ -836,11 +847,13 @@ export function parseFlyingBlueText(text: string): ParseResult {
         /(?:Excess|Überschuss|Eccesso|Exceso)\s*XP/i.test(content)
       ) {
         const { xp } = extractNumbers(content);
+        console.log('[Parser] Surplus XP detected:', { date: transDate, xp, content: content.substring(0, 60) });
         
         // Find the requalification event for this date and add rollover XP
         const existing = requalifications.find(r => r.date === transDate);
         if (existing) {
           existing.rolloverXP = xp;
+          console.log('[Parser] Added rollover to existing requalification');
         } else {
           // Create a new event if somehow we see surplus without seeing deduction first
           requalifications.push({
@@ -850,6 +863,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
             xpDeducted: null,
             rolloverXP: xp,
           });
+          console.log('[Parser] Created new requalification entry with rollover');
         }
       }
       
@@ -899,6 +913,17 @@ export function parseFlyingBlueText(text: string): ParseResult {
   const allDates = flights.map(f => f.date).filter(d => d);
   const oldestDate = allDates.length > 0 ? allDates.reduce((a, b) => a < b ? a : b) : null;
   const newestDate = allDates.length > 0 ? allDates.reduce((a, b) => a > b ? a : b) : null;
+  
+  // Debug: Log all detected requalifications
+  console.log('[Parser] All requalifications detected:', requalifications.length);
+  requalifications.forEach((r, idx) => {
+    console.log(`[Parser] Requalification ${idx + 1}:`, {
+      date: r.date,
+      toStatus: r.toStatus,
+      xpDeducted: r.xpDeducted,
+      rolloverXP: r.rolloverXP
+    });
+  });
   
   return {
     flights,
