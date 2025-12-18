@@ -500,14 +500,14 @@ export async function fetchProfile(userId: string) {
 
 export async function updateProfile(userId: string, updates: {
   target_cpm?: number;
-  qualification_start_month?: string;
-  qualification_start_date?: string;  // Full date (YYYY-MM-DD) for precise XP filtering
+  qualification_start_month?: string | null;
+  qualification_start_date?: string | null;  // Full date (YYYY-MM-DD) for precise XP filtering
   home_airport?: string | null;
   display_name?: string;
   xp_rollover?: number;
-  starting_status?: string;
+  starting_status?: string | null;
   starting_xp?: number;
-  ultimate_cycle_type?: string;
+  ultimate_cycle_type?: string | null;
   currency?: string;
   onboarding_completed?: boolean;
   email_consent?: boolean;

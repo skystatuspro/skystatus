@@ -1022,19 +1022,21 @@ export function useUserData(): UseUserDataReturn {
       }
 
       // Profile updates (qualification settings, xpRollover)
+      // IMPORTANT: Set null explicitly for missing fields to clear old database values
       const profileUpdates: Record<string, unknown> = {};
       if (importData.qualificationSettings) {
-        profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth;
-        profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate;
-        profileUpdates.starting_status = importData.qualificationSettings.startingStatus;
-        profileUpdates.starting_xp = importData.qualificationSettings.startingXP;
-        profileUpdates.ultimate_cycle_type = importData.qualificationSettings.ultimateCycleType;
+        profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth || null;
+        // CRITICAL: Explicitly set to null if not present, to clear any old value
+        profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate || null;
+        profileUpdates.starting_status = importData.qualificationSettings.startingStatus || null;
+        profileUpdates.starting_xp = importData.qualificationSettings.startingXP ?? 0;
+        profileUpdates.ultimate_cycle_type = importData.qualificationSettings.ultimateCycleType || null;
       }
       if (typeof importData.xpRollover === 'number') {
         profileUpdates.xp_rollover = importData.xpRollover;
       }
       if (Object.keys(profileUpdates).length > 0) {
-        console.log('[handleJsonImport] Saving profile updates:', Object.keys(profileUpdates));
+        console.log('[handleJsonImport] Saving profile updates:', profileUpdates);
         savePromises.push(updateProfile(user.id, profileUpdates));
       }
 
