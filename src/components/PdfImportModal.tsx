@@ -176,12 +176,18 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     let suggestedCycleStart: string | null = null;
     let suggestedCycleStartDate: string | null = null;  // Full date for precise filtering
     let suggestedStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null = null;
+    let suggestedRolloverXP: number | null = null;  // Rollover XP from previous cycle
     
     if (mostRecentRequalification) {
-      // Keep the full date for precise XP calculation
+      // Keep the full date for precise XP calculation (flights AFTER this date count)
       suggestedCycleStartDate = mostRecentRequalification.date; // Full date YYYY-MM-DD
-      // Convert date (YYYY-MM-DD) to month (YYYY-MM)
-      suggestedCycleStart = mostRecentRequalification.date.substring(0, 7);
+      
+      // IMPORTANT: Flying Blue official cycle starts on 1st of NEXT month after requalification
+      // Example: Reached Platinum on 2025-10-08 → Official cycle month is 2025-11
+      const requalDate = new Date(mostRecentRequalification.date);
+      const nextMonth = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
+      suggestedCycleStart = nextMonth.toISOString().substring(0, 7); // YYYY-MM
+      
       // Map status
       const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
         'EXPLORER': 'Explorer',
@@ -193,6 +199,17 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       suggestedStatus = mostRecentRequalification.toStatus 
         ? statusMap[mostRecentRequalification.toStatus] || null
         : null;
+      
+      // Get rollover XP if available
+      suggestedRolloverXP = mostRecentRequalification.rolloverXP ?? null;
+      
+      console.log('[PDF Import] Requalification detected:', {
+        requalDate: mostRecentRequalification.date,
+        officialCycleStart: suggestedCycleStart,
+        status: suggestedStatus,
+        xpDeducted: mostRecentRequalification.xpDeducted,
+        rolloverXP: suggestedRolloverXP
+      });
     }
 
     // PDF HEADER STATUS = SOURCE OF TRUTH
@@ -236,6 +253,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       suggestedCycleStart,
       suggestedCycleStartDate,  // Full date for precise filtering
       suggestedStatus,
+      suggestedRolloverXP,  // Rollover XP from previous cycle
       // PDF HEADER = SOURCE OF TRUTH
       pdfHeaderStatus,  // Official status from PDF header
       pdfTotalMiles: parseResult.totalMiles,  // Official miles balance
@@ -386,16 +404,28 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     
     if (applyCycleSettings && summary.suggestedCycleStart && summary.suggestedStatus && requalificationMatchesCurrentStatus) {
       // Requalification event represents reaching the CURRENT status - safe to use cycle data
-      // Calculate rollover XP: how much XP was "left over" after reaching the threshold
-      const previousStatus = getPreviousStatus(summary.suggestedStatus);
-      const rolloverXP = summary.suggestedCycleStartDate 
-        ? calculateRolloverXP(
-            summary.flights,  // All flights from PDF
-            summary.suggestedCycleStartDate,  // Date when new status was achieved
-            previousStatus,  // Status before the upgrade
-            0  // Starting XP (beginning of that cycle)
-          )
-        : 0;
+      
+      // PREFER: Use rollover XP directly from PDF (extracted from "Surplus XP beschikbaar" line)
+      // This is the most accurate value as it comes directly from Flying Blue
+      let rolloverXP = summary.suggestedRolloverXP ?? 0;
+      
+      // FALLBACK: Calculate rollover XP if not extracted from PDF
+      // This calculates how much XP was "left over" after reaching the threshold
+      if (rolloverXP === 0 && summary.suggestedCycleStartDate) {
+        const previousStatus = getPreviousStatus(summary.suggestedStatus);
+        rolloverXP = calculateRolloverXP(
+          summary.flights,  // All flights from PDF
+          summary.suggestedCycleStartDate,  // Date when new status was achieved
+          previousStatus,  // Status before the upgrade
+          0  // Starting XP (beginning of that cycle)
+        );
+      }
+      
+      console.log('[PDF Import] Rollover XP:', {
+        fromPdf: summary.suggestedRolloverXP,
+        calculated: rolloverXP,
+        using: rolloverXP
+      });
       
       // Use PDF HEADER STATUS if available (official Flying Blue status)
       // Fall back to suggested status only if header is not available
@@ -405,7 +435,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         cycleStartMonth: summary.suggestedCycleStart,
         cycleStartDate: summary.suggestedCycleStartDate || undefined,  // Full date for precise XP filtering
         startingStatus: officialStatus,  // USE OFFICIAL PDF STATUS
-        startingXP: rolloverXP,  // Rollover from the level-up
+        startingXP: rolloverXP,  // Rollover from the level-up (PDF value or calculated)
         // Pass PDF header info for validation in useUserData
         pdfHeaderStatus: summary.pdfHeaderStatus,
       };

@@ -148,6 +148,8 @@ export interface RequalificationEvent {
   date: string;
   fromStatus: string | null;
   toStatus: string | null;
+  xpDeducted: number | null;    // XP cost to reach new status (e.g., -300 for Platinum)
+  rolloverXP: number | null;    // Surplus XP carried over to new cycle
 }
 
 export interface ParseResult {
@@ -728,32 +730,149 @@ export function parseFlyingBlueText(text: string): ParseResult {
         }
       }
       
-      // === REQUALIFICATION EVENTS ===
-      // Detect status renewal/requalification in all supported languages
-      // EN: "XP Counter offset", "Requalification", "Status renewed"
-      // NL: "XP teller offset", "Herkwalificatie", "Gekwalificeerd", "Status verlengd"
-      // FR: "Requalification", "Qualifié", "Statut renouvelé"
-      // DE: "Qualifikation", "Qualifiziert", "Status erneuert"
-      // IT: "Riqualificazione", "Qualificato", "Stato rinnovato"
-      // ES: "Recalificación", "Calificado", "Estado renovado"
-      // PT: "Requalificação", "Qualificado", "Estado renovado"
+      // === AIR ADJUSTMENTS (retroactive XP corrections) ===
+      // Flying Blue sometimes applies retroactive XP corrections
+      // EN: "Air adjustment", NL: "Luchtvaartcorrectie", FR: "Ajustement aérien"
+      // DE: "Flugkorrektur", IT: "Correzione aerea", ES: "Ajuste aéreo", PT: "Ajuste aéreo"
       else if (
-        /XP.?(?:Counter|teller|compteur|Zähler|contatore|contador).?(?:offset|reset|compensat)/i.test(content) ||
+        /Air\s*adjustment/i.test(content) ||
+        /Luchtvaart\s*correctie/i.test(content) ||
+        /Ajustement\s*aérien/i.test(content) ||
+        /Flugkorrektur/i.test(content) ||
+        /Correzione\s*aerea/i.test(content) ||
+        /Ajuste\s*aéreo/i.test(content)
+      ) {
+        const { xp } = extractNumbers(content);
+        if (xp > 0) {
+          getOrCreateMonth(month).bonusXp += xp;
+        }
+      }
+      
+      // === XP DEDUCTION (Status Level-Up) ===
+      // When you reach a new status, Flying Blue deducts the required XP from your counter
+      // This is the primary indicator that a new qualification cycle started
+      // EN: "XP Counter deduction", NL: "Aftrek XP-teller", FR: "Déduction compteur XP"
+      // DE: "XP-Zähler Abzug", IT: "Deduzione contatore XP", ES: "Deducción contador XP"
+      else if (
+        /Aftrek\s*XP[- ]?teller/i.test(content) ||
+        /XP[- ]?(?:Counter|teller|compteur|Zähler|contatore|contador)\s*(?:deduct|offset|aftrek|déduction|abzug|deduzione|deducción)/i.test(content) ||
+        /(?:deduct|offset|aftrek|déduction|abzug|deduzione|deducción).*XP[- ]?(?:Counter|teller|compteur|Zähler|contatore|contador)/i.test(content)
+      ) {
+        // Extract the negative XP value (e.g., -300 for Platinum)
+        const xpMatch = content.match(/(-\d+)\s*XP/i);
+        const xpDeducted = xpMatch ? Math.abs(parseInt(xpMatch[1], 10)) : null;
+        
+        // Look for status in the same line first
+        let statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s*(?:reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido)/i);
+        
+        // If not found, look ahead at next few lines for "reached" pattern
+        // The status line often appears on a separate line without a date prefix
+        // Example: Line 218: "8 okt 2025Aftrek XP-teller0 Miles-300 XP"
+        //          Line 219: "Qualification period ended / Platinum reached0 Miles-300 XP"
+        if (!statusMatch) {
+          for (let k = i + 1; k < Math.min(i + 4, lines.length); k++) {
+            const nextLine = lines[k];
+            // Stop if we hit a new dated transaction
+            if (looksLikeNewTransaction(nextLine)) break;
+            
+            statusMatch = nextLine.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s*(?:reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido)/i);
+            if (statusMatch) break;
+          }
+        }
+        
+        // Check if we already have a requalification for this date (from "reached" line)
+        const existing = requalifications.find(r => r.date === transDate);
+        if (existing) {
+          existing.xpDeducted = xpDeducted;
+          if (statusMatch && !existing.toStatus) {
+            existing.toStatus = statusMatch[1].toUpperCase();
+          }
+        } else {
+          requalifications.push({
+            date: transDate,
+            fromStatus: null,
+            toStatus: statusMatch ? statusMatch[1].toUpperCase() : null,
+            xpDeducted,
+            rolloverXP: null,
+          });
+        }
+      }
+      
+      // === STATUS REACHED (Qualification period ended) ===
+      // EN: "Qualification period ended / Silver reached", "Gold reached", "Platinum reached"
+      // NL: "Kwalificatieperiode beëindigd / Gold bereikt", etc.
+      // This often appears together with or near the XP deduction
+      else if (
+        /(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s*(?:reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido)/i.test(content) ||
+        /(?:Qualification|Kwalificatie).*(?:period|periode).*(?:ended|beëindigd|terminée|beendet|terminato|terminado)/i.test(content)
+      ) {
+        const statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
+        const status = statusMatch ? statusMatch[1].toUpperCase() : null;
+        
+        // Check if we already have a requalification for this date (from XP deduction line)
+        const existing = requalifications.find(r => r.date === transDate);
+        if (existing) {
+          if (status && !existing.toStatus) {
+            existing.toStatus = status;
+          }
+        } else {
+          requalifications.push({
+            date: transDate,
+            fromStatus: null,
+            toStatus: status,
+            xpDeducted: null,
+            rolloverXP: null,
+          });
+        }
+      }
+      
+      // === SURPLUS XP (Rollover to new cycle) ===
+      // When you level up with more XP than required, the excess is carried over
+      // EN: "Surplus XP available", NL: "Surplus XP beschikbaar", FR: "XP excédentaires disponibles"
+      // DE: "Überschüssige XP verfügbar", IT: "XP in eccesso disponibili", ES: "XP excedentes disponibles"
+      else if (
+        /Surplus\s*XP\s*(?:beschikbaar|available|disponibles?|verfügbar|disponibili)/i.test(content) ||
+        /XP\s*(?:excédentaires?|überschüssige?|eccesso|excedentes?)\s*(?:disponibles?|verfügbar|disponibili)/i.test(content) ||
+        /(?:Excess|Überschuss|Eccesso|Exceso)\s*XP/i.test(content)
+      ) {
+        const { xp } = extractNumbers(content);
+        
+        // Find the requalification event for this date and add rollover XP
+        const existing = requalifications.find(r => r.date === transDate);
+        if (existing) {
+          existing.rolloverXP = xp;
+        } else {
+          // Create a new event if somehow we see surplus without seeing deduction first
+          requalifications.push({
+            date: transDate,
+            fromStatus: null,
+            toStatus: null,
+            xpDeducted: null,
+            rolloverXP: xp,
+          });
+        }
+      }
+      
+      // === LEGACY REQUALIFICATION PATTERNS ===
+      // Keep older detection patterns as fallback
+      // EN: "Requalification", NL: "Herkwalificatie", FR: "Requalification"
+      else if (
         /[Rr]e?qualifi(?:cation|catie|cazione|cación|cação|ed|é|ziert|cato|cado)/i.test(content) ||
         /[Hh]erkwalifi/i.test(content) ||
         /[Gg]ekwalificeerd/i.test(content) ||
-        /[Qq]ualifi(?:é|ziert|cato|cado)/i.test(content) ||
-        /[Ss]tatus.*(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado)/i.test(content) ||
-        /(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado).*[Ss]tatus/i.test(content) ||
-        /[Ss]tat(?:o|ut|us).*(?:rinnovato|renouvelé|erneuert|renovado)/i.test(content)
+        /[Ss]tatus.*(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado)/i.test(content)
       ) {
-        // Detect requalification/status renewal events
         const statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
-        requalifications.push({
-          date: transDate,
-          fromStatus: null, // Could potentially parse "from X to Y" patterns
-          toStatus: statusMatch ? statusMatch[1].toUpperCase() : null,
-        });
+        const existing = requalifications.find(r => r.date === transDate);
+        if (!existing) {
+          requalifications.push({
+            date: transDate,
+            fromStatus: null,
+            toStatus: statusMatch ? statusMatch[1].toUpperCase() : null,
+            xpDeducted: null,
+            rolloverXP: null,
+          });
+        }
       }
       
       // === OTHER ===
