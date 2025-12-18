@@ -230,16 +230,6 @@ export function useUserData(): UseUserDataReturn {
   // PDF Baseline - Source of truth from most recent PDF import
   const [pdfBaseline, setPdfBaselineInternal] = useState<PdfBaseline | null>(null);
   
-  // DEBUG: Log whenever pdfBaseline state changes
-  useEffect(() => {
-    console.log('[useUserData] pdfBaseline state changed:', {
-      hasPdfBaseline: !!pdfBaseline,
-      pdfBaseline: pdfBaseline,
-      xp: pdfBaseline?.xp,
-      status: pdfBaseline?.status,
-    });
-  }, [pdfBaseline]);
-  
   // Track if we've attempted to load data (prevents flash of empty state)
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 

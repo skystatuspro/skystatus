@@ -330,12 +330,30 @@ export function parseFlyingBlueText(text: string): ParseResult {
       if (i > 0 && /^[A-Z\s]+$/.test(lines[i-1].trim()) && lines[i-1].trim().length > 3) {
         memberName = lines[i-1].trim();
       }
-      // Status is typically one line after
+      // Status is typically one line after - can be standalone or with date/page info
       if (i < lines.length - 1) {
         const nextLine = lines[i+1].trim();
+        // Match standalone status
         if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(nextLine)) {
           status = nextLine.toUpperCase();
-          console.log('[Parser] Status found (after Flying Blue-nummer):', status);
+          console.log('[Parser] Status found (exact match after Flying Blue-nummer):', status);
+        }
+        // Match status followed by date/page info (e.g., "PLATINUM 11 dec 2025 • Pagina 1/18")
+        else {
+          const statusWithDateMatch = nextLine.match(/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s+\d/i);
+          if (statusWithDateMatch) {
+            status = statusWithDateMatch[1].toUpperCase();
+            console.log('[Parser] Status found (with date after Flying Blue-nummer):', status);
+          }
+        }
+      }
+      // Check if status is on SAME line as Flying Blue-nummer (combined header)
+      // Pattern: "Flying Blue-nummer: 4629294326 PLATINUM" or similar
+      if (!status) {
+        const sameLineMatch = lines[i].match(/Flying Blue[- ]?(?:nummer|number)[:\s]+\d+\s+(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
+        if (sameLineMatch) {
+          status = sameLineMatch[1].toUpperCase();
+          console.log('[Parser] Status found (same line as Flying Blue-nummer):', status);
         }
       }
       break; // Found it, stop searching
@@ -366,9 +384,23 @@ export function parseFlyingBlueText(text: string): ParseResult {
     }
   }
   
-  // Priority 2: Status in a line, but NOT in credit card context
+  // Priority 2: Status starting a line followed by date (PDF header pattern)
+  // E.g., "PLATINUM 11 dec 2025 • Pagina 1/18"
   if (!status) {
-    for (let i = 0; i < Math.min(50, lines.length); i++) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const headerPatternMatch = line.match(/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s+\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i);
+      if (headerPatternMatch) {
+        status = headerPatternMatch[1].toUpperCase();
+        console.log('[Parser] Status found (header with date pattern) at line', i, ':', status, 'from:', line);
+        break;
+      }
+    }
+  }
+  
+  // Priority 3: Status in a line, but NOT in credit card context (search ALL lines now)
+  if (!status) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
       // Skip lines that are clearly credit card references
@@ -378,6 +410,11 @@ export function parseFlyingBlueText(text: string): ParseResult {
       
       // Skip transaction lines (start with date)
       if (/^\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i.test(line)) {
+        continue;
+      }
+      
+      // Skip lines with "reached/bereikt" - these are requalification events, not current status
+      if (/reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido/i.test(line)) {
         continue;
       }
       

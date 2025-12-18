@@ -118,14 +118,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     [state.qualificationSettings]
   );
 
-  // DEBUG: Log pdfBaseline value to trace why it's undefined
-  console.log('[Dashboard] state.pdfBaseline:', {
-    hasPdfBaseline: !!state.pdfBaseline,
-    pdfBaseline: state.pdfBaseline,
-    xp: state.pdfBaseline?.xp,
-    status: state.pdfBaseline?.status,
-  });
-
   const { cycles } = useMemo(
     () =>
       calculateQualificationCycles(
