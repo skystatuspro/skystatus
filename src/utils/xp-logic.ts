@@ -8,6 +8,7 @@ import {
   ManualLedger,
   ManualMonthXP,
   StatusLevel,
+  PdfBaseline,
 } from '../types';
 import {
   PLATINUM_THRESHOLD,
@@ -1148,7 +1149,8 @@ export const calculateQualificationCycles = (
     startingStatus: StatusLevel; 
     startingXP: number;
     ultimateCycleType?: 'qualification' | 'calendar';
-  } | null
+  } | null,
+  pdfBaseline?: PdfBaseline | null  // PDF header values as source of truth
 ): MultiCycleStats => {
   // cycleStartDate = the date you QUALIFIED (e.g., 2025-10-07)
   // Flights AFTER this date count towards the NEW cycle
@@ -1408,6 +1410,54 @@ export const calculateQualificationCycles = (
     if (cycleStartMonth > maxRelevantMonth) {
       break;
     }
+  }
+
+  // ============================================================================
+  // PDF BASELINE OVERRIDE
+  // When a PDF baseline is provided, use it as source of truth for actual values
+  // This ensures the dashboard shows exactly what Flying Blue reports
+  // ============================================================================
+  if (pdfBaseline && cycles.length > 0) {
+    const activeCycle = cycles[cycles.length - 1];
+    
+    // Calculate XP delta from manual flights added AFTER the PDF export date
+    const manualFlightsAfterPdf = (flights ?? []).filter(f => 
+      f.importSource === 'manual' && f.date > pdfBaseline.pdfExportDate
+    );
+    
+    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+    );
+    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.uxp || 0), 0
+    );
+    
+    // Override actual values with baseline + manual delta
+    activeCycle.actualXP = pdfBaseline.xp + deltaXP;
+    activeCycle.actualUXP = pdfBaseline.uxp + deltaUXP;
+    activeCycle.actualStatus = pdfBaseline.status as StatusLevel;
+    
+    // Recalculate XP needed to next status
+    const statusThresholds: Record<StatusLevel, number> = {
+      Explorer: SILVER_THRESHOLD,
+      Silver: GOLD_THRESHOLD,
+      Gold: PLATINUM_THRESHOLD,
+      Platinum: PLATINUM_THRESHOLD, // Already at top (excluding Ultimate)
+    };
+    const nextThreshold = statusThresholds[activeCycle.actualStatus] || PLATINUM_THRESHOLD;
+    activeCycle.actualXPToNext = Math.max(0, nextThreshold - activeCycle.actualXP);
+    
+    // Also update currentXP for backwards compatibility
+    activeCycle.currentXP = activeCycle.actualXP;
+    activeCycle.currentXPToNext = activeCycle.actualXPToNext;
+    
+    console.log('[XP Engine] PDF baseline applied:', {
+      baselineXP: pdfBaseline.xp,
+      deltaXP,
+      finalActualXP: activeCycle.actualXP,
+      baselineStatus: pdfBaseline.status,
+      manualFlightsCount: manualFlightsAfterPdf.length,
+    });
   }
 
   // Apply calendar year UXP calculation if needed

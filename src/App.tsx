@@ -391,6 +391,7 @@ export default function App() {
             onUpdateManualLedger={actions.handleManualXPLedgerUpdate}
             qualificationSettings={state.qualificationSettings}
             onUpdateQualificationSettings={actions.handleQualificationSettingsUpdate}
+            pdfBaseline={state.pdfBaseline}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
           />
         );
