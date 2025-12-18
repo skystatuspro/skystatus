@@ -6,6 +6,7 @@ import { useAuth } from '../lib/AuthContext';
 import {
   fetchAllUserData,
   saveFlights,
+  replaceAllFlights,
   saveMilesRecords,
   saveRedemptions,
   saveXPLedger,
@@ -1003,8 +1004,9 @@ export function useUserData(): UseUserDataReturn {
       const savePromises: Promise<boolean>[] = [];
 
       if (importData.flights) {
-        console.log('[handleJsonImport] Saving', importData.flights.length, 'flights');
-        savePromises.push(saveFlights(user.id, importData.flights));
+        console.log('[handleJsonImport] Replacing all flights with', importData.flights.length, 'new flights');
+        // Use replaceAllFlights to delete all existing and insert with fresh IDs
+        savePromises.push(replaceAllFlights(user.id, importData.flights));
       }
       if (importData.baseMilesData) {
         console.log('[handleJsonImport] Saving', importData.baseMilesData.length, 'miles records');

@@ -122,6 +122,57 @@ export async function saveFlights(userId: string, flights: FlightRecord[]): Prom
   return true;
 }
 
+// Replace ALL flights for a user (delete all, then insert with new IDs)
+// Use this for JSON import where IDs may not match current user
+export async function replaceAllFlights(userId: string, flights: FlightRecord[]): Promise<boolean> {
+  // Step 1: Delete ALL existing flights for this user
+  const { error: deleteError } = await supabase
+    .from('flights')
+    .delete()
+    .eq('user_id', userId);
+  
+  if (deleteError) {
+    console.error('Error deleting existing flights:', deleteError);
+    return false;
+  }
+
+  // If no flights to insert, we're done
+  if (flights.length === 0) {
+    return true;
+  }
+
+  // Step 2: Insert new flights with fresh UUIDs
+  const records = flights.map(flight => {
+    const [origin, destination] = flight.route?.split('-') || ['???', '???'];
+    return {
+      id: crypto.randomUUID(), // Generate NEW ID for this user
+      user_id: userId,
+      date: flight.date,
+      origin: origin || '???',
+      destination: destination || '???',
+      airline: flight.airline,
+      cabin_class: flight.cabin,
+      ticket_price: flight.ticketPrice,
+      miles_earned: flight.earnedMiles,
+      xp_earned: flight.earnedXP,
+      saf_xp: flight.safXp || 0,
+      uxp: flight.uxp || 0,
+      is_scheduled: new Date(flight.date) > new Date(),
+    };
+  });
+
+  const { error: insertError } = await supabase
+    .from('flights')
+    .insert(records);
+
+  if (insertError) {
+    console.error('Error inserting flights:', insertError);
+    return false;
+  }
+
+  return true;
+}
+
 export async function deleteFlight(flightId: string): Promise<boolean> {
   const { error } = await supabase
     .from('flights')
@@ -382,15 +433,21 @@ export async function saveRedemption(userId: string, redemption: RedemptionRecor
 
 export async function saveRedemptions(userId: string, redemptions: RedemptionRecord[]): Promise<boolean> {
   // Delete all existing redemptions for this user
-  await supabase
+  const { error: deleteError } = await supabase
     .from('redemptions')
     .delete()
     .eq('user_id', userId);
 
+  if (deleteError) {
+    console.error('Error deleting existing redemptions:', deleteError);
+    // Continue anyway - maybe there were none
+  }
+
   if (redemptions.length === 0) return true;
 
+  // Generate NEW IDs to avoid conflicts with IDs from other users/backups
   const records = redemptions.map(r => ({
-    id: r.id,
+    id: crypto.randomUUID(), // Fresh ID for this user
     user_id: userId,
     date: r.date,
     description: r.description,
