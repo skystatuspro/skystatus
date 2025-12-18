@@ -310,6 +310,13 @@ export function parseFlyingBlueText(text: string): ParseResult {
   // Debug: log first 15 lines to understand PDF structure
   console.log('[Parser] First 15 lines of PDF:', lines.slice(0, 15));
   
+  // Debug: Find ALL lines containing status words
+  const statusLines = lines
+    .map((line, idx) => ({ line, idx }))
+    .filter(({ line }) => /PLATINUM|GOLD|SILVER|EXPLORER|ULTIMATE/i.test(line));
+  console.log('[Parser] All lines containing status words:', statusLines);
+  
+  // First pass: look for totals and member info in first 20 lines
   for (let i = 0; i < Math.min(20, lines.length); i++) {
     const line = lines[i];
     
@@ -317,26 +324,6 @@ export function parseFlyingBlueText(text: string): ParseResult {
     const memberMatch = line.match(/Flying Blue[- ]?(?:nummer|number)[:\s]+(\d+)/i);
     if (memberMatch) {
       memberNumber = memberMatch[1];
-    }
-    
-    // Status pattern - multiple approaches:
-    // 1. Exact match on line (original)
-    if (!status && /^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
-      status = line.toUpperCase();
-      console.log('[Parser] Status found (exact line match):', status);
-    }
-    
-    // 2. Status as part of a line (e.g., "Status: Platinum" or "Platinum member")
-    if (!status) {
-      const statusInLineMatch = line.match(/\b(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\b/i);
-      if (statusInLineMatch) {
-        // Avoid false positives from transaction lines
-        const isTransactionLine = /^\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i.test(line);
-        if (!isTransactionLine) {
-          status = statusInLineMatch[1].toUpperCase();
-          console.log('[Parser] Status found (in-line match):', status, 'from line:', line);
-        }
-      }
     }
     
     // Totals pattern: "248928 Miles 183 XP 40 UXP"
@@ -351,6 +338,41 @@ export function parseFlyingBlueText(text: string): ParseResult {
     // Name is typically the first line (all caps)
     if (i === 0 && /^[A-Z\s]+$/.test(line) && line.length > 3) {
       memberName = line;
+    }
+  }
+  
+  // Second pass: search ALL lines for status (it might be anywhere due to PDF extraction order)
+  // Priority 1: Exact standalone status line
+  for (let i = 0; i < lines.length && !status; i++) {
+    const line = lines[i].trim();
+    if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
+      status = line.toUpperCase();
+      console.log('[Parser] Status found (exact standalone match) at line', i, ':', status);
+      break;
+    }
+  }
+  
+  // Priority 2: Status in a line, but NOT in credit card context
+  if (!status) {
+    for (let i = 0; i < Math.min(50, lines.length); i++) {
+      const line = lines[i];
+      
+      // Skip lines that are clearly credit card references
+      if (/AMERICAN\s+EXPRESS|PLATINUM\s+CARD|CREDIT\s*CARD|AMEX/i.test(line)) {
+        continue;
+      }
+      
+      // Skip transaction lines (start with date)
+      if (/^\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i.test(line)) {
+        continue;
+      }
+      
+      const statusInLineMatch = line.match(/\b(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\b/i);
+      if (statusInLineMatch) {
+        status = statusInLineMatch[1].toUpperCase();
+        console.log('[Parser] Status found (in-line match) at line', i, ':', status, 'from:', line);
+        break;
+      }
     }
   }
   
