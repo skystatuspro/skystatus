@@ -2,7 +2,7 @@
 // Main Dashboard component - Command Center
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
+import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, PdfBaseline } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -51,6 +51,7 @@ interface DashboardState {
   targetCPM: number;
   manualLedger: ManualLedger;
   qualificationSettings?: QualificationSettings | null;
+  pdfBaseline?: PdfBaseline | null;
 }
 
 interface DashboardProps {
@@ -117,6 +118,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     [state.qualificationSettings]
   );
 
+  // DEBUG: Log pdfBaseline value to trace why it's undefined
+  console.log('[Dashboard] state.pdfBaseline:', {
+    hasPdfBaseline: !!state.pdfBaseline,
+    pdfBaseline: state.pdfBaseline,
+    xp: state.pdfBaseline?.xp,
+    status: state.pdfBaseline?.status,
+  });
+
   const { cycles } = useMemo(
     () =>
       calculateQualificationCycles(
@@ -124,9 +133,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         state.xpRollover,
         state.flights,
         state.manualLedger,
-        normalizedSettings
+        normalizedSettings,
+        state.pdfBaseline
       ),
-    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings]
+    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings, state.pdfBaseline]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);

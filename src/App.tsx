@@ -311,6 +311,14 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   const renderContent = () => {
+    // DEBUG: Log pdfBaseline before passing to Dashboard
+    if (view === 'dashboard') {
+      console.log('[App.tsx] Passing to Dashboard - state.pdfBaseline:', {
+        hasPdfBaseline: !!state.pdfBaseline,
+        pdfBaseline: state.pdfBaseline,
+      });
+    }
+    
     switch (view) {
       case 'dashboard':
         return (
