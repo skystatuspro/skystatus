@@ -445,31 +445,20 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     let cycleInfo: { cycleStartMonth: string; cycleStartDate?: string; rolloverXP?: number } | undefined;
     
     // Check if we have a valid cycle suggestion
-    // OLD LOGIC: Required suggestedStatus to match pdfHeaderStatus
-    // NEW LOGIC: Trust PDF header as source of truth for status, use requalification for cycle date
-    const requalificationMatchesCurrentStatus = 
-      summary.suggestedStatus === summary.pdfHeaderStatus;
-    
-    // More flexible check: Use cycle info if:
-    // 1. We have a suggested cycle start date, AND
-    // 2. Either the status matches, OR the requalification has a valid date close to PDF export
-    const hasValidCycleInfo = summary.suggestedCycleStart && (
-      requalificationMatchesCurrentStatus || 
-      // Fallback: If PDF header status is Platinum and we have ANY requalification,
-      // and the most recent requalification has xpDeducted of 300 (Platinum level),
-      // then it's likely the Platinum requalification even if toStatus wasn't parsed
-      (summary.pdfHeaderStatus === 'Platinum' && summary.requalifications.length > 0 && 
-        summary.requalifications.some(r => r.xpDeducted === 300 || r.toStatus?.toUpperCase() === 'PLATINUM'))
-    );
+    // SIMPLIFIED LOGIC: 
+    // - PDF header status is the SOURCE OF TRUTH for current status
+    // - Most recent requalification date is used for cycle start
+    // - We don't need the requalification toStatus to match - it might not be parsed correctly
+    const hasValidCycleInfo = summary.suggestedCycleStart && summary.pdfHeaderStatus && summary.requalifications.length > 0;
     
     // DEBUG: Log all requalifications to understand cycle detection
     console.log('[PDF Import] All requalifications:', summary.requalifications);
     console.log('[PDF Import] Cycle match check:', {
       suggestedStatus: summary.suggestedStatus,
       pdfHeaderStatus: summary.pdfHeaderStatus,
-      requalificationMatchesCurrentStatus,
       hasValidCycleInfo,
       suggestedCycleStart: summary.suggestedCycleStart,
+      requalificationsCount: summary.requalifications.length,
     });
     
     if (applyCycleSettings && hasValidCycleInfo) {
@@ -482,7 +471,10 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     } else {
       console.log('[PDF Import] No matching cycle info - user may need to set qualification date manually');
       console.log('[PDF Import] Reason: applyCycleSettings=', applyCycleSettings, 
-        ', hasValidCycleInfo=', hasValidCycleInfo);
+        ', hasValidCycleInfo=', hasValidCycleInfo,
+        ', suggestedCycleStart=', summary.suggestedCycleStart,
+        ', pdfHeaderStatus=', summary.pdfHeaderStatus,
+        ', requalificationsCount=', summary.requalifications.length);
     }
 
     // =========================================================================
