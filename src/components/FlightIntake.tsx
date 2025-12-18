@@ -68,7 +68,7 @@ const getAirlineByCode = (code: string): AirlineInfo | undefined => {
 
 interface FlightIntakeProps {
   onApply: (flights: FlightIntakePayload[]) => void;
-  currentStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+  currentStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
   existingFlights?: FlightRecord[]; // For duplicate detection
 }
 
@@ -340,10 +340,11 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     if (!canSubmit || submitting) return;
     setSubmitting(true);
 
-    // UXP is ONLY earned on KLM and Air France flights (NOT Transavia/HV or partners)
+    // UXP is ONLY earned by Platinum/Ultimate members on KLM and Air France flights
     // SAF XP also counts towards UXP for KL/AF
     const uxpAirlines = ['KL', 'KLM', 'AF'];
-    const isUxpEligible = uxpAirlines.includes(form.airline.toUpperCase());
+    const isUxpEligible = uxpAirlines.includes(form.airline.toUpperCase()) 
+      && (currentStatus === 'Platinum' || currentStatus === 'Ultimate');
 
     const payloads: FlightIntakePayload[] = segments.map((seg, index) => ({
         date: form.date,
@@ -356,7 +357,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         safXp: index === 0 ? form.safXp : 0,
         // flightNumber only for single-segment flights (multi-segment has multiple flight numbers)
         flightNumber: segments.length === 1 ? form.flightNumber : undefined,
-        // UXP = XP + SAF XP for KL/AF flights only, 0 for all others (including HV)
+        // UXP = XP + SAF XP for KL/AF flights, ONLY for Platinum/Ultimate members
         uxp: isUxpEligible ? seg.xp + (index === 0 ? form.safXp : 0) : 0,
     }));
 
