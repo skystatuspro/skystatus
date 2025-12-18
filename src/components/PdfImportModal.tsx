@@ -178,22 +178,10 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     let suggestedStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | null = null;
     
     if (mostRecentRequalification) {
-      // Keep the full date for precise XP calculation (flight filtering)
+      // Keep the full date for precise XP calculation
       suggestedCycleStartDate = mostRecentRequalification.date; // Full date YYYY-MM-DD
-      
-      // IMPORTANT: The official Flying Blue cycle starts on the 1st of the NEXT month
-      // E.g., if you qualified on Oct 8, your new cycle officially starts Nov 1
-      // Calculate the next month for cycleStartMonth (used for manual ledger filtering)
-      const qualDate = new Date(mostRecentRequalification.date + 'T00:00:00');
-      const nextMonth = new Date(qualDate.getFullYear(), qualDate.getMonth() + 1, 1);
-      suggestedCycleStart = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
-      
-      console.log('[PDF Import] Requalification detected:', {
-        qualificationDate: mostRecentRequalification.date,
-        officialCycleStart: suggestedCycleStart,
-        status: mostRecentRequalification.toStatus,
-      });
-      
+      // Convert date (YYYY-MM-DD) to month (YYYY-MM)
+      suggestedCycleStart = mostRecentRequalification.date.substring(0, 7);
       // Map status
       const statusMap: Record<string, 'Explorer' | 'Silver' | 'Gold' | 'Platinum'> = {
         'EXPLORER': 'Explorer',

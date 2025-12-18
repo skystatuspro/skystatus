@@ -742,13 +742,10 @@ export function parseFlyingBlueText(text: string): ParseResult {
         /[Rr]e?qualifi(?:cation|catie|cazione|cación|cação|ed|é|ziert|cato|cado)/i.test(content) ||
         /[Hh]erkwalifi/i.test(content) ||
         /[Gg]ekwalificeerd/i.test(content) ||
-        /[Qq]ualifi(?:cation|é|ziert|cato|cado)/i.test(content) ||  // Added "cation" for English
+        /[Qq]ualifi(?:é|ziert|cato|cado)/i.test(content) ||
         /[Ss]tatus.*(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado)/i.test(content) ||
         /(?:renewed|verlengd|renouvelé|erneuert|rinnovato|renovado).*[Ss]tatus/i.test(content) ||
-        /[Ss]tat(?:o|ut|us).*(?:rinnovato|renouvelé|erneuert|renovado)/i.test(content) ||
-        /(?:EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s*reached/i.test(content) ||  // "Platinum reached"
-        /period\s*ended/i.test(content) ||  // "Qualification period ended"
-        /Aftrek\s*XP/i.test(content)  // Dutch "Aftrek XP-teller" = XP counter deduction
+        /[Ss]tat(?:o|ut|us).*(?:rinnovato|renouvelé|erneuert|renovado)/i.test(content)
       ) {
         // Detect requalification/status renewal events
         const statusMatch = content.match(/(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
