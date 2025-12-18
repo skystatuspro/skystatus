@@ -182,8 +182,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         manualLedgerMonths: parsed.manualLedger ? Object.keys(parsed.manualLedger).length : 0,
       };
 
+      console.log('[JSON Import] Starting import with counts:', importedCounts);
+      console.log('[JSON Import] handleJsonImport available:', !!handleJsonImport);
+      console.log('[JSON Import] isLoggedIn:', isLoggedIn);
+
       // Use handleJsonImport for direct database write + state update
+      // handleJsonImport internally checks for user/demo/local mode
       if (handleJsonImport) {
+        console.log('[JSON Import] Using handleJsonImport for database write');
         const success = await handleJsonImport({
           flights: parsed.flights,
           baseMilesData: parsed.baseMilesData,
@@ -194,10 +200,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           xpRollover: parsed.xpRollover,
         });
 
+        console.log('[JSON Import] handleJsonImport result:', success);
+
         if (!success) {
-          console.warn('[handleFileChange] Import reported failure');
+          console.error('[JSON Import] Database write failed!');
+          if (showToast) {
+            showToast('Import failed: Could not save to database', 'error');
+          }
+          return;
         }
       } else {
+        console.log('[JSON Import] Fallback: using setters (handleJsonImport not available)');
         // Fallback for local/demo mode: use setters
         if (parsed.baseMilesData) setters.setBaseMilesData(parsed.baseMilesData);
         if (parsed.baseXpData) setters.setBaseXpData(parsed.baseXpData);
@@ -224,13 +237,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (importedCounts.manualLedgerMonths > 0) parts.push(`${importedCounts.manualLedgerMonths} manual ledger months`);
 
       const message = parts.length > 0
-        ? `Import completed! Restored: ${parts.join(', ')}. Data saved.`
-        : 'Import completed. Data restored and saved successfully.';
+        ? `Import completed! Restored: ${parts.join(', ')}. Reloading...`
+        : 'Import completed. Data restored successfully. Reloading...';
       
       if (showToast) {
         showToast(message, 'success');
       }
-      onClose(); // Auto-close modal after successful import
+      
+      // CRITICAL: Force page reload to ensure clean state from database
+      // This avoids race conditions with React state updates
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (e) {
       console.error('Import failed', e);
       if (showToast) {

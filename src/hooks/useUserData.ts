@@ -951,7 +951,7 @@ export function useUserData(): UseUserDataReturn {
   }, [milesData]);
 
   // -------------------------------------------------------------------------
-  // JSON IMPORT - Direct database write then state update
+  // JSON IMPORT - Direct database write then reload from database
   // -------------------------------------------------------------------------
 
   const handleJsonImport = useCallback(async (importData: {
@@ -963,9 +963,9 @@ export function useUserData(): UseUserDataReturn {
     qualificationSettings?: QualificationSettings;
     xpRollover?: number;
   }): Promise<boolean> => {
-    if (!user) {
-      console.warn('[handleJsonImport] No user - updating local state only');
-      // Local mode: just update state
+    // Local/demo mode: just update state directly
+    if (!user || isDemoMode || isLocalMode) {
+      console.log('[handleJsonImport] Local/demo mode - updating state only');
       if (importData.flights) setFlightsInternal(importData.flights);
       if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
       if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
@@ -976,13 +976,13 @@ export function useUserData(): UseUserDataReturn {
       return true;
     }
 
-    if (isDemoMode) {
-      console.warn('[handleJsonImport] Demo mode - not saving to database');
-      return false;
-    }
-
-    console.log('[handleJsonImport] Starting direct database write...');
+    console.log('[handleJsonImport] Starting database import for user:', user.id);
     setIsSaving(true);
+
+    // CRITICAL: Mark as loaded to prevent loadUserData from overwriting our import
+    hasInitiallyLoaded.current = true;
+    loadedForUserId.current = user.id;
+    setHasAttemptedLoad(true);
 
     try {
       // Prepare XP ledger for database format
@@ -1003,15 +1003,19 @@ export function useUserData(): UseUserDataReturn {
       const savePromises: Promise<boolean>[] = [];
 
       if (importData.flights) {
+        console.log('[handleJsonImport] Saving', importData.flights.length, 'flights');
         savePromises.push(saveFlights(user.id, importData.flights));
       }
       if (importData.baseMilesData) {
+        console.log('[handleJsonImport] Saving', importData.baseMilesData.length, 'miles records');
         savePromises.push(saveMilesRecords(user.id, importData.baseMilesData));
       }
       if (importData.redemptions) {
+        console.log('[handleJsonImport] Saving', importData.redemptions.length, 'redemptions');
         savePromises.push(saveRedemptions(user.id, importData.redemptions));
       }
-      if (importData.manualLedger) {
+      if (importData.manualLedger && Object.keys(xpLedgerToSave).length > 0) {
+        console.log('[handleJsonImport] Saving', Object.keys(xpLedgerToSave).length, 'XP ledger months');
         savePromises.push(saveXPLedger(user.id, xpLedgerToSave));
       }
 
@@ -1028,35 +1032,66 @@ export function useUserData(): UseUserDataReturn {
         profileUpdates.xp_rollover = importData.xpRollover;
       }
       if (Object.keys(profileUpdates).length > 0) {
+        console.log('[handleJsonImport] Saving profile updates:', Object.keys(profileUpdates));
         savePromises.push(updateProfile(user.id, profileUpdates));
       }
 
-      // Wait for all saves to complete
+      // Wait for ALL saves to complete
+      console.log('[handleJsonImport] Waiting for', savePromises.length, 'save operations...');
       const results = await Promise.all(savePromises);
       const allSucceeded = results.every(r => r);
 
       if (!allSucceeded) {
-        console.error('[handleJsonImport] Some saves failed');
+        console.error('[handleJsonImport] Some saves failed:', results);
+        return false;
       }
 
-      // NOW update local state (after database is written)
-      if (importData.flights) setFlightsInternal(importData.flights);
-      if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
-      if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
-      if (importData.redemptions) setRedemptionsInternal(importData.redemptions);
-      if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
-      if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
-      if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
+      console.log('[handleJsonImport] All saves completed successfully');
 
-      console.log('[handleJsonImport] Database write complete, state updated');
-      return allSucceeded;
+      // CRITICAL: Reload data from database to ensure state matches database
+      // This prevents any race conditions with loadUserData
+      console.log('[handleJsonImport] Reloading data from database to verify...');
+      const freshData = await fetchAllUserData(user.id);
+
+      // Update state from database (single source of truth)
+      setFlightsInternal(freshData.flights);
+      setBaseMilesDataInternal(freshData.milesData);
+      setRedemptionsInternal(freshData.redemptions);
+      
+      // Load XP Ledger
+      const loadedLedger: ManualLedger = {};
+      Object.entries(freshData.xpLedger).forEach(([month, entry]) => {
+        loadedLedger[month] = {
+          amexXp: entry.amexXp,
+          bonusSafXp: entry.bonusSafXp,
+          miscXp: entry.miscXp,
+          correctionXp: entry.correctionXp,
+        };
+      });
+      setManualLedgerInternal(loadedLedger);
+
+      if (freshData.profile) {
+        setXpRolloverInternal(freshData.profile.xpRollover || 0);
+        if (freshData.profile.qualificationStartMonth) {
+          setQualificationSettingsInternal({
+            cycleStartMonth: freshData.profile.qualificationStartMonth,
+            cycleStartDate: freshData.profile.qualificationStartDate || undefined,
+            startingStatus: (freshData.profile.startingStatus || 'Explorer') as StatusLevel,
+            startingXP: freshData.profile.startingXP ?? 0,
+            ultimateCycleType: freshData.profile.ultimateCycleType || 'qualification',
+          });
+        }
+      }
+
+      console.log('[handleJsonImport] State updated from database. Flights:', freshData.flights.length);
+      return true;
     } catch (error) {
       console.error('[handleJsonImport] Error:', error);
       return false;
     } finally {
       setIsSaving(false);
     }
-  }, [user, isDemoMode]);
+  }, [user, isDemoMode, isLocalMode]);
 
   // -------------------------------------------------------------------------
   // RETURN
