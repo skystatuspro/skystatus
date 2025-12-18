@@ -1461,6 +1461,10 @@ export const calculateQualificationCycles = (
   // PDF BASELINE OVERRIDE
   // PDF header = source of truth at export date
   // Add XP/UXP from flights added AFTER the PDF export date
+  // 
+  // CRITICAL FIX (v11): Apply baseline to the ACTIVE cycle, not the last cycle!
+  // The code generates future cycles (+12 months), so cycles[length-1] is often
+  // a future cycle. We need to find the cycle where TODAY falls.
   // ============================================================================
   console.log('[XP Engine] PDF baseline check:', {
     hasPdfBaseline: !!pdfBaseline,
@@ -1469,7 +1473,38 @@ export const calculateQualificationCycles = (
   });
   
   if (pdfBaseline && cycles.length > 0) {
-    const activeCycle = cycles[cycles.length - 1];
+    // FIXED: Find the ACTIVE cycle (where today falls), not just the last one
+    // This mirrors the findActiveCycle() logic used by UI components
+    const today = new Date().toISOString().slice(0, 10);
+    let targetCycleIndex = cycles.length - 1; // fallback to last
+    
+    // First: find cycle where today falls within start-end dates
+    for (let i = 0; i < cycles.length; i++) {
+      if (today >= cycles[i].startDate && today <= cycles[i].endDate) {
+        targetCycleIndex = i;
+        break;
+      }
+    }
+    
+    // Fallback: if no cycle contains today, find first cycle that hasn't ended yet
+    if (targetCycleIndex === cycles.length - 1) {
+      for (let i = 0; i < cycles.length; i++) {
+        if (cycles[i].endDate >= today) {
+          targetCycleIndex = i;
+          break;
+        }
+      }
+    }
+    
+    const targetCycle = cycles[targetCycleIndex];
+    
+    console.log('[XP Engine] PDF baseline target cycle:', {
+      today,
+      targetCycleIndex,
+      cycleStart: targetCycle.startDate,
+      cycleEnd: targetCycle.endDate,
+      totalCycles: cycles.length,
+    });
     
     // Find flights that are NOT from PDF and have date AFTER PDF export
     // These are manual additions that should be added to the baseline
@@ -1485,10 +1520,10 @@ export const calculateQualificationCycles = (
     );
     
     // Baseline + delta
-    activeCycle.actualXP = pdfBaseline.xp + deltaXP;
-    activeCycle.actualUXP = pdfBaseline.uxp + deltaUXP;
-    activeCycle.actualStatus = pdfBaseline.status as StatusLevel;
-    activeCycle.currentXP = activeCycle.actualXP;
+    targetCycle.actualXP = pdfBaseline.xp + deltaXP;
+    targetCycle.actualUXP = pdfBaseline.uxp + deltaUXP;
+    targetCycle.actualStatus = pdfBaseline.status as StatusLevel;
+    targetCycle.currentXP = targetCycle.actualXP;
     
     // Recalculate XP needed
     const statusThresholds: Record<StatusLevel, number> = {
@@ -1497,16 +1532,17 @@ export const calculateQualificationCycles = (
       Gold: PLATINUM_THRESHOLD,
       Platinum: PLATINUM_THRESHOLD,
     };
-    const nextThreshold = statusThresholds[activeCycle.actualStatus] || PLATINUM_THRESHOLD;
-    activeCycle.actualXPToNext = Math.max(0, nextThreshold - activeCycle.actualXP);
-    activeCycle.currentXPToNext = activeCycle.actualXPToNext;
+    const nextThreshold = statusThresholds[targetCycle.actualStatus] || PLATINUM_THRESHOLD;
+    targetCycle.actualXPToNext = Math.max(0, nextThreshold - targetCycle.actualXP);
+    targetCycle.currentXPToNext = targetCycle.actualXPToNext;
     
     console.log('[XP Engine] PDF baseline applied:', {
       baselineXP: pdfBaseline.xp,
       deltaXP,
       deltaFlights: flightsAfterExport.length,
-      finalXP: activeCycle.actualXP,
-      status: activeCycle.actualStatus,
+      finalXP: targetCycle.actualXP,
+      status: targetCycle.actualStatus,
+      appliedToCycleIndex: targetCycleIndex,
     });
   }
 
