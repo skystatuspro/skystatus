@@ -57,18 +57,7 @@ interface DashboardProps {
   state: DashboardState;
   navigateTo: (view: any) => void;
   onUpdateCurrentMonth: (month: string) => void;
-  onPdfImport?: (
-    flights: FlightRecord[], 
-    miles: MilesRecord[],
-    xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { 
-      cycleStartMonth: string; 
-      cycleStartDate?: string;
-      startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
-      startingXP?: number;
-    },
-    bonusXpByMonth?: Record<string, number>
-  ) => void;
+  onPdfImport?: (flights: FlightRecord[], miles: MilesRecord[]) => void;
   demoStatus?: StatusLevel; // Override status in demo mode
 }
 
@@ -328,8 +317,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <PdfImportModal
             isOpen={showPdfImport}
             onClose={() => setShowPdfImport(false)}
-            onImport={(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-              onPdfImport?.(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth);
+            onImport={(flights, miles) => {
+              onPdfImport(flights, miles);
             }}
             existingFlights={state.flights}
             existingMiles={state.milesData}
@@ -725,8 +714,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <PdfImportModal
           isOpen={showPdfImport}
           onClose={() => setShowPdfImport(false)}
-          onImport={(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-            onPdfImport(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth);
+          onImport={(flights, miles) => {
+            onPdfImport(flights, miles);
           }}
           existingFlights={state.flights}
           existingMiles={state.milesData}

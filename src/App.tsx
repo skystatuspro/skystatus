@@ -117,13 +117,12 @@ export default function App() {
 
     actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
 
-    // Show success toast - note: actual merge happens in handlePdfImport
-    // newFlightCount here is what PDF contained, actual added may be less due to duplicates
+    // Show success toast
     const rolloverMsg = cycleSettings?.startingXP ? ` (${cycleSettings.startingXP} XP rollover)` : '';
     const cycleMsg = cycleSettings ? ` · Cycle: ${cycleSettings.startingStatus} from ${cycleSettings.cycleStartMonth}${rolloverMsg}` : '';
     const bonusXpTotal = bonusXpByMonth ? Object.values(bonusXpByMonth).reduce((a, b) => a + b, 0) : 0;
     const bonusMsg = bonusXpTotal > 0 ? ` (+${bonusXpTotal} bonus XP)` : '';
-    showToast(`Merged ${newFlightCount} flights from PDF${bonusMsg}${cycleMsg}. Duplicates skipped. Use Data Settings to undo.`, 'success');
+    showToast(`Imported ${newFlightCount} flights and ${importedMiles.length} months of miles data${bonusMsg}${cycleMsg}`, 'success');
   };
 
   // -------------------------------------------------------------------------
@@ -552,9 +551,9 @@ export default function App() {
       <PdfImportModal
         isOpen={showOnboardingPdfModal}
         onClose={() => setShowOnboardingPdfModal(false)}
-        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth) => {
+        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings) => {
           // Save the flights
-          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
+          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings);
           
           // Calculate summary for onboarding display
           const totalXP = importedFlights.reduce((sum, f) => sum + (f.earnedXP || 0), 0);
@@ -578,8 +577,8 @@ export default function App() {
       <PdfImportModal
         isOpen={showPdfImportModal}
         onClose={() => setShowPdfImportModal(false)}
-        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-          handlePdfImportWithToast(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
+        onImport={(importedFlights, importedMiles) => {
+          handlePdfImportWithToast(importedFlights, importedMiles);
         }}
         existingFlights={state.flights}
         existingMiles={state.baseMilesData}
@@ -616,9 +615,6 @@ export default function App() {
         onLoadDemo={actions.handleLoadDemo}
         onStartOver={actions.handleStartOver}
         onRerunOnboarding={actions.handleRerunOnboarding}
-        onUndoImport={actions.handleUndoImport}
-        canUndoImport={actions.canUndoImport}
-        importBackupInfo={actions.importBackupInfo}
         emailConsent={meta.emailConsent}
         onEmailConsentChange={actions.handleEmailConsentChange}
         isDemoMode={meta.isDemoMode || meta.isLocalMode}

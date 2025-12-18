@@ -1,8 +1,8 @@
 // src/components/Dashboard/SimpleDashboard.tsx
 // Simplified dashboard view for casual users
 
-import React, { useMemo, useState, lazy, Suspense } from 'react';
-import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, ViewState } from '../../types';
+import React, { useMemo, useState } from 'react';
+import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -21,21 +21,9 @@ import {
   Gauge,
   Crown,
   Target,
-  Loader2,
 } from 'lucide-react';
+import PdfImportModal from '../PdfImportModal';
 import { StatusLevel, getStatusTheme, getTargetXP, findActiveCycle } from './helpers';
-
-// Lazy load PdfImportModal to reduce initial bundle
-const PdfImportModal = lazy(() => import('../PdfImportModal'));
-
-const ModalLoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
-      <Loader2 size={24} className="animate-spin text-blue-500" />
-      <span className="text-slate-600">Loading...</span>
-    </div>
-  </div>
-);
 
 interface SimpleDashboardState {
   milesData: { month: string; totalMiles: number }[];
@@ -51,19 +39,8 @@ interface SimpleDashboardState {
 
 interface SimpleDashboardProps {
   state: SimpleDashboardState;
-  navigateTo: (view: ViewState) => void;
-  onPdfImport?: (
-    flights: FlightRecord[], 
-    miles: MilesRecord[],
-    xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { 
-      cycleStartMonth: string; 
-      cycleStartDate?: string;
-      startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
-      startingXP?: number;
-    },
-    bonusXpByMonth?: Record<string, number>
-  ) => void;
+  navigateTo: (view: any) => void;
+  onPdfImport?: (flights: FlightRecord[], miles: MilesRecord[]) => void;
   demoStatus?: StatusLevel;
 }
 
@@ -198,16 +175,14 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
         </div>
 
         {/* PDF Import Modal */}
-        {onPdfImport && showPdfImport && (
-          <Suspense fallback={<ModalLoadingFallback />}>
-            <PdfImportModal
-              isOpen={showPdfImport}
-              onClose={() => setShowPdfImport(false)}
-              onImport={onPdfImport}
-              existingFlights={state.flights}
-              existingMiles={state.milesData}
-            />
-          </Suspense>
+        {onPdfImport && (
+          <PdfImportModal
+            isOpen={showPdfImport}
+            onClose={() => setShowPdfImport(false)}
+            onImport={onPdfImport}
+            existingFlights={state.flights}
+            existingMiles={state.milesData}
+          />
         )}
       </div>
     );
@@ -387,16 +362,14 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
       </div>
 
       {/* PDF Import Modal */}
-      {onPdfImport && showPdfImport && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <PdfImportModal
-            isOpen={showPdfImport}
-            onClose={() => setShowPdfImport(false)}
-            onImport={onPdfImport}
-            existingFlights={state.flights}
-            existingMiles={state.milesData}
-          />
-        </Suspense>
+      {onPdfImport && (
+        <PdfImportModal
+          isOpen={showPdfImport}
+          onClose={() => setShowPdfImport(false)}
+          onImport={onPdfImport}
+          existingFlights={state.flights}
+          existingMiles={state.milesData}
+        />
       )}
     </div>
   );

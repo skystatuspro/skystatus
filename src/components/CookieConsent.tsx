@@ -45,56 +45,96 @@ const COOKIE_CATEGORIES = [
   },
 ];
 
-// Main Cookie Banner Component - Non-intrusive bottom banner
+// Main Cookie Banner Component
 export const CookieBanner: React.FC = () => {
   const { showBanner, acceptAll, rejectAll, openSettings } = useCookieConsent();
 
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 animate-in slide-in-from-bottom duration-300">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-        <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* Icon & Text */}
-          <div className="flex items-start gap-3 flex-1">
-            <div className="p-2 bg-slate-100 rounded-xl flex-shrink-0 hidden sm:flex">
-              <Cookie size={20} className="text-slate-600" />
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-brand-500 to-blue-600 p-5 text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <Cookie size={24} />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-slate-600 leading-relaxed">
-                We use cookies to improve your experience. Analytics help us make SkyStatus better.{' '}
-                <button 
-                  onClick={openSettings}
-                  className="text-brand-600 hover:text-brand-700 font-medium underline underline-offset-2"
-                >
-                  Customize
-                </button>
-                {' '}or read our{' '}
-                <a 
-                  href="/privacy" 
-                  className="text-brand-600 hover:text-brand-700 font-medium underline underline-offset-2"
-                >
-                  Privacy Policy
-                </a>.
-              </p>
+            <div>
+              <h2 className="text-lg font-bold">Cookie Preferences</h2>
+              <p className="text-sm text-white/80">We respect your privacy</p>
             </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-5">
+          <p className="text-slate-600 text-sm leading-relaxed mb-4">
+            SkyStatus uses cookies to ensure the website functions properly. You can choose which cookies to allow. We save your preferences. You can change them anytime via the settings in the footer.
+          </p>
+
+          <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100 mb-5">
+            <Shield size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-blue-800">
+              <strong>Your privacy matters.</strong> We use only essential cookies by default. 
+              Analytics help us improve SkyStatus but are optional. We never sell your data.
+            </p>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={rejectAll}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors text-sm"
-            >
-              Decline
-            </button>
-            <button
-              onClick={acceptAll}
-              className="flex-1 sm:flex-none px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition-colors text-sm shadow-lg shadow-brand-600/25"
-            >
-              Accept All
-            </button>
+          {/* Quick summary of categories */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+            {COOKIE_CATEGORIES.map((cat) => (
+              <div 
+                key={cat.id} 
+                className={`p-2 rounded-lg text-center text-xs ${
+                  cat.required 
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' 
+                    : cat.disabled 
+                      ? 'bg-slate-50 border border-slate-200 text-slate-400'
+                      : 'bg-slate-50 border border-slate-200 text-slate-600'
+                }`}
+              >
+                <div className="font-semibold">{cat.name}</div>
+                <div className="text-[10px] mt-0.5">
+                  {cat.required ? 'Required' : cat.disabled ? 'Not used' : 'Optional'}
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-5 pb-5 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={rejectAll}
+            className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors text-sm"
+          >
+            Reject Optional
+          </button>
+          <button
+            onClick={openSettings}
+            className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors text-sm flex items-center justify-center gap-2"
+          >
+            <Settings size={16} />
+            Customize
+          </button>
+          <button
+            onClick={acceptAll}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-brand-500 to-blue-600 text-white font-semibold rounded-xl hover:from-brand-600 hover:to-blue-700 transition-colors text-sm"
+          >
+            Accept All
+          </button>
+        </div>
+
+        {/* Legal links */}
+        <div className="px-5 pb-4 pt-2 border-t border-slate-100 flex items-center justify-center gap-4 text-xs text-slate-400">
+          <a href="/privacy" className="hover:text-brand-600 flex items-center gap-1">
+            Privacy Policy <ExternalLink size={10} />
+          </a>
+          <span>•</span>
+          <a href="/cookies" className="hover:text-brand-600 flex items-center gap-1">
+            Cookie Policy <ExternalLink size={10} />
+          </a>
         </div>
       </div>
     </div>

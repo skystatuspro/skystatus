@@ -17,8 +17,7 @@ import {
   Download,
   AlertTriangle,
   Sparkles,
-  Gauge,
-  Search
+  Gauge
 } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../lib/AuthContext';
@@ -27,7 +26,6 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { BugReportModal } from './BugReportModal';
 import { CookieSettingsLink } from './CookieConsent';
 import { APP_VERSION } from '../config/version';
-import { SearchModal, SearchTrigger, useSearchShortcut } from './SearchModal';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -79,30 +77,9 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isBugReportOpen, setIsBugReportOpen] = React.useState(false);
-  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const { user, signOut } = useAuth();
   const { viewMode, isSimpleMode, setViewMode } = useViewMode();
-  const { trackViewMode, trackNav, trackUserSignOut, trackSearch } = useAnalytics();
-
-  // Check for ?search=1 parameter on mount (from static pages)
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('search') === '1') {
-      setIsSearchOpen(true);
-      trackSearch('button');
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, [trackSearch]);
-
-  // Cmd+K shortcut for search (with tracking)
-  useSearchShortcut(() => setIsSearchOpen(true), trackSearch);
-
-  // Handle search open from button click
-  const handleSearchOpen = () => {
-    trackSearch('button');
-    setIsSearchOpen(true);
-  };
+  const { trackViewMode, trackNav, trackUserSignOut } = useAnalytics();
 
   // Track navigation with analytics
   const handleNavigate = (view: ViewState) => {
@@ -199,16 +176,6 @@ export const Layout: React.FC<LayoutProps> = ({
                 setIsMobileMenuOpen(false);
             }} 
           />
-          
-          {/* Search - secondary utility */}
-          <button
-            onClick={handleSearchOpen}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-200 group"
-          >
-            <Search size={20} className="text-slate-500 group-hover:text-white transition-colors" />
-            <span className="font-medium text-sm tracking-wide">Search</span>
-            <kbd className="ml-auto px-1.5 py-0.5 bg-slate-800 group-hover:bg-slate-700 rounded text-[10px] font-mono text-slate-500">⌘K</kbd>
-          </button>
         </nav>
 
         {/* Footer Info */}
@@ -317,28 +284,19 @@ export const Layout: React.FC<LayoutProps> = ({
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b border-slate-200 px-4 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+        <header className="lg:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-3">
               <div className="bg-slate-900 p-1.5 rounded-lg">
                 <Plane className="text-white transform -rotate-45" size={18} fill="currentColor" />
               </div>
               <span className="font-bold text-slate-900">SkyStatus</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSearchOpen}
-              className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-              aria-label="Search"
-            >
-              <Search size={20} />
-            </button>
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </header>
 
         {/* Scrollable Content */}
@@ -456,12 +414,6 @@ export const Layout: React.FC<LayoutProps> = ({
         <BugReportModal 
           isOpen={isBugReportOpen} 
           onClose={() => setIsBugReportOpen(false)} 
-        />
-
-        {/* Search Modal */}
-        <SearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
         />
       </main>
     </div>
