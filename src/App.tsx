@@ -627,6 +627,7 @@ export default function App() {
         isLoggedIn={!!user}
         markDataChanged={actions.markDataChanged}
         forceSave={actions.forceSave}
+        handleJsonImport={actions.handleJsonImport}
         showToast={showToast}
       />
 

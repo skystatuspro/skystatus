@@ -86,6 +86,15 @@ interface SettingsModalProps {
   isLoggedIn?: boolean;
   markDataChanged?: () => void;
   forceSave?: () => Promise<void>;
+  handleJsonImport?: (data: {
+    flights?: FlightRecord[];
+    baseMilesData?: MilesRecord[];
+    baseXpData?: XPRecord[];
+    redemptions?: RedemptionRecord[];
+    manualLedger?: ManualLedger;
+    qualificationSettings?: QualificationSettings;
+    xpRollover?: number;
+  }) => Promise<boolean>;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -109,6 +118,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isLoggedIn = false,
   markDataChanged,
   forceSave,
+  handleJsonImport,
   showToast,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -161,76 +171,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       // =======================================================================
       // REPLACE MODE: JSON is the single source of truth for all data
-      // User preferences (currency, homeAirport, emailConsent) are NOT touched
+      // User preferences (currency, homeAirport, emailConsent, targetCPM) are NOT touched
       // =======================================================================
 
       // Track what was imported
       const importedCounts = {
-        miles: 0,
-        flights: 0,
-        redemptions: 0,
-        manualLedgerMonths: 0,
+        miles: parsed.baseMilesData?.length || 0,
+        flights: parsed.flights?.length || 0,
+        redemptions: parsed.redemptions?.length || 0,
+        manualLedgerMonths: parsed.manualLedger ? Object.keys(parsed.manualLedger).length : 0,
       };
 
-      // REPLACE baseMilesData - JSON overwrites all existing miles data
-      if (parsed.baseMilesData) {
-        setters.setBaseMilesData(parsed.baseMilesData);
-        importedCounts.miles = parsed.baseMilesData.length;
-      }
+      // Use handleJsonImport for direct database write + state update
+      if (handleJsonImport) {
+        const success = await handleJsonImport({
+          flights: parsed.flights,
+          baseMilesData: parsed.baseMilesData,
+          baseXpData: parsed.baseXpData,
+          redemptions: parsed.redemptions,
+          manualLedger: parsed.manualLedger,
+          qualificationSettings: parsed.qualificationSettings,
+          xpRollover: parsed.xpRollover,
+        });
 
-      // REPLACE baseXpData - JSON overwrites all existing XP data
-      if (parsed.baseXpData) {
-        setters.setBaseXpData(parsed.baseXpData);
-      }
-
-      // REPLACE flights - JSON overwrites all existing flights
-      if (parsed.flights) {
-        setters.setFlights(parsed.flights);
-        importedCounts.flights = parsed.flights.length;
-      }
-
-      // REPLACE redemptions - JSON overwrites all existing redemptions
-      if (parsed.redemptions) {
-        setters.setRedemptions(parsed.redemptions);
-        importedCounts.redemptions = parsed.redemptions.length;
-      }
-
-      // REPLACE manualLedger - JSON overwrites all existing manual ledger entries
-      if (parsed.manualLedger) {
-        setters.setManualLedger(parsed.manualLedger);
-        importedCounts.manualLedgerMonths = Object.keys(parsed.manualLedger).length;
-      }
-
-      // REPLACE qualificationSettings - JSON is the source of truth
-      // This is CRITICAL for correct XP cycle calculation
-      if (parsed.qualificationSettings) {
-        setters.setQualificationSettings(parsed.qualificationSettings);
-      }
-
-      // REPLACE xpRollover if present in JSON
-      if (typeof parsed.xpRollover === 'number') {
-        setters.setXpRollover(parsed.xpRollover);
-      }
-
-      // REPLACE currentMonth if present in JSON
-      if (parsed.currentMonth) {
-        setters.setCurrentMonth(parsed.currentMonth);
-      }
-
-      // NOTE: We intentionally do NOT import user preferences from onboarding:
-      // - currency
-      // - homeAirport
-      // - emailConsent
-      // - targetCPM
-      // - onboardingCompleted
-
-      // Mark data as changed for any listeners
-      if (markDataChanged) markDataChanged();
-      
-      // CRITICAL: Force immediate save to database (don't wait for debounce)
-      // This ensures data is persisted before user can navigate away
-      if (forceSave) {
-        await forceSave();
+        if (!success) {
+          console.warn('[handleFileChange] Import reported failure');
+        }
+      } else {
+        // Fallback for local/demo mode: use setters
+        if (parsed.baseMilesData) setters.setBaseMilesData(parsed.baseMilesData);
+        if (parsed.baseXpData) setters.setBaseXpData(parsed.baseXpData);
+        if (parsed.flights) setters.setFlights(parsed.flights);
+        if (parsed.redemptions) setters.setRedemptions(parsed.redemptions);
+        if (parsed.manualLedger) setters.setManualLedger(parsed.manualLedger);
+        if (parsed.qualificationSettings) setters.setQualificationSettings(parsed.qualificationSettings);
+        if (typeof parsed.xpRollover === 'number') setters.setXpRollover(parsed.xpRollover);
+        if (parsed.currentMonth) setters.setCurrentMonth(parsed.currentMonth);
       }
       
       // Track the import for analytics

@@ -133,6 +133,15 @@ export interface UserDataActions {
   markDataChanged: () => void;
   calculateGlobalCPM: () => number;
   forceSave: () => Promise<void>;
+  handleJsonImport: (data: {
+    flights?: FlightRecord[];
+    baseMilesData?: MilesRecord[];
+    baseXpData?: XPRecord[];
+    redemptions?: RedemptionRecord[];
+    manualLedger?: ManualLedger;
+    qualificationSettings?: QualificationSettings;
+    xpRollover?: number;
+  }) => Promise<boolean>;
 }
 
 export interface UserDataMeta {
@@ -942,6 +951,114 @@ export function useUserData(): UseUserDataReturn {
   }, [milesData]);
 
   // -------------------------------------------------------------------------
+  // JSON IMPORT - Direct database write then state update
+  // -------------------------------------------------------------------------
+
+  const handleJsonImport = useCallback(async (importData: {
+    flights?: FlightRecord[];
+    baseMilesData?: MilesRecord[];
+    baseXpData?: XPRecord[];
+    redemptions?: RedemptionRecord[];
+    manualLedger?: ManualLedger;
+    qualificationSettings?: QualificationSettings;
+    xpRollover?: number;
+  }): Promise<boolean> => {
+    if (!user) {
+      console.warn('[handleJsonImport] No user - updating local state only');
+      // Local mode: just update state
+      if (importData.flights) setFlightsInternal(importData.flights);
+      if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
+      if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
+      if (importData.redemptions) setRedemptionsInternal(importData.redemptions);
+      if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
+      if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
+      if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
+      return true;
+    }
+
+    if (isDemoMode) {
+      console.warn('[handleJsonImport] Demo mode - not saving to database');
+      return false;
+    }
+
+    console.log('[handleJsonImport] Starting direct database write...');
+    setIsSaving(true);
+
+    try {
+      // Prepare XP ledger for database format
+      const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
+      if (importData.manualLedger) {
+        Object.entries(importData.manualLedger).forEach(([month, entry]) => {
+          xpLedgerToSave[month] = {
+            month,
+            amexXp: entry.amexXp || 0,
+            bonusSafXp: entry.bonusSafXp || 0,
+            miscXp: entry.miscXp || 0,
+            correctionXp: entry.correctionXp || 0,
+          };
+        });
+      }
+
+      // Write ALL data to database in parallel
+      const savePromises: Promise<boolean>[] = [];
+
+      if (importData.flights) {
+        savePromises.push(saveFlights(user.id, importData.flights));
+      }
+      if (importData.baseMilesData) {
+        savePromises.push(saveMilesRecords(user.id, importData.baseMilesData));
+      }
+      if (importData.redemptions) {
+        savePromises.push(saveRedemptions(user.id, importData.redemptions));
+      }
+      if (importData.manualLedger) {
+        savePromises.push(saveXPLedger(user.id, xpLedgerToSave));
+      }
+
+      // Profile updates (qualification settings, xpRollover)
+      const profileUpdates: Record<string, unknown> = {};
+      if (importData.qualificationSettings) {
+        profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth;
+        profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate;
+        profileUpdates.starting_status = importData.qualificationSettings.startingStatus;
+        profileUpdates.starting_xp = importData.qualificationSettings.startingXP;
+        profileUpdates.ultimate_cycle_type = importData.qualificationSettings.ultimateCycleType;
+      }
+      if (typeof importData.xpRollover === 'number') {
+        profileUpdates.xp_rollover = importData.xpRollover;
+      }
+      if (Object.keys(profileUpdates).length > 0) {
+        savePromises.push(updateProfile(user.id, profileUpdates));
+      }
+
+      // Wait for all saves to complete
+      const results = await Promise.all(savePromises);
+      const allSucceeded = results.every(r => r);
+
+      if (!allSucceeded) {
+        console.error('[handleJsonImport] Some saves failed');
+      }
+
+      // NOW update local state (after database is written)
+      if (importData.flights) setFlightsInternal(importData.flights);
+      if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
+      if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
+      if (importData.redemptions) setRedemptionsInternal(importData.redemptions);
+      if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
+      if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
+      if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
+
+      console.log('[handleJsonImport] Database write complete, state updated');
+      return allSucceeded;
+    } catch (error) {
+      console.error('[handleJsonImport] Error:', error);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, isDemoMode]);
+
+  // -------------------------------------------------------------------------
   // RETURN
   // -------------------------------------------------------------------------
 
@@ -998,6 +1115,7 @@ export function useUserData(): UseUserDataReturn {
       markDataChanged,
       calculateGlobalCPM,
       forceSave: saveUserData,
+      handleJsonImport,
       handleOnboardingComplete,
       handleRerunOnboarding,
       handleEmailConsentChange,
