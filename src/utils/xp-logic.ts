@@ -1226,7 +1226,6 @@ export const calculateQualificationCycles = (
       cycle.actualStatus = pdfBaseline.status as StatusLevel;
       cycle.currentXP = pdfBaseline.xp;
       
-      // Recalculate XP needed
       const statusThresholds: Record<StatusLevel, number> = {
         Explorer: SILVER_THRESHOLD,
         Silver: GOLD_THRESHOLD,
@@ -1237,9 +1236,10 @@ export const calculateQualificationCycles = (
       cycle.actualXPToNext = Math.max(0, nextThreshold - cycle.actualXP);
       cycle.currentXPToNext = cycle.actualXPToNext;
       
-      console.log('[XP Engine] PDF baseline applied to empty cycle:', {
-        baselineXP: pdfBaseline.xp,
-        baselineStatus: pdfBaseline.status,
+      console.log('[XP Engine] PDF baseline applied (empty cycle):', {
+        xp: cycle.actualXP,
+        uxp: cycle.actualUXP,
+        status: cycle.actualStatus,
       });
     }
 
@@ -1438,70 +1438,42 @@ export const calculateQualificationCycles = (
 
   // ============================================================================
   // PDF BASELINE OVERRIDE
-  // When a PDF baseline is provided, use it as source of truth for actual values
-  // This ensures the dashboard shows exactly what Flying Blue reports
+  // When a PDF baseline is provided, use it as the SINGLE SOURCE OF TRUTH
+  // The PDF header values ARE the correct values - no calculations needed
   // ============================================================================
   console.log('[XP Engine] PDF baseline check:', {
     hasPdfBaseline: !!pdfBaseline,
     pdfBaseline: pdfBaseline,
     cyclesLength: cycles.length,
-    willApply: !!(pdfBaseline && cycles.length > 0)
   });
   
   if (pdfBaseline && cycles.length > 0) {
     const activeCycle = cycles[cycles.length - 1];
     
-    // Calculate XP delta from manual flights added AFTER the PDF export date
-    const allFlights = flights ?? [];
-    const manualFlights = allFlights.filter(f => f.importSource === 'manual');
-    const manualFlightsAfterPdf = manualFlights.filter(f => f.date > pdfBaseline.pdfExportDate);
-    
-    console.log('[XP Engine] Baseline delta calculation:', {
-      totalFlights: allFlights.length,
-      manualFlights: manualFlights.length,
-      manualFlightsAfterPdf: manualFlightsAfterPdf.length,
-      pdfExportDate: pdfBaseline.pdfExportDate,
-      manualFlightDates: manualFlights.map(f => ({ date: f.date, source: f.importSource })),
-    });
-    
-    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
-      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
-    );
-    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
-      sum + (f.uxp || 0), 0
-    );
-    
-    // Log before override
-    console.log('[XP Engine] Before baseline override:', {
-      activeCycleActualXP: activeCycle.actualXP,
-      activeCycleActualStatus: activeCycle.actualStatus,
-    });
-    
-    // Override actual values with baseline + manual delta
-    activeCycle.actualXP = pdfBaseline.xp + deltaXP;
-    activeCycle.actualUXP = pdfBaseline.uxp + deltaUXP;
+    // Simply use the PDF header values - they ARE the truth
+    activeCycle.actualXP = pdfBaseline.xp;
+    activeCycle.actualUXP = pdfBaseline.uxp;
     activeCycle.actualStatus = pdfBaseline.status as StatusLevel;
     
-    // Recalculate XP needed to next status
+    // Update currentXP for backwards compatibility
+    activeCycle.currentXP = pdfBaseline.xp;
+    
+    // Recalculate XP needed to maintain/reach next status
     const statusThresholds: Record<StatusLevel, number> = {
       Explorer: SILVER_THRESHOLD,
       Silver: GOLD_THRESHOLD,
       Gold: PLATINUM_THRESHOLD,
-      Platinum: PLATINUM_THRESHOLD, // Already at top (excluding Ultimate)
+      Platinum: PLATINUM_THRESHOLD,
     };
     const nextThreshold = statusThresholds[activeCycle.actualStatus] || PLATINUM_THRESHOLD;
     activeCycle.actualXPToNext = Math.max(0, nextThreshold - activeCycle.actualXP);
-    
-    // Also update currentXP for backwards compatibility
-    activeCycle.currentXP = activeCycle.actualXP;
     activeCycle.currentXPToNext = activeCycle.actualXPToNext;
     
     console.log('[XP Engine] PDF baseline applied:', {
-      baselineXP: pdfBaseline.xp,
-      deltaXP,
-      finalActualXP: activeCycle.actualXP,
-      baselineStatus: pdfBaseline.status,
-      manualFlightsCount: manualFlightsAfterPdf.length,
+      xp: activeCycle.actualXP,
+      uxp: activeCycle.actualUXP,
+      status: activeCycle.actualStatus,
+      xpToNext: activeCycle.actualXPToNext,
     });
   }
 
