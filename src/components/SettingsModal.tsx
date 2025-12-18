@@ -228,19 +228,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (importedCounts.redemptions > 0) parts.push(`${importedCounts.redemptions} redemptions`);
       if (importedCounts.manualLedgerMonths > 0) parts.push(`${importedCounts.manualLedgerMonths} manual ledger months`);
 
+      const willReload = !isDemoMode && !isLocalMode && isLoggedIn;
+      const suffix = willReload ? ' Reloading...' : '';
       const message = parts.length > 0
-        ? `Import completed! Restored: ${parts.join(', ')}. Reloading...`
-        : 'Import completed. Data restored successfully. Reloading...';
+        ? `Import completed! Restored: ${parts.join(', ')}.${suffix}`
+        : `Import completed. Data restored successfully.${suffix}`;
       
       if (showToast) {
         showToast(message, 'success');
       }
       
-      // CRITICAL: Force page reload to ensure clean state from database
-      // This avoids race conditions with React state updates
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // CRITICAL: Only reload for logged-in database users
+      // Local/demo mode keeps data in React state - reload would LOSE everything!
+      if (!isDemoMode && !isLocalMode && isLoggedIn) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        // For local/demo: just close the modal, state is already updated
+        onClose();
+      }
     } catch (e) {
       console.error('Import failed', e);
       if (showToast) {
