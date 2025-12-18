@@ -316,15 +316,35 @@ export function parseFlyingBlueText(text: string): ParseResult {
     .filter(({ line }) => /PLATINUM|GOLD|SILVER|EXPLORER|ULTIMATE/i.test(line));
   console.log('[Parser] All lines containing status words:', statusLines);
   
-  // First pass: look for totals and member info in first 20 lines
+  // PDF.js often extracts the visual header at the END of pages
+  // Look for "Flying Blue-nummer:" pattern and get status from nearby line
+  let flyingBlueLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/Flying Blue[- ]?(?:nummer|number)/i.test(lines[i])) {
+      flyingBlueLineIdx = i;
+      const memberMatch = lines[i].match(/Flying Blue[- ]?(?:nummer|number)[:\s]+(\d+)/i);
+      if (memberMatch) {
+        memberNumber = memberMatch[1];
+      }
+      // Name is typically one line before
+      if (i > 0 && /^[A-Z\s]+$/.test(lines[i-1].trim()) && lines[i-1].trim().length > 3) {
+        memberName = lines[i-1].trim();
+      }
+      // Status is typically one line after
+      if (i < lines.length - 1) {
+        const nextLine = lines[i+1].trim();
+        if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(nextLine)) {
+          status = nextLine.toUpperCase();
+          console.log('[Parser] Status found (after Flying Blue-nummer):', status);
+        }
+      }
+      break; // Found it, stop searching
+    }
+  }
+  
+  // First pass: look for totals in first 20 lines
   for (let i = 0; i < Math.min(20, lines.length); i++) {
     const line = lines[i];
-    
-    // Member number pattern: "Flying Blue-nummer: 1234567890"
-    const memberMatch = line.match(/Flying Blue[- ]?(?:nummer|number)[:\s]+(\d+)/i);
-    if (memberMatch) {
-      memberNumber = memberMatch[1];
-    }
     
     // Totals pattern: "248928 Miles 183 XP 40 UXP"
     const totalsMatch = line.match(/(\d[\d\s.,]*)\s*Miles\s+(\d+)\s*XP\s+(\d+)\s*UXP/i);
@@ -334,15 +354,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
       totalUXP = parseInt(totalsMatch[3], 10);
       console.log('[Parser] Totals found:', { totalMiles, totalXP, totalUXP });
     }
-    
-    // Name is typically the first line (all caps)
-    if (i === 0 && /^[A-Z\s]+$/.test(line) && line.length > 3) {
-      memberName = line;
-    }
   }
   
-  // Second pass: search ALL lines for status (it might be anywhere due to PDF extraction order)
-  // Priority 1: Exact standalone status line
+  // If status still not found, search ALL lines for standalone status
   for (let i = 0; i < lines.length && !status; i++) {
     const line = lines[i].trim();
     if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
@@ -980,12 +994,34 @@ export function parseFlyingBlueText(text: string): ParseResult {
     });
   });
   
+  // FALLBACK: If header status wasn't found (pdf.js didn't extract the header section),
+  // use the most recent requalification status as fallback
+  // Note: This may not be 100% accurate if user qualified to a higher status since then
+  let finalStatus = status;
+  if (!finalStatus && requalifications.length > 0) {
+    // Sort by date descending to get most recent
+    const sortedReqals = [...requalifications].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const mostRecent = sortedReqals.find(r => r.toStatus);
+    if (mostRecent?.toStatus) {
+      finalStatus = mostRecent.toStatus.toUpperCase();
+      console.log('[Parser] Status fallback: using most recent requalification status:', finalStatus);
+    }
+  }
+  
+  // If still no status, default to Explorer
+  if (!finalStatus) {
+    finalStatus = null; // Will be handled by PdfImportModal as 'Explorer'
+    console.log('[Parser] Status: could not determine from PDF');
+  }
+  
   return {
     flights,
     miles: milesArray,
     memberName,
     memberNumber,
-    status,
+    status: finalStatus,
     totalMiles,
     totalXP,
     totalUXP,

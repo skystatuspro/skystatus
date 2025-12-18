@@ -1417,6 +1417,13 @@ export const calculateQualificationCycles = (
   // When a PDF baseline is provided, use it as source of truth for actual values
   // This ensures the dashboard shows exactly what Flying Blue reports
   // ============================================================================
+  console.log('[XP Engine] PDF baseline check:', {
+    hasPdfBaseline: !!pdfBaseline,
+    pdfBaseline: pdfBaseline,
+    cyclesLength: cycles.length,
+    willApply: !!(pdfBaseline && cycles.length > 0)
+  });
+  
   if (pdfBaseline && cycles.length > 0) {
     const activeCycle = cycles[cycles.length - 1];
     
