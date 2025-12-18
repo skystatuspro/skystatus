@@ -1219,6 +1219,30 @@ export const calculateQualificationCycles = (
       0 // uxpRolloverIn = 0 for empty cycle
     );
 
+    // Apply PDF baseline to empty cycle if available
+    if (pdfBaseline) {
+      cycle.actualXP = pdfBaseline.xp;
+      cycle.actualUXP = pdfBaseline.uxp;
+      cycle.actualStatus = pdfBaseline.status as StatusLevel;
+      cycle.currentXP = pdfBaseline.xp;
+      
+      // Recalculate XP needed
+      const statusThresholds: Record<StatusLevel, number> = {
+        Explorer: SILVER_THRESHOLD,
+        Silver: GOLD_THRESHOLD,
+        Gold: PLATINUM_THRESHOLD,
+        Platinum: PLATINUM_THRESHOLD,
+      };
+      const nextThreshold = statusThresholds[cycle.actualStatus] || PLATINUM_THRESHOLD;
+      cycle.actualXPToNext = Math.max(0, nextThreshold - cycle.actualXP);
+      cycle.currentXPToNext = cycle.actualXPToNext;
+      
+      console.log('[XP Engine] PDF baseline applied to empty cycle:', {
+        baselineXP: pdfBaseline.xp,
+        baselineStatus: pdfBaseline.status,
+      });
+    }
+
     return { cycles: [cycle] };
   }
 
@@ -1428,9 +1452,17 @@ export const calculateQualificationCycles = (
     const activeCycle = cycles[cycles.length - 1];
     
     // Calculate XP delta from manual flights added AFTER the PDF export date
-    const manualFlightsAfterPdf = (flights ?? []).filter(f => 
-      f.importSource === 'manual' && f.date > pdfBaseline.pdfExportDate
-    );
+    const allFlights = flights ?? [];
+    const manualFlights = allFlights.filter(f => f.importSource === 'manual');
+    const manualFlightsAfterPdf = manualFlights.filter(f => f.date > pdfBaseline.pdfExportDate);
+    
+    console.log('[XP Engine] Baseline delta calculation:', {
+      totalFlights: allFlights.length,
+      manualFlights: manualFlights.length,
+      manualFlightsAfterPdf: manualFlightsAfterPdf.length,
+      pdfExportDate: pdfBaseline.pdfExportDate,
+      manualFlightDates: manualFlights.map(f => ({ date: f.date, source: f.importSource })),
+    });
     
     const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
       sum + (f.earnedXP || 0) + (f.safXp || 0), 0
@@ -1438,6 +1470,12 @@ export const calculateQualificationCycles = (
     const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
       sum + (f.uxp || 0), 0
     );
+    
+    // Log before override
+    console.log('[XP Engine] Before baseline override:', {
+      activeCycleActualXP: activeCycle.actualXP,
+      activeCycleActualStatus: activeCycle.actualStatus,
+    });
     
     // Override actual values with baseline + manual delta
     activeCycle.actualXP = pdfBaseline.xp + deltaXP;
