@@ -157,154 +157,96 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const text = await file.text();
       const parsed = JSON.parse(text);
 
-      // Helper: merge arrays by ID (existing data is kept, only new entries added)
-      const mergeById = <T extends { id?: string }>(
-        existing: T[],
-        incoming: T[],
-        idField: keyof T = 'id' as keyof T
-      ): T[] => {
-        const existingIds = new Set(existing.map(item => item[idField]));
-        const newItems = incoming.filter(item => !existingIds.has(item[idField]));
-        return [...existing, ...newItems];
-      };
+      // =======================================================================
+      // REPLACE MODE: JSON is the single source of truth for all data
+      // User preferences (currency, homeAirport, emailConsent) are NOT touched
+      // =======================================================================
 
-      // Helper: merge miles records by month (replaces existing months with incoming data)
-      const mergeMilesRecords = (existing: MilesRecord[], incoming: MilesRecord[]): MilesRecord[] => {
-        const result = [...existing];
-        const existingMonthIndex = new Map(existing.map((r, i) => [r.month, i]));
-        
-        for (const incomingRecord of incoming) {
-          const existingIndex = existingMonthIndex.get(incomingRecord.month);
-          if (existingIndex !== undefined) {
-            // Replace existing month with incoming data
-            result[existingIndex] = { ...result[existingIndex], ...incomingRecord, id: result[existingIndex].id };
-          } else {
-            // New month - add it
-            result.push(incomingRecord);
-          }
-        }
-        return result;
-      };
-
-      // Helper: merge arrays by unique key (for flights: date + route)
-      const mergeFlights = (existing: FlightRecord[], incoming: FlightRecord[]): FlightRecord[] => {
-        const existingKeys = new Set(existing.map(f => `${f.date}-${f.route}`));
-        const newFlights = incoming.filter(f => !existingKeys.has(`${f.date}-${f.route}`));
-        return [...existing, ...newFlights];
-      };
-
-      // Helper: merge manualLedger (existing months are kept, only new months added)
-      const mergeManualLedger = (
-        existing: ManualLedger,
-        incoming: ManualLedger
-      ): ManualLedger => {
-        const merged = { ...existing };
-        for (const month of Object.keys(incoming)) {
-          if (!merged[month]) {
-            merged[month] = incoming[month];
-          }
-        }
-        return merged;
-      };
-
-      // Track what was added
-      let addedCount = {
+      // Track what was imported
+      const importedCounts = {
         miles: 0,
-        xp: 0,
-        redemptions: 0,
         flights: 0,
-        manualLedger: 0,
+        redemptions: 0,
+        manualLedgerMonths: 0,
       };
 
-      // Merge baseMilesData (by month - replaces existing months)
-      if (parsed.baseMilesData?.length) {
-        const merged = mergeMilesRecords(data.baseMilesData, parsed.baseMilesData);
-        const newCount = merged.length - data.baseMilesData.length;
-        const updatedCount = parsed.baseMilesData.filter((r: MilesRecord) => 
-          data.baseMilesData.some(e => e.month === r.month)
-        ).length;
-        addedCount.miles = newCount;
-        if (newCount > 0 || updatedCount > 0) {
-          setters.setBaseMilesData(merged);
-          if (updatedCount > 0 && newCount === 0) {
-            addedCount.miles = -updatedCount; // Signal that we updated, not added
-          }
-        }
+      // REPLACE baseMilesData - JSON overwrites all existing miles data
+      if (parsed.baseMilesData) {
+        setters.setBaseMilesData(parsed.baseMilesData);
+        importedCounts.miles = parsed.baseMilesData.length;
       }
 
-      // Merge baseXpData
-      if (parsed.baseXpData?.length) {
-        const merged = mergeById(data.baseXpData, parsed.baseXpData);
-        addedCount.xp = merged.length - data.baseXpData.length;
-        if (addedCount.xp > 0) setters.setBaseXpData(merged);
+      // REPLACE baseXpData - JSON overwrites all existing XP data
+      if (parsed.baseXpData) {
+        setters.setBaseXpData(parsed.baseXpData);
       }
 
-      // Merge redemptions
-      if (parsed.redemptions?.length) {
-        const merged = mergeById(data.redemptions, parsed.redemptions);
-        addedCount.redemptions = merged.length - data.redemptions.length;
-        if (addedCount.redemptions > 0) setters.setRedemptions(merged);
+      // REPLACE flights - JSON overwrites all existing flights
+      if (parsed.flights) {
+        setters.setFlights(parsed.flights);
+        importedCounts.flights = parsed.flights.length;
       }
 
-      // Merge flights (by date + route combination)
-      if (parsed.flights?.length) {
-        const merged = mergeFlights(data.flights, parsed.flights);
-        addedCount.flights = merged.length - data.flights.length;
-        if (addedCount.flights > 0) setters.setFlights(merged);
+      // REPLACE redemptions - JSON overwrites all existing redemptions
+      if (parsed.redemptions) {
+        setters.setRedemptions(parsed.redemptions);
+        importedCounts.redemptions = parsed.redemptions.length;
       }
 
-      // Merge manualLedger
+      // REPLACE manualLedger - JSON overwrites all existing manual ledger entries
       if (parsed.manualLedger) {
-        const existingMonths = Object.keys(data.manualLedger || {}).length;
-        const merged = mergeManualLedger(data.manualLedger || {}, parsed.manualLedger);
-        addedCount.manualLedger = Object.keys(merged).length - existingMonths;
-        if (addedCount.manualLedger > 0) setters.setManualLedger(merged);
+        setters.setManualLedger(parsed.manualLedger);
+        importedCounts.manualLedgerMonths = Object.keys(parsed.manualLedger).length;
       }
 
-      // Import qualificationSettings (only if not already set)
-      if (parsed.qualificationSettings && !data.qualificationSettings) {
+      // REPLACE qualificationSettings - JSON is the source of truth
+      // This is CRITICAL for correct XP cycle calculation
+      if (parsed.qualificationSettings) {
         setters.setQualificationSettings(parsed.qualificationSettings);
       }
 
-      // Build summary message
-      const additions = [];
-      const updates = [];
-      
-      if (addedCount.miles > 0) additions.push(`${addedCount.miles} miles entries`);
-      if (addedCount.miles < 0) updates.push(`${Math.abs(addedCount.miles)} miles entries`);
-      if (addedCount.xp > 0) additions.push(`${addedCount.xp} XP entries`);
-      if (addedCount.redemptions > 0) additions.push(`${addedCount.redemptions} redemptions`);
-      if (addedCount.flights > 0) additions.push(`${addedCount.flights} flights`);
-      if (addedCount.manualLedger > 0) additions.push(`${addedCount.manualLedger} manual ledger months`);
+      // REPLACE xpRollover if present in JSON
+      if (typeof parsed.xpRollover === 'number') {
+        setters.setXpRollover(parsed.xpRollover);
+      }
 
-      const hasChanges = additions.length > 0 || updates.length > 0;
-      
-      // Always trigger auto-save after import, even if no "new" items detected
-      // This ensures database sync when restoring from backup after clear
+      // REPLACE currentMonth if present in JSON
+      if (parsed.currentMonth) {
+        setters.setCurrentMonth(parsed.currentMonth);
+      }
+
+      // NOTE: We intentionally do NOT import user preferences from onboarding:
+      // - currency
+      // - homeAirport
+      // - emailConsent
+      // - targetCPM
+      // - onboardingCompleted
+
+      // Trigger auto-save to persist all changes to database
       if (markDataChanged) markDataChanged();
       
-      // Track the import
+      // Track the import for analytics
       trackImport(
-        addedCount.flights > 0 ? addedCount.flights : 0,
-        addedCount.redemptions > 0 ? addedCount.redemptions : 0,
-        addedCount.miles > 0 ? addedCount.miles : (addedCount.miles < 0 ? Math.abs(addedCount.miles) : 0)
+        importedCounts.flights,
+        importedCounts.redemptions,
+        importedCounts.miles
       );
+
+      // Build summary message
+      const parts = [];
+      if (importedCounts.miles > 0) parts.push(`${importedCounts.miles} miles entries`);
+      if (importedCounts.flights > 0) parts.push(`${importedCounts.flights} flights`);
+      if (importedCounts.redemptions > 0) parts.push(`${importedCounts.redemptions} redemptions`);
+      if (importedCounts.manualLedgerMonths > 0) parts.push(`${importedCounts.manualLedgerMonths} manual ledger months`);
+
+      const message = parts.length > 0
+        ? `Import completed! Restored: ${parts.join(', ')}. Existing data was replaced.`
+        : 'Import completed. Data restored successfully.';
       
-      if (hasChanges) {
-        let message = `Import completed! Added: ${additions.join(', ')}`;
-        if (updates.length > 0) message += `. Updated: ${updates.join(', ')}`;
-        message += '. Existing data was preserved.';
-        
-        if (showToast) {
-          showToast(message, 'success');
-        }
-        onClose(); // Auto-close modal after successful import
-      } else {
-        if (showToast) {
-          showToast('Import completed. Data restored successfully.', 'success');
-        }
-        onClose(); // Also close when restoring existing data
+      if (showToast) {
+        showToast(message, 'success');
       }
+      onClose(); // Auto-close modal after successful import
     } catch (e) {
       console.error('Import failed', e);
       if (showToast) {
