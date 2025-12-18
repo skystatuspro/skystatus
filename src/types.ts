@@ -29,6 +29,35 @@ export interface FlightRecord {
   earnedXP?: number;
   safXp?: number;         // SAF (Sustainable Aviation Fuel) XP
   uxp?: number;           // Ultimate XP - only KLM/AF flights generate UXP
+  // Import tracking
+  importSource?: 'pdf' | 'manual';  // How was this flight added
+  importedAt?: string;              // ISO timestamp of when it was imported
+}
+
+// ============================================================================
+// PDF BASELINE (Source of Truth from PDF Header)
+// ============================================================================
+
+/**
+ * Stores the official Flying Blue balances from the most recent PDF import.
+ * These values are the "source of truth" - they come directly from Flying Blue
+ * and should be displayed as-is. Manual additions are calculated as delta on top.
+ */
+export interface PdfBaseline {
+  // Official balances from PDF header
+  xp: number;                        // XP balance at time of PDF export
+  uxp: number;                       // UXP balance at time of PDF export
+  miles: number;                     // Miles balance at time of PDF export
+  status: StatusLevel;               // Official status level
+  
+  // PDF metadata
+  pdfExportDate: string;             // Date the PDF was exported (from newest transaction or header)
+  importedAt: string;                // When we imported this PDF
+  
+  // Qualification cycle (detected or user-provided)
+  cycleStartMonth?: string;          // YYYY-MM - Official cycle start month
+  cycleStartDate?: string;           // YYYY-MM-DD - Exact date status was reached
+  rolloverXP?: number;               // XP carried over from previous cycle
 }
 
 // ============================================================================

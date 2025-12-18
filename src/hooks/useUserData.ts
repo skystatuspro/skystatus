@@ -20,6 +20,7 @@ import {
   FlightRecord,
   ManualLedger,
   StatusLevel,
+  PdfBaseline,
 } from '../types';
 import {
   INITIAL_MILES_DATA,
@@ -70,9 +71,18 @@ export interface UserDataState {
   currency: CurrencyCode;
   qualificationSettings: QualificationSettings | null;
   
+  // PDF Baseline - Source of truth from most recent PDF import
+  pdfBaseline: PdfBaseline | null;
+  
   // Computed data (derived from base + flights)
   milesData: MilesRecord[];
   xpData: XPRecord[];
+  
+  // Current balances (computed from baseline + delta)
+  displayXP: number;        // XP to show in UI (baseline + manual delta)
+  displayUXP: number;       // UXP to show in UI
+  displayMiles: number;     // Miles to show in UI
+  displayStatus: StatusLevel; // Status to show in UI
   
   // Current status (computed)
   currentStatus: StatusLevel;
@@ -106,14 +116,18 @@ export interface UserDataActions {
   handlePdfImport: (
     flights: FlightRecord[],
     miles: MilesRecord[],
-    xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { 
-      cycleStartMonth: string; 
-      cycleStartDate?: string;
-      startingStatus: StatusLevel;
-      startingXP?: number;
+    pdfHeader: {
+      xp: number;
+      uxp: number;
+      miles: number;
+      status: StatusLevel;
+      exportDate: string;  // Date of newest transaction in PDF
     },
-    bonusXpByMonth?: Record<string, number>,
+    cycleInfo?: {
+      cycleStartMonth: string;
+      cycleStartDate?: string;
+      rolloverXP?: number;
+    },
     sourceFileName?: string
   ) => void;
   handleUndoImport: () => boolean;
@@ -219,6 +233,9 @@ export function useUserData(): UseUserDataReturn {
   const [dataVersion, setDataVersion] = useState(0);
   const debouncedDataVersion = useDebounce(dataVersion, 2000);
   
+  // PDF Baseline - Source of truth from most recent PDF import
+  const [pdfBaseline, setPdfBaselineInternal] = useState<PdfBaseline | null>(null);
+  
   // Track if we've attempted to load data (prevents flash of empty state)
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
@@ -253,6 +270,61 @@ export function useUserData(): UseUserDataReturn {
     const cycle = stats[currentQYear];
     return (cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer') as StatusLevel;
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
+
+  // -------------------------------------------------------------------------
+  // DISPLAY VALUES (PDF Baseline + Manual Delta)
+  // -------------------------------------------------------------------------
+  // These are the values shown in the UI. If we have a PDF baseline, we use that
+  // as the source of truth and add any manual additions made AFTER the PDF date.
+
+  const { displayXP, displayUXP, displayMiles, displayStatus } = useMemo(() => {
+    // If no PDF baseline, fall back to calculated values
+    if (!pdfBaseline) {
+      const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
+      const now = new Date();
+      const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+      const cycle = stats[currentQYear];
+      
+      // Calculate total XP from flights
+      const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
+      const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
+      const totalMiles = milesData.reduce((sum, m) => 
+        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+      );
+      
+      return {
+        displayXP: cycle?.totalXP || totalFlightXP,
+        displayUXP: totalUXP,
+        displayMiles: totalMiles,
+        displayStatus: currentStatus,
+      };
+    }
+
+    // We have a PDF baseline - use it as source of truth
+    // Calculate delta from manual flights added AFTER the PDF export date
+    const pdfDate = pdfBaseline.pdfExportDate;
+    
+    const manualFlightsAfterPdf = flights.filter(f => 
+      f.importSource === 'manual' && f.date > pdfDate
+    );
+    
+    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+    );
+    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.uxp || 0), 0
+    );
+    const deltaMiles = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedMiles || 0), 0
+    );
+    
+    return {
+      displayXP: pdfBaseline.xp + deltaXP,
+      displayUXP: pdfBaseline.uxp + deltaUXP,
+      displayMiles: pdfBaseline.miles + deltaMiles,
+      displayStatus: pdfBaseline.status,
+    };
+  }, [pdfBaseline, flights, xpData, xpRollover, manualLedger, milesData, currentStatus]);
 
   // -------------------------------------------------------------------------
   // DATA PERSISTENCE
@@ -522,13 +594,21 @@ export function useUserData(): UseUserDataReturn {
   const handlePdfImport = useCallback((
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
-    xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
-    bonusXpByMonth?: Record<string, number>,
+    pdfHeader: {
+      xp: number;
+      uxp: number;
+      miles: number;
+      status: StatusLevel;
+      exportDate: string;
+    },
+    cycleInfo?: {
+      cycleStartMonth: string;
+      cycleStartDate?: string;
+      rolloverXP?: number;
+    },
     sourceFileName?: string
   ) => {
     // CRITICAL: Mark as loaded so autosave works for new users
-    // Without this, importing PDF before loadUserData completes would not save
     if (user) {
       hasInitiallyLoaded.current = true;
       loadedForUserId.current = user.id;
@@ -549,117 +629,105 @@ export function useUserData(): UseUserDataReturn {
       console.log('[handlePdfImport] Backup created before import');
     } catch (e) {
       console.error('[handlePdfImport] Failed to create backup:', e);
-      // Continue anyway - backup failure shouldn't block import
     }
 
     // =========================================================================
-    // MERGE MODE: Add new data while preserving existing data
+    // STEP 1: Store PDF Header as Baseline (Source of Truth)
     // =========================================================================
-    
-    // 1. MERGE FLIGHTS: Add new flights, keep existing ones
-    // Match duplicates by date + route (same logic as PdfImportModal)
+    const newBaseline: PdfBaseline = {
+      xp: pdfHeader.xp,
+      uxp: pdfHeader.uxp,
+      miles: pdfHeader.miles,
+      status: pdfHeader.status,
+      pdfExportDate: pdfHeader.exportDate,
+      importedAt: new Date().toISOString(),
+      cycleStartMonth: cycleInfo?.cycleStartMonth,
+      cycleStartDate: cycleInfo?.cycleStartDate,
+      rolloverXP: cycleInfo?.rolloverXP,
+    };
+    setPdfBaselineInternal(newBaseline);
+    console.log('[handlePdfImport] PDF Baseline set:', newBaseline);
+
+    // =========================================================================
+    // STEP 2: Mark all imported flights with source and timestamp
+    // =========================================================================
+    const now = new Date().toISOString();
+    const taggedFlights = importedFlights.map(f => ({
+      ...f,
+      importSource: 'pdf' as const,
+      importedAt: now,
+    }));
+
+    // =========================================================================
+    // STEP 3: Merge Flights - Skip duplicates by date + route
+    // =========================================================================
     const existingFlightKeys = new Set(
       flights.map(f => `${f.date}|${f.route}`)
     );
     
-    const newFlights = importedFlights.filter(f => {
+    const newFlights = taggedFlights.filter(f => {
       const key = `${f.date}|${f.route}`;
       return !existingFlightKeys.has(key);
     });
     
-    // Combine: existing flights + new flights from PDF
+    // Keep existing flights, add new ones
+    // Note: Manual flights added AFTER previous PDF remain with their importSource
     const mergedFlights = [...flights, ...newFlights];
-    // Sort by date descending (newest first)
     mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
     setFlightsInternal(mergedFlights);
     
     console.log(`[handlePdfImport] Merged flights: ${flights.length} existing + ${newFlights.length} new = ${mergedFlights.length} total`);
 
-    // 2. MERGE MILES: Update existing months, add new months
+    // =========================================================================
+    // STEP 4: Merge Miles Records
+    // =========================================================================
     const existingMilesByMonth = new Map(
       baseMilesData.map(m => [m.month, m])
     );
     
     for (const importedMonth of importedMiles) {
-      // Always use PDF data for months it contains (more accurate)
+      // PDF data is authoritative for months it contains
       existingMilesByMonth.set(importedMonth.month, importedMonth);
     }
     
     const mergedMiles = Array.from(existingMilesByMonth.values());
-    // Sort by month descending
     mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
     setBaseMilesDataInternal(mergedMiles);
     
     console.log(`[handlePdfImport] Merged miles: ${baseMilesData.length} existing months, ${importedMiles.length} from PDF = ${mergedMiles.length} total`);
 
-    // 3. MERGE MANUAL LEDGER: Add bonus XP from PDF, preserve existing entries
-    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      const mergedLedger = { ...manualLedger };
-      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-        if (mergedLedger[month]) {
-          // Month exists - add to miscXp
-          mergedLedger[month] = {
-            ...mergedLedger[month],
-            miscXp: (mergedLedger[month].miscXp || 0) + xp,
-          };
-        } else {
-          // New month
-          mergedLedger[month] = { amexXp: 0, bonusSafXp: 0, miscXp: xp, correctionXp: 0 };
-        }
-      }
-      setManualLedgerInternal(mergedLedger);
+    // =========================================================================
+    // STEP 5: Update Qualification Settings if cycle info detected
+    // =========================================================================
+    if (cycleInfo?.cycleStartMonth) {
+      setQualificationSettingsInternal({
+        cycleStartMonth: cycleInfo.cycleStartMonth,
+        cycleStartDate: cycleInfo.cycleStartDate,
+        startingStatus: pdfHeader.status,
+        startingXP: cycleInfo.rolloverXP ?? 0,
+      });
+      console.log('[handlePdfImport] Qualification settings updated from PDF cycle info');
+    } else if (!qualificationSettings) {
+      // No cycle info detected and no existing settings
+      // User needs to set this manually - will be handled by UI
+      console.log('[handlePdfImport] No cycle info detected - user needs to set qualification date');
     }
-    // If no bonus XP, keep existing ledger unchanged
 
-    // 4. QUALIFICATION SETTINGS: Update based on PDF header status (source of truth)
-    if (cycleSettings) {
-      const pdfOfficialStatus = (cycleSettings as { pdfHeaderStatus?: StatusLevel }).pdfHeaderStatus;
-      
-      if (!qualificationSettings) {
-        // No existing settings - use PDF settings (first time setup)
-        // Only set if we have actual cycle info, not just header status
-        if (cycleSettings.cycleStartMonth) {
-          setQualificationSettingsInternal({
-            cycleStartMonth: cycleSettings.cycleStartMonth,
-            cycleStartDate: cycleSettings.cycleStartDate,
-            startingStatus: pdfOfficialStatus || cycleSettings.startingStatus,
-            startingXP: cycleSettings.startingXP ?? 0,
-          });
-          console.log('[handlePdfImport] Set qualification settings from PDF (first time setup)');
-        }
-      } else {
-        // User has existing settings
-        const currentUserStatus = qualificationSettings.startingStatus;
-        
-        // CRITICAL: If PDF status MATCHES user's current status, DO NOT change cycle settings!
-        // The user's existing cycle is correct. Only update if status actually CHANGED.
-        if (pdfOfficialStatus && pdfOfficialStatus !== currentUserStatus) {
-          console.log(`[handlePdfImport] Status CHANGE detected: ${currentUserStatus} → ${pdfOfficialStatus}`);
-          
-          // Status changed - update settings with new cycle info if available
-          if (cycleSettings.cycleStartMonth) {
-            setQualificationSettingsInternal({
-              cycleStartMonth: cycleSettings.cycleStartMonth,
-              cycleStartDate: cycleSettings.cycleStartDate,
-              startingStatus: pdfOfficialStatus,
-              startingXP: cycleSettings.startingXP ?? 0,
-            });
-            console.log(`[handlePdfImport] Updated to ${pdfOfficialStatus} with cycle from ${cycleSettings.cycleStartMonth}`);
-          } else {
-            // Only have status, keep existing cycle but update status
-            setQualificationSettingsInternal({
-              ...qualificationSettings,
-              startingStatus: pdfOfficialStatus,
-            });
-            console.log(`[handlePdfImport] Updated status to ${pdfOfficialStatus}, kept existing cycle`);
-          }
-        } else {
-          // Status matches - DO NOT TOUCH cycle settings!
-          // User's existing cycle (e.g., Nov 2025) is correct
-          // PDF might have old requalification events that don't apply to current cycle
-          console.log(`[handlePdfImport] Status matches (${currentUserStatus}) - keeping ALL existing cycle settings unchanged`);
-        }
-      }
+    // =========================================================================
+    // STEP 6: Validation - Log any discrepancies (informational only)
+    // =========================================================================
+    const calculatedXP = mergedFlights
+      .filter(f => {
+        // Only count flights in current cycle
+        if (!cycleInfo?.cycleStartDate) return true;
+        return f.date >= cycleInfo.cycleStartDate;
+      })
+      .reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0) + (cycleInfo?.rolloverXP || 0);
+    
+    const xpDifference = pdfHeader.xp - calculatedXP;
+    if (Math.abs(xpDifference) > 0) {
+      console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
+      // This is informational - we still use PDF header as source of truth
     }
 
     markDataChanged();
@@ -1111,8 +1179,14 @@ export function useUserData(): UseUserDataReturn {
       targetCPM,
       currency,
       qualificationSettings,
+      pdfBaseline,
       milesData,
       xpData,
+      // Display values (PDF baseline + manual delta)
+      displayXP,
+      displayUXP,
+      displayMiles,
+      displayStatus,
       currentStatus,
       currentMonth,
       homeAirport,
