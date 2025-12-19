@@ -692,7 +692,7 @@ export function useUserData(): UseUserDataReturn {
     
     const mergedMiles = Array.from(existingMilesByMonth.values());
     mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-    setBaseMilesDataInternal(mergedMiles);
+    // NOTE: Don't set state here yet - we need to add miles correction in Step 7 first
     
     console.log(`[handlePdfImport] Merged miles: ${baseMilesData.length} existing months, ${importedMiles.length} from PDF = ${mergedMiles.length} total`);
 
@@ -835,13 +835,26 @@ export function useUserData(): UseUserDataReturn {
       
       // Re-sort and update state
       mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-      setBaseMilesDataInternal(mergedMiles);
+      
+      // Debug: verify correction is in the data
+      const recordWithCorrection = mergedMiles.find(m => m.month === correctionMonth);
+      console.log(`[handlePdfImport] Verifying correction in data:`, {
+        month: correctionMonth,
+        miles_correction: recordWithCorrection?.miles_correction,
+        fullRecord: recordWithCorrection
+      });
+      
+      setBaseMilesDataInternal([...mergedMiles]); // New array reference to ensure React updates
       
       console.log(`[handlePdfImport] Stored Miles correction ${milesCorrection} in month ${correctionMonth}`);
-    } else if (hadExistingCorrections) {
-      // No new correction needed, but we cleared old ones - update state
-      setBaseMilesDataInternal(mergedMiles);
-      console.log(`[handlePdfImport] Cleared old Miles corrections, no new correction needed`);
+    } else {
+      // No correction needed - still need to update state with merged miles (new array reference)
+      setBaseMilesDataInternal([...mergedMiles]);
+      if (hadExistingCorrections) {
+        console.log(`[handlePdfImport] Cleared old Miles corrections, no new correction needed`);
+      } else {
+        console.log(`[handlePdfImport] Miles match PDF header, no correction needed`);
+      }
     }
 
     markDataChanged();

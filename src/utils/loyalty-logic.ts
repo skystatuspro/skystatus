@@ -51,6 +51,11 @@ export const calculateMilesStats = (
       r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
     const rowCorrection = r.miles_correction || 0;
 
+    // Debug: log any records with corrections
+    if (rowCorrection !== 0) {
+      console.log(`[calculateMilesStats] Found correction in month ${r.month}: ${rowCorrection}`);
+    }
+
     earnedAll += rowEarned;
     burnAll += rowBurn;
     costAll += rowCost;
@@ -62,6 +67,8 @@ export const calculateMilesStats = (
       costPast += rowCost;
     }
   });
+
+  console.log(`[calculateMilesStats] Total correction: ${correctionTotal}, earnedPast: ${earnedPast}, burnPast: ${burnPast}, netCurrent will be: ${earnedPast - burnPast + correctionTotal}`);
 
   // Include correction in net calculations (correction can be positive or negative)
   const netCurrent = earnedPast - burnPast + correctionTotal;
