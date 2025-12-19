@@ -180,9 +180,20 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
     // Find suggested cycle settings from most recent requalification
     // Sort requalifications by date descending and take the most recent
-    const sortedRequalifications = [...requalifications].sort((a, b) => b.date.localeCompare(a.date));
     
-    // DEBUG: Log all requalifications
+    // DEBUG: Log dates BEFORE sorting
+    console.log('[PDF Import] Requalification dates BEFORE sort:', requalifications.map(r => r.date));
+    
+    const sortedRequalifications = [...requalifications].sort((a, b) => {
+      const comparison = b.date.localeCompare(a.date);
+      console.log(`[PDF Import] Sort compare: "${b.date}" vs "${a.date}" = ${comparison}`);
+      return comparison;
+    });
+    
+    // DEBUG: Log dates AFTER sorting
+    console.log('[PDF Import] Requalification dates AFTER sort:', sortedRequalifications.map(r => r.date));
+    
+    // DEBUG: Log all requalifications with full details
     console.log('[PDF Import] Sorted requalifications (newest first):', sortedRequalifications.map(r => ({
       date: r.date,
       toStatus: r.toStatus,
@@ -190,12 +201,26 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       rolloverXP: r.rolloverXP
     })));
     
+    // Log specifically the first one (should be newest)
+    if (sortedRequalifications.length > 0) {
+      console.log('[PDF Import] NEWEST requalification (index 0):', {
+        date: sortedRequalifications[0].date,
+        toStatus: sortedRequalifications[0].toStatus,
+        xpDeducted: sortedRequalifications[0].xpDeducted,
+      });
+    }
+    
     // ALWAYS use the most recent requalification for cycle date
     // The PDF header status is the source of truth for current status
     // We don't need to match toStatus - it's often not parsed correctly
     const mostRecentRequalification = sortedRequalifications[0] || null;
     
-    console.log('[PDF Import] Using most recent requalification:', mostRecentRequalification);
+    console.log('[PDF Import] Using most recent requalification:', {
+      date: mostRecentRequalification?.date,
+      toStatus: mostRecentRequalification?.toStatus,
+      xpDeducted: mostRecentRequalification?.xpDeducted,
+      rolloverXP: mostRecentRequalification?.rolloverXP,
+    });
     
     let suggestedCycleStart: string | null = null;
     let suggestedCycleStartDate: string | null = null;  // Full date for precise filtering
@@ -221,6 +246,13 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       const requalDate = new Date(mostRecentRequalification.date);
       const nextMonth = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
       suggestedCycleStart = nextMonth.toISOString().substring(0, 7); // YYYY-MM
+      
+      console.log('[PDF Import] Cycle calculation:', {
+        inputDate: mostRecentRequalification.date,
+        parsedDate: requalDate.toISOString(),
+        nextMonthDate: nextMonth.toISOString(),
+        suggestedCycleStart: suggestedCycleStart,
+      });
       
       // Use PDF header status as the suggested status (it's the source of truth)
       suggestedStatus = pdfHeaderStatusRaw ? (statusMap[pdfHeaderStatusRaw] || null) : null;
