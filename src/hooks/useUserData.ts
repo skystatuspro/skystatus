@@ -775,9 +775,14 @@ export function useUserData(): UseUserDataReturn {
     // STEP 7: Calculate Miles correction and store in milesData
     // =========================================================================
     // Same pattern as XP: PDF header is source of truth
-    // IMPORTANT: Calculate engine miles WITHOUT existing corrections to get accurate new correction
+    // IMPORTANT: We must calculate the correction based on what the Dashboard will see,
+    // which is AFTER rebuildLedgersFromFlights adds flight miles to the records.
     
-    const engineMilesWithoutCorrection = mergedMiles.reduce((sum, m) => 
+    // First, simulate what rebuildLedgersFromFlights will produce
+    const { miles: simulatedMilesData } = rebuildLedgersFromFlights(mergedMiles, baseXpData, mergedFlights);
+    
+    // Now calculate engine miles the same way calculateMilesStats does
+    const engineMilesWithoutCorrection = simulatedMilesData.reduce((sum, m) => 
       sum 
       + (m.miles_subscription || 0)
       + (m.miles_amex || 0) 
@@ -789,7 +794,7 @@ export function useUserData(): UseUserDataReturn {
 
     const milesCorrection = pdfHeader.miles - engineMilesWithoutCorrection;
 
-    console.log(`[handlePdfImport] Miles Engine calculated (without correction): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
+    console.log(`[handlePdfImport] Miles Engine calculated (after rebuildLedgers): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
 
     // First, clear ALL existing corrections (we only want one correction, replacing any old ones)
     let hadExistingCorrections = false;
