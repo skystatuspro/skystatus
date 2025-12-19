@@ -775,20 +775,30 @@ export function useUserData(): UseUserDataReturn {
     // STEP 7: Calculate Miles correction and store in milesData
     // =========================================================================
     // Same pattern as XP: PDF header is source of truth
+    // IMPORTANT: Calculate engine miles WITHOUT existing corrections to get accurate new correction
     
-    const engineMiles = mergedMiles.reduce((sum, m) => 
+    const engineMilesWithoutCorrection = mergedMiles.reduce((sum, m) => 
       sum 
       + (m.miles_subscription || 0)
       + (m.miles_amex || 0) 
       + (m.miles_flight || 0) 
       + (m.miles_other || 0) 
-      - (m.miles_debit || 0)
-      + (m.miles_correction || 0),  // Include existing corrections
+      - (m.miles_debit || 0),
+      // Deliberately NOT including miles_correction here
     0);
 
-    const milesCorrection = pdfHeader.miles - engineMiles;
+    const milesCorrection = pdfHeader.miles - engineMilesWithoutCorrection;
 
-    console.log(`[handlePdfImport] Miles Engine calculated: ${engineMiles}, PDF header: ${pdfHeader.miles}, correction: ${milesCorrection}`);
+    console.log(`[handlePdfImport] Miles Engine calculated (without correction): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
+
+    // First, clear ALL existing corrections (we only want one correction, replacing any old ones)
+    let hadExistingCorrections = false;
+    mergedMiles.forEach(m => {
+      if (m.miles_correction) {
+        hadExistingCorrections = true;
+        m.miles_correction = 0;
+      }
+    });
 
     if (milesCorrection !== 0) {
       // Determine correction month: prefer cycle start, fallback to most recent month or current month
@@ -828,6 +838,10 @@ export function useUserData(): UseUserDataReturn {
       setBaseMilesDataInternal(mergedMiles);
       
       console.log(`[handlePdfImport] Stored Miles correction ${milesCorrection} in month ${correctionMonth}`);
+    } else if (hadExistingCorrections) {
+      // No new correction needed, but we cleared old ones - update state
+      setBaseMilesDataInternal(mergedMiles);
+      console.log(`[handlePdfImport] Cleared old Miles corrections, no new correction needed`);
     }
 
     markDataChanged();
