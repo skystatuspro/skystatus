@@ -289,7 +289,7 @@ export function useUserData(): UseUserDataReturn {
       const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
       const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
       const totalMiles = milesData.reduce((sum, m) => 
-        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit + (m.miles_correction || 0), 0
       );
       
       return {
@@ -769,6 +769,62 @@ export function useUserData(): UseUserDataReturn {
       if (Math.abs(xpDifference) > 0) {
         console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
       }
+    }
+
+    // =========================================================================
+    // STEP 7: Calculate Miles correction and store in milesData
+    // =========================================================================
+    // Same pattern as XP: PDF header is source of truth
+    
+    const engineMiles = mergedMiles.reduce((sum, m) => 
+      sum 
+      + (m.miles_subscription || 0)
+      + (m.miles_amex || 0) 
+      + (m.miles_flight || 0) 
+      + (m.miles_other || 0) 
+      - (m.miles_debit || 0)
+      + (m.miles_correction || 0),  // Include existing corrections
+    0);
+
+    const milesCorrection = pdfHeader.miles - engineMiles;
+
+    console.log(`[handlePdfImport] Miles Engine calculated: ${engineMiles}, PDF header: ${pdfHeader.miles}, correction: ${milesCorrection}`);
+
+    if (milesCorrection !== 0 && newQualificationSettings?.cycleStartMonth) {
+      const correctionMonth = newQualificationSettings.cycleStartMonth;
+      
+      // Find or create the record for this month
+      const existingRecordIndex = mergedMiles.findIndex(m => m.month === correctionMonth);
+      
+      if (existingRecordIndex >= 0) {
+        // Update existing record - REPLACE, don't add (prevents double correction on re-import)
+        mergedMiles[existingRecordIndex] = {
+          ...mergedMiles[existingRecordIndex],
+          miles_correction: milesCorrection,
+        };
+      } else {
+        // Create new record for correction month
+        mergedMiles.push({
+          id: `correction-${correctionMonth}`,
+          month: correctionMonth,
+          miles_subscription: 0,
+          miles_amex: 0,
+          miles_flight: 0,
+          miles_other: 0,
+          miles_debit: 0,
+          cost_subscription: 0,
+          cost_amex: 0,
+          cost_flight: 0,
+          cost_other: 0,
+          miles_correction: milesCorrection,
+        });
+      }
+      
+      // Re-sort and update state
+      mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
+      setBaseMilesDataInternal(mergedMiles);
+      
+      console.log(`[handlePdfImport] Stored Miles correction ${milesCorrection} in month ${correctionMonth}`);
     }
 
     markDataChanged();

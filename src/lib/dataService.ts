@@ -223,6 +223,7 @@ export async function fetchMilesTransactions(userId: string): Promise<MilesRecor
         cost_amex: 0,
         cost_flight: 0,
         cost_other: 0,
+        miles_correction: 0,
       };
     }
 
@@ -242,6 +243,9 @@ export async function fetchMilesTransactions(userId: string): Promise<MilesRecor
         break;
       case 'debit':
         record.miles_debit += t.miles;
+        break;
+      case 'correction':
+        record.miles_correction = (record.miles_correction || 0) + t.miles;
         break;
       default:
         record.miles_other += t.miles;
@@ -295,6 +299,18 @@ export async function saveMilesRecord(userId: string, record: MilesRecord): Prom
       month: record.month,
       source: 'debit',
       miles: record.miles_debit,
+      cost: 0,
+      is_projected: false,
+    });
+  }
+
+  // Save correction (can be positive or negative)
+  if (record.miles_correction && record.miles_correction !== 0) {
+    transactions.push({
+      user_id: userId,
+      month: record.month,
+      source: 'correction',
+      miles: record.miles_correction,
       cost: 0,
       is_projected: false,
     });
@@ -370,6 +386,18 @@ export async function saveMilesRecords(userId: string, records: MilesRecord[]): 
         month: record.month,
         source: 'debit',
         miles: record.miles_debit,
+        cost: 0,
+        is_projected: false,
+      });
+    }
+
+    // Save correction (can be positive or negative)
+    if (record.miles_correction && record.miles_correction !== 0) {
+      transactions.push({
+        user_id: userId,
+        month: record.month,
+        source: 'correction',
+        miles: record.miles_correction,
         cost: 0,
         is_projected: false,
       });

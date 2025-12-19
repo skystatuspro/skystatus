@@ -76,6 +76,9 @@ export interface MilesRecord {
   cost_amex: number;
   cost_flight: number;
   cost_other: number;
+  // Correction to align calculated miles with PDF header balance
+  // Positive = PDF shows more miles, Negative = PDF shows fewer
+  miles_correction?: number;
 }
 
 // ============================================================================
