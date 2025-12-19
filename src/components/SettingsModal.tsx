@@ -1,4 +1,4 @@
-import React, { useRef, useState, lazy, Suspense } from 'react';
+import React, { useRef, useState, lazy, Suspense, useMemo } from 'react';
 import {
   Database,
   X,
@@ -21,6 +21,9 @@ import {
 import { useAuth } from '../lib/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { CurrencyCode, SUPPORTED_CURRENCIES } from '../utils/format';
+import { calculateQualificationCycles } from '../utils/xp-logic';
+import { normalizeQualificationSettings } from '../utils/ultimate-bridge';
+import { findActiveCycle } from './Dashboard/helpers';
 
 // Lazy load PdfImportModal to reduce initial bundle
 const PdfImportModal = lazy(() => import('./PdfImportModal'));
@@ -129,6 +132,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Calculate active cycle for PdfImportModal
+  const normalizedSettings = useMemo(
+    () => normalizeQualificationSettings(data.qualificationSettings ?? null),
+    [data.qualificationSettings]
+  );
+
+  const { cycles } = useMemo(
+    () => calculateQualificationCycles(
+      data.baseXpData,
+      data.xpRollover,
+      data.flights,
+      data.manualLedger,
+      normalizedSettings
+    ),
+    [data.baseXpData, data.xpRollover, data.flights, data.manualLedger, normalizedSettings]
+  );
+
+  const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
 
   if (!isOpen) return null;
 
@@ -957,6 +979,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onImport={handlePdfImport}
             existingFlights={data.flights}
             existingMiles={data.baseMilesData}
+            existingQualificationSettings={data.qualificationSettings}
+            existingStatus={data.qualificationSettings?.startingStatus || null}
+            existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
+            existingRolloverXP={activeCycle?.rolloverIn ?? null}
           />
         </Suspense>
       )}
