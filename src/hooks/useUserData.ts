@@ -35,7 +35,7 @@ import {
   FlightIntakePayload,
   createFlightRecord,
 } from '../utils/flight-intake';
-import { calculateMultiYearStats } from '../utils/xp-logic';
+import { calculateMultiYearStats, calculateQualificationCycles } from '../utils/xp-logic';
 import { CurrencyCode } from '../utils/format';
 import {
   createBackup,
@@ -289,7 +289,7 @@ export function useUserData(): UseUserDataReturn {
       const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
       const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
       const totalMiles = milesData.reduce((sum, m) => 
-        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit + (m.miles_correction || 0), 0
       );
       
       return {
@@ -380,6 +380,18 @@ export function useUserData(): UseUserDataReturn {
             startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
             startingUXP: data.profile.startingUXP || 0,
             ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
+          });
+        }
+        
+        // Load PDF Baseline from database
+        if (data.profile.pdfBaselineXp !== null && data.profile.pdfBaselineXp !== undefined) {
+          setPdfBaselineInternal({
+            xp: data.profile.pdfBaselineXp,
+            uxp: data.profile.pdfBaselineUxp || 0,
+            miles: data.profile.pdfBaselineMiles || 0,
+            status: (data.profile.pdfBaselineStatus || 'Explorer') as StatusLevel,
+            pdfExportDate: data.profile.pdfExportDate || '',
+            importedAt: data.profile.pdfImportedAt || '',
           });
         }
       } else {
@@ -692,7 +704,7 @@ export function useUserData(): UseUserDataReturn {
     
     const mergedMiles = Array.from(existingMilesByMonth.values());
     mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-    setBaseMilesDataInternal(mergedMiles);
+    // NOTE: Don't set state here yet - we need to add miles correction in Step 7 first
     
     console.log(`[handlePdfImport] Merged miles: ${baseMilesData.length} existing months, ${importedMiles.length} from PDF = ${mergedMiles.length} total`);
 
@@ -714,24 +726,194 @@ export function useUserData(): UseUserDataReturn {
     }
 
     // =========================================================================
-    // STEP 6: Validation - Log any discrepancies (informational only)
+    // STEP 6: Calculate XP correction and store in manualLedger
     // =========================================================================
-    const calculatedXP = mergedFlights
-      .filter(f => {
-        // Only count flights in current cycle
-        if (!cycleInfo?.cycleStartDate) return true;
-        return f.date >= cycleInfo.cycleStartDate;
-      })
-      .reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0) + (cycleInfo?.rolloverXP || 0);
+    const newQualificationSettings = cycleInfo?.cycleStartMonth ? {
+      cycleStartMonth: cycleInfo.cycleStartMonth,
+      cycleStartDate: cycleInfo.cycleStartDate,
+      startingStatus: pdfHeader.status,
+      startingXP: cycleInfo.rolloverXP ?? 0,
+    } : qualificationSettings;
+
+    if (newQualificationSettings?.cycleStartMonth) {
+      const { cycles } = calculateQualificationCycles(
+        baseXpData,
+        xpRollover,
+        mergedFlights,
+        manualLedger,
+        newQualificationSettings
+      );
+      
+      const today = new Date().toISOString().slice(0, 10);
+      const activeCycle = cycles.find(c => today >= c.startDate && today <= c.endDate)
+        || cycles.find(c => c.endDate >= today)
+        || cycles[cycles.length - 1];
+      
+      if (activeCycle) {
+        const engineXP = activeCycle.actualXP ?? 0;
+        const xpCorrection = pdfHeader.xp - engineXP;
+        
+        console.log(`[handlePdfImport] XP Engine calculated: ${engineXP}, PDF header: ${pdfHeader.xp}, correction: ${xpCorrection}`);
+        
+        if (xpCorrection !== 0) {
+          const correctionMonth = newQualificationSettings.cycleStartMonth;
+          const updatedLedger: ManualLedger = {
+            ...manualLedger,
+            [correctionMonth]: {
+              ...manualLedger[correctionMonth],
+              correctionXp: (manualLedger[correctionMonth]?.correctionXp ?? 0) + xpCorrection,
+            },
+          };
+          setManualLedgerInternal(updatedLedger);
+          console.log(`[handlePdfImport] Stored XP correction ${xpCorrection} in ledger month ${correctionMonth}`);
+        }
+      }
+    } else {
+      // Fallback: simple validation logging if no cycle settings
+      const calculatedXP = mergedFlights
+        .filter(f => {
+          if (!cycleInfo?.cycleStartDate) return true;
+          return f.date >= cycleInfo.cycleStartDate;
+        })
+        .reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0) + (cycleInfo?.rolloverXP || 0);
+      
+      const xpDifference = pdfHeader.xp - calculatedXP;
+      if (Math.abs(xpDifference) > 0) {
+        console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
+      }
+    }
+
+    // =========================================================================
+    // STEP 7: Calculate Miles correction and store in milesData
+    // =========================================================================
+    // Same pattern as XP: PDF header is source of truth
+    // IMPORTANT: We must calculate the correction based on what the Dashboard will see,
+    // which is AFTER rebuildLedgersFromFlights adds flight miles to the records.
     
-    const xpDifference = pdfHeader.xp - calculatedXP;
-    if (Math.abs(xpDifference) > 0) {
-      console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
-      // This is informational - we still use PDF header as source of truth
+    // First, simulate what rebuildLedgersFromFlights will produce
+    const { miles: simulatedMilesData } = rebuildLedgersFromFlights(mergedMiles, baseXpData, mergedFlights);
+    
+    // CRITICAL FIX: Calculate engine miles the same way calculateMilesStats does
+    // calculateMilesStats filters on month <= currentMonth for earnedPast/burnPast,
+    // so we must apply the same filter here to get a matching correction value.
+    const nowForCorrection = new Date();
+    const currentMonthForCorrection = `${nowForCorrection.getFullYear()}-${String(nowForCorrection.getMonth() + 1).padStart(2, '0')}`;
+    
+    const engineMilesWithoutCorrection = simulatedMilesData
+      .filter(m => m.month <= currentMonthForCorrection)  // Match calculateMilesStats filter
+      .reduce((sum, m) => 
+        sum 
+        + (m.miles_subscription || 0)
+        + (m.miles_amex || 0) 
+        + (m.miles_flight || 0) 
+        + (m.miles_other || 0) 
+        - (m.miles_debit || 0),
+        // Deliberately NOT including miles_correction here
+      0);
+
+    let milesCorrection = pdfHeader.miles - engineMilesWithoutCorrection;
+
+    // Validation guard: abort if correction is invalid (prevents data corruption)
+    if (!Number.isFinite(milesCorrection)) {
+      console.error('[handlePdfImport] Invalid miles correction calculated:', {
+        pdfHeaderMiles: pdfHeader.miles,
+        engineMiles: engineMilesWithoutCorrection,
+        result: milesCorrection
+      });
+      return;  // Abort - better to show wrong balance than corrupt data
+    }
+
+    console.log(`[handlePdfImport] Miles Engine calculated (after rebuildLedgers, filtered to ${currentMonthForCorrection}): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
+
+    // First, clear ALL existing corrections (we only want one correction, replacing any old ones)
+    let hadExistingCorrections = false;
+    mergedMiles.forEach(m => {
+      if (m.miles_correction) {
+        hadExistingCorrections = true;
+        m.miles_correction = 0;
+      }
+    });
+
+    if (milesCorrection !== 0) {
+      // Determine correction month: prefer cycle start, fallback to most recent month or current month
+      const correctionMonth = newQualificationSettings?.cycleStartMonth 
+        || cycleInfo?.cycleStartMonth
+        || (mergedMiles.length > 0 ? mergedMiles[0].month : new Date().toISOString().slice(0, 7));
+      
+      // Find or create the record for this month
+      const existingRecordIndex = mergedMiles.findIndex(m => m.month === correctionMonth);
+      
+      if (existingRecordIndex >= 0) {
+        // Update existing record - REPLACE, don't add (prevents double correction on re-import)
+        mergedMiles[existingRecordIndex] = {
+          ...mergedMiles[existingRecordIndex],
+          miles_correction: milesCorrection,
+        };
+      } else {
+        // Create new record for correction month
+        mergedMiles.push({
+          id: `correction-${correctionMonth}`,
+          month: correctionMonth,
+          miles_subscription: 0,
+          miles_amex: 0,
+          miles_flight: 0,
+          miles_other: 0,
+          miles_debit: 0,
+          cost_subscription: 0,
+          cost_amex: 0,
+          cost_flight: 0,
+          cost_other: 0,
+          miles_correction: milesCorrection,
+        });
+      }
+      
+      // Re-sort and update state
+      mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
+      
+      // Debug: verify correction is in the data
+      const recordWithCorrection = mergedMiles.find(m => m.month === correctionMonth);
+      console.log(`[handlePdfImport] Verifying correction in data:`, {
+        month: correctionMonth,
+        miles_correction: recordWithCorrection?.miles_correction,
+        fullRecord: recordWithCorrection
+      });
+      
+      setBaseMilesDataInternal([...mergedMiles]); // New array reference to ensure React updates
+      
+      console.log(`[handlePdfImport] Stored Miles correction ${milesCorrection} in month ${correctionMonth}`);
+    } else {
+      // No correction needed - still need to update state with merged miles (new array reference)
+      setBaseMilesDataInternal([...mergedMiles]);
+      if (hadExistingCorrections) {
+        console.log(`[handlePdfImport] Cleared old Miles corrections, no new correction needed`);
+      } else {
+        console.log(`[handlePdfImport] Miles match PDF header, no correction needed`);
+      }
+    }
+
+    // =========================================================================
+    // STEP 8: Save PDF Baseline to Database
+    // =========================================================================
+    if (user) {
+      updateProfile(user.id, {
+        pdf_baseline_xp: pdfHeader.xp,
+        pdf_baseline_uxp: pdfHeader.uxp,
+        pdf_baseline_miles: pdfHeader.miles,
+        pdf_baseline_status: pdfHeader.status,
+        pdf_export_date: pdfHeader.exportDate,
+        pdf_imported_at: new Date().toISOString(),
+        pdf_source_filename: sourceFileName || null,
+      }).then(success => {
+        if (success) {
+          console.log('[handlePdfImport] PDF Baseline saved to database');
+        } else {
+          console.error('[handlePdfImport] Failed to save PDF Baseline to database');
+        }
+      });
     }
 
     markDataChanged();
-  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger]);
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, baseXpData, xpRollover]);
 
   // UNDO IMPORT: Restore data from backup
   const handleUndoImport = useCallback(() => {
@@ -955,6 +1137,7 @@ export function useUserData(): UseUserDataReturn {
           cycleStartMonth,
           startingStatus: data.currentStatus,
           startingXP: data.currentXP,
+          startingUXP: data.currentUXP || 0,
           ultimateCycleType: data.ultimateCycleType,
         });
       }
@@ -1037,6 +1220,7 @@ export function useUserData(): UseUserDataReturn {
     qualificationSettings?: QualificationSettings;
     xpRollover?: number;
     homeAirport?: string | null;
+    pdfBaseline?: PdfBaseline | null;
   }): Promise<boolean> => {
     // Local/demo mode: just update state directly
     if (!user || isDemoMode || isLocalMode) {
@@ -1048,6 +1232,7 @@ export function useUserData(): UseUserDataReturn {
       if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
       if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
       if (importData.homeAirport !== undefined) setHomeAirportInternal(importData.homeAirport);
+      if (importData.pdfBaseline !== undefined) setPdfBaselineInternal(importData.pdfBaseline);
       return true;
     }
 
@@ -1108,6 +1293,25 @@ export function useUserData(): UseUserDataReturn {
       if (importData.homeAirport !== undefined) {
         profileUpdates.home_airport = importData.homeAirport;
       }
+      // PDF Baseline
+      if (importData.pdfBaseline !== undefined) {
+        if (importData.pdfBaseline) {
+          profileUpdates.pdf_baseline_xp = importData.pdfBaseline.xp;
+          profileUpdates.pdf_baseline_uxp = importData.pdfBaseline.uxp;
+          profileUpdates.pdf_baseline_miles = importData.pdfBaseline.miles;
+          profileUpdates.pdf_baseline_status = importData.pdfBaseline.status;
+          profileUpdates.pdf_export_date = importData.pdfBaseline.pdfExportDate;
+          profileUpdates.pdf_imported_at = importData.pdfBaseline.importedAt;
+        } else {
+          // Explicitly clear pdfBaseline if null
+          profileUpdates.pdf_baseline_xp = null;
+          profileUpdates.pdf_baseline_uxp = null;
+          profileUpdates.pdf_baseline_miles = null;
+          profileUpdates.pdf_baseline_status = null;
+          profileUpdates.pdf_export_date = null;
+          profileUpdates.pdf_imported_at = null;
+        }
+      }
       if (Object.keys(profileUpdates).length > 0) {
         savePromises.push(updateProfile(user.id, profileUpdates));
       }
@@ -1150,8 +1354,22 @@ export function useUserData(): UseUserDataReturn {
             cycleStartDate: freshData.profile.qualificationStartDate || undefined,
             startingStatus: (freshData.profile.startingStatus || 'Explorer') as StatusLevel,
             startingXP: freshData.profile.startingXP ?? 0,
+            startingUXP: freshData.profile.startingUXP ?? 0,
             ultimateCycleType: freshData.profile.ultimateCycleType || 'qualification',
           });
+        }
+        // Load PDF Baseline from database
+        if (freshData.profile.pdfBaselineXp !== null) {
+          setPdfBaselineInternal({
+            xp: freshData.profile.pdfBaselineXp,
+            uxp: freshData.profile.pdfBaselineUxp || 0,
+            miles: freshData.profile.pdfBaselineMiles || 0,
+            status: (freshData.profile.pdfBaselineStatus || 'Explorer') as StatusLevel,
+            pdfExportDate: freshData.profile.pdfExportDate || '',
+            importedAt: freshData.profile.pdfImportedAt || '',
+          });
+        } else {
+          setPdfBaselineInternal(null);
         }
       }
 
