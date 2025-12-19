@@ -1,0 +1,9 @@
+
+# Build output
+dist/
+
+# Debug files
+diagnose-*.cjs
+diagnose-*.mjs
+.wget-hsts
+.npmrc
