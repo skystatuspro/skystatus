@@ -43,7 +43,6 @@ import {
   StatusLevel,
 } from '../types';
 import { QualificationSettings } from '../hooks/useUserData';
-import { PdfBaseline } from '../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -60,7 +59,6 @@ interface SettingsModalProps {
     manualLedger: ManualLedger;
     qualificationSettings: QualificationSettings | null;
     homeAirport: string | null;
-    pdfBaseline: PdfBaseline | null;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;
@@ -136,21 +134,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleExport = () => {
     try {
-      // Ensure qualificationSettings has all fields with explicit values (not undefined)
-      // This prevents data loss when importing older backups
-      const exportData = {
-        ...data,
-        qualificationSettings: data.qualificationSettings ? {
-          cycleStartMonth: data.qualificationSettings.cycleStartMonth,
-          cycleStartDate: data.qualificationSettings.cycleStartDate ?? null,
-          startingStatus: data.qualificationSettings.startingStatus,
-          startingXP: data.qualificationSettings.startingXP ?? 0,
-          startingUXP: data.qualificationSettings.startingUXP ?? 0,
-          ultimateCycleType: data.qualificationSettings.ultimateCycleType ?? 'qualification',
-        } : null,
-      };
-      
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: 'application/json',
       });
       const url = URL.createObjectURL(blob);

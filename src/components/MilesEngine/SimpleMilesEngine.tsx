@@ -206,8 +206,7 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
     const sorted = [...data].sort((a, b) => b.month.localeCompare(a.month));
     return sorted.slice(0, 6).map(record => {
       const total = record.miles_subscription + record.miles_amex + 
-                   record.miles_flight + record.miles_other - record.miles_debit +
-                   (record.miles_correction || 0);
+                   record.miles_flight + record.miles_other - record.miles_debit;
       return {
         record,
         month: record.month,
@@ -217,9 +216,8 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
         subscription: record.miles_subscription,
         other: record.miles_other,
         burned: record.miles_debit,
-        correction: record.miles_correction || 0,
       };
-    }).filter(m => m.total !== 0 || m.burned > 0 || m.correction !== 0);
+    }).filter(m => m.total !== 0 || m.burned > 0);
   }, [data]);
 
   // Recent redemptions

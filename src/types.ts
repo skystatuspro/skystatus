@@ -76,9 +76,6 @@ export interface MilesRecord {
   cost_amex: number;
   cost_flight: number;
   cost_other: number;
-  // Correction to align calculated miles with PDF header balance
-  // Positive = PDF shows more miles, Negative = PDF shows fewer
-  miles_correction?: number;
 }
 
 // ============================================================================
@@ -103,11 +100,11 @@ export interface XPRecord {
 
 export interface RedemptionRecord {
   id: string;
-  date: string;              // YYYY-MM-DD format
+  month: string;
+  miles_redeemed: number;
   description: string;
-  award_miles: number;       // Miles used for this redemption
-  surcharges: number;        // Taxes/fees paid in cash
-  cash_price_estimate?: number;  // Estimated cash value of what was redeemed
+  category: 'flight' | 'upgrade' | 'product' | 'transfer' | 'other';
+  estimated_value?: number;
 }
 
 // ============================================================================

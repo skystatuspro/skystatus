@@ -45,13 +45,7 @@ export const rebuildLedgersFromFlights = (
   const getLedgerId = (prefix: string, month: string) => `${prefix}-${month}`;
 
   (milesData ?? []).forEach((r) => {
-    if (r && typeof r.month === 'string') {
-      // Debug: log any records with corrections being copied
-      if (r.miles_correction) {
-        console.log(`[rebuildLedgersFromFlights] Copying record with correction: month=${r.month}, correction=${r.miles_correction}`);
-      }
-      milesByMonth.set(r.month, { ...r });
-    }
+    if (r && typeof r.month === 'string') milesByMonth.set(r.month, { ...r });
   });
 
   (xpData ?? []).forEach((r) => {
