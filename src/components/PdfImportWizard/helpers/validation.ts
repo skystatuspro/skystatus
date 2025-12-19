@@ -108,14 +108,19 @@ export function validateConfirmStep(): StepValidation {
 
 /**
  * Check if a specific step is valid
+ * @param hasExistingSettings - If true, cycle step is optional (pre-filled from existing data)
  */
-export function isStepValid(step: number, state: WizardState): boolean {
+export function isStepValid(step: number, state: WizardState, hasExistingSettings: boolean = false): boolean {
   switch (step) {
     case 0:
       return validateStatusStep(state).isValid;
     case 1:
       return validateBalanceStep(state).isValid;
     case 2:
+      // If user has existing settings AND cycleStartMonth is pre-filled, it's valid
+      if (hasExistingSettings && state.cycleStartMonth) {
+        return true;
+      }
       return validateCycleStep(state).isValid;
     case 3:
       return validatePreviewStep().isValid;

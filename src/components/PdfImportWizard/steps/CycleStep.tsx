@@ -20,6 +20,7 @@ export const CycleStep: React.FC<CycleStepProps> = ({
   updateState,
   suggestedCycleStart,
   suggestedSurplusXP,
+  hasExistingSettings,
 }) => {
   const [showCycleHelp, setShowCycleHelp] = useState(false);
   const [showSurplusHelp, setShowSurplusHelp] = useState(false);
@@ -66,29 +67,45 @@ export const CycleStep: React.FC<CycleStepProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-          <Calendar className="text-amber-600" size={28} />
+        <div className={`w-14 h-14 ${hasExistingSettings ? 'bg-green-100' : 'bg-amber-100'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
+          <Calendar className={hasExistingSettings ? 'text-green-600' : 'text-amber-600'} size={28} />
         </div>
         <h2 className="text-xl font-bold text-slate-900 mb-2">
-          Set Your Qualification Cycle
+          {hasExistingSettings ? 'Confirm Your Qualification Cycle' : 'Set Your Qualification Cycle'}
         </h2>
         <p className="text-slate-500 text-sm">
-          This information is required for accurate calculations.
+          {hasExistingSettings 
+            ? 'Your settings are pre-filled. Review and adjust if needed.'
+            : 'This information is required for accurate calculations.'}
         </p>
       </div>
 
-      {/* Required Warning */}
-      <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-        <AlertTriangle size={20} className="text-amber-600 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-medium text-amber-800">
-            This step is required
-          </p>
-          <p className="text-xs text-amber-700 mt-1">
-            Without your qualification cycle start date, we cannot calculate your progress correctly.
-          </p>
+      {/* Info Box - different for existing vs new */}
+      {hasExistingSettings ? (
+        <div className="flex gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+          <Calendar size={20} className="text-green-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-green-800">
+              Settings loaded from your account
+            </p>
+            <p className="text-xs text-green-700 mt-1">
+              We've pre-filled your qualification cycle. You can skip this step or adjust if needed.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <AlertTriangle size={20} className="text-amber-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">
+              This step is required
+            </p>
+            <p className="text-xs text-amber-700 mt-1">
+              Without your qualification cycle start date, we cannot calculate your progress correctly.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Cycle Start Month */}
       <div className="space-y-3">

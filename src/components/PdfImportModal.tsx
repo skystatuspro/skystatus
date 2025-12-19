@@ -108,6 +108,14 @@ interface PdfImportModalProps {
   ) => void;
   existingFlights: FlightRecord[];
   existingMiles: MilesRecord[];
+  // Existing user settings (for returning users)
+  existingQualificationSettings?: {
+    cycleStartMonth: string;
+    cycleStartDate?: string;
+    startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+    startingXP?: number;
+  } | null;
+  existingStatus?: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate' | null;
 }
 
 type ImportStep = 'upload' | 'parsing' | 'wizard' | 'feedback' | 'error';
@@ -117,7 +125,9 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   onClose,
   onImport,
   existingFlights,
-  existingMiles
+  existingMiles,
+  existingQualificationSettings,
+  existingStatus,
 }) => {
   const [step, setStep] = useState<ImportStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
@@ -587,6 +597,13 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
 
   const wizardParseResult = getWizardParseResult();
 
+  // Build existing settings from props (for returning users)
+  const existingSettings = existingQualificationSettings ? {
+    status: existingStatus || existingQualificationSettings.startingStatus || null,
+    cycleStartMonth: existingQualificationSettings.cycleStartMonth || null,
+    surplusXP: existingQualificationSettings.startingXP || null,
+  } : null;
+
   // Render wizard when in wizard step
   if (step === 'wizard' && wizardParseResult) {
     return (
@@ -595,6 +612,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
         onClose={handleClose}
         onComplete={handleWizardComplete}
         parseResult={wizardParseResult}
+        existingSettings={existingSettings}
       />
     );
   }

@@ -586,6 +586,8 @@ export default function App() {
         }}
         existingFlights={state.flights}
         existingMiles={state.baseMilesData}
+        existingQualificationSettings={state.qualificationSettings}
+        existingStatus={state.currentStatus}
       />
 
       <PdfImportModal
@@ -596,6 +598,8 @@ export default function App() {
         }}
         existingFlights={state.flights}
         existingMiles={state.baseMilesData}
+        existingQualificationSettings={state.qualificationSettings}
+        existingStatus={state.currentStatus}
       />
 
       <SettingsModal

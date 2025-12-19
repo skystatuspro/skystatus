@@ -40,6 +40,7 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
   onClose,
   onComplete,
   parseResult,
+  existingSettings,
 }) => {
   // =========================================================================
   // STATE
@@ -47,20 +48,25 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
   
   const [currentStep, setCurrentStep] = useState(0);
   
-  // Initialize wizard state with detected values
+  // Determine if user has existing settings in the database
+  const hasExistingSettings = !!(existingSettings?.cycleStartMonth);
+  const hasExistingStatus = !!(existingSettings?.status);
+  
+  // Initialize wizard state with detected values OR existing settings
+  // Priority: 1. PDF detected values, 2. Existing settings, 3. Defaults
   const [wizardState, setWizardState] = useState<WizardState>(() => ({
-    // Step 1: Status
-    status: parseResult.detectedStatus || 'Explorer',
-    statusConfirmed: !!parseResult.detectedStatus,
+    // Step 1: Status - prefer PDF detected, then existing, then Explorer
+    status: parseResult.detectedStatus || existingSettings?.status || 'Explorer',
+    statusConfirmed: !!(parseResult.detectedStatus || existingSettings?.status),
     
-    // Step 2: Balances
+    // Step 2: Balances - always from PDF
     xpBalance: parseResult.detectedXP,
     uxpBalance: parseResult.detectedUXP,
     milesBalance: parseResult.detectedMiles,
     
-    // Step 3: Cycle (initially empty - user must fill)
-    cycleStartMonth: parseResult.suggestedCycleStart || '',
-    surplusXP: parseResult.suggestedSurplusXP ?? 0,
+    // Step 3: Cycle - prefer PDF suggested, then existing settings
+    cycleStartMonth: parseResult.suggestedCycleStart || existingSettings?.cycleStartMonth || '',
+    surplusXP: parseResult.suggestedSurplusXP ?? existingSettings?.surplusXP ?? 0,
   }));
 
   // =========================================================================
@@ -113,11 +119,11 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
   // =========================================================================
 
   const canContinue = useMemo(() => {
-    return isStepValid(currentStep, wizardState);
-  }, [currentStep, wizardState]);
+    return isStepValid(currentStep, wizardState, hasExistingSettings);
+  }, [currentStep, wizardState, hasExistingSettings]);
 
-  // Step 2 (Cycle) is NEVER skippable
-  const showSkip = currentStep !== 2;
+  // Step 2 (Cycle) is skippable if user has existing settings
+  const showSkip = currentStep !== 2 || hasExistingSettings;
 
   // =========================================================================
   // RENDER CURRENT STEP
@@ -150,6 +156,7 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
             updateState={updateState}
             suggestedCycleStart={parseResult.suggestedCycleStart}
             suggestedSurplusXP={parseResult.suggestedSurplusXP}
+            hasExistingSettings={hasExistingSettings}
           />
         );
       case 3:

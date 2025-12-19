@@ -81,6 +81,13 @@ export interface PdfImportWizardProps {
     // Summary stats
     summary: ParseSummary;
   };
+  
+  // Existing user settings (for returning users importing additional data)
+  existingSettings?: {
+    status: StatusLevel | null;
+    cycleStartMonth: string | null;
+    surplusXP: number | null;
+  } | null;
 }
 
 /**
@@ -135,6 +142,8 @@ export interface BalanceStepProps extends StepProps {
 export interface CycleStepProps extends StepProps {
   suggestedCycleStart: string | null;
   suggestedSurplusXP: number | null;
+  // If true, user already has settings - step is optional (just confirm or change)
+  hasExistingSettings: boolean;
 }
 
 /**
