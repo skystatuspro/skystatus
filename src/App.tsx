@@ -601,6 +601,7 @@ export default function App() {
           manualLedger: state.manualLedger,
           qualificationSettings: state.qualificationSettings,
           homeAirport: state.homeAirport,
+          pdfBaseline: state.pdfBaseline,
         }}
         setters={{
           setBaseMilesData: actions.setBaseMilesData,
