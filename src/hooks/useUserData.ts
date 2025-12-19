@@ -293,45 +293,31 @@ export function useUserData(): UseUserDataReturn {
       };
     }
 
-    // Calculate current values from flights (for delta tracking)
-    const cycleStartDate = qualificationSettings?.cycleStartMonth 
-      ? `${qualificationSettings.cycleStartMonth}-01`
-      : null;
-    
-    const flightsInCycle = cycleStartDate
-      ? flights.filter(f => f.date >= cycleStartDate)
-      : flights;
-    
-    const currentCalculatedXP = flightsInCycle.reduce((sum, f) => 
-      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
-    ) + (qualificationSettings?.startingXP || 0);
-    
-    const currentCalculatedUXP = flightsInCycle.reduce((sum, f) => 
-      sum + (f.uxp || 0), 0
-    );
-
-    // We have a PDF baseline - calculate delta from import time
-    // displayXP = currentCalculatedXP + (pdfXP - calculatedXpAtImport)
-    // This means: if user removes a flight, currentCalculatedXP drops, so displayXP drops too
-    const xpCorrection = pdfBaseline.xp - (pdfBaseline.calculatedXpAtImport ?? pdfBaseline.xp);
-    const uxpCorrection = pdfBaseline.uxp - (pdfBaseline.calculatedUxpAtImport ?? pdfBaseline.uxp);
-    
-    // For miles, still use manual additions after PDF date (miles don't change with flight removal)
+    // We have a PDF baseline - use it as source of truth
+    // Calculate delta from manual flights added AFTER the PDF export date
     const pdfDate = pdfBaseline.pdfExportDate;
+    
     const manualFlightsAfterPdf = flights.filter(f => 
       f.importSource === 'manual' && f.date > pdfDate
+    );
+    
+    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+    );
+    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.uxp || 0), 0
     );
     const deltaMiles = manualFlightsAfterPdf.reduce((sum, f) => 
       sum + (f.earnedMiles || 0), 0
     );
     
     return {
-      displayXP: currentCalculatedXP + xpCorrection,
-      displayUXP: currentCalculatedUXP + uxpCorrection,
+      displayXP: pdfBaseline.xp + deltaXP,
+      displayUXP: pdfBaseline.uxp + deltaUXP,
       displayMiles: pdfBaseline.miles + deltaMiles,
       displayStatus: pdfBaseline.status,
     };
-  }, [pdfBaseline, flights, qualificationSettings, milesData, currentStatus]);
+  }, [pdfBaseline, flights, milesData, currentStatus]);
 
   // -------------------------------------------------------------------------
   // DATA PERSISTENCE
@@ -646,7 +632,7 @@ export function useUserData(): UseUserDataReturn {
     }
 
     // =========================================================================
-    // STEP 1: Prepare PDF Header as Baseline (will be finalized in STEP 6)
+    // STEP 1: Store PDF Header as Baseline (Source of Truth)
     // =========================================================================
     const newBaseline: PdfBaseline = {
       xp: pdfHeader.xp,
@@ -659,7 +645,8 @@ export function useUserData(): UseUserDataReturn {
       cycleStartDate: cycleInfo?.cycleStartDate,
       rolloverXP: cycleInfo?.rolloverXP,
     };
-    // Note: setPdfBaselineInternal is called in STEP 6 after calculating delta values
+    setPdfBaselineInternal(newBaseline);
+    console.log('[handlePdfImport] PDF Baseline set:', newBaseline);
 
     // =========================================================================
     // STEP 2: Mark all imported flights with source and timestamp
@@ -727,7 +714,7 @@ export function useUserData(): UseUserDataReturn {
     }
 
     // =========================================================================
-    // STEP 6: Calculate XP at import time (for delta tracking)
+    // STEP 6: Validation - Log any discrepancies (informational only)
     // =========================================================================
     const calculatedXP = mergedFlights
       .filter(f => {
@@ -737,27 +724,11 @@ export function useUserData(): UseUserDataReturn {
       })
       .reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0) + (cycleInfo?.rolloverXP || 0);
     
-    const calculatedUXP = mergedFlights
-      .filter(f => {
-        if (!cycleInfo?.cycleStartDate) return true;
-        return f.date >= cycleInfo.cycleStartDate;
-      })
-      .reduce((sum, f) => sum + (f.uxp || 0), 0);
-    
     const xpDifference = pdfHeader.xp - calculatedXP;
     if (Math.abs(xpDifference) > 0) {
       console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
-      // This difference becomes the correction factor for dynamic display
+      // This is informational - we still use PDF header as source of truth
     }
-    
-    // Update pdfBaseline with calculated values for delta tracking
-    const finalBaseline: PdfBaseline = {
-      ...newBaseline,
-      calculatedXpAtImport: calculatedXP,
-      calculatedUxpAtImport: calculatedUXP,
-    };
-    setPdfBaselineInternal(finalBaseline);
-    console.log('[handlePdfImport] PDF Baseline with delta tracking:', finalBaseline);
 
     markDataChanged();
   }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger]);
