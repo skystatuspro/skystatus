@@ -216,6 +216,8 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
               onImport={onPdfImport}
               existingFlights={state.flights}
               existingMiles={state.milesData}
+              existingQualificationSettings={state.qualificationSettings}
+              existingStatus={actualStatus}
             />
           </Suspense>
         )}

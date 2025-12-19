@@ -347,6 +347,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             }}
             existingFlights={state.flights}
             existingMiles={state.milesData}
+            existingQualificationSettings={state.qualificationSettings}
+            existingStatus={actualStatus}
           />
         )}
 
@@ -744,6 +746,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}
           existingFlights={state.flights}
           existingMiles={state.milesData}
+          existingQualificationSettings={state.qualificationSettings}
+          existingStatus={actualStatus}
         />
       )}
     </>

@@ -52,23 +52,31 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
   const hasExistingSettings = !!(existingSettings?.cycleStartMonth);
   const hasExistingStatus = !!(existingSettings?.status);
   
+  console.log('[PdfImportWizard] Received existingSettings:', existingSettings);
+  console.log('[PdfImportWizard] hasExistingSettings:', hasExistingSettings);
+  console.log('[PdfImportWizard] parseResult.suggestedCycleStart:', parseResult.suggestedCycleStart);
+  
   // Initialize wizard state with detected values OR existing settings
   // Priority for RETURNING users: 1. Existing settings, 2. PDF detected, 3. Defaults
   // Priority for NEW users: 1. PDF detected, 2. Defaults
-  const [wizardState, setWizardState] = useState<WizardState>(() => ({
-    // Step 1: Status - prefer existing (returning user), then PDF detected, then Explorer
-    status: existingSettings?.status || parseResult.detectedStatus || 'Explorer',
-    statusConfirmed: !!(existingSettings?.status || parseResult.detectedStatus),
-    
-    // Step 2: Balances - always from PDF (this is the latest authoritative data)
-    xpBalance: parseResult.detectedXP,
-    uxpBalance: parseResult.detectedUXP,
-    milesBalance: parseResult.detectedMiles,
-    
-    // Step 3: Cycle - prefer existing settings (user already configured), then PDF suggestion
-    cycleStartMonth: existingSettings?.cycleStartMonth || parseResult.suggestedCycleStart || '',
-    surplusXP: existingSettings?.surplusXP ?? parseResult.suggestedSurplusXP ?? 0,
-  }));
+  const [wizardState, setWizardState] = useState<WizardState>(() => {
+    const initialState = {
+      // Step 1: Status - prefer existing (returning user), then PDF detected, then Explorer
+      status: existingSettings?.status || parseResult.detectedStatus || 'Explorer',
+      statusConfirmed: !!(existingSettings?.status || parseResult.detectedStatus),
+      
+      // Step 2: Balances - always from PDF (this is the latest authoritative data)
+      xpBalance: parseResult.detectedXP,
+      uxpBalance: parseResult.detectedUXP,
+      milesBalance: parseResult.detectedMiles,
+      
+      // Step 3: Cycle - prefer existing settings (user already configured), then PDF suggestion
+      cycleStartMonth: existingSettings?.cycleStartMonth || parseResult.suggestedCycleStart || '',
+      surplusXP: existingSettings?.surplusXP ?? parseResult.suggestedSurplusXP ?? 0,
+    };
+    console.log('[PdfImportWizard] Initial state:', initialState);
+    return initialState;
+  });
 
   // =========================================================================
   // HANDLERS

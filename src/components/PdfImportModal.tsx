@@ -604,8 +604,15 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     surplusXP: existingQualificationSettings.startingXP || null,
   } : null;
 
+  // Debug logging
+  console.log('[PdfImportModal] existingQualificationSettings prop:', existingQualificationSettings);
+  console.log('[PdfImportModal] existingStatus prop:', existingStatus);
+  console.log('[PdfImportModal] Built existingSettings:', existingSettings);
+
   // Render wizard when in wizard step
   if (step === 'wizard' && wizardParseResult) {
+    console.log('[PdfImportModal] Passing to wizard - existingSettings:', existingSettings);
+    console.log('[PdfImportModal] Passing to wizard - parseResult.suggestedCycleStart:', wizardParseResult.suggestedCycleStart);
     return (
       <PdfImportWizard
         isOpen={true}
