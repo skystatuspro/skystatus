@@ -51,6 +51,12 @@ interface DashboardState {
   targetCPM: number;
   manualLedger: ManualLedger;
   qualificationSettings?: QualificationSettings | null;
+  // PDF Baseline display values (source of truth)
+  displayXP?: number;
+  displayUXP?: number;
+  displayMiles?: number;
+  displayStatus?: StatusLevel;
+  hasPdfBaseline?: boolean;
 }
 
 interface DashboardProps {
@@ -148,12 +154,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
   const projectedStatus: StatusLevel = demoStatus ?? getDisplayProjectedStatus(rawProjectedStatus, cycleProjectedUltimate);
   
-  const actualXP: number = activeCycle?.actualXP ?? 0;
+  // Use displayXP from PDF baseline if available, otherwise use calculated actualXP
+  // This ensures PDF header values are shown as the source of truth
+  const calculatedActualXP: number = activeCycle?.actualXP ?? 0;
+  const actualXP: number = state.hasPdfBaseline && state.displayXP !== undefined 
+    ? state.displayXP 
+    : calculatedActualXP;
   const rolloverIn: number = activeCycle?.rolloverIn ?? 0;
   const rolloverOut: number = activeCycle?.rolloverOut ?? 0;
 
-  // UXP data
-  const actualUXP: number = activeCycle?.actualUXP ?? 0;
+  // UXP data - use displayUXP from PDF baseline if available
+  const calculatedActualUXP: number = activeCycle?.actualUXP ?? 0;
+  const actualUXP: number = state.hasPdfBaseline && state.displayUXP !== undefined
+    ? state.displayUXP
+    : calculatedActualUXP;
   const projectedUXP: number = activeCycle?.projectedUXP ?? 0;
   
   // Show Ultimate progress bar only for:

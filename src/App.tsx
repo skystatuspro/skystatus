@@ -325,6 +325,12 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
+              // PDF Baseline display values
+              displayXP: state.displayXP,
+              displayUXP: state.displayUXP,
+              displayMiles: state.displayMiles,
+              displayStatus: state.displayStatus,
+              hasPdfBaseline: !!state.pdfBaseline,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -455,6 +461,12 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
+              // PDF Baseline display values
+              displayXP: state.displayXP,
+              displayUXP: state.displayUXP,
+              displayMiles: state.displayMiles,
+              displayStatus: state.displayStatus,
+              hasPdfBaseline: !!state.pdfBaseline,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}

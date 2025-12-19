@@ -33,6 +33,9 @@ export const StatusStep: React.FC<StatusStepProps> = ({
   updateState,
   detectedStatus,
 }) => {
+  // If no status detected, force manual selection mode
+  const noStatusDetected = !detectedStatus;
+  
   const handleConfirmChange = (confirmed: boolean) => {
     updateState({
       statusConfirmed: confirmed,
@@ -56,84 +59,111 @@ export const StatusStep: React.FC<StatusStepProps> = ({
           <Award className="text-blue-600" size={28} />
         </div>
         <h2 className="text-xl font-bold text-slate-900 mb-2">
-          Confirm Your Status
+          {noStatusDetected ? 'Select Your Status' : 'Confirm Your Status'}
         </h2>
         <p className="text-slate-500 text-sm">
-          We detected the following Flying Blue status from your PDF.
+          {noStatusDetected 
+            ? 'We couldn\'t detect your status from the PDF. Please select it manually.'
+            : 'We detected the following Flying Blue status from your PDF.'}
         </p>
       </div>
 
-      {/* Detected Status Display */}
+      {/* Detected Status Display - only if detected */}
       {detectedStatus && (
         <div className="flex justify-center py-4">
           <StatusBadge status={detectedStatus} large />
         </div>
       )}
 
-      {/* Confirmation Options */}
-      <div className="space-y-3">
-        {/* Yes, this is correct */}
-        <label
-          className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-            wizardState.statusConfirmed
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <input
-            type="radio"
-            name="statusConfirm"
-            checked={wizardState.statusConfirmed}
-            onChange={() => handleConfirmChange(true)}
-            className="w-5 h-5 text-blue-600 border-slate-300 focus:ring-blue-500"
-          />
-          <div className="flex-1">
-            <p className="font-medium text-slate-800">Yes, this is correct</p>
+      {/* No status detected - show manual selection directly */}
+      {noStatusDetected && (
+        <div className="space-y-3">
+          <p className="font-medium text-slate-700 text-center">What is your current Flying Blue status?</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {STATUS_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleStatusChange(option.value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  wizardState.status === option.value
+                    ? `${option.color} text-white`
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
-          {wizardState.statusConfirmed && (
-            <Check size={20} className="text-blue-600" />
-          )}
-        </label>
+        </div>
+      )}
 
-        {/* No, my status is different */}
-        <label
-          className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-            !wizardState.statusConfirmed
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          <input
-            type="radio"
-            name="statusConfirm"
-            checked={!wizardState.statusConfirmed}
-            onChange={() => handleConfirmChange(false)}
-            className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 focus:ring-blue-500"
-          />
-          <div className="flex-1 space-y-3">
-            <p className="font-medium text-slate-800">No, my status is:</p>
-            
-            {!wizardState.statusConfirmed && (
-              <div className="flex flex-wrap gap-2">
-                {STATUS_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleStatusChange(option.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      wizardState.status === option.value
-                        ? `${option.color} text-white`
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+      {/* Confirmation Options - only if status was detected */}
+      {!noStatusDetected && (
+        <div className="space-y-3">
+          {/* Yes, this is correct */}
+          <label
+            className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              wizardState.statusConfirmed
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="statusConfirm"
+              checked={wizardState.statusConfirmed}
+              onChange={() => handleConfirmChange(true)}
+              className="w-5 h-5 text-blue-600 border-slate-300 focus:ring-blue-500"
+            />
+            <div className="flex-1">
+              <p className="font-medium text-slate-800">Yes, this is correct</p>
+            </div>
+            {wizardState.statusConfirmed && (
+              <Check size={20} className="text-blue-600" />
             )}
-          </div>
-        </label>
-      </div>
+          </label>
+
+          {/* No, my status is different */}
+          <label
+            className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              !wizardState.statusConfirmed
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <input
+              type="radio"
+              name="statusConfirm"
+              checked={!wizardState.statusConfirmed}
+              onChange={() => handleConfirmChange(false)}
+              className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+            />
+            <div className="flex-1 space-y-3">
+              <p className="font-medium text-slate-800">No, my status is:</p>
+              
+              {!wizardState.statusConfirmed && (
+                <div className="flex flex-wrap gap-2">
+                  {STATUS_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleStatusChange(option.value)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        wizardState.status === option.value
+                          ? `${option.color} text-white`
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </label>
+        </div>
+      )}
 
       {/* Info note */}
       <div className="bg-slate-50 rounded-xl p-4">
