@@ -7,3 +7,4 @@ diagnose-*.cjs
 diagnose-*.mjs
 .wget-hsts
 .npmrc
+PDF-BASELINE-BUG-ANALYSE.md
