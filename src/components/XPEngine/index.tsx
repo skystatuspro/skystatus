@@ -59,6 +59,10 @@ interface XPEngineProps {
   qualificationSettings: QualificationSettingsType | null;
   onUpdateQualificationSettings: (settings: QualificationSettingsType | null) => void;
   demoStatus?: StatusLevel; // Override status display in demo mode
+  // PDF Baseline display values (source of truth when available)
+  displayXP?: number;
+  displayUXP?: number;
+  hasPdfBaseline?: boolean;
 }
 
 export const XPEngine: React.FC<XPEngineProps> = ({
@@ -76,6 +80,9 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   qualificationSettings,
   onUpdateQualificationSettings,
   demoStatus,
+  displayXP: propDisplayXP,
+  displayUXP: propDisplayUXP,
+  hasPdfBaseline = false,
 }) => {
   const { isSimpleMode } = useViewMode();
 
@@ -158,6 +165,8 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         manualLedger={manualLedger}
         qualificationSettings={qualificationSettings}
         demoStatus={demoStatus}
+        displayXP={propDisplayXP}
+        hasPdfBaseline={hasPdfBaseline}
       />
     );
   }
@@ -180,7 +189,12 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   // ACTUAL status and XP - use demoStatus override or bridge
   const rawActualStatus: StatusLevel = currentCycle.actualStatus ?? currentCycle.startStatus;
   const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
-  const actualXP: number = currentCycle.actualXP ?? 0;
+  
+  // Use displayXP from PDF baseline if available, otherwise use calculated actualXP
+  const calculatedActualXP: number = currentCycle.actualXP ?? 0;
+  const actualXP: number = hasPdfBaseline && propDisplayXP !== undefined 
+    ? propDisplayXP 
+    : calculatedActualXP;
   const actualXPToNext: number = currentCycle.actualXPToNext ?? 0;
 
   // Calculate projected cumulative XP first (needed for projected status)

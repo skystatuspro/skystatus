@@ -423,6 +423,9 @@ export default function App() {
             qualificationSettings={state.qualificationSettings}
             onUpdateQualificationSettings={actions.handleQualificationSettingsUpdate}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
+            displayXP={state.displayXP}
+            displayUXP={state.displayUXP}
+            hasPdfBaseline={!!state.pdfBaseline}
           />
         );
 
@@ -457,6 +460,8 @@ export default function App() {
             manualLedger={state.manualLedger}
             qualificationSettings={state.qualificationSettings}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
+            displayXP={state.displayXP}
+            hasPdfBaseline={!!state.pdfBaseline}
           />
         );
 

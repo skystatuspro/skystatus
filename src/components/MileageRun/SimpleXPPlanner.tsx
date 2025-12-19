@@ -58,6 +58,8 @@ export const SimpleXPPlanner: React.FC<MileageRunProps> = ({
   manualLedger,
   qualificationSettings,
   demoStatus,
+  displayXP: propDisplayXP,
+  hasPdfBaseline = false,
 }) => {
   const { setViewMode } = useViewMode();
   
@@ -79,7 +81,12 @@ export const SimpleXPPlanner: React.FC<MileageRunProps> = ({
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
-  const actualXP = activeCycle?.actualXP ?? 0;
+  
+  // Use displayXP from PDF baseline if available, otherwise use calculated actualXP
+  const calculatedActualXP = activeCycle?.actualXP ?? 0;
+  const actualXP = hasPdfBaseline && propDisplayXP !== undefined 
+    ? propDisplayXP 
+    : calculatedActualXP;
   const cycleIsUltimate = activeCycle?.isUltimate ?? false;
   const rawStatus: StatusLevel = (activeCycle?.actualStatus as StatusLevel) ?? 'Explorer';
   const currentStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawStatus, cycleIsUltimate);

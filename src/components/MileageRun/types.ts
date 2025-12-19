@@ -18,6 +18,9 @@ export interface MileageRunProps {
   manualLedger: ManualXPLedger;
   qualificationSettings: QualificationSettings;
   demoStatus?: StatusLevel; // Override status display in demo mode
+  // PDF Baseline display values
+  displayXP?: number;
+  hasPdfBaseline?: boolean;
 }
 
 export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
