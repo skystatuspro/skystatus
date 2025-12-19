@@ -53,20 +53,21 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
   const hasExistingStatus = !!(existingSettings?.status);
   
   // Initialize wizard state with detected values OR existing settings
-  // Priority: 1. PDF detected values, 2. Existing settings, 3. Defaults
+  // Priority for RETURNING users: 1. Existing settings, 2. PDF detected, 3. Defaults
+  // Priority for NEW users: 1. PDF detected, 2. Defaults
   const [wizardState, setWizardState] = useState<WizardState>(() => ({
-    // Step 1: Status - prefer PDF detected, then existing, then Explorer
-    status: parseResult.detectedStatus || existingSettings?.status || 'Explorer',
-    statusConfirmed: !!(parseResult.detectedStatus || existingSettings?.status),
+    // Step 1: Status - prefer existing (returning user), then PDF detected, then Explorer
+    status: existingSettings?.status || parseResult.detectedStatus || 'Explorer',
+    statusConfirmed: !!(existingSettings?.status || parseResult.detectedStatus),
     
-    // Step 2: Balances - always from PDF
+    // Step 2: Balances - always from PDF (this is the latest authoritative data)
     xpBalance: parseResult.detectedXP,
     uxpBalance: parseResult.detectedUXP,
     milesBalance: parseResult.detectedMiles,
     
-    // Step 3: Cycle - prefer PDF suggested, then existing settings
-    cycleStartMonth: parseResult.suggestedCycleStart || existingSettings?.cycleStartMonth || '',
-    surplusXP: parseResult.suggestedSurplusXP ?? existingSettings?.surplusXP ?? 0,
+    // Step 3: Cycle - prefer existing settings (user already configured), then PDF suggestion
+    cycleStartMonth: existingSettings?.cycleStartMonth || parseResult.suggestedCycleStart || '',
+    surplusXP: existingSettings?.surplusXP ?? parseResult.suggestedSurplusXP ?? 0,
   }));
 
   // =========================================================================
