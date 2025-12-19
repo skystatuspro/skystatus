@@ -781,20 +781,37 @@ export function useUserData(): UseUserDataReturn {
     // First, simulate what rebuildLedgersFromFlights will produce
     const { miles: simulatedMilesData } = rebuildLedgersFromFlights(mergedMiles, baseXpData, mergedFlights);
     
-    // Now calculate engine miles the same way calculateMilesStats does
-    const engineMilesWithoutCorrection = simulatedMilesData.reduce((sum, m) => 
-      sum 
-      + (m.miles_subscription || 0)
-      + (m.miles_amex || 0) 
-      + (m.miles_flight || 0) 
-      + (m.miles_other || 0) 
-      - (m.miles_debit || 0),
-      // Deliberately NOT including miles_correction here
-    0);
+    // CRITICAL FIX: Calculate engine miles the same way calculateMilesStats does
+    // calculateMilesStats filters on month <= currentMonth for earnedPast/burnPast,
+    // so we must apply the same filter here to get a matching correction value.
+    const nowForCorrection = new Date();
+    const currentMonthForCorrection = `${nowForCorrection.getFullYear()}-${String(nowForCorrection.getMonth() + 1).padStart(2, '0')}`;
+    
+    const engineMilesWithoutCorrection = simulatedMilesData
+      .filter(m => m.month <= currentMonthForCorrection)  // Match calculateMilesStats filter
+      .reduce((sum, m) => 
+        sum 
+        + (m.miles_subscription || 0)
+        + (m.miles_amex || 0) 
+        + (m.miles_flight || 0) 
+        + (m.miles_other || 0) 
+        - (m.miles_debit || 0),
+        // Deliberately NOT including miles_correction here
+      0);
 
-    const milesCorrection = pdfHeader.miles - engineMilesWithoutCorrection;
+    let milesCorrection = pdfHeader.miles - engineMilesWithoutCorrection;
 
-    console.log(`[handlePdfImport] Miles Engine calculated (after rebuildLedgers): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
+    // Validation guard: abort if correction is invalid (prevents data corruption)
+    if (!Number.isFinite(milesCorrection)) {
+      console.error('[handlePdfImport] Invalid miles correction calculated:', {
+        pdfHeaderMiles: pdfHeader.miles,
+        engineMiles: engineMilesWithoutCorrection,
+        result: milesCorrection
+      });
+      return;  // Abort - better to show wrong balance than corrupt data
+    }
+
+    console.log(`[handlePdfImport] Miles Engine calculated (after rebuildLedgers, filtered to ${currentMonthForCorrection}): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
 
     // First, clear ALL existing corrections (we only want one correction, replacing any old ones)
     let hadExistingCorrections = false;
