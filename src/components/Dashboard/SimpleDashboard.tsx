@@ -218,6 +218,8 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
               existingMiles={state.milesData}
               existingQualificationSettings={state.qualificationSettings}
               existingStatus={actualStatus}
+              existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
+              existingRolloverXP={activeCycle?.rolloverIn ?? null}
             />
           </Suspense>
         )}
@@ -409,6 +411,8 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
             existingMiles={state.milesData}
             existingQualificationSettings={state.qualificationSettings}
             existingStatus={actualStatus}
+            existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
+            existingRolloverXP={activeCycle?.rolloverIn ?? null}
           />
         </Suspense>
       )}

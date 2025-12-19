@@ -116,6 +116,9 @@ interface PdfImportModalProps {
     startingXP?: number;
   } | null;
   existingStatus?: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate' | null;
+  // ACTUAL current cycle start from XP Engine (overrides qualificationSettings)
+  existingActiveCycleStart?: string | null; // YYYY-MM format
+  existingRolloverXP?: number | null;
 }
 
 type ImportStep = 'upload' | 'parsing' | 'wizard' | 'feedback' | 'error';
@@ -128,6 +131,8 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   existingMiles,
   existingQualificationSettings,
   existingStatus,
+  existingActiveCycleStart,
+  existingRolloverXP,
 }) => {
   const [step, setStep] = useState<ImportStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
@@ -598,14 +603,20 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const wizardParseResult = getWizardParseResult();
 
   // Build existing settings from props (for returning users)
-  const existingSettings = existingQualificationSettings ? {
-    status: existingStatus || existingQualificationSettings.startingStatus || null,
-    cycleStartMonth: existingQualificationSettings.cycleStartMonth || null,
-    surplusXP: existingQualificationSettings.startingXP || null,
+  // Priority: existingActiveCycleStart (from XP Engine) > qualificationSettings (from DB)
+  const actualCycleStart = existingActiveCycleStart || existingQualificationSettings?.cycleStartMonth || null;
+  const actualRolloverXP = existingRolloverXP ?? existingQualificationSettings?.startingXP ?? null;
+  
+  const existingSettings = (actualCycleStart || existingStatus) ? {
+    status: existingStatus || existingQualificationSettings?.startingStatus || null,
+    cycleStartMonth: actualCycleStart,
+    surplusXP: actualRolloverXP,
   } : null;
 
   // Debug logging
   console.log('[PdfImportModal] existingQualificationSettings prop:', existingQualificationSettings);
+  console.log('[PdfImportModal] existingActiveCycleStart prop:', existingActiveCycleStart);
+  console.log('[PdfImportModal] existingRolloverXP prop:', existingRolloverXP);
   console.log('[PdfImportModal] existingStatus prop:', existingStatus);
   console.log('[PdfImportModal] Built existingSettings:', existingSettings);
 
