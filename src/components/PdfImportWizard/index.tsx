@@ -108,13 +108,24 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
     }
 
     // Prepare complete data
+    // cycleStartDate is derived from the user-selected cycleStartMonth (first day of that month)
+    // Only use suggestedCycleStartDate if it matches the selected month (user confirmed the suggestion)
+    const selectedMonth = wizardState.cycleStartMonth; // YYYY-MM format
+    const suggestedDate = parseResult.suggestedCycleStartDate; // YYYY-MM-DD format
+    
+    // If user selected a different month than suggested, use first day of selected month
+    // If user kept the suggested month, use the precise suggested date
+    const cycleStartDate = suggestedDate && suggestedDate.startsWith(selectedMonth)
+      ? suggestedDate
+      : `${selectedMonth}-01`;
+    
     const completeData: WizardCompleteData = {
       status: wizardState.status,
       xpBalance: wizardState.xpBalance,
       uxpBalance: wizardState.uxpBalance,
       milesBalance: wizardState.milesBalance,
       cycleStartMonth: wizardState.cycleStartMonth,
-      cycleStartDate: parseResult.suggestedCycleStartDate || undefined,
+      cycleStartDate: cycleStartDate,
       surplusXP: wizardState.surplusXP,
       flights: parseResult.flights,
       newFlights: parseResult.newFlights,
