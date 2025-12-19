@@ -29,6 +29,7 @@ import { CalculatorPage } from './components/CalculatorPage';
 import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { MaintenanceNotice } from './components/MaintenanceNotice';
+import { UpdateNotice } from './components/UpdateNotice';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel } from './types';
 
@@ -637,8 +638,11 @@ export default function App() {
       <ToastContainer />
       <CookieConsentUI />
       
-      {/* Maintenance Notice for PDF Import Issues */}
-      <MaintenanceNotice isActiveUser={!!user || meta.isLocalMode} />
+      {/* Update Notice for PDF Import 2.0 and Miles Engine Maintenance */}
+      <UpdateNotice 
+        isActiveUser={!!user || meta.isLocalMode} 
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
       
       {/* Demo Mode Bar */}
       <DemoBar
