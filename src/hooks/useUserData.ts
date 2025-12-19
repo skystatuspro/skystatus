@@ -35,7 +35,7 @@ import {
   FlightIntakePayload,
   createFlightRecord,
 } from '../utils/flight-intake';
-import { calculateMultiYearStats, calculateQualificationCycles, QualificationCycleStats } from '../utils/xp-logic';
+import { calculateMultiYearStats, calculateQualificationCycles } from '../utils/xp-logic';
 import { CurrencyCode } from '../utils/format';
 import {
   createBackup,
@@ -79,11 +79,10 @@ export interface UserDataState {
   xpData: XPRecord[];
   
   // Current balances (computed from baseline + delta)
-  // undefined means: use XP Engine calculated value (no PDF baseline)
-  displayXP: number | undefined;   // XP to show in UI (baseline + manual delta)
-  displayUXP: number | undefined;  // UXP to show in UI
-  displayMiles: number;            // Miles to show in UI
-  displayStatus: StatusLevel;      // Status to show in UI
+  displayXP: number;        // XP to show in UI (baseline + manual delta)
+  displayUXP: number;       // UXP to show in UI
+  displayMiles: number;     // Miles to show in UI
+  displayStatus: StatusLevel; // Status to show in UI
   
   // Current status (computed)
   currentStatus: StatusLevel;
@@ -273,32 +272,59 @@ export function useUserData(): UseUserDataReturn {
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
   // -------------------------------------------------------------------------
-  // DISPLAY VALUES (Computed from XP Engine)
+  // DISPLAY VALUES (PDF Baseline + Manual Delta)
   // -------------------------------------------------------------------------
-  // These values are now always computed via the XP Engine. The PDF import
-  // stores any difference as a correctionXp in the manualLedger, so the
-  // XP Engine output already reflects the PDF header values.
+  // These are the values shown in the UI. If we have a PDF baseline, we use that
+  // as the source of truth and add any manual additions made AFTER the PDF date.
 
   const { displayXP, displayUXP, displayMiles, displayStatus } = useMemo(() => {
-    const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
-    const now = new Date();
-    const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-    const cycle = stats[currentQYear];
+    // If no PDF baseline, fall back to calculated values
+    if (!pdfBaseline) {
+      const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
+      const now = new Date();
+      const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+      const cycle = stats[currentQYear];
+      
+      // Calculate total XP from flights
+      const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
+      const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
+      const totalMiles = milesData.reduce((sum, m) => 
+        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+      );
+      
+      return {
+        displayXP: cycle?.totalXP || totalFlightXP,
+        displayUXP: totalUXP,
+        displayMiles: totalMiles,
+        displayStatus: currentStatus,
+      };
+    }
+
+    // We have a PDF baseline - use it as source of truth
+    // Calculate delta from manual flights added AFTER the PDF export date
+    const pdfDate = pdfBaseline.pdfExportDate;
     
-    // Calculate totals from flights
-    const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
-    const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
-    const totalMiles = milesData.reduce((sum, m) => 
-      sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+    const manualFlightsAfterPdf = flights.filter(f => 
+      f.importSource === 'manual' && f.date > pdfDate
+    );
+    
+    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+    );
+    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.uxp || 0), 0
+    );
+    const deltaMiles = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedMiles || 0), 0
     );
     
     return {
-      displayXP: cycle?.totalXP || totalFlightXP,
-      displayUXP: totalUXP,
-      displayMiles: totalMiles,
-      displayStatus: currentStatus,
+      displayXP: pdfBaseline.xp + deltaXP,
+      displayUXP: pdfBaseline.uxp + deltaUXP,
+      displayMiles: pdfBaseline.miles + deltaMiles,
+      displayStatus: pdfBaseline.status,
     };
-  }, [xpData, xpRollover, flights, manualLedger, milesData, currentStatus]);
+  }, [pdfBaseline, flights, xpData, xpRollover, manualLedger, milesData, currentStatus]);
 
   // -------------------------------------------------------------------------
   // DATA PERSISTENCE
@@ -340,11 +366,6 @@ export function useUserData(): UseUserDataReturn {
         setMilesBalanceInternal(data.profile.milesBalance || 0);
         setCurrentUXPInternal(data.profile.currentUXP || 0);
         setEmailConsentInternal(data.profile.emailConsent ?? false);
-        
-        // Load PDF Baseline (source of truth for XP/UXP/Miles display)
-        if (data.profile.pdfBaseline) {
-          setPdfBaselineInternal(data.profile.pdfBaseline as PdfBaseline);
-        }
         
         // CRITICAL: For existing users without the new column, default to TRUE (they've already been using the app)
         // Only new users (no data AND onboarding_completed explicitly false) should see onboarding
@@ -409,8 +430,6 @@ export function useUserData(): UseUserDataReturn {
           starting_xp: qualificationSettings?.startingXP ?? 0,
           starting_uxp: qualificationSettings?.startingUXP ?? 0,
           ultimate_cycle_type: qualificationSettings?.ultimateCycleType ?? null,
-          // Save PDF Baseline (source of truth for XP/UXP/Miles)
-          pdf_baseline: pdfBaseline ?? null,
         }),
       ]);
     } catch (error) {
@@ -418,7 +437,7 @@ export function useUserData(): UseUserDataReturn {
     } finally {
       setIsSaving(false);
     }
-  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings, pdfBaseline]);
+  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings]);
 
   // Load on auth change
   useEffect(() => {
@@ -697,58 +716,63 @@ export function useUserData(): UseUserDataReturn {
     // =========================================================================
     // STEP 6: Calculate XP correction and store in manualLedger
     // =========================================================================
-    // The PDF header XP is the source of truth. We calculate what the XP Engine
-    // would compute, then store the difference as a correction in the ledger.
-    // This way the XP Engine handles everything and all pages stay consistent.
-    
     const newQualificationSettings = cycleInfo?.cycleStartMonth ? {
       cycleStartMonth: cycleInfo.cycleStartMonth,
       cycleStartDate: cycleInfo.cycleStartDate,
       startingStatus: pdfHeader.status,
       startingXP: cycleInfo.rolloverXP ?? 0,
     } : qualificationSettings;
-    
+
     if (newQualificationSettings?.cycleStartMonth) {
-      // Run XP Engine to see what it calculates
       const { cycles } = calculateQualificationCycles(
         baseXpData,
         xpRollover,
         mergedFlights,
-        manualLedger, // Use existing ledger (without new correction)
+        manualLedger,
         newQualificationSettings
       );
       
-      // Find the active cycle
       const today = new Date().toISOString().slice(0, 10);
       const activeCycle = cycles.find(c => today >= c.startDate && today <= c.endDate)
         || cycles.find(c => c.endDate >= today)
         || cycles[cycles.length - 1];
       
-      const engineXP = activeCycle?.actualXP ?? 0;
-      const xpCorrection = pdfHeader.xp - engineXP;
-      
-      console.log(`[handlePdfImport] XP Engine calculated: ${engineXP}, PDF header: ${pdfHeader.xp}, correction: ${xpCorrection}`);
-      
-      // Store correction in manualLedger for the cycle start month
-      // This makes the correction visible in the XP Engine ledger
-      if (xpCorrection !== 0) {
-        const correctionMonth = newQualificationSettings.cycleStartMonth;
-        const updatedLedger: ManualLedger = {
-          ...manualLedger,
-          [correctionMonth]: {
-            ...manualLedger[correctionMonth],
-            correctionXp: (manualLedger[correctionMonth]?.correctionXp ?? 0) + xpCorrection,
-          },
-        };
-        setManualLedgerInternal(updatedLedger);
-        console.log(`[handlePdfImport] Stored XP correction ${xpCorrection} in ledger month ${correctionMonth}`);
+      if (activeCycle) {
+        const engineXP = activeCycle.actualXP ?? 0;
+        const xpCorrection = pdfHeader.xp - engineXP;
+        
+        console.log(`[handlePdfImport] XP Engine calculated: ${engineXP}, PDF header: ${pdfHeader.xp}, correction: ${xpCorrection}`);
+        
+        if (xpCorrection !== 0) {
+          const correctionMonth = newQualificationSettings.cycleStartMonth;
+          const updatedLedger: ManualLedger = {
+            ...manualLedger,
+            [correctionMonth]: {
+              ...manualLedger[correctionMonth],
+              correctionXp: (manualLedger[correctionMonth]?.correctionXp ?? 0) + xpCorrection,
+            },
+          };
+          setManualLedgerInternal(updatedLedger);
+          console.log(`[handlePdfImport] Stored XP correction ${xpCorrection} in ledger month ${correctionMonth}`);
+        }
       }
     } else {
-      console.log('[handlePdfImport] No qualification settings - skipping XP correction calculation');
+      // Fallback: simple validation logging if no cycle settings
+      const calculatedXP = mergedFlights
+        .filter(f => {
+          if (!cycleInfo?.cycleStartDate) return true;
+          return f.date >= cycleInfo.cycleStartDate;
+        })
+        .reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0) + (cycleInfo?.rolloverXP || 0);
+      
+      const xpDifference = pdfHeader.xp - calculatedXP;
+      if (Math.abs(xpDifference) > 0) {
+        console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
+      }
     }
 
     markDataChanged();
-  }, [user, markDataChanged, flights, baseMilesData, baseXpData, xpRollover, qualificationSettings, manualLedger]);
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, baseXpData, xpRollover]);
 
   // UNDO IMPORT: Restore data from backup
   const handleUndoImport = useCallback(() => {

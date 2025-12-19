@@ -12,8 +12,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    // Target ES2022 to support top-level await (required by pdfjs-dist)
-    target: 'esnext',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -27,15 +25,6 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 300, // Warn earlier to catch issues
-  },
-  // Also set esbuild target for dev server
-  esbuild: {
-    target: 'esnext',
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      target: 'esnext',
-    },
   },
   server: {
     port: 3000,

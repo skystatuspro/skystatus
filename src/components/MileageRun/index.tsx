@@ -46,9 +46,7 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   flights, 
   manualLedger, 
   qualificationSettings,
-  demoStatus,
-  displayXP: propDisplayXP,
-  hasPdfBaseline = false,
+  demoStatus
 }) => {
   const { symbol: currencySymbol } = useCurrency();
   const { isSimpleMode } = useViewMode();
@@ -92,14 +90,8 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   );
   
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
-  
-  // Use displayXP from PDF baseline if available, otherwise use calculated actualXP
-  const calculatedActualXP = activeCycle?.actualXP ?? 0;
-  const actualXP = hasPdfBaseline && propDisplayXP !== undefined 
-    ? propDisplayXP 
-    : calculatedActualXP;
-  // Projected XP should never be less than actual XP
-  const projectedXP = Math.max(activeCycle?.projectedXP ?? actualXP, actualXP);
+  const actualXP = activeCycle?.actualXP ?? 0;
+  const projectedXP = activeCycle?.projectedXP ?? actualXP;
   const actualUXP = activeCycle?.actualUXP ?? 0;
   const projectedUXP = activeCycle?.projectedUXP ?? actualUXP;
   
@@ -121,8 +113,6 @@ export const MileageRun: React.FC<MileageRunProps> = ({
         manualLedger={manualLedger}
         qualificationSettings={qualificationSettings}
         demoStatus={demoStatus}
-        displayXP={propDisplayXP}
-        hasPdfBaseline={hasPdfBaseline}
       />
     );
   }

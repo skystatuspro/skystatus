@@ -42,9 +42,6 @@ interface SimpleXPEngineProps {
   manualLedger: ManualLedger;
   qualificationSettings: QualificationSettingsType | null;
   demoStatus?: StatusLevel;
-  // PDF Baseline display values
-  displayXP?: number;
-  hasPdfBaseline?: boolean;
 }
 
 // Helper to get target XP for a status
@@ -94,8 +91,6 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
   manualLedger,
   qualificationSettings,
   demoStatus,
-  displayXP: propDisplayXP,
-  hasPdfBaseline = false,
 }) => {
   const { setViewMode } = useViewMode();
 
@@ -126,23 +121,16 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
   const actualStatus = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
   const isUltimate = demoStatus === 'Ultimate' || cycleIsUltimate;
 
-  // Use displayXP from PDF baseline if available, otherwise use calculated actualXP
-  const calculatedActualXP = activeCycle.actualXP ?? 0;
-  const actualXP = hasPdfBaseline && propDisplayXP !== undefined 
-    ? propDisplayXP 
-    : calculatedActualXP;
+  const actualXP = activeCycle.actualXP ?? 0;
   const targetXP = getTargetXP(actualStatus);
   const theme = getStatusTheme(actualStatus, isUltimate);
   const nextStatus = getNextStatus(actualStatus);
 
-  // Calculate projected XP - should never be less than actual XP
-  const calculatedProjectedXP = useMemo(() => {
+  // Calculate projected XP
+  const projectedXP = useMemo(() => {
     const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
     return activeCycle.rolloverIn + totalMonthXP;
   }, [activeCycle]);
-  
-  // Projected XP should never be less than actual XP
-  const projectedXP = Math.max(calculatedProjectedXP, actualXP);
 
   const hasProjectedXP = projectedXP > actualXP;
   const progressPercent = Math.min(100, Math.round((actualXP / targetXP) * 100));

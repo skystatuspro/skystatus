@@ -518,17 +518,6 @@ export async function updateProfile(userId: string, updates: {
   email_consent?: boolean;
   miles_balance?: number;
   current_uxp?: number;
-  pdf_baseline?: {
-    xp: number;
-    uxp: number;
-    miles: number;
-    status: string;
-    pdfExportDate: string;
-    importedAt: string;
-    cycleStartMonth?: string;
-    cycleStartDate?: string;
-    rolloverXP?: number;
-  } | null;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -637,29 +626,16 @@ export interface UserData {
   profile: {
     targetCPM: number;
     qualificationStartMonth: string;
-    qualificationStartDate?: string;  // Full date for precise XP filtering
     homeAirport: string | null;
     xpRollover: number;
     startingStatus: string | null;
     startingXP: number | null;
-    startingUXP: number;
     ultimateCycleType: 'qualification' | 'calendar' | null;
     currency: string;
     onboardingCompleted: boolean;
     emailConsent: boolean;
     milesBalance: number;
     currentUXP: number;
-    pdfBaseline: {
-      xp: number;
-      uxp: number;
-      miles: number;
-      status: string;
-      pdfExportDate: string;
-      importedAt: string;
-      cycleStartMonth?: string;
-      cycleStartDate?: string;
-      rolloverXP?: number;
-    } | null;
   } | null;
 }
 
@@ -692,7 +668,6 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       emailConsent: profile.email_consent || false,
       milesBalance: profile.miles_balance || 0,
       currentUXP: profile.current_uxp || 0,
-      pdfBaseline: profile.pdf_baseline || null,
     } : null,
   };
 }

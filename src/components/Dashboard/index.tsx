@@ -51,12 +51,6 @@ interface DashboardState {
   targetCPM: number;
   manualLedger: ManualLedger;
   qualificationSettings?: QualificationSettings | null;
-  // PDF Baseline display values (source of truth)
-  displayXP?: number;
-  displayUXP?: number;
-  displayMiles?: number;
-  displayStatus?: StatusLevel;
-  hasPdfBaseline?: boolean;
 }
 
 interface DashboardProps {
@@ -154,20 +148,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
   const projectedStatus: StatusLevel = demoStatus ?? getDisplayProjectedStatus(rawProjectedStatus, cycleProjectedUltimate);
   
-  // Use displayXP from PDF baseline if available, otherwise use calculated actualXP
-  // This ensures PDF header values are shown as the source of truth
-  const calculatedActualXP: number = activeCycle?.actualXP ?? 0;
-  const actualXP: number = state.hasPdfBaseline && state.displayXP !== undefined 
-    ? state.displayXP 
-    : calculatedActualXP;
+  const actualXP: number = activeCycle?.actualXP ?? 0;
   const rolloverIn: number = activeCycle?.rolloverIn ?? 0;
   const rolloverOut: number = activeCycle?.rolloverOut ?? 0;
 
-  // UXP data - use displayUXP from PDF baseline if available
-  const calculatedActualUXP: number = activeCycle?.actualUXP ?? 0;
-  const actualUXP: number = state.hasPdfBaseline && state.displayUXP !== undefined
-    ? state.displayUXP
-    : calculatedActualUXP;
+  // UXP data
+  const actualUXP: number = activeCycle?.actualUXP ?? 0;
   const projectedUXP: number = activeCycle?.projectedUXP ?? 0;
   
   // Show Ultimate progress bar only for:
@@ -192,12 +178,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [showUltimateProgress, actualUXP, projectedUXP, monthsRemaining]);
 
   const projectedTotalXP = useMemo(() => {
-    if (!activeCycle) return actualXP;
+    if (!activeCycle) return 0;
     const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
-    const calculatedProjected = activeCycle.rolloverIn + totalMonthXP;
-    // Projected XP should never be less than actual XP
-    return Math.max(calculatedProjected, actualXP);
-  }, [activeCycle, actualXP]);
+    return activeCycle.rolloverIn + totalMonthXP;
+  }, [activeCycle]);
 
   const hasProjectedUpgrade = projectedStatus !== actualStatus;
 
@@ -349,10 +333,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             }}
             existingFlights={state.flights}
             existingMiles={state.milesData}
-            existingQualificationSettings={state.qualificationSettings}
-            existingStatus={actualStatus}
-            existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
-            existingRolloverXP={activeCycle?.rolloverIn ?? null}
           />
         )}
 
@@ -750,10 +730,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}
           existingFlights={state.flights}
           existingMiles={state.milesData}
-          existingQualificationSettings={state.qualificationSettings}
-          existingStatus={actualStatus}
-          existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
-          existingRolloverXP={activeCycle?.rolloverIn ?? null}
         />
       )}
     </>

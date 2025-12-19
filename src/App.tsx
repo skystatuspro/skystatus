@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext';
 import { useUserData } from './hooks/useUserData';
@@ -31,9 +31,6 @@ import { useToast } from './components/Toast';
 import { MaintenanceNotice } from './components/MaintenanceNotice';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel } from './types';
-import { calculateQualificationCycles } from './utils/xp-logic';
-import { normalizeQualificationSettings } from './utils/ultimate-bridge';
-import { findActiveCycle } from './components/Dashboard/helpers';
 
 // Inner component that uses page tracking (must be inside CookieConsentProvider)
 function PageTracker() {
@@ -99,28 +96,6 @@ export default function App() {
       setLegalPage(null);
     }
   }, [location.pathname]);
-
-  // -------------------------------------------------------------------------
-  // ACTIVE CYCLE CALCULATION (for PdfImportModal)
-  // -------------------------------------------------------------------------
-  
-  const normalizedSettings = useMemo(
-    () => normalizeQualificationSettings(state.qualificationSettings ?? null),
-    [state.qualificationSettings]
-  );
-
-  const { cycles } = useMemo(
-    () => calculateQualificationCycles(
-      state.baseXpData,
-      state.xpRollover,
-      state.flights,
-      state.manualLedger,
-      normalizedSettings
-    ),
-    [state.baseXpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings]
-  );
-
-  const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
 
   // -------------------------------------------------------------------------
   // PDF IMPORT HANDLER (wraps actions.handlePdfImport with toast)
@@ -350,12 +325,6 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
-              // PDF Baseline display values
-              displayXP: state.displayXP,
-              displayUXP: state.displayUXP,
-              displayMiles: state.displayMiles,
-              displayStatus: state.displayStatus,
-              hasPdfBaseline: !!state.pdfBaseline,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -423,9 +392,6 @@ export default function App() {
             qualificationSettings={state.qualificationSettings}
             onUpdateQualificationSettings={actions.handleQualificationSettingsUpdate}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
-            displayXP={state.displayXP}
-            displayUXP={state.displayUXP}
-            hasPdfBaseline={!!state.pdfBaseline}
           />
         );
 
@@ -460,8 +426,6 @@ export default function App() {
             manualLedger={state.manualLedger}
             qualificationSettings={state.qualificationSettings}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
-            displayXP={state.displayXP}
-            hasPdfBaseline={!!state.pdfBaseline}
           />
         );
 
@@ -491,12 +455,6 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
-              // PDF Baseline display values
-              displayXP: state.displayXP,
-              displayUXP: state.displayUXP,
-              displayMiles: state.displayMiles,
-              displayStatus: state.displayStatus,
-              hasPdfBaseline: !!state.pdfBaseline,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -616,10 +574,6 @@ export default function App() {
         }}
         existingFlights={state.flights}
         existingMiles={state.baseMilesData}
-        existingQualificationSettings={state.qualificationSettings}
-        existingStatus={state.currentStatus}
-        existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
-        existingRolloverXP={activeCycle?.rolloverIn ?? null}
       />
 
       <PdfImportModal
@@ -630,10 +584,6 @@ export default function App() {
         }}
         existingFlights={state.flights}
         existingMiles={state.baseMilesData}
-        existingQualificationSettings={state.qualificationSettings}
-        existingStatus={state.currentStatus}
-        existingActiveCycleStart={activeCycle?.startDate?.slice(0, 7) || null}
-        existingRolloverXP={activeCycle?.rolloverIn ?? null}
       />
 
       <SettingsModal
