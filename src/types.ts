@@ -103,11 +103,11 @@ export interface XPRecord {
 
 export interface RedemptionRecord {
   id: string;
-  month: string;
-  miles_redeemed: number;
+  date: string;              // YYYY-MM-DD format
   description: string;
-  category: 'flight' | 'upgrade' | 'product' | 'transfer' | 'other';
-  estimated_value?: number;
+  award_miles: number;       // Miles used for this redemption
+  surcharges: number;        // Taxes/fees paid in cash
+  cash_price_estimate?: number;  // Estimated cash value of what was redeemed
 }
 
 // ============================================================================

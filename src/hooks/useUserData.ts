@@ -1104,6 +1104,7 @@ export function useUserData(): UseUserDataReturn {
           cycleStartMonth,
           startingStatus: data.currentStatus,
           startingXP: data.currentXP,
+          startingUXP: data.currentUXP || 0,
           ultimateCycleType: data.ultimateCycleType,
         });
       }
@@ -1299,6 +1300,7 @@ export function useUserData(): UseUserDataReturn {
             cycleStartDate: freshData.profile.qualificationStartDate || undefined,
             startingStatus: (freshData.profile.startingStatus || 'Explorer') as StatusLevel,
             startingXP: freshData.profile.startingXP ?? 0,
+            startingUXP: freshData.profile.startingUXP ?? 0,
             ultimateCycleType: freshData.profile.ultimateCycleType || 'qualification',
           });
         }
