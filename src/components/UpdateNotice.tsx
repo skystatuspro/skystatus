@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  AlertTriangle, 
   X, 
   Sparkles, 
   Download, 
   Wrench, 
-  ArrowRight,
   FileJson,
-  Database,
-  CheckCircle2,
-  Info,
   Zap
 } from 'lucide-react';
 
@@ -62,13 +57,13 @@ export const UpdateNotice: React.FC<UpdateNoticeProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto transition-opacity duration-300 ${
         isClosing ? 'opacity-0' : 'opacity-100'
       }`}
       style={{ backgroundColor: 'rgba(15, 23, 42, 0.90)' }}
     >
       <div 
-        className={`relative w-full max-w-2xl bg-gradient-to-b from-slate-800 via-slate-850 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transform transition-all duration-300 ${
+        className={`relative w-full max-w-2xl my-4 sm:my-0 bg-gradient-to-b from-slate-800 via-slate-850 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden transform transition-all duration-300 ${
           isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
         }`}
       >
@@ -78,119 +73,92 @@ export const UpdateNotice: React.FC<UpdateNoticeProps> = ({
         {/* Close button */}
         <button
           onClick={handleDismiss}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors z-10"
+          className="absolute top-3 right-3 sm:top-5 sm:right-5 p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors z-10"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-6 md:p-8">
           {/* Header with icon */}
-          <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="flex items-center justify-center gap-3 mb-4 sm:mb-6">
             <div className="relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center border border-blue-500/30">
-                <Sparkles className="w-8 h-8 text-blue-400" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center border border-blue-500/30">
+                <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400" />
               </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/50">
+              <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/50">
                 <span className="text-xs font-bold text-white">!</span>
               </div>
             </div>
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-2">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center mb-2">
             Major Update: PDF Import 2.0
           </h2>
           
-          <p className="text-slate-400 text-center mb-8 max-w-lg mx-auto">
-            We've completely rebuilt the PDF import with new data fields and improved accuracy.
-            Here's what you need to know:
+          <p className="text-sm sm:text-base text-slate-400 text-center mb-4 sm:mb-6 max-w-lg mx-auto">
+            We've rebuilt the PDF import with new data fields and improved accuracy.
           </p>
 
-          {/* Content Cards */}
-          <div className="space-y-4 mb-8">
+          {/* Content Cards - Simplified for mobile */}
+          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             
             {/* What's New Card */}
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-5 border border-blue-500/20">
-              <div className="flex gap-4">
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-3 sm:p-4 border border-blue-500/20">
+              <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-blue-400" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-white text-sm sm:text-base mb-1">
                     What's New
-                    <span className="text-xs bg-blue-500/30 text-blue-300 px-2 py-0.5 rounded-full">v2.0</span>
                   </h3>
-                  <ul className="text-sm text-slate-300 space-y-1.5">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span>New data fields for better tracking accuracy</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span>Improved XP and status detection from PDFs</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span>Better support for international date formats</span>
-                    </li>
-                  </ul>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    Better XP detection, international date support, new tracking fields
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Action Required Card */}
-            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl p-5 border border-amber-500/30">
-              <div className="flex gap-4">
+            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl p-3 sm:p-4 border border-amber-500/30">
+              <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                    <FileJson className="w-5 h-5 text-amber-400" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                    <FileJson className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    Action Recommended
-                    <span className="text-xs bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full">Important</span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-white text-sm sm:text-base mb-1 flex items-center gap-2">
+                    Export Recommended
+                    <span className="text-xs bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded-full">Important</span>
                   </h3>
-                  <p className="text-sm text-slate-300 mb-3">
-                    Your existing JSON backup may be missing new data fields. We recommend creating a 
-                    <strong className="text-amber-300"> fresh export</strong> via the JSON module in Settings 
-                    to ensure you have a complete backup with all the new fields.
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    Create a fresh JSON backup via Settings → Data Management to include all new fields.
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <Info className="w-3.5 h-3.5" />
-                    <span>Go to Settings → Data Management → Export JSON</span>
-                  </div>
                 </div>
               </div>
             </div>
 
             {/* Miles Engine Maintenance Card */}
-            <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-xl p-5 border border-red-500/30">
-              <div className="flex gap-4">
+            <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-xl p-3 sm:p-4 border border-red-500/30">
+              <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
-                    <Wrench className="w-5 h-5 text-red-400" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+                    <Wrench className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    Miles Engine Under Maintenance
-                    <span className="text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded-full">Temporary</span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-white text-sm sm:text-base mb-1 flex items-center gap-2">
+                    Miles Engine Maintenance
+                    <span className="text-xs bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full">Temp</span>
                   </h3>
-                  <p className="text-sm text-slate-300 mb-2">
-                    The Miles Engine calculations are being recalibrated for the new data structure. 
-                    <strong className="text-red-300"> Some calculations may be inaccurate</strong> until 
-                    this maintenance is complete.
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    Calculations may be inaccurate temporarily. <strong className="text-green-400">Your data is safe.</strong>
                   </p>
-                  <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2 text-sm">
-                    <Database className="w-4 h-4 text-green-400" />
-                    <span className="text-slate-300">
-                      <strong className="text-green-400">Your data is safe.</strong> All entered information is preserved.
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -198,27 +166,26 @@ export const UpdateNotice: React.FC<UpdateNoticeProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col gap-2 sm:gap-3">
             <button
               onClick={handleExportClick}
-              className="flex-1 py-3.5 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group"
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              <Download className="w-5 h-5" />
-              <span>Open Settings to Export</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Open Settings</span>
             </button>
             
             <button
               onClick={handleDismiss}
-              className="flex-1 sm:flex-none py-3.5 px-6 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-xl transition-all duration-200 border border-slate-600"
+              className="w-full py-3 px-4 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-xl transition-all duration-200 border border-slate-600 text-sm sm:text-base"
             >
               Got It, Continue
             </button>
           </div>
 
           {/* Footer note */}
-          <p className="text-xs text-slate-500 text-center mt-6">
-            Thank you for using SkyStatus Pro! We're working hard to improve your experience. 🚀
+          <p className="text-xs text-slate-500 text-center mt-4">
+            Thank you for using SkyStatus Pro! 🚀
           </p>
         </div>
       </div>
