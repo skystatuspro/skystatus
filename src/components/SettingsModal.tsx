@@ -43,6 +43,7 @@ import {
   StatusLevel,
 } from '../types';
 import { QualificationSettings } from '../hooks/useUserData';
+import { PdfBaseline } from '../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -59,6 +60,7 @@ interface SettingsModalProps {
     manualLedger: ManualLedger;
     qualificationSettings: QualificationSettings | null;
     homeAirport: string | null;
+    pdfBaseline: PdfBaseline | null;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;

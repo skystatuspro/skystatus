@@ -382,6 +382,18 @@ export function useUserData(): UseUserDataReturn {
             ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
           });
         }
+        
+        // Load PDF Baseline from database
+        if (data.profile.pdfBaselineXp !== null && data.profile.pdfBaselineXp !== undefined) {
+          setPdfBaselineInternal({
+            xp: data.profile.pdfBaselineXp,
+            uxp: data.profile.pdfBaselineUxp || 0,
+            miles: data.profile.pdfBaselineMiles || 0,
+            status: (data.profile.pdfBaselineStatus || 'Explorer') as StatusLevel,
+            pdfExportDate: data.profile.pdfExportDate || '',
+            importedAt: data.profile.pdfImportedAt || '',
+          });
+        }
       } else {
         // No profile at all - new user, show onboarding
         setOnboardingCompletedInternal(false);
@@ -879,6 +891,27 @@ export function useUserData(): UseUserDataReturn {
       }
     }
 
+    // =========================================================================
+    // STEP 8: Save PDF Baseline to Database
+    // =========================================================================
+    if (user) {
+      updateProfile(user.id, {
+        pdf_baseline_xp: pdfHeader.xp,
+        pdf_baseline_uxp: pdfHeader.uxp,
+        pdf_baseline_miles: pdfHeader.miles,
+        pdf_baseline_status: pdfHeader.status,
+        pdf_export_date: pdfHeader.exportDate,
+        pdf_imported_at: new Date().toISOString(),
+        pdf_source_filename: sourceFileName || null,
+      }).then(success => {
+        if (success) {
+          console.log('[handlePdfImport] PDF Baseline saved to database');
+        } else {
+          console.error('[handlePdfImport] Failed to save PDF Baseline to database');
+        }
+      });
+    }
+
     markDataChanged();
   }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, baseXpData, xpRollover]);
 
@@ -1187,6 +1220,7 @@ export function useUserData(): UseUserDataReturn {
     qualificationSettings?: QualificationSettings;
     xpRollover?: number;
     homeAirport?: string | null;
+    pdfBaseline?: PdfBaseline | null;
   }): Promise<boolean> => {
     // Local/demo mode: just update state directly
     if (!user || isDemoMode || isLocalMode) {
@@ -1198,6 +1232,7 @@ export function useUserData(): UseUserDataReturn {
       if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
       if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
       if (importData.homeAirport !== undefined) setHomeAirportInternal(importData.homeAirport);
+      if (importData.pdfBaseline !== undefined) setPdfBaselineInternal(importData.pdfBaseline);
       return true;
     }
 
@@ -1258,6 +1293,25 @@ export function useUserData(): UseUserDataReturn {
       if (importData.homeAirport !== undefined) {
         profileUpdates.home_airport = importData.homeAirport;
       }
+      // PDF Baseline
+      if (importData.pdfBaseline !== undefined) {
+        if (importData.pdfBaseline) {
+          profileUpdates.pdf_baseline_xp = importData.pdfBaseline.xp;
+          profileUpdates.pdf_baseline_uxp = importData.pdfBaseline.uxp;
+          profileUpdates.pdf_baseline_miles = importData.pdfBaseline.miles;
+          profileUpdates.pdf_baseline_status = importData.pdfBaseline.status;
+          profileUpdates.pdf_export_date = importData.pdfBaseline.pdfExportDate;
+          profileUpdates.pdf_imported_at = importData.pdfBaseline.importedAt;
+        } else {
+          // Explicitly clear pdfBaseline if null
+          profileUpdates.pdf_baseline_xp = null;
+          profileUpdates.pdf_baseline_uxp = null;
+          profileUpdates.pdf_baseline_miles = null;
+          profileUpdates.pdf_baseline_status = null;
+          profileUpdates.pdf_export_date = null;
+          profileUpdates.pdf_imported_at = null;
+        }
+      }
       if (Object.keys(profileUpdates).length > 0) {
         savePromises.push(updateProfile(user.id, profileUpdates));
       }
@@ -1303,6 +1357,19 @@ export function useUserData(): UseUserDataReturn {
             startingUXP: freshData.profile.startingUXP ?? 0,
             ultimateCycleType: freshData.profile.ultimateCycleType || 'qualification',
           });
+        }
+        // Load PDF Baseline from database
+        if (freshData.profile.pdfBaselineXp !== null) {
+          setPdfBaselineInternal({
+            xp: freshData.profile.pdfBaselineXp,
+            uxp: freshData.profile.pdfBaselineUxp || 0,
+            miles: freshData.profile.pdfBaselineMiles || 0,
+            status: (freshData.profile.pdfBaselineStatus || 'Explorer') as StatusLevel,
+            pdfExportDate: freshData.profile.pdfExportDate || '',
+            importedAt: freshData.profile.pdfImportedAt || '',
+          });
+        } else {
+          setPdfBaselineInternal(null);
         }
       }
 

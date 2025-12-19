@@ -30,6 +30,8 @@ export async function fetchFlights(userId: string): Promise<FlightRecord[]> {
     earnedXP: f.xp_earned,
     safXp: f.saf_xp || 0,
     uxp: f.uxp || 0,
+    importSource: f.import_source || undefined,
+    importedAt: f.imported_at || undefined,
   }));
 }
 
@@ -53,6 +55,8 @@ export async function saveFlight(userId: string, flight: FlightRecord): Promise<
       saf_xp: flight.safXp || 0,
       uxp: flight.uxp || 0,
       is_scheduled: new Date(flight.date) > new Date(),
+      import_source: flight.importSource || null,
+      imported_at: flight.importedAt || null,
     });
 
   if (error) {
@@ -95,6 +99,8 @@ export async function saveFlights(userId: string, flights: FlightRecord[]): Prom
       saf_xp: flight.safXp || 0,
       uxp: flight.uxp || 0,
       is_scheduled: new Date(flight.date) > new Date(),
+      import_source: flight.importSource || null,
+      imported_at: flight.importedAt || null,
     };
   });
 
@@ -162,6 +168,8 @@ export async function replaceAllFlights(userId: string, flights: FlightRecord[])
       saf_xp: flight.safXp || 0,
       uxp: flight.uxp || 0,
       is_scheduled: new Date(flight.date) > new Date(),
+      import_source: flight.importSource || null,
+      imported_at: flight.importedAt || null,
     };
   });
 
@@ -546,6 +554,14 @@ export async function updateProfile(userId: string, updates: {
   email_consent?: boolean;
   miles_balance?: number;
   current_uxp?: number;
+  // PDF Baseline fields
+  pdf_baseline_xp?: number | null;
+  pdf_baseline_uxp?: number | null;
+  pdf_baseline_miles?: number | null;
+  pdf_baseline_status?: string | null;
+  pdf_export_date?: string | null;
+  pdf_imported_at?: string | null;
+  pdf_source_filename?: string | null;
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -654,16 +670,26 @@ export interface UserData {
   profile: {
     targetCPM: number;
     qualificationStartMonth: string;
+    qualificationStartDate?: string;
     homeAirport: string | null;
     xpRollover: number;
     startingStatus: string | null;
     startingXP: number | null;
+    startingUXP: number;
     ultimateCycleType: 'qualification' | 'calendar' | null;
     currency: string;
     onboardingCompleted: boolean;
     emailConsent: boolean;
     milesBalance: number;
     currentUXP: number;
+    // PDF Baseline
+    pdfBaselineXp: number | null;
+    pdfBaselineUxp: number | null;
+    pdfBaselineMiles: number | null;
+    pdfBaselineStatus: string | null;
+    pdfExportDate: string | null;
+    pdfImportedAt: string | null;
+    pdfSourceFilename: string | null;
   } | null;
 }
 
@@ -684,7 +710,7 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
     profile: profile ? {
       targetCPM: profile.target_cpm,
       qualificationStartMonth: profile.qualification_start_month,
-      qualificationStartDate: profile.qualification_start_date,  // Full date for precise XP filtering
+      qualificationStartDate: profile.qualification_start_date,
       homeAirport: profile.home_airport || null,
       xpRollover: profile.xp_rollover || 0,
       startingStatus: profile.starting_status || null,
@@ -696,6 +722,14 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       emailConsent: profile.email_consent || false,
       milesBalance: profile.miles_balance || 0,
       currentUXP: profile.current_uxp || 0,
+      // PDF Baseline
+      pdfBaselineXp: profile.pdf_baseline_xp || null,
+      pdfBaselineUxp: profile.pdf_baseline_uxp || null,
+      pdfBaselineMiles: profile.pdf_baseline_miles || null,
+      pdfBaselineStatus: profile.pdf_baseline_status || null,
+      pdfExportDate: profile.pdf_export_date || null,
+      pdfImportedAt: profile.pdf_imported_at || null,
+      pdfSourceFilename: profile.pdf_source_filename || null,
     } : null,
   };
 }
