@@ -70,6 +70,7 @@ export interface PdfImportWizardProps {
     
     // Suggested cycle info (from requalification detection)
     suggestedCycleStart: string | null;  // YYYY-MM
+    suggestedCycleStartDate: string | null;  // YYYY-MM-DD (full date for precise filtering)
     suggestedSurplusXP: number | null;
     
     // Parsed data
@@ -100,6 +101,7 @@ export interface WizardCompleteData {
   uxpBalance: number;
   milesBalance: number;
   cycleStartMonth: string;
+  cycleStartDate?: string;  // YYYY-MM-DD (full date for precise filtering)
   surplusXP: number;
   
   // Pass-through data

@@ -507,6 +507,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       },
       {
         cycleStartMonth: wizardData.cycleStartMonth,
+        cycleStartDate: wizardData.cycleStartDate,
         rolloverXP: wizardData.surplusXP,
       },
       'Flying Blue PDF'
@@ -580,6 +581,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       detectedUXP: parseResult.totalUXP ?? 0,
       detectedMiles: parseResult.totalMiles ?? 0,
       suggestedCycleStart: summary.suggestedCycleStart || null,
+      suggestedCycleStartDate: summary.suggestedCycleStartDate || null,
       suggestedSurplusXP: summary.suggestedRolloverXP ?? null,
       flights: summary.flights as FlightRecord[],
       newFlights: summary.newFlights as FlightRecord[],

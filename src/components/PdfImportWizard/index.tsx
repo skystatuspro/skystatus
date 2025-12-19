@@ -114,6 +114,7 @@ export const PdfImportWizard: React.FC<PdfImportWizardProps> = ({
       uxpBalance: wizardState.uxpBalance,
       milesBalance: wizardState.milesBalance,
       cycleStartMonth: wizardState.cycleStartMonth,
+      cycleStartDate: parseResult.suggestedCycleStartDate || undefined,
       surplusXP: wizardState.surplusXP,
       flights: parseResult.flights,
       newFlights: parseResult.newFlights,
