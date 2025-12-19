@@ -57,6 +57,7 @@ export const SimpleXPPlanner: React.FC<MileageRunProps> = ({
   flights,
   manualLedger,
   qualificationSettings,
+  pdfBaseline,
   demoStatus,
 }) => {
   const { setViewMode } = useViewMode();
@@ -74,8 +75,8 @@ export const SimpleXPPlanner: React.FC<MileageRunProps> = ({
 
   // Calculate current status
   const { cycles } = useMemo(
-    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, normalizedSettings),
-    [xpData, rollover, flights, manualLedger, normalizedSettings]
+    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, normalizedSettings, pdfBaseline),
+    [xpData, rollover, flights, manualLedger, normalizedSettings, pdfBaseline]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);

@@ -1,4 +1,4 @@
-import { CabinClass, XPRecord, FlightRecord, ManualXPLedger, QualificationSettings } from '../../types';
+import { CabinClass, XPRecord, FlightRecord, ManualXPLedger, QualificationSettings, PdfBaseline } from '../../types';
 import { DistanceBand } from '../../utils/airports';
 
 export interface EditableSegment {
@@ -17,6 +17,7 @@ export interface MileageRunProps {
   flights: FlightRecord[];
   manualLedger: ManualXPLedger;
   qualificationSettings: QualificationSettings;
+  pdfBaseline?: PdfBaseline | null;
   demoStatus?: StatusLevel; // Override status display in demo mode
 }
 

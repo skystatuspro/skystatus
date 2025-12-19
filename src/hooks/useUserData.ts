@@ -639,22 +639,13 @@ export function useUserData(): UseUserDataReturn {
     // =========================================================================
     // STEP 5: Update Qualification Settings if cycle info detected
     // =========================================================================
-    console.log('[handlePdfImport] Checking cycle info:', {
-      hasCycleInfo: !!cycleInfo,
-      cycleStartMonth: cycleInfo?.cycleStartMonth,
-      cycleStartDate: cycleInfo?.cycleStartDate,
-      rolloverXP: cycleInfo?.rolloverXP,
-    });
-    
     if (cycleInfo?.cycleStartMonth) {
-      const newSettings = {
+      setQualificationSettingsInternal({
         cycleStartMonth: cycleInfo.cycleStartMonth,
         cycleStartDate: cycleInfo.cycleStartDate,
         startingStatus: pdfHeader.status,
         startingXP: cycleInfo.rolloverXP ?? 0,
-      };
-      console.log('[handlePdfImport] Setting qualification settings to:', newSettings);
-      setQualificationSettingsInternal(newSettings);
+      });
       console.log('[handlePdfImport] Qualification settings updated from PDF cycle info');
     } else if (!qualificationSettings) {
       // No cycle info detected and no existing settings
