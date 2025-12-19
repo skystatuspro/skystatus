@@ -79,10 +79,11 @@ export interface UserDataState {
   xpData: XPRecord[];
   
   // Current balances (computed from baseline + delta)
-  displayXP: number;        // XP to show in UI (baseline + manual delta)
-  displayUXP: number;       // UXP to show in UI
-  displayMiles: number;     // Miles to show in UI
-  displayStatus: StatusLevel; // Status to show in UI
+  // undefined means: use XP Engine calculated value (no PDF baseline)
+  displayXP: number | undefined;   // XP to show in UI (baseline + manual delta)
+  displayUXP: number | undefined;  // UXP to show in UI
+  displayMiles: number;            // Miles to show in UI
+  displayStatus: StatusLevel;      // Status to show in UI
   
   // Current status (computed)
   currentStatus: StatusLevel;
@@ -278,7 +279,21 @@ export function useUserData(): UseUserDataReturn {
   // as the source of truth and add any manual additions made AFTER the PDF date.
 
   const { displayXP, displayUXP, displayMiles, displayStatus } = useMemo(() => {
-    // Calculate current values from flights
+    // If no PDF baseline, return undefined - components will use their own XP Engine calculation
+    if (!pdfBaseline) {
+      const currentMiles = milesData.reduce((sum, m) => 
+        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+      );
+      
+      return {
+        displayXP: undefined,
+        displayUXP: undefined,
+        displayMiles: currentMiles,
+        displayStatus: currentStatus,
+      };
+    }
+
+    // Calculate current values from flights (for delta tracking)
     const cycleStartDate = qualificationSettings?.cycleStartMonth 
       ? `${qualificationSettings.cycleStartMonth}-01`
       : null;
@@ -294,20 +309,6 @@ export function useUserData(): UseUserDataReturn {
     const currentCalculatedUXP = flightsInCycle.reduce((sum, f) => 
       sum + (f.uxp || 0), 0
     );
-    
-    const currentMiles = milesData.reduce((sum, m) => 
-      sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
-    );
-
-    // If no PDF baseline, use calculated values directly
-    if (!pdfBaseline) {
-      return {
-        displayXP: currentCalculatedXP,
-        displayUXP: currentCalculatedUXP,
-        displayMiles: currentMiles,
-        displayStatus: currentStatus,
-      };
-    }
 
     // We have a PDF baseline - calculate delta from import time
     // displayXP = currentCalculatedXP + (pdfXP - calculatedXpAtImport)
