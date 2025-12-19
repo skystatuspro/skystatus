@@ -790,8 +790,11 @@ export function useUserData(): UseUserDataReturn {
 
     console.log(`[handlePdfImport] Miles Engine calculated: ${engineMiles}, PDF header: ${pdfHeader.miles}, correction: ${milesCorrection}`);
 
-    if (milesCorrection !== 0 && newQualificationSettings?.cycleStartMonth) {
-      const correctionMonth = newQualificationSettings.cycleStartMonth;
+    if (milesCorrection !== 0) {
+      // Determine correction month: prefer cycle start, fallback to most recent month or current month
+      const correctionMonth = newQualificationSettings?.cycleStartMonth 
+        || cycleInfo?.cycleStartMonth
+        || (mergedMiles.length > 0 ? mergedMiles[0].month : new Date().toISOString().slice(0, 7));
       
       // Find or create the record for this month
       const existingRecordIndex = mergedMiles.findIndex(m => m.month === correctionMonth);
