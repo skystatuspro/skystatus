@@ -57,7 +57,7 @@ import {
   calculateRolloverXP, 
   getPreviousStatus 
 } from '../utils/xp-logic';
-import { FlightRecord, MilesRecord } from '../types';
+import { FlightRecord, MilesRecord, StatusLevel } from '../types';
 import {
   submitFeedback,
   recordFirstImport,
@@ -66,6 +66,8 @@ import {
   FeedbackRating
 } from '../lib/feedbackService';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { PdfImportWizard } from './PdfImportWizard';
+import { WizardCompleteData, ParseSummary } from './PdfImportWizard/types';
 
 // Set up PDF.js worker - use unpkg which has all npm versions
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -106,16 +108,30 @@ interface PdfImportModalProps {
   ) => void;
   existingFlights: FlightRecord[];
   existingMiles: MilesRecord[];
+  // Optional props for returning users (wizard uses these to pre-fill settings)
+  existingQualificationSettings?: {
+    cycleStartMonth: string;
+    cycleStartDate?: string;
+    startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+    startingXP?: number;
+  } | null;
+  existingStatus?: 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate' | null;
+  existingActiveCycleStart?: string | null;
+  existingRolloverXP?: number | null;
 }
 
-type ImportStep = 'upload' | 'parsing' | 'preview' | 'feedback' | 'error';
+type ImportStep = 'upload' | 'parsing' | 'wizard' | 'feedback' | 'error';
 
 const PdfImportModal: React.FC<PdfImportModalProps> = ({
   isOpen,
   onClose,
   onImport,
   existingFlights,
-  existingMiles
+  existingMiles,
+  existingQualificationSettings,
+  existingStatus,
+  existingActiveCycleStart,
+  existingRolloverXP,
 }) => {
   const [step, setStep] = useState<ImportStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
@@ -345,7 +361,7 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
       }
 
       setParseResult(result);
-      setStep('preview');
+      setStep('wizard');
     } catch (err) {
       console.error('PDF parsing error:', err);
       setError('Failed to parse PDF. Make sure it\'s a valid Flying Blue transaction history.');
@@ -465,6 +481,59 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
     handleClose();
   };
 
+  // Handler for when the wizard completes
+  const handleWizardComplete = (wizardData: WizardCompleteData) => {
+    if (!parseResult) return;
+
+    const summary = getImportSummary();
+    if (!summary) return;
+
+    // Map status - Ultimate falls back to Platinum for pdfHeader
+    // (Ultimate users are tracked separately via UXP)
+    const pdfStatus = wizardData.status === 'Ultimate' 
+      ? 'Platinum' 
+      : wizardData.status as 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+
+    // Call onImport with wizard-verified data
+    onImport(
+      wizardData.newFlights,
+      wizardData.milesData,
+      {
+        xp: wizardData.xpBalance,
+        uxp: wizardData.uxpBalance,
+        miles: wizardData.milesBalance,
+        status: pdfStatus,
+        exportDate: summary.newestDate || new Date().toISOString().substring(0, 10),
+      },
+      {
+        cycleStartMonth: wizardData.cycleStartMonth,
+        rolloverXP: wizardData.surplusXP,
+      },
+      'Flying Blue PDF'
+    );
+
+    // Track successful PDF import
+    trackPdf(wizardData.newFlights.length, wizardData.milesData.length, parseResult.language);
+
+    // Record first import for feedback triggers
+    recordFirstImport();
+
+    // Check if we should show feedback
+    if (!hasGivenPostImportFeedback()) {
+      const totalMiles = wizardData.milesData.reduce(
+        (sum, m) => sum + m.miles_subscription + m.miles_amex + m.miles_other,
+        0
+      );
+      setImportSummaryForFeedback({
+        flights: wizardData.newFlights.length,
+        miles: totalMiles
+      });
+      setStep('feedback');
+    } else {
+      handleClose();
+    }
+  };
+
   const handleClose = () => {
     setStep('upload');
     setParseResult(null);
@@ -490,6 +559,72 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
   if (!isOpen) return null;
 
   const summary = getImportSummary();
+
+  // Prepare wizard props from parse result
+  const getWizardParseResult = () => {
+    if (!parseResult || !summary) return null;
+    
+    // Map status to StatusLevel
+    const statusMap: Record<string, StatusLevel> = {
+      'EXPLORER': 'Explorer',
+      'SILVER': 'Silver',
+      'GOLD': 'Gold',
+      'PLATINUM': 'Platinum',
+      'ULTIMATE': 'Ultimate',
+    };
+    const detectedStatus: StatusLevel | null = parseResult.status ? statusMap[parseResult.status.toUpperCase()] || null : null;
+
+    return {
+      detectedStatus,
+      detectedXP: parseResult.totalXP ?? 0,
+      detectedUXP: parseResult.totalUXP ?? 0,
+      detectedMiles: parseResult.totalMiles ?? 0,
+      suggestedCycleStart: summary.suggestedCycleStart || null,
+      suggestedSurplusXP: summary.suggestedRolloverXP ?? null,
+      flights: summary.flights as FlightRecord[],
+      newFlights: summary.newFlights as FlightRecord[],
+      duplicateFlights: summary.flights.filter(f => 
+        existingFlights.some(e => e.date === f.date && e.route === f.route)
+      ) as FlightRecord[],
+      milesData: summary.miles as MilesRecord[],
+      summary: {
+        totalFlights: summary.flights.length,
+        newFlights: summary.newFlights.length,
+        duplicateFlights: summary.duplicateFlights,
+        totalFlightXP: summary.totalFlightXP,
+        totalFlightSafXP: summary.totalFlightSafXP,
+        totalMonths: summary.miles.length,
+        totalMilesEarned: summary.totalMilesEarned,
+        totalMilesDebit: summary.totalMilesDebit,
+        pdfTotalXP: summary.pdfTotalXP,
+        calculatedXP: summary.calculatedXP,
+        hasXpDiscrepancy: summary.hasXpDiscrepancy,
+        xpDiscrepancy: summary.xpDiscrepancy,
+      } as ParseSummary,
+    };
+  };
+
+  const wizardParseResult = getWizardParseResult();
+
+  // Build existing settings for returning users
+  const existingSettingsForWizard = (existingActiveCycleStart || existingStatus) ? {
+    status: existingStatus || existingQualificationSettings?.startingStatus || null,
+    cycleStartMonth: existingActiveCycleStart || existingQualificationSettings?.cycleStartMonth || null,
+    surplusXP: existingRolloverXP ?? existingQualificationSettings?.startingXP ?? null,
+  } : null;
+
+  // Render wizard when in wizard step
+  if (step === 'wizard' && wizardParseResult) {
+    return (
+      <PdfImportWizard
+        isOpen={true}
+        onClose={handleClose}
+        onComplete={handleWizardComplete}
+        parseResult={wizardParseResult}
+        existingSettings={existingSettingsForWizard}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -626,277 +761,8 @@ const PdfImportModal: React.FC<PdfImportModalProps> = ({
             </div>
           )}
 
-          {/* Preview Step */}
-          {step === 'preview' && parseResult && summary && (
-            <div className="space-y-6">
-              {/* Member Info */}
-              {(parseResult.memberName || parseResult.status) && (
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User size={24} className="text-blue-600" />
-                  </div>
-                  <div>
-                    {parseResult.memberName && (
-                      <p className="font-bold text-slate-800">{parseResult.memberName}</p>
-                    )}
-                    <div className="flex items-center gap-2 text-sm">
-                      {parseResult.status && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${
-                          parseResult.status === 'PLATINUM' ? 'bg-slate-800 text-white' :
-                          parseResult.status === 'GOLD' ? 'bg-amber-100 text-amber-700' :
-                          parseResult.status === 'SILVER' ? 'bg-slate-200 text-slate-600' :
-                          'bg-blue-100 text-blue-600'
-                        }`}>
-                          {parseResult.status}
-                        </span>
-                      )}
-                      {parseResult.memberNumber && (
-                        <span className="text-slate-500">#{parseResult.memberNumber}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Data Range Info */}
-              {summary.oldestDate && summary.newestDate && (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Info size={16} className="text-slate-400" />
-                    <span>
-                      PDF contains data from <strong>{summary.oldestDate}</strong> to <strong>{summary.newestDate}</strong>
-                      {summary.dataRangeMonths > 0 && ` (${summary.dataRangeMonths} months)`}
-                    </span>
-                  </div>
-                  {summary.requalifications.length > 0 && !summary.suggestedCycleStart && (
-                    <div className="mt-2 text-xs text-slate-500">
-                      {summary.requalifications.length} requalification event{summary.requalifications.length > 1 ? 's' : ''} detected
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Cycle Settings Suggestion */}
-              {summary.suggestedCycleStart && summary.suggestedStatus && (
-                <div className="p-4 rounded-xl bg-purple-50 border border-purple-100">
-                  <div className="flex items-start gap-3">
-                    <Award size={18} className="text-purple-500 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-purple-800">
-                        Qualification cycle detected
-                      </p>
-                      <p className="text-sm mt-1 text-purple-600">
-                        Your PDF shows a requalification to <strong>{summary.suggestedStatus}</strong> in <strong>{summary.suggestedCycleStart}</strong>.
-                      </p>
-                      
-                      <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={applyCycleSettings}
-                          onChange={(e) => setApplyCycleSettings(e.target.checked)}
-                          className="w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="text-sm text-purple-800">
-                          Set my qualification cycle to start {summary.suggestedCycleStart} as {summary.suggestedStatus}
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Flights Card */}
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Plane size={18} className="text-emerald-600" />
-                    <span className="font-bold text-emerald-800">Flights</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-emerald-600">Found:</span>
-                      <span className="font-bold text-emerald-800">{summary.flights.length}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-emerald-600">New:</span>
-                      <span className="font-bold text-emerald-800">{summary.newFlights.length}</span>
-                    </div>
-                    {summary.duplicateFlights > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Duplicates:</span>
-                        <span className="text-slate-400">{summary.duplicateFlights}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-emerald-200 my-2" />
-                    <div className="flex justify-between text-sm">
-                      <span className="text-emerald-600">Total XP:</span>
-                      <span className="font-bold text-emerald-800">{summary.totalFlightXP}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-emerald-600">SAF XP:</span>
-                      <span className="font-bold text-emerald-800">{summary.totalFlightSafXP}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Miles Card */}
-                <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Coins size={18} className="text-blue-600" />
-                    <span className="font-bold text-blue-800">Miles</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-blue-600">Months:</span>
-                      <span className="font-bold text-blue-800">{summary.miles.length}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-blue-600">New:</span>
-                      <span className="font-bold text-blue-800">{summary.newMiles.length}</span>
-                    </div>
-                    {summary.updatedMiles.length > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Updates:</span>
-                        <span className="text-slate-400">{summary.updatedMiles.length}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-blue-200 my-2" />
-                    <div className="flex justify-between text-sm">
-                      <span className="text-blue-600">Earned:</span>
-                      <span className="font-bold text-blue-800">{summary.totalMilesEarned.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-blue-600">Debit:</span>
-                      <span className="font-bold text-red-500">-{summary.totalMilesDebit.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Flight Details */}
-              {summary.flights.length > 0 && (
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setShowFlightDetails(!showFlightDetails)}
-                    className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors"
-                  >
-                    <span className="text-sm font-medium text-slate-700">
-                      Flight Details ({summary.flights.length})
-                    </span>
-                    {showFlightDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </button>
-                  {showFlightDetails && (
-                    <div className="max-h-48 overflow-y-auto">
-                      <table className="w-full text-xs">
-                        <thead className="bg-slate-50 sticky top-0">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-slate-500">Date</th>
-                            <th className="px-3 py-2 text-left text-slate-500">Route</th>
-                            <th className="px-3 py-2 text-left text-slate-500">Flight</th>
-                            <th className="px-3 py-2 text-right text-slate-500">Miles</th>
-                            <th className="px-3 py-2 text-right text-slate-500">XP</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {summary.flights.map((f, i) => {
-                            const isDuplicate = existingFlights.some(e => e.date === f.date && e.route === f.route);
-                            return (
-                              <tr key={i} className={`border-t border-slate-100 ${isDuplicate ? 'opacity-40' : ''}`}>
-                                <td className="px-3 py-2 font-mono">{f.date}</td>
-                                <td className="px-3 py-2 font-bold">{f.route}</td>
-                                <td className="px-3 py-2 text-slate-500">{f.flightNumber}</td>
-                                <td className="px-3 py-2 text-right">{f.earnedMiles.toLocaleString()}</td>
-                                <td className="px-3 py-2 text-right font-bold text-blue-600">+{f.earnedXP}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Warnings */}
-              {summary.duplicateFlights > 0 && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
-                  <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-800">
-                    <p className="font-medium">{summary.duplicateFlights} duplicate flights will be skipped</p>
-                    <p className="text-amber-600">These flights already exist in your data (matched by date + route).</p>
-                  </div>
-                </div>
-              )}
-
-              {/* XP Discrepancy Warning */}
-              {summary.hasXpDiscrepancy && summary.xpDiscrepancy !== null && (
-                <div className={`p-4 rounded-xl border ${summary.xpDiscrepancy > 0 ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
-                  <div className="flex items-start gap-3">
-                    <Info size={18} className={`flex-shrink-0 mt-0.5 ${summary.xpDiscrepancy > 0 ? 'text-blue-500' : 'text-amber-500'}`} />
-                    <div className="flex-1">
-                      <p className={`text-sm font-medium ${summary.xpDiscrepancy > 0 ? 'text-blue-800' : 'text-amber-800'}`}>
-                        XP discrepancy detected
-                      </p>
-                      <p className={`text-sm mt-1 ${summary.xpDiscrepancy > 0 ? 'text-blue-600' : 'text-amber-600'}`}>
-                        Your official Flying Blue balance is <strong>{summary.pdfTotalXP} XP</strong>, but imported flights total <strong>{summary.calculatedXP} XP</strong>.
-                        {summary.xpDiscrepancy > 0 
-                          ? ` The ${summary.xpDiscrepancy} XP difference likely comes from credit card bonuses, status bonuses, or older flights not in this PDF.`
-                          : ` This is normal — older flights in the PDF don't count towards your current qualification period.`
-                        }
-                      </p>
-                      
-                      {summary.xpDiscrepancy > 0 && (
-                        <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={addXpCorrection}
-                            onChange={(e) => setAddXpCorrection(e.target.checked)}
-                            className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-blue-800">
-                            Add +{summary.xpDiscrepancy} XP correction to match your actual balance
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Info */}
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <Info size={18} className="text-slate-400 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-slate-600 space-y-2">
-                  <p><span className="font-medium">Note:</span> All flights are imported with "Economy" cabin. You can edit the cabin class later in the Flight Ledger.</p>
-                  <p><span className="font-medium">Tip:</span> If your PDF doesn't cover your full qualification period, you can manually add older flights in the Flight Ledger, or add an XP correction in the XP Engine.</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Footer */}
-        {step === 'preview' && summary && (
-          <div className="p-6 border-t border-slate-100 bg-slate-50">
-            <div className="flex gap-3">
-              <button
-                onClick={handleReset}
-                className="flex-1 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmImport}
-                disabled={summary.newFlights.length === 0 && summary.miles.length === 0}
-                className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 size={18} />
-                Import {summary.newFlights.length} Flights & {summary.miles.length} Months
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Feedback Step */}
         {step === 'feedback' && (

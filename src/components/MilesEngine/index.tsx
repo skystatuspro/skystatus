@@ -126,13 +126,15 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
           r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
         const cpm = totalEarned > 0 ? totalCost / totalEarned : 0;
         const isProjected = r.month > currentMonth;
-        runningBalance += totalEarned - r.miles_debit;
+        const correction = r.miles_correction || 0;
+        runningBalance += totalEarned - r.miles_debit + correction;
         return {
           month: r.month,
           isProjected,
           earnedActual: isProjected ? 0 : totalEarned,
           earnedProjected: isProjected ? totalEarned : 0,
           redeemed: r.miles_debit,
+          correction,
           cpmActual: r.month <= currentMonth ? cpm : null,
           cpmProjected: r.month >= currentMonth ? cpm : null,
           runningBalance,

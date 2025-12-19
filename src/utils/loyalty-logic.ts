@@ -38,6 +38,7 @@ export const calculateMilesStats = (
   let burnAll = 0;
   let costPast = 0;
   let costAll = 0;
+  let correctionTotal = 0;
 
   milesData.forEach((r) => {
     const rowEarned =
@@ -48,10 +49,17 @@ export const calculateMilesStats = (
     const rowBurn = r.miles_debit;
     const rowCost =
       r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
+    const rowCorrection = r.miles_correction || 0;
+
+    // Debug: log any records with corrections
+    if (rowCorrection !== 0) {
+      console.log(`[calculateMilesStats] Found correction in month ${r.month}: ${rowCorrection}`);
+    }
 
     earnedAll += rowEarned;
     burnAll += rowBurn;
     costAll += rowCost;
+    correctionTotal += rowCorrection;
 
     if (r.month <= currentMonth) {
       earnedPast += rowEarned;
@@ -60,8 +68,11 @@ export const calculateMilesStats = (
     }
   });
 
-  const netCurrent = earnedPast - burnPast;
-  const netProjected = earnedAll - burnAll;
+  console.log(`[calculateMilesStats] Total correction: ${correctionTotal}, earnedPast: ${earnedPast}, burnPast: ${burnPast}, netCurrent will be: ${earnedPast - burnPast + correctionTotal}`);
+
+  // Include correction in net calculations (correction can be positive or negative)
+  const netCurrent = earnedPast - burnPast + correctionTotal;
+  const netProjected = earnedAll - burnAll + correctionTotal;
 
   const totalCost = costAll;
 
