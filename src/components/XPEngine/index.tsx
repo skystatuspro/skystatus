@@ -9,7 +9,6 @@ import {
   ManualMonthXP,
   ManualField,
   StatusLevel,
-  PdfBaseline,
 } from '../../types';
 import {
   calculateQualificationCycles,
@@ -59,7 +58,6 @@ interface XPEngineProps {
   onUpdateManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
   qualificationSettings: QualificationSettingsType | null;
   onUpdateQualificationSettings: (settings: QualificationSettingsType | null) => void;
-  pdfBaseline?: PdfBaseline | null; // PDF header as source of truth for XP
   demoStatus?: StatusLevel; // Override status display in demo mode
 }
 
@@ -77,7 +75,6 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   onUpdateManualLedger,
   qualificationSettings,
   onUpdateQualificationSettings,
-  pdfBaseline,
   demoStatus,
 }) => {
   const { isSimpleMode } = useViewMode();
@@ -96,10 +93,9 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         rollover,
         flights,
         manualLedger,
-        normalizedSettings,
-        pdfBaseline
+        normalizedSettings
       ),
-    [_legacyData, rollover, flights, manualLedger, normalizedSettings, pdfBaseline]
+    [_legacyData, rollover, flights, manualLedger, normalizedSettings]
   );
 
   // Find active cycle
@@ -161,7 +157,6 @@ export const XPEngine: React.FC<XPEngineProps> = ({
         flights={flights}
         manualLedger={manualLedger}
         qualificationSettings={qualificationSettings}
-        pdfBaseline={pdfBaseline}
         demoStatus={demoStatus}
       />
     );

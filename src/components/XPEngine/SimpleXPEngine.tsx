@@ -7,7 +7,6 @@ import {
   FlightRecord,
   ManualLedger,
   StatusLevel,
-  PdfBaseline,
 } from '../../types';
 import {
   calculateQualificationCycles,
@@ -42,7 +41,6 @@ interface SimpleXPEngineProps {
   flights: FlightRecord[];
   manualLedger: ManualLedger;
   qualificationSettings: QualificationSettingsType | null;
-  pdfBaseline?: PdfBaseline | null;
   demoStatus?: StatusLevel;
 }
 
@@ -92,7 +90,6 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
   flights,
   manualLedger,
   qualificationSettings,
-  pdfBaseline,
   demoStatus,
 }) => {
   const { setViewMode } = useViewMode();
@@ -104,8 +101,8 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
   );
 
   const { cycles } = useMemo(
-    () => calculateQualificationCycles(data, rollover, flights, manualLedger, normalizedSettings, pdfBaseline),
-    [data, rollover, flights, manualLedger, normalizedSettings, pdfBaseline]
+    () => calculateQualificationCycles(data, rollover, flights, manualLedger, normalizedSettings),
+    [data, rollover, flights, manualLedger, normalizedSettings]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);

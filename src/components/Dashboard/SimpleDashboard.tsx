@@ -2,7 +2,7 @@
 // Simplified dashboard view for casual users
 
 import React, { useMemo, useState, lazy, Suspense } from 'react';
-import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, ViewState, PdfBaseline } from '../../types';
+import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, ViewState } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -47,7 +47,6 @@ interface SimpleDashboardState {
   targetCPM: number;
   manualLedger: ManualLedger;
   qualificationSettings?: QualificationSettings | null;
-  pdfBaseline?: PdfBaseline | null;
 }
 
 interface SimpleDashboardProps {
@@ -102,10 +101,9 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
       state.xpRollover,
       state.flights,
       state.manualLedger,
-      normalizedSettings,
-      state.pdfBaseline
+      normalizedSettings
     ),
-    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings, state.pdfBaseline]
+    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);

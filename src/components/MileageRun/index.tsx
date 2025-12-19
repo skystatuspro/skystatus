@@ -46,7 +46,6 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   flights, 
   manualLedger, 
   qualificationSettings,
-  pdfBaseline,
   demoStatus
 }) => {
   const { symbol: currencySymbol } = useCurrency();
@@ -86,8 +85,8 @@ export const MileageRun: React.FC<MileageRunProps> = ({
 
   // Calculate Status - use same logic as Dashboard/XPEngine
   const { cycles } = useMemo(
-    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, normalizedSettings, pdfBaseline),
-    [xpData, rollover, flights, manualLedger, normalizedSettings, pdfBaseline]
+    () => calculateQualificationCycles(xpData, rollover, flights, manualLedger, normalizedSettings),
+    [xpData, rollover, flights, manualLedger, normalizedSettings]
   );
   
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
@@ -113,7 +112,6 @@ export const MileageRun: React.FC<MileageRunProps> = ({
         flights={flights}
         manualLedger={manualLedger}
         qualificationSettings={qualificationSettings}
-        pdfBaseline={pdfBaseline}
         demoStatus={demoStatus}
       />
     );

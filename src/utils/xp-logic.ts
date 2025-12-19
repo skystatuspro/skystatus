@@ -8,7 +8,6 @@ import {
   ManualLedger,
   ManualMonthXP,
   StatusLevel,
-  PdfBaseline,
 } from '../types';
 import {
   PLATINUM_THRESHOLD,
@@ -1149,17 +1148,8 @@ export const calculateQualificationCycles = (
     startingStatus: StatusLevel; 
     startingXP: number;
     ultimateCycleType?: 'qualification' | 'calendar';
-  } | null,
-  pdfBaseline?: PdfBaseline | null  // PDF header values as source of truth
+  } | null
 ): MultiCycleStats => {
-  // Debug: log every call to understand which component is calling
-  console.log('[XP Engine] calculateQualificationCycles called:', {
-    hasPdfBaseline: !!pdfBaseline,
-    pdfBaselineXP: pdfBaseline?.xp,
-    flightsCount: flights?.length ?? 0,
-    cycleStartMonth: qualificationSettings?.cycleStartMonth,
-  });
-  
   // cycleStartDate = the date you QUALIFIED (e.g., 2025-10-07)
   // Flights AFTER this date count towards the NEW cycle
   // Flights ON or BEFORE this date belong to the OLD cycle
@@ -1226,43 +1216,6 @@ export const calculateQualificationCycles = (
       currentMonth,
       0 // uxpRolloverIn = 0 for empty cycle
     );
-
-    // Apply PDF baseline to empty cycle if available
-    if (pdfBaseline) {
-      // Find flights added after PDF export
-      const flightsAfterExport = (flights ?? []).filter(f => 
-        f.importSource !== 'pdf' && f.date > pdfBaseline.pdfExportDate
-      );
-      
-      const deltaXP = flightsAfterExport.reduce((sum, f) => 
-        sum + (f.earnedXP || 0) + (f.safXp || 0), 0
-      );
-      const deltaUXP = flightsAfterExport.reduce((sum, f) => 
-        sum + (f.uxp || 0), 0
-      );
-      
-      cycle.actualXP = pdfBaseline.xp + deltaXP;
-      cycle.actualUXP = pdfBaseline.uxp + deltaUXP;
-      cycle.actualStatus = pdfBaseline.status as StatusLevel;
-      cycle.currentXP = cycle.actualXP;
-      
-      const statusThresholds: Record<StatusLevel, number> = {
-        Explorer: SILVER_THRESHOLD,
-        Silver: GOLD_THRESHOLD,
-        Gold: PLATINUM_THRESHOLD,
-        Platinum: PLATINUM_THRESHOLD,
-      };
-      const nextThreshold = statusThresholds[cycle.actualStatus] || PLATINUM_THRESHOLD;
-      cycle.actualXPToNext = Math.max(0, nextThreshold - cycle.actualXP);
-      cycle.currentXPToNext = cycle.actualXPToNext;
-      
-      console.log('[XP Engine] PDF baseline applied (empty cycle):', {
-        baselineXP: pdfBaseline.xp,
-        deltaXP,
-        finalXP: cycle.actualXP,
-        status: cycle.actualStatus,
-      });
-    }
 
     return { cycles: [cycle] };
   }
@@ -1455,95 +1408,6 @@ export const calculateQualificationCycles = (
     if (cycleStartMonth > maxRelevantMonth) {
       break;
     }
-  }
-
-  // ============================================================================
-  // PDF BASELINE OVERRIDE
-  // PDF header = source of truth at export date
-  // Add XP/UXP from flights added AFTER the PDF export date
-  // 
-  // CRITICAL FIX (v11): Apply baseline to the ACTIVE cycle, not the last cycle!
-  // The code generates future cycles (+12 months), so cycles[length-1] is often
-  // a future cycle. We need to find the cycle where TODAY falls.
-  // ============================================================================
-  console.log('[XP Engine] PDF baseline check:', {
-    hasPdfBaseline: !!pdfBaseline,
-    pdfBaseline: pdfBaseline,
-    cyclesLength: cycles.length,
-  });
-  
-  if (pdfBaseline && cycles.length > 0) {
-    // FIXED: Find the ACTIVE cycle (where today falls), not just the last one
-    // This mirrors the findActiveCycle() logic used by UI components
-    const today = new Date().toISOString().slice(0, 10);
-    let targetCycleIndex = cycles.length - 1; // fallback to last
-    
-    // First: find cycle where today falls within start-end dates
-    for (let i = 0; i < cycles.length; i++) {
-      if (today >= cycles[i].startDate && today <= cycles[i].endDate) {
-        targetCycleIndex = i;
-        break;
-      }
-    }
-    
-    // Fallback: if no cycle contains today, find first cycle that hasn't ended yet
-    if (targetCycleIndex === cycles.length - 1) {
-      for (let i = 0; i < cycles.length; i++) {
-        if (cycles[i].endDate >= today) {
-          targetCycleIndex = i;
-          break;
-        }
-      }
-    }
-    
-    const targetCycle = cycles[targetCycleIndex];
-    
-    console.log('[XP Engine] PDF baseline target cycle:', {
-      today,
-      targetCycleIndex,
-      cycleStart: targetCycle.startDate,
-      cycleEnd: targetCycle.endDate,
-      totalCycles: cycles.length,
-    });
-    
-    // Find flights that are NOT from PDF and have date AFTER PDF export
-    // These are manual additions that should be added to the baseline
-    const flightsAfterExport = (flights ?? []).filter(f => 
-      f.importSource !== 'pdf' && f.date > pdfBaseline.pdfExportDate
-    );
-    
-    const deltaXP = flightsAfterExport.reduce((sum, f) => 
-      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
-    );
-    const deltaUXP = flightsAfterExport.reduce((sum, f) => 
-      sum + (f.uxp || 0), 0
-    );
-    
-    // Baseline + delta
-    targetCycle.actualXP = pdfBaseline.xp + deltaXP;
-    targetCycle.actualUXP = pdfBaseline.uxp + deltaUXP;
-    targetCycle.actualStatus = pdfBaseline.status as StatusLevel;
-    targetCycle.currentXP = targetCycle.actualXP;
-    
-    // Recalculate XP needed
-    const statusThresholds: Record<StatusLevel, number> = {
-      Explorer: SILVER_THRESHOLD,
-      Silver: GOLD_THRESHOLD,
-      Gold: PLATINUM_THRESHOLD,
-      Platinum: PLATINUM_THRESHOLD,
-    };
-    const nextThreshold = statusThresholds[targetCycle.actualStatus] || PLATINUM_THRESHOLD;
-    targetCycle.actualXPToNext = Math.max(0, nextThreshold - targetCycle.actualXP);
-    targetCycle.currentXPToNext = targetCycle.actualXPToNext;
-    
-    console.log('[XP Engine] PDF baseline applied:', {
-      baselineXP: pdfBaseline.xp,
-      deltaXP,
-      deltaFlights: flightsAfterExport.length,
-      finalXP: targetCycle.actualXP,
-      status: targetCycle.actualStatus,
-      appliedToCycleIndex: targetCycleIndex,
-    });
   }
 
   // Apply calendar year UXP calculation if needed

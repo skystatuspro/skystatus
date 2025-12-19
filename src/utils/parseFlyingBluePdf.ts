@@ -307,62 +307,19 @@ export function parseFlyingBlueText(text: string): ParseResult {
   let totalUXP: number | null = null;
   
   // Look for header info in first few lines
-  // Debug: log first 15 lines to understand PDF structure
-  console.log('[Parser] First 15 lines of PDF:', lines.slice(0, 15));
-  
-  // Debug: Find ALL lines containing status words
-  const statusLines = lines
-    .map((line, idx) => ({ line, idx }))
-    .filter(({ line }) => /PLATINUM|GOLD|SILVER|EXPLORER|ULTIMATE/i.test(line));
-  console.log('[Parser] All lines containing status words:', statusLines);
-  
-  // PDF.js often extracts the visual header at the END of pages
-  // Look for "Flying Blue-nummer:" pattern and get status from nearby line
-  let flyingBlueLineIdx = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/Flying Blue[- ]?(?:nummer|number)/i.test(lines[i])) {
-      flyingBlueLineIdx = i;
-      const memberMatch = lines[i].match(/Flying Blue[- ]?(?:nummer|number)[:\s]+(\d+)/i);
-      if (memberMatch) {
-        memberNumber = memberMatch[1];
-      }
-      // Name is typically one line before
-      if (i > 0 && /^[A-Z\s]+$/.test(lines[i-1].trim()) && lines[i-1].trim().length > 3) {
-        memberName = lines[i-1].trim();
-      }
-      // Status is typically one line after - can be standalone or with date/page info
-      if (i < lines.length - 1) {
-        const nextLine = lines[i+1].trim();
-        // Match standalone status
-        if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(nextLine)) {
-          status = nextLine.toUpperCase();
-          console.log('[Parser] Status found (exact match after Flying Blue-nummer):', status);
-        }
-        // Match status followed by date/page info (e.g., "PLATINUM 11 dec 2025 • Pagina 1/18")
-        else {
-          const statusWithDateMatch = nextLine.match(/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s+\d/i);
-          if (statusWithDateMatch) {
-            status = statusWithDateMatch[1].toUpperCase();
-            console.log('[Parser] Status found (with date after Flying Blue-nummer):', status);
-          }
-        }
-      }
-      // Check if status is on SAME line as Flying Blue-nummer (combined header)
-      // Pattern: "Flying Blue-nummer: 4629294326 PLATINUM" or similar
-      if (!status) {
-        const sameLineMatch = lines[i].match(/Flying Blue[- ]?(?:nummer|number)[:\s]+\d+\s+(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)/i);
-        if (sameLineMatch) {
-          status = sameLineMatch[1].toUpperCase();
-          console.log('[Parser] Status found (same line as Flying Blue-nummer):', status);
-        }
-      }
-      break; // Found it, stop searching
-    }
-  }
-  
-  // First pass: look for totals in first 20 lines
-  for (let i = 0; i < Math.min(20, lines.length); i++) {
+  for (let i = 0; i < Math.min(10, lines.length); i++) {
     const line = lines[i];
+    
+    // Member number pattern: "Flying Blue-nummer: 1234567890"
+    const memberMatch = line.match(/Flying Blue[- ]?(?:nummer|number)[:\s]+(\d+)/i);
+    if (memberMatch) {
+      memberNumber = memberMatch[1];
+    }
+    
+    // Status pattern
+    if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
+      status = line.toUpperCase();
+    }
     
     // Totals pattern: "248928 Miles 183 XP 40 UXP"
     const totalsMatch = line.match(/(\d[\d\s.,]*)\s*Miles\s+(\d+)\s*XP\s+(\d+)\s*UXP/i);
@@ -370,64 +327,13 @@ export function parseFlyingBlueText(text: string): ParseResult {
       totalMiles = parseInt(totalsMatch[1].replace(/[\s.,]/g, ''), 10);
       totalXP = parseInt(totalsMatch[2], 10);
       totalUXP = parseInt(totalsMatch[3], 10);
-      console.log('[Parser] Totals found:', { totalMiles, totalXP, totalUXP });
+    }
+    
+    // Name is typically the first line (all caps)
+    if (i === 0 && /^[A-Z\s]+$/.test(line) && line.length > 3) {
+      memberName = line;
     }
   }
-  
-  // If status still not found, search ALL lines for standalone status
-  for (let i = 0; i < lines.length && !status; i++) {
-    const line = lines[i].trim();
-    if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
-      status = line.toUpperCase();
-      console.log('[Parser] Status found (exact standalone match) at line', i, ':', status);
-      break;
-    }
-  }
-  
-  // Priority 2: Status starting a line followed by date (PDF header pattern)
-  // E.g., "PLATINUM 11 dec 2025 • Pagina 1/18"
-  if (!status) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      const headerPatternMatch = line.match(/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\s+\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i);
-      if (headerPatternMatch) {
-        status = headerPatternMatch[1].toUpperCase();
-        console.log('[Parser] Status found (header with date pattern) at line', i, ':', status, 'from:', line);
-        break;
-      }
-    }
-  }
-  
-  // Priority 3: Status in a line, but NOT in credit card context (search ALL lines now)
-  if (!status) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Skip lines that are clearly credit card references
-      if (/AMERICAN\s+EXPRESS|PLATINUM\s+CARD|CREDIT\s*CARD|AMEX/i.test(line)) {
-        continue;
-      }
-      
-      // Skip transaction lines (start with date)
-      if (/^\d{1,2}\s+(jan|feb|mrt|mar|apr|mei|may|jun|jul|aug|sep|okt|oct|nov|dec)/i.test(line)) {
-        continue;
-      }
-      
-      // Skip lines with "reached/bereikt" - these are requalification events, not current status
-      if (/reached|bereikt|atteint|erreicht|raggiunto|alcanzado|atingido/i.test(line)) {
-        continue;
-      }
-      
-      const statusInLineMatch = line.match(/\b(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\b/i);
-      if (statusInLineMatch) {
-        status = statusInLineMatch[1].toUpperCase();
-        console.log('[Parser] Status found (in-line match) at line', i, ':', status, 'from:', line);
-        break;
-      }
-    }
-  }
-  
-  console.log('[Parser] Header parsing result:', { memberName, memberNumber, status, totalMiles, totalXP, totalUXP });
   
   // Parse flights and miles
   const flights: ParsedFlight[] = [];
@@ -1031,34 +937,12 @@ export function parseFlyingBlueText(text: string): ParseResult {
     });
   });
   
-  // FALLBACK: If header status wasn't found (pdf.js didn't extract the header section),
-  // use the most recent requalification status as fallback
-  // Note: This may not be 100% accurate if user qualified to a higher status since then
-  let finalStatus = status;
-  if (!finalStatus && requalifications.length > 0) {
-    // Sort by date descending to get most recent
-    const sortedReqals = [...requalifications].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    const mostRecent = sortedReqals.find(r => r.toStatus);
-    if (mostRecent?.toStatus) {
-      finalStatus = mostRecent.toStatus.toUpperCase();
-      console.log('[Parser] Status fallback: using most recent requalification status:', finalStatus);
-    }
-  }
-  
-  // If still no status, default to Explorer
-  if (!finalStatus) {
-    finalStatus = null; // Will be handled by PdfImportModal as 'Explorer'
-    console.log('[Parser] Status: could not determine from PDF');
-  }
-  
   return {
     flights,
     miles: milesArray,
     memberName,
     memberNumber,
-    status: finalStatus,
+    status,
     totalMiles,
     totalXP,
     totalUXP,

@@ -78,6 +78,12 @@ export interface UserDataState {
   milesData: MilesRecord[];
   xpData: XPRecord[];
   
+  // Current balances (computed from baseline + delta)
+  displayXP: number;        // XP to show in UI (baseline + manual delta)
+  displayUXP: number;       // UXP to show in UI
+  displayMiles: number;     // Miles to show in UI
+  displayStatus: StatusLevel; // Status to show in UI
+  
   // Current status (computed)
   currentStatus: StatusLevel;
   
@@ -266,6 +272,60 @@ export function useUserData(): UseUserDataReturn {
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
   // -------------------------------------------------------------------------
+  // DISPLAY VALUES (PDF Baseline + Manual Delta)
+  // -------------------------------------------------------------------------
+  // These are the values shown in the UI. If we have a PDF baseline, we use that
+  // as the source of truth and add any manual additions made AFTER the PDF date.
+
+  const { displayXP, displayUXP, displayMiles, displayStatus } = useMemo(() => {
+    // If no PDF baseline, fall back to calculated values
+    if (!pdfBaseline) {
+      const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
+      const now = new Date();
+      const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+      const cycle = stats[currentQYear];
+      
+      // Calculate total XP from flights
+      const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
+      const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
+      const totalMiles = milesData.reduce((sum, m) => 
+        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
+      );
+      
+      return {
+        displayXP: cycle?.totalXP || totalFlightXP,
+        displayUXP: totalUXP,
+        displayMiles: totalMiles,
+        displayStatus: currentStatus,
+      };
+    }
+
+    // We have a PDF baseline - use it as source of truth
+    // Calculate delta from manual flights added AFTER the PDF export date
+    const pdfDate = pdfBaseline.pdfExportDate;
+    
+    const manualFlightsAfterPdf = flights.filter(f => 
+      f.importSource === 'manual' && f.date > pdfDate
+    );
+    
+    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
+    );
+    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.uxp || 0), 0
+    );
+    const deltaMiles = manualFlightsAfterPdf.reduce((sum, f) => 
+      sum + (f.earnedMiles || 0), 0
+    );
+    
+    return {
+      displayXP: pdfBaseline.xp + deltaXP,
+      displayUXP: pdfBaseline.uxp + deltaUXP,
+      displayMiles: pdfBaseline.miles + deltaMiles,
+      displayStatus: pdfBaseline.status,
+    };
+  }, [pdfBaseline, flights, xpData, xpRollover, manualLedger, milesData, currentStatus]);
+
   // -------------------------------------------------------------------------
   // DATA PERSISTENCE
   // -------------------------------------------------------------------------
@@ -1122,6 +1182,11 @@ export function useUserData(): UseUserDataReturn {
       pdfBaseline,
       milesData,
       xpData,
+      // Display values (PDF baseline + manual delta)
+      displayXP,
+      displayUXP,
+      displayMiles,
+      displayStatus,
       currentStatus,
       currentMonth,
       homeAirport,

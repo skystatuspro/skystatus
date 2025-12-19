@@ -2,7 +2,7 @@
 // Main Dashboard component - Command Center
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, PdfBaseline } from '../../types';
+import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -51,7 +51,6 @@ interface DashboardState {
   targetCPM: number;
   manualLedger: ManualLedger;
   qualificationSettings?: QualificationSettings | null;
-  pdfBaseline?: PdfBaseline | null;
 }
 
 interface DashboardProps {
@@ -125,10 +124,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         state.xpRollover,
         state.flights,
         state.manualLedger,
-        normalizedSettings,
-        state.pdfBaseline
+        normalizedSettings
       ),
-    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings, state.pdfBaseline]
+    [state.xpData, state.xpRollover, state.flights, state.manualLedger, normalizedSettings]
   );
 
   const activeCycle = useMemo(() => findActiveCycle(cycles), [cycles]);
