@@ -367,6 +367,11 @@ export function useUserData(): UseUserDataReturn {
         setCurrentUXPInternal(data.profile.currentUXP || 0);
         setEmailConsentInternal(data.profile.emailConsent ?? false);
         
+        // Load PDF Baseline (source of truth for XP/UXP/Miles display)
+        if (data.profile.pdfBaseline) {
+          setPdfBaselineInternal(data.profile.pdfBaseline as PdfBaseline);
+        }
+        
         // CRITICAL: For existing users without the new column, default to TRUE (they've already been using the app)
         // Only new users (no data AND onboarding_completed explicitly false) should see onboarding
         const onboardingStatus = data.profile.onboardingCompleted ?? hasExistingData;
@@ -430,6 +435,8 @@ export function useUserData(): UseUserDataReturn {
           starting_xp: qualificationSettings?.startingXP ?? 0,
           starting_uxp: qualificationSettings?.startingUXP ?? 0,
           ultimate_cycle_type: qualificationSettings?.ultimateCycleType ?? null,
+          // Save PDF Baseline (source of truth for XP/UXP/Miles)
+          pdf_baseline: pdfBaseline ?? null,
         }),
       ]);
     } catch (error) {
@@ -437,7 +444,7 @@ export function useUserData(): UseUserDataReturn {
     } finally {
       setIsSaving(false);
     }
-  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings]);
+  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings, pdfBaseline]);
 
   // Load on auth change
   useEffect(() => {

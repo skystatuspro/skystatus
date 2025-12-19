@@ -307,8 +307,9 @@ export function parseFlyingBlueText(text: string): ParseResult {
   let totalUXP: number | null = null;
   
   // Look for header info in first few lines
-  for (let i = 0; i < Math.min(10, lines.length); i++) {
-    const line = lines[i];
+  console.log('[Parser] Scanning header, first 15 lines:', lines.slice(0, 15));
+  for (let i = 0; i < Math.min(15, lines.length); i++) {
+    const line = lines[i].trim();
     
     // Member number pattern: "Flying Blue-nummer: 1234567890"
     const memberMatch = line.match(/Flying Blue[- ]?(?:nummer|number)[:\s]+(\d+)/i);
@@ -316,9 +317,14 @@ export function parseFlyingBlueText(text: string): ParseResult {
       memberNumber = memberMatch[1];
     }
     
-    // Status pattern
-    if (/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i.test(line)) {
-      status = line.toUpperCase();
+    // Status pattern - look for status keywords (can be on own line or in line)
+    if (!status) {
+      const statusMatch = line.match(/^(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)$/i) ||
+                          line.match(/\b(EXPLORER|SILVER|GOLD|PLATINUM|ULTIMATE)\b/i);
+      if (statusMatch) {
+        status = statusMatch[1].toUpperCase();
+        console.log('[Parser] Detected status:', status, 'from line:', line);
+      }
     }
     
     // Totals pattern: "248928 Miles 183 XP 40 UXP"
@@ -327,6 +333,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
       totalMiles = parseInt(totalsMatch[1].replace(/[\s.,]/g, ''), 10);
       totalXP = parseInt(totalsMatch[2], 10);
       totalUXP = parseInt(totalsMatch[3], 10);
+      console.log('[Parser] Detected totals:', { totalMiles, totalXP, totalUXP });
     }
     
     // Name is typically the first line (all caps)
@@ -334,6 +341,7 @@ export function parseFlyingBlueText(text: string): ParseResult {
       memberName = line;
     }
   }
+  console.log('[Parser] Header result:', { memberName, memberNumber, status, totalMiles, totalXP, totalUXP });
   
   // Parse flights and miles
   const flights: ParsedFlight[] = [];
