@@ -98,7 +98,8 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   const actualXP = hasPdfBaseline && propDisplayXP !== undefined 
     ? propDisplayXP 
     : calculatedActualXP;
-  const projectedXP = activeCycle?.projectedXP ?? actualXP;
+  // Projected XP should never be less than actual XP
+  const projectedXP = Math.max(activeCycle?.projectedXP ?? actualXP, actualXP);
   const actualUXP = activeCycle?.actualUXP ?? 0;
   const projectedUXP = activeCycle?.projectedUXP ?? actualUXP;
   

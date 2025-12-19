@@ -1,0 +1,616 @@
+// src/components/XPEngine/index.tsx
+// Main XPEngine component - manages state and composes subcomponents
+
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  XPRecord,
+  FlightRecord,
+  ManualLedger,
+  ManualMonthXP,
+  ManualField,
+  StatusLevel,
+} from '../../types';
+import {
+  calculateQualificationCycles,
+  XPLedgerRow,
+  QualificationCycleStats,
+} from '../../utils/xp-logic';
+import { normalizeQualificationSettings, getDisplayStatus, getDisplayProjectedStatus } from '../../utils/ultimate-bridge';
+import { useViewMode } from '../../hooks/useViewMode';
+import {
+  ChevronRight,
+  ChevronLeft,
+  Zap,
+  Clock,
+  TrendingUp,
+  RotateCcw,
+  Lightbulb,
+  Settings2,
+} from 'lucide-react';
+import { Tooltip } from '../Tooltip';
+import { FAQModal } from '../FAQModal';
+
+// Subcomponents
+import { getStatusTheme, getNextStatusFromCurrent, formatDate, noSpinnerClass } from './helpers';
+import { CycleSetupForm, CycleSetupFormValues } from './CycleSetupForm';
+import { StatusCard } from './StatusCard';
+import { ProgressionChart } from './ProgressionChart';
+import { LedgerTable } from './LedgerTable';
+import { SimpleXPEngine } from './SimpleXPEngine';
+
+interface QualificationSettingsType {
+  cycleStartMonth: string;
+  startingStatus: StatusLevel;
+  startingXP: number;
+}
+
+interface XPEngineProps {
+  data: XPRecord[];
+  baseData: XPRecord[];
+  onUpdate: (data: XPRecord[]) => void;
+  rollover: number;
+  onUpdateRollover: (val: number) => void;
+  uxpRollover: number;
+  onUpdateUxpRollover: (val: number) => void;
+  flights: FlightRecord[];
+  onUpdateFlights: (flights: FlightRecord[]) => void;
+  manualLedger: ManualLedger;
+  onUpdateManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
+  qualificationSettings: QualificationSettingsType | null;
+  onUpdateQualificationSettings: (settings: QualificationSettingsType | null) => void;
+  demoStatus?: StatusLevel; // Override status display in demo mode
+}
+
+export const XPEngine: React.FC<XPEngineProps> = ({
+  data: _legacyData,
+  baseData: _baseData,
+  onUpdate: _onUpdate,
+  rollover,
+  onUpdateRollover,
+  uxpRollover,
+  onUpdateUxpRollover,
+  flights,
+  onUpdateFlights: _onUpdateFlights,
+  manualLedger,
+  onUpdateManualLedger,
+  qualificationSettings,
+  onUpdateQualificationSettings,
+  demoStatus,
+}) => {
+  const { isSimpleMode } = useViewMode();
+
+  // Normalize qualification settings for core logic (Ultimate → Platinum + UXP)
+  const normalizedSettings = useMemo(
+    () => normalizeQualificationSettings(qualificationSettings),
+    [qualificationSettings]
+  );
+
+  // Calculate cycles with normalized settings
+  const { cycles } = useMemo(
+    () =>
+      calculateQualificationCycles(
+        _legacyData,
+        rollover,
+        flights,
+        manualLedger,
+        normalizedSettings
+      ),
+    [_legacyData, rollover, flights, manualLedger, normalizedSettings]
+  );
+
+  // Find active cycle
+  const findActiveCycleIndex = (cycleList: QualificationCycleStats[]): number => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    for (let i = 0; i < cycleList.length; i++) {
+      const cycle = cycleList[i];
+      if (today >= cycle.startDate && today <= cycle.endDate) {
+        return i;
+      }
+    }
+
+    for (let i = 0; i < cycleList.length; i++) {
+      const cycle = cycleList[i];
+      if (cycle.endDate >= today) {
+        return i;
+      }
+    }
+
+    return cycleList.length - 1;
+  };
+
+  // State
+  const [selectedIndex, setSelectedIndex] = useState(() =>
+    cycles.length > 0 ? findActiveCycleIndex(cycles) : 0
+  );
+  const [showFaqModal, setShowFaqModal] = useState(false);
+  const [showCycleSetup, setShowCycleSetup] = useState(false);
+  const [skipCycleSetup, setSkipCycleSetup] = useState(false);
+
+  const shouldShowCycleSetup = (!qualificationSettings && !skipCycleSetup) || showCycleSetup;
+
+  // Create a stable identifier for the cycles array to detect significant changes
+  // This changes when cycle dates change (e.g., qualificationSettings updates)
+  const cyclesFingerprint = useMemo(() => {
+    if (cycles.length === 0) return '';
+    return cycles.map(c => `${c.startDate}-${c.endDate}`).join('|');
+  }, [cycles]);
+
+  // Update selection when cycles change significantly (not just during typing)
+  useEffect(() => {
+    if (cycles.length === 0) {
+      setSelectedIndex(0);
+      return;
+    }
+
+    // Always recalculate when cycles structure changes
+    const newIndex = findActiveCycleIndex(cycles);
+    setSelectedIndex(newIndex);
+  }, [cyclesFingerprint]);
+
+  // Simple Mode: render simplified XP Engine
+  if (isSimpleMode) {
+    return (
+      <SimpleXPEngine
+        data={_legacyData}
+        rollover={rollover}
+        flights={flights}
+        manualLedger={manualLedger}
+        qualificationSettings={qualificationSettings}
+        demoStatus={demoStatus}
+      />
+    );
+  }
+
+  if (cycles.length === 0) {
+    return null;
+  }
+
+  // Safe index
+  const safeSelectedIndex =
+    selectedIndex < cycles.length ? selectedIndex : Math.max(0, cycles.length - 1);
+  const currentCycle: QualificationCycleStats = cycles[safeSelectedIndex];
+
+  // Ultimate flags from cycle
+  // In demo mode, determine Ultimate from demoStatus
+  const cycleIsUltimate = currentCycle.isUltimate ?? false;
+  const cycleProjectedUltimate = currentCycle.projectedUltimate ?? false;
+  const isDemoUltimate = demoStatus === 'Ultimate';
+
+  // ACTUAL status and XP - use demoStatus override or bridge
+  const rawActualStatus: StatusLevel = currentCycle.actualStatus ?? currentCycle.startStatus;
+  const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
+  const actualXP: number = currentCycle.actualXP ?? 0;
+  const actualXPToNext: number = currentCycle.actualXPToNext ?? 0;
+
+  // Calculate projected cumulative XP first (needed for projected status)
+  const projectedCumulativeXP = useMemo(() => {
+    const totalMonthXP = currentCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
+    return currentCycle.rolloverIn + totalMonthXP;
+  }, [currentCycle]);
+
+  // PROJECTED status and XP - use demoStatus override or bridge with additional context
+  const rawProjectedStatus: StatusLevel = currentCycle.projectedStatus ?? currentCycle.endStatus;
+  const isCurrentlyUltimate = isDemoUltimate || cycleIsUltimate || actualStatus === 'Ultimate';
+  const projectedStatus: StatusLevel = demoStatus ?? getDisplayProjectedStatus(
+    rawProjectedStatus, 
+    cycleProjectedUltimate,
+    isCurrentlyUltimate,
+    projectedCumulativeXP
+  );
+  const projectedXPToNext: number = currentCycle.projectedXPToNext ?? 0;
+
+  const projectedXP = projectedCumulativeXP;
+
+  // Check differences
+  const hasProjectedUpgrade = projectedStatus !== actualStatus;
+  const hasProjectedXPDifference = projectedCumulativeXP !== actualXP;
+
+  // Theme - use cycleIsUltimate for theming (or check if actualStatus is Ultimate)
+  const isUltimate = cycleIsUltimate || actualStatus === 'Ultimate';
+  const projectedUltimate = cycleProjectedUltimate || projectedStatus === 'Ultimate';
+  const theme = getStatusTheme(actualStatus, isUltimate);
+  const nextStatus = getNextStatusFromCurrent(actualStatus);
+
+  // Cycle info
+  const isLevelUpCycle = currentCycle.endedByLevelUp ?? false;
+  const levelUpIsActual = currentCycle.levelUpIsActual ?? false;
+  const isChained = selectedIndex > 0;
+
+  // Cycle XP calculations
+  const projectedCycleXP = useMemo(
+    () =>
+      currentCycle.ledger.reduce((sum: number, row: XPLedgerRow) => {
+        const monthTotal = row.monthTotal ?? row.xpMonth ?? 0;
+        return sum + monthTotal;
+      }, 0),
+    [currentCycle]
+  );
+
+  const actualCycleXP = useMemo(
+    () =>
+      currentCycle.ledger.reduce((sum: number, row: XPLedgerRow) => {
+        return sum + (row.actualXP ?? 0);
+      }, 0),
+    [currentCycle]
+  );
+
+  // Progress calculations
+  const nextStatusThreshold = useMemo(() => {
+    if (actualStatus === 'Explorer') return 100;
+    if (actualStatus === 'Silver') return 180;
+    if (actualStatus === 'Gold') return 300;
+    return 300;
+  }, [actualStatus]);
+
+  const actualProgress = Math.min(100, (actualXP / nextStatusThreshold) * 100);
+  const projectedProgress = Math.min(100, (projectedXP / nextStatusThreshold) * 100);
+
+  // Handlers
+  const handleCycleChange = (delta: number) => {
+    const next = selectedIndex + delta;
+    if (next >= 0 && next < cycles.length) {
+      setSelectedIndex(next);
+    }
+  };
+
+  const handleManualRolloverChange = (val: number) => {
+    const clamped = Math.max(0, Math.min(300, val));
+    onUpdateRollover(Number.isFinite(clamped) ? clamped : 0);
+  };
+
+  const handleManualUxpRolloverChange = (val: number) => {
+    const clamped = Math.max(0, Math.min(900, val));
+    onUpdateUxpRollover(Number.isFinite(clamped) ? clamped : 0);
+  };
+
+  const ensureManualMonth = (month: string): ManualMonthXP => {
+    const base: ManualMonthXP = {
+      amexXp: 0,
+      bonusSafXp: 0,
+      miscXp: 0,
+      correctionXp: 0,
+    };
+    return manualLedger[month] ? { ...base, ...manualLedger[month] } : base;
+  };
+
+  const handleManualCellChange = (month: string, field: ManualField, value: number) => {
+    onUpdateManualLedger((prev) => {
+      const current = ensureManualMonth(month);
+      return {
+        ...prev,
+        [month]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  // Enhanced ledger
+  const enhancedLedger = useMemo(() => {
+    const rows = currentCycle.ledger;
+    let prevCumulative = currentCycle.rolloverIn ?? 0;
+
+    return rows.map((row) => {
+      const monthTotal = row.monthTotal ?? row.xpMonth ?? 0;
+      const diff = row.cumulative - prevCumulative;
+      const autoCorrection = diff - monthTotal;
+      prevCumulative = row.cumulative;
+
+      const isLevelUpMonth = isLevelUpCycle && currentCycle.levelUpMonth === row.month;
+
+      return { row, autoCorrection, isLevelUpMonth };
+    });
+  }, [currentCycle, isLevelUpCycle]);
+
+  // Chart data
+  const chartData = useMemo(() => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    return currentCycle.ledger.map((row) => {
+      const isFuture = row.month > currentMonth;
+      const monthXP = row.monthTotal ?? row.xpMonth ?? 0;
+      const actualMonthXP = row.actualXP ?? 0;
+      const projectedMonthXP = row.projectedXP ?? 0;
+
+      return {
+        ...row,
+        xp: monthXP,
+        actualXP: actualMonthXP,
+        projectedXP: projectedMonthXP,
+        isFuture,
+      };
+    });
+  }, [currentCycle]);
+
+  // Run rate
+  const avgNeeded = useMemo(() => {
+    const futureMonths = chartData.filter((d) => d.isFuture);
+    const futureCount = futureMonths.length;
+    if (actualXPToNext > 0 && futureCount > 0) {
+      return Math.ceil(actualXPToNext / futureCount);
+    }
+    return 0;
+  }, [chartData, actualXPToNext]);
+
+  // Cycle type label
+  const getCycleTypeLabel = () => {
+    if (isLevelUpCycle && levelUpIsActual) {
+      return (
+        <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded uppercase tracking-wide border border-emerald-100">
+          <Zap size={12} />
+          Level-up achieved
+        </div>
+      );
+    }
+    if (isLevelUpCycle && !levelUpIsActual) {
+      return (
+        <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-wide border border-blue-100">
+          <Clock size={12} />
+          Level-up projected
+        </div>
+      );
+    }
+    return (
+      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+        Standard cycle
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-slate-100 pb-6">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">XP Engine</h2>
+          <p className="text-slate-500 mt-1 font-medium">Manage your qualification cycle</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Edit cycle settings button */}
+          <button
+            onClick={() => setShowCycleSetup(!showCycleSetup)}
+            className={`p-2 rounded-lg transition-all ${
+              showCycleSetup
+                ? 'bg-amber-100 text-amber-600'
+                : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+            }`}
+            title={showCycleSetup ? 'Close cycle settings' : 'Edit cycle settings'}
+          >
+            <Settings2 size={20} />
+          </button>
+
+          {/* Cycle selector - hidden on mobile */}
+          <div className="hidden md:flex items-center space-x-4 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm">
+            <button
+              onClick={() => handleCycleChange(-1)}
+              disabled={selectedIndex === 0}
+              className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-700 transition-all disabled:opacity-30"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <div className="flex flex-col items-center w-48">
+              <span className="text-sm font-bold text-slate-800 tabular-nums">
+                {formatDate(currentCycle.startDate)}
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                to {formatDate(currentCycle.endDate)}
+              </span>
+              {getCycleTypeLabel()}
+            </div>
+
+            <button
+              onClick={() => handleCycleChange(1)}
+              disabled={selectedIndex === cycles.length - 1}
+              className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-700 transition-all disabled:opacity-30"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Cycle Setup */}
+      {shouldShowCycleSetup && (
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-amber-100 rounded-xl text-amber-600 flex-shrink-0">
+              <Lightbulb size={24} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-slate-900 text-lg mb-2">
+                {qualificationSettings ? 'Edit your cycle settings' : 'Set up your Flying Blue cycle'}
+              </h3>
+              <p className="text-slate-600 text-sm mb-5">
+                {qualificationSettings
+                  ? 'Update your qualification year settings below.'
+                  : 'To accurately track your XP, tell us when your qualification year started, what status you had, and your current XP balance.'}{' '}
+                Find this info at{' '}
+                <a
+                  href="https://www.flyingblue.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-600 hover:underline font-medium"
+                >
+                  flyingblue.com
+                </a>
+                .
+              </p>
+
+              <CycleSetupForm
+                initialValues={qualificationSettings}
+                onSave={(settings) => {
+                  onUpdateQualificationSettings(settings);
+                  setShowCycleSetup(false);
+                }}
+                onCancel={() => {
+                  setShowCycleSetup(false);
+                  if (!qualificationSettings) {
+                    setSkipCycleSetup(true);
+                  }
+                }}
+                onShowFaq={() => setShowFaqModal(true)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Status Card */}
+        <StatusCard
+          actualStatus={actualStatus}
+          actualXP={actualXP}
+          actualXPToNext={actualXPToNext}
+          projectedStatus={projectedStatus}
+          projectedXP={projectedXP}
+          projectedXPToNext={projectedXPToNext}
+          nextStatus={nextStatus}
+          nextStatusThreshold={nextStatusThreshold}
+          currentCycle={currentCycle}
+          theme={theme}
+          isLevelUpCycle={isLevelUpCycle}
+          levelUpIsActual={levelUpIsActual}
+          hasProjectedUpgrade={hasProjectedUpgrade}
+          hasProjectedXPDifference={hasProjectedXPDifference}
+          actualProgress={actualProgress}
+          projectedProgress={projectedProgress}
+          isUltimate={isUltimate}
+          projectedUltimate={projectedUltimate}
+          actualUXP={isDemoUltimate ? Math.max(currentCycle.actualUXP ?? 0, 950) : (currentCycle.actualUXP ?? 0)}
+          projectedUXP={isDemoUltimate ? Math.max(currentCycle.projectedUXP ?? 0, 1000) : (currentCycle.projectedUXP ?? 0)}
+        />
+
+        {/* Right column */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* Rollover and performance cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[140px]">
+            {/* Rollover card */}
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:border-slate-200 transition-colors relative z-0 hover:z-10">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Rollover (Start)
+                    </p>
+                    <Tooltip text="XP and UXP balances carried over from the previous qualification cycle." />
+                  </div>
+                  <div className="flex gap-4">
+                    {/* XP Input */}
+                    <div className="flex items-baseline gap-1.5">
+                      {isChained ? (
+                        <span className="text-3xl font-black text-slate-800">
+                          {currentCycle.rolloverIn}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          value={rollover}
+                          onChange={(e) => handleManualRolloverChange(Number(e.target.value))}
+                          className={`text-3xl font-black text-slate-800 w-20 bg-transparent border-b-2 border-slate-100 focus:border-blue-500 focus:outline-none ${noSpinnerClass}`}
+                        />
+                      )}
+                      <span className="text-sm font-bold text-slate-400">XP</span>
+                    </div>
+                    {/* UXP Input - only for Platinum starting status */}
+                    {(actualStatus === 'Platinum' || currentCycle.isUltimate) && (
+                      <div className="flex items-baseline gap-1.5">
+                        {isChained ? (
+                          <span className="text-3xl font-black text-slate-600">
+                            {currentCycle.uxpRolloverIn ?? 0}
+                          </span>
+                        ) : (
+                          <input
+                            type="number"
+                            value={uxpRollover}
+                            onChange={(e) => handleManualUxpRolloverChange(Number(e.target.value))}
+                            className={`text-3xl font-black text-slate-600 w-20 bg-transparent border-b-2 border-slate-100 focus:border-slate-400 focus:outline-none ${noSpinnerClass}`}
+                          />
+                        )}
+                        <span className="text-sm font-bold text-slate-400">UXP</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-500 border border-slate-100">
+                  <RotateCcw size={20} />
+                </div>
+              </div>
+              {isChained && (
+                <div className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded w-fit uppercase tracking-wide">
+                  Auto chained from previous cycle
+                </div>
+              )}
+            </div>
+
+            {/* Cycle performance card */}
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between hover:border-slate-200 transition-colors relative z-0 hover:z-10">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Cycle Performance
+                    </p>
+                    <Tooltip text="XP earned this cycle. Actual = flown flights. Projected = including scheduled flights." />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-slate-800">{actualCycleXP}</span>
+                    <span className="text-sm font-bold text-slate-400">XP actual</span>
+                  </div>
+                  {projectedCycleXP > actualCycleXP && (
+                    <div className="flex items-center gap-1 text-blue-500 text-xs mt-1">
+                      <Clock size={10} />
+                      <span>{projectedCycleXP} XP projected</span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-2.5 bg-amber-50 rounded-xl text-amber-500 border border-amber-100">
+                  <TrendingUp size={20} />
+                </div>
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
+                {projectedCycleXP > actualCycleXP && (
+                  <div
+                    className="absolute h-full bg-amber-200 rounded-full"
+                    style={{
+                      width: `${Math.min(100, (projectedCycleXP / 300) * 100)}%`,
+                    }}
+                  />
+                )}
+                <div
+                  className="absolute h-full bg-amber-400 rounded-full"
+                  style={{
+                    width: `${Math.min(100, (actualCycleXP / 300) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Progression chart */}
+          <ProgressionChart chartData={chartData} avgNeeded={avgNeeded} />
+        </div>
+      </div>
+
+      {/* Ledger table */}
+      <LedgerTable
+        currentCycle={currentCycle}
+        enhancedLedger={enhancedLedger}
+        flights={flights}
+        manualLedger={manualLedger}
+        theme={theme}
+        isLevelUpCycle={isLevelUpCycle}
+        levelUpIsActual={levelUpIsActual}
+        isChained={isChained}
+        onManualCellChange={handleManualCellChange}
+        showUXP={actualStatus === 'Platinum' || currentCycle.isUltimate}
+      />
+
+      {/* FAQ Modal */}
+      <FAQModal isOpen={showFaqModal} onClose={() => setShowFaqModal(false)} />
+    </div>
+  );
+};

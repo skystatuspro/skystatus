@@ -135,11 +135,14 @@ export const SimpleXPEngine: React.FC<SimpleXPEngineProps> = ({
   const theme = getStatusTheme(actualStatus, isUltimate);
   const nextStatus = getNextStatus(actualStatus);
 
-  // Calculate projected XP
-  const projectedXP = useMemo(() => {
+  // Calculate projected XP - should never be less than actual XP
+  const calculatedProjectedXP = useMemo(() => {
     const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
     return activeCycle.rolloverIn + totalMonthXP;
   }, [activeCycle]);
+  
+  // Projected XP should never be less than actual XP
+  const projectedXP = Math.max(calculatedProjectedXP, actualXP);
 
   const hasProjectedXP = projectedXP > actualXP;
   const progressPercent = Math.min(100, Math.round((actualXP / targetXP) * 100));

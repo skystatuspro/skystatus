@@ -129,10 +129,12 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
   const theme = getStatusTheme(actualStatus, isUltimate);
   
   // Calculate projected XP (rollover + all month XP including booked flights)
+  // Projected XP should never be less than actual XP
   const projectedXP = useMemo(() => {
     if (!activeCycle) return actualXP;
     const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
-    return activeCycle.rolloverIn + totalMonthXP;
+    const calculatedProjected = activeCycle.rolloverIn + totalMonthXP;
+    return Math.max(calculatedProjected, actualXP);
   }, [activeCycle, actualXP]);
   
   const hasProjectedXP = projectedXP > actualXP;

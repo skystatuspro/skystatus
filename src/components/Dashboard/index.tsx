@@ -192,10 +192,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [showUltimateProgress, actualUXP, projectedUXP, monthsRemaining]);
 
   const projectedTotalXP = useMemo(() => {
-    if (!activeCycle) return 0;
+    if (!activeCycle) return actualXP;
     const totalMonthXP = activeCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
-    return activeCycle.rolloverIn + totalMonthXP;
-  }, [activeCycle]);
+    const calculatedProjected = activeCycle.rolloverIn + totalMonthXP;
+    // Projected XP should never be less than actual XP
+    return Math.max(calculatedProjected, actualXP);
+  }, [activeCycle, actualXP]);
 
   const hasProjectedUpgrade = projectedStatus !== actualStatus;
 

@@ -50,6 +50,10 @@ export interface PdfBaseline {
   miles: number;                     // Miles balance at time of PDF export
   status: StatusLevel;               // Official status level
   
+  // Calculated values at import time (for delta tracking)
+  calculatedXpAtImport?: number;     // Calculated XP when PDF was imported
+  calculatedUxpAtImport?: number;    // Calculated UXP when PDF was imported
+  
   // PDF metadata
   pdfExportDate: string;             // Date the PDF was exported (from newest transaction or header)
   importedAt: string;                // When we imported this PDF

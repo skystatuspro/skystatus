@@ -198,10 +198,14 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const actualXPToNext: number = currentCycle.actualXPToNext ?? 0;
 
   // Calculate projected cumulative XP first (needed for projected status)
-  const projectedCumulativeXP = useMemo(() => {
+  // When using PDF baseline, projected should be at least actualXP
+  const calculatedProjectedXP = useMemo(() => {
     const totalMonthXP = currentCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
     return currentCycle.rolloverIn + totalMonthXP;
   }, [currentCycle]);
+  
+  // Projected XP should never be less than actual XP
+  const projectedCumulativeXP = Math.max(calculatedProjectedXP, actualXP);
 
   // PROJECTED status and XP - use demoStatus override or bridge with additional context
   const rawProjectedStatus: StatusLevel = currentCycle.projectedStatus ?? currentCycle.endStatus;

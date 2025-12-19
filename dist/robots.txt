@@ -1,0 +1,38 @@
+# SkyStatus Pro - robots.txt
+# https://skystatus.pro
+
+User-agent: *
+Allow: /
+Sitemap: https://skystatus.pro/sitemap.xml
+
+# OpenAI
+User-agent: GPTBot
+Allow: /
+
+# Anthropic (official bot names)
+User-agent: ClaudeBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Claude-SearchBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Claude-User
+Allow: /
+
+# Google AI
+User-agent: Google-Extended
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+# Common Crawl
+User-agent: CCBot
+Allow: /
+
+# Apple
+User-agent: Applebot-Extended
+Allow: /
