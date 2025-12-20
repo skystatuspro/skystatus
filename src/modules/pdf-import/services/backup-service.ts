@@ -14,6 +14,11 @@ export interface ImportBackup {
   milesRecords: unknown[];
   qualificationSettings: unknown;
   manualLedger: unknown;
+  // FIX Issue 2: Added missing fields for complete restore
+  xpRollover: number;
+  pdfBaseline: unknown | null;
+  currency: string;
+  targetCPM: number;
   timestamp: string;
   source: string; // filename of imported PDF
 }
@@ -27,6 +32,11 @@ export function createBackup(
     milesRecords: unknown[];
     qualificationSettings: unknown;
     manualLedger: unknown;
+    // FIX Issue 2: Added missing fields for complete restore
+    xpRollover: number;
+    pdfBaseline: unknown | null;
+    currency: string;
+    targetCPM: number;
   },
   source: string
 ): void {

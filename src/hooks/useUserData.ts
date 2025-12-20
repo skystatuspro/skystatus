@@ -641,6 +641,11 @@ export function useUserData(): UseUserDataReturn {
           milesRecords: baseMilesData,
           qualificationSettings: qualificationSettings,
           manualLedger: manualLedger,
+          // FIX Issue 2: Added missing fields for complete restore
+          xpRollover: xpRollover,
+          pdfBaseline: pdfBaseline,
+          currency: currency,
+          targetCPM: targetCPM,
         },
         sourceFileName || 'PDF Import'
       );
@@ -925,7 +930,7 @@ export function useUserData(): UseUserDataReturn {
     }
 
     markDataChanged();
-  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, baseXpData, xpRollover]);
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, baseXpData, xpRollover, currency, targetCPM, pdfBaseline]);
 
   // UNDO IMPORT: Restore data from backup
   const handleUndoImport = useCallback(() => {
@@ -940,6 +945,20 @@ export function useUserData(): UseUserDataReturn {
     setBaseMilesDataInternal(backup.milesRecords as MilesRecord[]);
     setQualificationSettingsInternal(backup.qualificationSettings as QualificationSettings | null);
     setManualLedgerInternal(backup.manualLedger as ManualLedger);
+    
+    // FIX Issue 2: Also restore xpRollover, pdfBaseline, currency, targetCPM
+    if (typeof backup.xpRollover === 'number') {
+      setXpRolloverInternal(backup.xpRollover);
+    }
+    if (backup.pdfBaseline !== undefined) {
+      setPdfBaselineInternal(backup.pdfBaseline as PdfBaseline | null);
+    }
+    if (backup.currency) {
+      setCurrencyInternal(backup.currency as CurrencyCode);
+    }
+    if (typeof backup.targetCPM === 'number') {
+      setTargetCPMInternal(backup.targetCPM);
+    }
 
     // Clear the backup after successful restore
     clearBackup();
