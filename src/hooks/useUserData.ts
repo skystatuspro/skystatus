@@ -156,6 +156,9 @@ export interface UserDataActions {
     manualLedger?: ManualLedger;
     qualificationSettings?: QualificationSettings;
     xpRollover?: number;
+    // FIX: Added missing fields
+    currency?: CurrencyCode;
+    targetCPM?: number;
   }) => Promise<boolean>;
 }
 
@@ -1227,6 +1230,9 @@ export function useUserData(): UseUserDataReturn {
     xpRollover?: number;
     homeAirport?: string | null;
     pdfBaseline?: PdfBaseline | null;
+    // FIX: Added missing fields that are exported but weren't imported
+    currency?: CurrencyCode;
+    targetCPM?: number;
   }): Promise<boolean> => {
     // Local/demo mode: just update state directly
     if (!user || isDemoMode || isLocalMode) {
@@ -1239,6 +1245,9 @@ export function useUserData(): UseUserDataReturn {
       if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
       if (importData.homeAirport !== undefined) setHomeAirportInternal(importData.homeAirport);
       if (importData.pdfBaseline !== undefined) setPdfBaselineInternal(importData.pdfBaseline);
+      // FIX: Import currency and targetCPM settings
+      if (importData.currency) setCurrencyInternal(importData.currency);
+      if (typeof importData.targetCPM === 'number') setTargetCPMInternal(importData.targetCPM);
       return true;
     }
 
@@ -1299,6 +1308,13 @@ export function useUserData(): UseUserDataReturn {
       if (importData.homeAirport !== undefined) {
         profileUpdates.home_airport = importData.homeAirport;
       }
+      // FIX: Import currency and targetCPM to database
+      if (importData.currency) {
+        profileUpdates.currency = importData.currency;
+      }
+      if (typeof importData.targetCPM === 'number') {
+        profileUpdates.target_cpm = importData.targetCPM;
+      }
       // PDF Baseline
       if (importData.pdfBaseline !== undefined) {
         if (importData.pdfBaseline) {
@@ -1354,6 +1370,9 @@ export function useUserData(): UseUserDataReturn {
 
       if (freshData.profile) {
         setXpRolloverInternal(freshData.profile.xpRollover || 0);
+        // FIX: Also reload currency and targetCPM after import
+        setCurrencyInternal((freshData.profile.currency || 'EUR') as CurrencyCode);
+        setTargetCPMInternal(freshData.profile.targetCPM || 0.012);
         if (freshData.profile.qualificationStartMonth) {
           setQualificationSettingsInternal({
             cycleStartMonth: freshData.profile.qualificationStartMonth,
