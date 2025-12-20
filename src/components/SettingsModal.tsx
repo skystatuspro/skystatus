@@ -100,6 +100,9 @@ interface SettingsModalProps {
     // FIX: Added missing fields
     currency?: CurrencyCode;
     targetCPM?: number;
+    // FIX Issue 1: Added homeAirport and pdfBaseline
+    homeAirport?: string | null;
+    pdfBaseline?: PdfBaseline | null;
   }) => Promise<boolean>;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -216,6 +219,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           // FIX: Also import user preferences
           currency: parsed.currency,
           targetCPM: parsed.targetCPM,
+          // FIX Issue 1: Also import homeAirport and pdfBaseline
+          homeAirport: parsed.homeAirport,
+          pdfBaseline: parsed.pdfBaseline,
         });
 
         if (!success) {

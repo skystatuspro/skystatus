@@ -159,6 +159,9 @@ export interface UserDataActions {
     // FIX: Added missing fields
     currency?: CurrencyCode;
     targetCPM?: number;
+    // FIX Issue 3: Added homeAirport and pdfBaseline
+    homeAirport?: string | null;
+    pdfBaseline?: PdfBaseline | null;
   }) => Promise<boolean>;
 }
 
