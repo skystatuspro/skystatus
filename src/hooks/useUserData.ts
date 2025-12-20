@@ -718,6 +718,12 @@ export function useUserData(): UseUserDataReturn {
         startingStatus: pdfHeader.status,
         startingXP: cycleInfo.rolloverXP ?? 0,
       });
+      
+      // FIX: Sync rollover to top-level xpRollover state for XP Engine UI
+      if (cycleInfo.rolloverXP !== undefined) {
+        setXpRolloverInternal(cycleInfo.rolloverXP);
+      }
+      
       console.log('[handlePdfImport] Qualification settings updated from PDF cycle info');
     } else if (!qualificationSettings) {
       // No cycle info detected and no existing settings
