@@ -97,6 +97,9 @@ interface SettingsModalProps {
     manualLedger?: ManualLedger;
     qualificationSettings?: QualificationSettings;
     xpRollover?: number;
+    // FIX: Added missing fields
+    currency?: CurrencyCode;
+    targetCPM?: number;
   }) => Promise<boolean>;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -210,6 +213,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           manualLedger: parsed.manualLedger,
           qualificationSettings: parsed.qualificationSettings,
           xpRollover: parsed.xpRollover,
+          // FIX: Also import user preferences
+          currency: parsed.currency,
+          targetCPM: parsed.targetCPM,
         });
 
         if (!success) {
@@ -228,6 +234,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         if (parsed.qualificationSettings) setters.setQualificationSettings(parsed.qualificationSettings);
         if (typeof parsed.xpRollover === 'number') setters.setXpRollover(parsed.xpRollover);
         if (parsed.currentMonth) setters.setCurrentMonth(parsed.currentMonth);
+        // FIX: Also import user preferences in fallback mode
+        if (parsed.currency) setters.setCurrency(parsed.currency);
+        if (typeof parsed.targetCPM === 'number') setters.setTargetCPM(parsed.targetCPM);
       }
       
       // Track the import for analytics
