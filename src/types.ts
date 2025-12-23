@@ -35,32 +35,6 @@ export interface FlightRecord {
 }
 
 // ============================================================================
-// PDF BASELINE (Source of Truth from PDF Header)
-// ============================================================================
-
-/**
- * Stores the official Flying Blue balances from the most recent PDF import.
- * These values are the "source of truth" - they come directly from Flying Blue
- * and should be displayed as-is. Manual additions are calculated as delta on top.
- */
-export interface PdfBaseline {
-  // Official balances from PDF header
-  xp: number;                        // XP balance at time of PDF export
-  uxp: number;                       // UXP balance at time of PDF export
-  miles: number;                     // Miles balance at time of PDF export
-  status: StatusLevel;               // Official status level
-  
-  // PDF metadata
-  pdfExportDate: string;             // Date the PDF was exported (from newest transaction or header)
-  importedAt: string;                // When we imported this PDF
-  
-  // Qualification cycle (detected or user-provided)
-  cycleStartMonth?: string;          // YYYY-MM - Official cycle start month
-  cycleStartDate?: string;           // YYYY-MM-DD - Exact date status was reached
-  rolloverXP?: number;               // XP carried over from previous cycle
-}
-
-// ============================================================================
 // MILES RECORDS
 // ============================================================================
 
@@ -76,9 +50,6 @@ export interface MilesRecord {
   cost_amex: number;
   cost_flight: number;
   cost_other: number;
-  // Correction to align calculated miles with PDF header balance
-  // Positive = PDF shows more miles, Negative = PDF shows fewer
-  miles_correction?: number;
 }
 
 // ============================================================================
@@ -144,9 +115,9 @@ export interface AppState {
 
 export interface QualificationSettings {
   cycleStartMonth: string;
-  cycleStartDate?: string;    // Full date (YYYY-MM-DD) for precise cycle start
   startingStatus: StatusLevel;
   startingXP: number;
   startingUXP?: number;     // UXP carried over from previous cycle
   ultimateCycleType?: 'qualification' | 'calendar'; // Legacy Ultimate members may use calendar year
+  cycleStartDate?: string;  // Full date (YYYY-MM-DD) for precise cycle start
 }

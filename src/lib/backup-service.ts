@@ -1,9 +1,8 @@
 /**
- * ╔═══════════════════════════════════════════════════════════════════════════╗
- * ║  Backup Service - Simple localStorage backup before PDF imports           ║
- * ╠═══════════════════════════════════════════════════════════════════════════╣
- * ║  Provides undo functionality for PDF imports                              ║
- * ╚═══════════════════════════════════════════════════════════════════════════╝
+ * Backup Service - Simple localStorage backup before imports
+ * Provides undo functionality for PDF imports
+ * 
+ * Location: src/lib/backup-service.ts
  */
 
 const BACKUP_KEY = 'skystatus_import_backup';
@@ -14,9 +13,7 @@ export interface ImportBackup {
   milesRecords: unknown[];
   qualificationSettings: unknown;
   manualLedger: unknown;
-  // FIX Issue 2: Added missing fields for complete restore
   xpRollover: number;
-  pdfBaseline: unknown | null;
   currency: string;
   targetCPM: number;
   timestamp: string;
@@ -32,9 +29,7 @@ export function createBackup(
     milesRecords: unknown[];
     qualificationSettings: unknown;
     manualLedger: unknown;
-    // FIX Issue 2: Added missing fields for complete restore
     xpRollover: number;
-    pdfBaseline: unknown | null;
     currency: string;
     targetCPM: number;
   },

@@ -1,7 +1,7 @@
 // src/modules/ai-pdf-parser/types.ts
 // Type definitions for AI-powered PDF parsing
 
-import type { FlightRecord, MilesRecord, StatusLevel, PdfBaseline } from '../../types';
+import type { FlightRecord, MilesRecord, StatusLevel } from '../../types';
 import type { QualificationSettings } from '../../hooks/useUserData';
 
 // ============================================================================
@@ -127,12 +127,31 @@ export interface AIRawStatusEvent {
 }
 
 // ============================================================================
+// PDF HEADER (for preview/validation only - NOT stored or used as bypass)
+// ============================================================================
+
+/**
+ * Header information extracted from PDF.
+ * Used ONLY for preview display and validation - NOT as source of truth.
+ * The XP/Miles engines remain the single source of truth.
+ */
+export interface PdfHeader {
+  xp: number;
+  uxp: number;
+  miles: number;
+  status: StatusLevel;
+  exportDate: string;       // YYYY-MM-DD
+  memberName?: string;
+  memberNumber?: string;
+}
+
+// ============================================================================
 // PARSED RESULT TYPES (converted to app format)
 // ============================================================================
 
 /**
  * Final parsed result ready for the app
- * This is what handlePdfImportAI receives
+ * This is what the AI parser returns after processing
  */
 export interface AIParsedResult {
   /** Flight records in app format */
@@ -141,8 +160,8 @@ export interface AIParsedResult {
   /** Miles records aggregated by month */
   milesRecords: MilesRecord[];
   
-  /** PDF baseline (source of truth) */
-  pdfBaseline: PdfBaseline;
+  /** PDF header for preview/validation only (NOT stored) */
+  pdfHeader: PdfHeader;
   
   /** Qualification settings if cycle info detected */
   qualificationSettings: QualificationSettings | null;

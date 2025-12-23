@@ -12,7 +12,7 @@ import {
   convertMilesRecords,
   extractBonusXpByMonth,
   detectQualificationSettings,
-  createPdfBaseline,
+  createPdfHeader,
   validateConversion,
 } from './converter';
 
@@ -147,13 +147,13 @@ export async function aiParseFlyingBlue(
       rawResponse.statusEvents,
       rawResponse.header.currentStatus
     );
-    const pdfBaseline = createPdfBaseline(rawResponse, qualificationSettings, model);
+    const pdfHeader = createPdfHeader(rawResponse);
     
     // Validate conversion
     const conversionValidation = validateConversion(
       flights,
       milesRecords,
-      pdfBaseline,
+      pdfHeader,
       bonusXpByMonth
     );
     
@@ -171,7 +171,7 @@ export async function aiParseFlyingBlue(
     const result: AIParsedResult = {
       flights,
       milesRecords,
-      pdfBaseline,
+      pdfHeader,
       qualificationSettings,
       bonusXpByMonth,
       rawResponse,

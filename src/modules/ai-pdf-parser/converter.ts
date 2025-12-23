@@ -1,9 +1,9 @@
 // src/modules/ai-pdf-parser/converter.ts
 // Converts AI raw response to SkyStatus app types
 
-import type { FlightRecord, MilesRecord, StatusLevel, PdfBaseline } from '../../types';
+import type { FlightRecord, MilesRecord, StatusLevel } from '../../types';
 import type { QualificationSettings } from '../../hooks/useUserData';
-import type { AIRawResponse, AIRawFlight, AIRawMilesActivity, AIRawStatusEvent } from './types';
+import type { AIRawResponse, AIRawFlight, AIRawMilesActivity, AIRawStatusEvent, PdfHeader } from './types';
 
 // ============================================================================
 // FLIGHT CONVERSION
@@ -73,7 +73,6 @@ export function convertMilesRecords(
         cost_amex: 0,
         cost_flight: 0,
         cost_other: 0,
-        miles_correction: 0,
       });
     }
     return monthMap.get(month)!;
@@ -217,35 +216,22 @@ export function detectQualificationSettings(
 }
 
 // ============================================================================
-// PDF BASELINE CREATION
+// PDF HEADER CREATION (for preview/validation only)
 // ============================================================================
 
 /**
- * Create PdfBaseline from AI response
+ * Create PdfHeader from AI response for preview display.
+ * This is NOT stored or used as source of truth - only for UI preview.
  */
-export function createPdfBaseline(
-  rawResponse: AIRawResponse,
-  qualificationSettings: QualificationSettings | null,
-  model: string
-): PdfBaseline {
-  // Map Ultimate to Platinum for storage
-  let status: StatusLevel = rawResponse.header.currentStatus;
-  if (status === 'Ultimate') {
-    status = 'Platinum';
-  }
-  
+export function createPdfHeader(rawResponse: AIRawResponse): PdfHeader {
   return {
     xp: rawResponse.header.totalXp,
     uxp: rawResponse.header.totalUxp,
     miles: rawResponse.header.totalMiles,
-    status,
-    pdfExportDate: rawResponse.header.exportDate,
-    importedAt: new Date().toISOString(),
-    cycleStartMonth: qualificationSettings?.cycleStartMonth,
-    cycleStartDate: qualificationSettings?.cycleStartDate,
-    rolloverXP: qualificationSettings?.startingXP,
-    parserUsed: 'ai',
-    aiParserModel: model,
+    status: rawResponse.header.currentStatus,
+    exportDate: rawResponse.header.exportDate,
+    memberName: rawResponse.header.memberName ?? undefined,
+    memberNumber: rawResponse.header.memberNumber ?? undefined,
   };
 }
 
@@ -259,7 +245,7 @@ export function createPdfBaseline(
 export function validateConversion(
   flights: FlightRecord[],
   milesRecords: MilesRecord[],
-  pdfBaseline: PdfBaseline,
+  pdfHeader: PdfHeader,
   bonusXpByMonth: Record<string, number>
 ): { isValid: boolean; warnings: string[] } {
   const warnings: string[] = [];
@@ -278,15 +264,15 @@ export function validateConversion(
     }
   }
   
-  // Check totals make rough sense
+  // Check totals make rough sense (informational only)
   const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP ?? 0) + (f.safXp ?? 0), 0);
   const totalBonusXP = Object.values(bonusXpByMonth).reduce((sum, xp) => sum + xp, 0);
   const totalCalculatedXP = totalFlightXP + totalBonusXP;
   
-  // Allow for rollover XP difference
-  const xpDifference = Math.abs(pdfBaseline.xp - totalCalculatedXP);
+  // Allow for rollover XP difference - this is just informational
+  const xpDifference = Math.abs(pdfHeader.xp - totalCalculatedXP);
   if (xpDifference > 500) { // Allow significant variance due to rollovers
-    warnings.push(`Large XP discrepancy: PDF shows ${pdfBaseline.xp}, calculated ${totalCalculatedXP}`);
+    warnings.push(`XP difference detected: PDF header shows ${pdfHeader.xp}, calculated ${totalCalculatedXP}. This is normal if there's rollover XP from a previous cycle.`);
   }
   
   return {
