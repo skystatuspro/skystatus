@@ -103,7 +103,7 @@ export interface UserDataActions {
     flights: FlightRecord[],
     miles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
     bonusXpByMonth?: Record<string, number>
   ) => void;
   handleUndoImport: () => boolean;
@@ -506,7 +506,7 @@ export function useUserData(): UseUserDataReturn {
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
-    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
     bonusXpByMonth?: Record<string, number>
   ) => {
     // Create backup before modifying data
@@ -587,7 +587,7 @@ export function useUserData(): UseUserDataReturn {
         cycleStartMonth: cycleSettings.cycleStartMonth,
         cycleStartDate: cycleSettings.cycleStartDate,
         startingStatus: cycleSettings.startingStatus,
-        startingXP: 0,
+        startingXP: cycleSettings.startingXP ?? 0,
       });
     }
 
