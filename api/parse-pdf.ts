@@ -2,10 +2,13 @@
 // Vercel Edge Function for AI PDF parsing
 // Keeps OpenAI API key server-side
 //
-// CHANGELOG v2.4 (2025-12-23):
-// - CRITICAL FIX: Added explicit status events extraction instructions
-// - AI now properly extracts XP resets, surplus/rollover events
-// - These are crucial for qualification cycle detection
+// CHANGELOG v3.0 (2025-12-23):
+// - MAJOR: Split extraction into 2 API calls for robustness
+// - Call 1: flights + header (no competition with other data)
+// - Call 2: milesActivities + statusEvents
+// - Server-side merge of results
+// - Segment-based coverage validation (not just routes)
+// - Fixes issue where adding statusEvents caused flights to be dropped
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -23,23 +26,8 @@ interface OpenAIMessage {
   content: string;
 }
 
-type FlightOut = {
-  postingDate: string;
-  tripTitle: string;
-  route: string;
-  flightNumber: string;
-  airline: string;
-  flightDate: string;
-  miles: number;
-  xp: number;
-  uxp: number;
-  safMiles: number;
-  safXp: number;
-  cabin: "Economy" | "Premium Economy" | "Business" | "First" | "Unknown";
-  isRevenue: boolean;
-};
-
-type ParsedOut = {
+// Call 1 output: Header + Flights
+type FlightsOutput = {
   header: {
     memberName: string | null;
     memberNumber: string | null;
@@ -49,7 +37,25 @@ type ParsedOut = {
     totalUxp: number;
     exportDate: string;
   };
-  flights: FlightOut[];
+  flights: Array<{
+    postingDate: string;
+    tripTitle: string;
+    route: string;
+    flightNumber: string;
+    airline: string;
+    flightDate: string;
+    miles: number;
+    xp: number;
+    uxp: number;
+    safMiles: number;
+    safXp: number;
+    cabin: "Economy" | "Premium Economy" | "Business" | "First" | "Unknown";
+    isRevenue: boolean;
+  }>;
+};
+
+// Call 2 output: Miles Activities + Status Events
+type ActivitiesOutput = {
   milesActivities: Array<{
     date: string;
     type: "subscription" | "amex" | "amex_bonus" | "hotel" | "shopping" | "partner" | "car_rental" | "transfer_in" | "transfer_out" | "donation" | "adjustment" | "redemption" | "expiry" | "promo" | "other";
@@ -67,116 +73,105 @@ type ParsedOut = {
   }>;
 };
 
+// Combined output (what we return to client)
+type ParsedOut = FlightsOutput & ActivitiesOutput;
+
 // ============================================================================
-// PROMPTS
+// PROMPTS - CALL 1: FLIGHTS
 // ============================================================================
 
-const SYSTEM_PROMPT = `You are a precise data extraction engine for Flying Blue loyalty program PDF statements. Your task is to extract ALL transaction data with 100% accuracy.
+const SYSTEM_PROMPT_FLIGHTS = `You are a precise data extraction engine for Flying Blue loyalty program PDF statements.
+Your task is to extract the HEADER and ALL FLIGHT transactions with 100% accuracy.
 
 ## CRITICAL RULES
 
-1. Extract EVERY transaction. Do not skip any line items.
-2. Use flight dates, not posting dates. Look for "op [date]" or "on [date]" patterns for actual flight date.
+1. Extract EVERY flight segment. Do not skip any.
+2. Use flight dates, not posting dates. Look for "op [date]" or "on [date]" patterns.
 3. UXP is ONLY for KL and AF flights. Set uxp=0 for all other airlines (DL, VS, SK, HV, etc.).
-4. Preserve negative values. Miles can be negative (redemptions, adjustments, deductions).
-5. XP from non-flight activities goes to milesActivities, not to flights.
-6. Flights can be detected by either:
-   - Route + flight number (KL1234, AF0123, DL456, SK0822, etc.)
-   - Route + explicit carrier label when flight number is missing (for example TRANSAVIA HOLLAND)
+4. Each flight SEGMENT is a separate entry. A trip with 4 segments = 4 flight entries.
 
-## CRITICAL: DUPLICATE TRANSACTIONS - DO NOT DEDUPLICATE
+## CRITICAL: DUPLICATE FLIGHT POSTINGS
 
-Flying Blue PDFs can contain MULTIPLE IDENTICAL transactions on the SAME DATE.
-This is NOT an error - these are separate legitimate transactions.
+The same flight segment can appear MULTIPLE times in the PDF with different values.
+Example: KEF-AMS appears twice - once with 0 XP, once with 5 XP. Output BOTH entries.
+NEVER deduplicate. Count exactly what the PDF shows.
 
-Examples from real PDFs:
-- "9 nov 2025  Air adjustment  0 Miles  20 XP" appears TWICE = output TWO separate milesActivities entries
-- Two SAF bonus entries with identical values on same flight = TWO separate amounts to sum
-- Two "Lastminute-upgrade -47000 Miles" on same date = TWO separate redemptions
-
-RULES:
-- NEVER deduplicate transactions just because they look identical
-- Count EXACTLY what appears in the PDF line by line
-- If a line appears N times, output N entries
-- The PDF is the source of truth - preserve ALL occurrences
-
-## PDF STRUCTURE
-
-Flying Blue PDFs have:
-- Header section: member name, number, current status, total balances
-- Transaction list: newest first
-
-## CRITICAL: Trip vs Individual Flight XP
+## CRITICAL: Trip vs Individual Flight
 
 Trips have two levels:
-1. Trip header line shows totals for the whole trip. Never use those totals as a flight segment.
-2. Individual flight lines show miles, XP, UXP per segment.
-3. SAF lines show bonuses that must be attributed to the preceding flight segment.
+1. Trip header line shows totals - IGNORE these for individual flights
+2. Individual flight lines show per-segment data - EXTRACT these
 
 Rules:
-- Extract each flight segment separately.
-- Use XP and UXP from the individual flight line.
-- SAF: sum all "Sustainable Aviation Fuel" lines after a flight until the next flight segment starts.
+- Extract each flight segment separately
+- SAF bonus lines after a flight belong to that flight (sum into safMiles/safXp)
 
 ## CRITICAL: Transavia flights
 
-Transavia flights can have no flight number.
 - Pattern includes "TRANSAVIA" or "TRANSAVIA HOLLAND"
 - Airline code must be "HV"
 - Set flightNumber to empty string ""
 - uxp must be 0
 
-## CRITICAL: Status Events - XP Resets and Rollovers
+## OUTPUT
 
-Flying Blue PDFs contain STATUS EVENTS that indicate qualification cycle transitions.
-These are CRUCIAL for tracking XP correctly and MUST be extracted to statusEvents array.
+Return ONLY header and flights. Do not include miles activities or status events.`;
 
-Look for these patterns in the transaction list:
+// ============================================================================
+// PROMPTS - CALL 2: ACTIVITIES & STATUS EVENTS
+// ============================================================================
 
-1. **XP Reset** (type: "xp_reset"):
-   - Dutch: "Aftrek XP-teller" or "Aftrek XP- teller"
-   - English: "XP counter deduction"
-   - Contains NEGATIVE xpChange (e.g., -300 for Platinum, -180 for Gold, -100 for Silver)
-   - Determine statusReached from the XP deducted:
-     - xpChange = -300 → statusReached = "Platinum"
-     - xpChange = -180 → statusReached = "Gold"  
-     - xpChange = -100 → statusReached = "Silver"
-     - Other values → statusReached = null
+const SYSTEM_PROMPT_ACTIVITIES = `You are a precise data extraction engine for Flying Blue loyalty program PDF statements.
+Your task is to extract ALL non-flight transactions: miles activities and status events.
 
-2. **XP Surplus/Rollover** (type: "xp_surplus"):
-   - Dutch: "Surplus XP beschikbaar" or "Surplus XP beschikbaar op XP-teller" or "Surplus XP beschikbaar op XP- teller"
-   - English: "Surplus XP available"
-   - Contains POSITIVE or ZERO xpChange (the rollover amount)
-   - statusReached = null
+## WHAT TO EXTRACT
 
-3. **Annual XP Counter Reset** (type: "xp_reset"):
-   - Dutch: "Reset XP-teller" or "Reset XP- teller"
-   - Usually on Jan 1 with small negative value like -15
-   - statusReached = null
+1. **milesActivities**: All non-flight transactions that earn or spend miles/XP
+   - Subscriptions (Subscribe to Miles)
+   - AMEX card earnings and bonuses
+   - Hotel bookings (Accor, Booking.com)
+   - Shopping (Amazon, Flying Blue Shop)
+   - Transfers (Family transfers, Air Miles conversion)
+   - Donations
+   - Redemptions (award bookings, upgrades)
+   - Adjustments (Air adjustment, Klantenservice)
 
-IMPORTANT RULES for statusEvents:
-- These transactions appear with 0 Miles but have XP changes
-- Extract them to the statusEvents array, NOT to milesActivities
-- Set uxpChange to 0 unless explicitly mentioned for UXP
-- Keep the original date format from PDF (e.g., "8 okt 2025")
-- Extract ALL status events - they are essential for cycle tracking
+2. **statusEvents**: XP counter resets and rollovers
+   - "Aftrek XP-teller" or "Aftrek XP- teller" → type: "xp_reset"
+   - "Surplus XP beschikbaar" → type: "xp_surplus"
+   - "Reset XP-teller" or "Reset XP- teller" → type: "xp_reset"
 
-Example from PDF:
-"8 okt 2025  Surplus XP beschikbaar op XP- teller  0 Miles  23 XP"
-→ statusEvents entry: { date: "8 okt 2025", type: "xp_surplus", description: "Surplus XP beschikbaar op XP- teller", xpChange: 23, uxpChange: 0, statusReached: null }
+## CRITICAL: DUPLICATE TRANSACTIONS
 
-"8 okt 2025  Aftrek XP- teller  0 Miles  -300 XP"
-→ statusEvents entry: { date: "8 okt 2025", type: "xp_reset", description: "Aftrek XP- teller", xpChange: -300, uxpChange: 0, statusReached: "Platinum" }
+Flying Blue PDFs can have IDENTICAL transactions on the SAME DATE.
+Example: "Air adjustment 0 Miles 20 XP" appears TWICE = output TWO entries.
+Example: "Lastminute-upgrade -47000 Miles" appears TWICE = output TWO entries.
+NEVER deduplicate. The PDF is the source of truth.
+
+## CRITICAL: Status Events Classification
+
+For xp_reset events, determine statusReached from XP deducted:
+- xpChange = -300 → statusReached = "Platinum"
+- xpChange = -180 → statusReached = "Gold"
+- xpChange = -100 → statusReached = "Silver"
+- Other values (like -15 for annual reset) → statusReached = null
+
+For xp_surplus events: statusReached = null
+
+## WHAT TO EXCLUDE
+
+- Flight transactions (these are extracted separately)
+- SAF bonus lines (these belong to flights)
 
 ## OUTPUT
 
-Return valid JSON matching the exact schema. All fields are required.`;
+Return ONLY milesActivities and statusEvents. Do not include header or flights.`;
 
 // ============================================================================
-// JSON SCHEMA (Structured Outputs)
+// JSON SCHEMAS
 // ============================================================================
 
-const JSON_SCHEMA = {
+const SCHEMA_FLIGHTS = {
   type: "object",
   properties: {
     header: {
@@ -200,9 +195,9 @@ const JSON_SCHEMA = {
         properties: {
           postingDate: { type: "string" },
           tripTitle: { type: "string" },
-          route: { type: "string", description: "Must be AAA-BBB with no spaces" },
-          flightNumber: { type: "string", description: "May be empty string for Transavia and rare cases where flight number is not shown" },
-          airline: { type: "string", description: "2-letter airline code when available. Use HV for Transavia" },
+          route: { type: "string" },
+          flightNumber: { type: "string" },
+          airline: { type: "string" },
           flightDate: { type: "string" },
           miles: { type: "integer" },
           xp: { type: "integer" },
@@ -215,7 +210,15 @@ const JSON_SCHEMA = {
         required: ["postingDate", "tripTitle", "route", "flightNumber", "airline", "flightDate", "miles", "xp", "uxp", "safMiles", "safXp", "cabin", "isRevenue"],
         additionalProperties: false
       }
-    },
+    }
+  },
+  required: ["header", "flights"],
+  additionalProperties: false
+};
+
+const SCHEMA_ACTIVITIES = {
+  type: "object",
+  properties: {
     milesActivities: {
       type: "array",
       items: {
@@ -248,7 +251,7 @@ const JSON_SCHEMA = {
       }
     }
   },
-  required: ["header", "flights", "milesActivities", "statusEvents"],
+  required: ["milesActivities", "statusEvents"],
   additionalProperties: false
 };
 
@@ -262,53 +265,80 @@ function normalizeRoute(raw: string): string | null {
   return `${m[1]}-${m[2]}`;
 }
 
-function extractExpectedSegments(pdfText: string) {
+/**
+ * Extract expected flight segments with full context for validation
+ */
+function extractExpectedFlightPostings(pdfText: string) {
   const lines = pdfText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const carrierMarkers = ["TRANSAVIA"];
 
-  const expected: Array<{
+  type Expected = {
     route: string;
-    carrierHint: string;
-    flightNumber: string | null;
-    raw: string;
-  }> = [];
+    flightNumber: string;
+    airlineHint: string | null;
+    flightDate: string | null;
+    rawLine: string;
+  };
 
-  for (const line of lines) {
+  const out: Expected[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
     const route = normalizeRoute(line);
     if (!route) continue;
 
-    const flightNoMatch = line.match(/\b([A-Z0-9]{2}\d{2,4})\b/);
-    const flightNumber = flightNoMatch ? flightNoMatch[1] : null;
-    const hasCarrierMarker = carrierMarkers.some(m => line.toUpperCase().includes(m));
+    const hasTransavia = /TRANSAVIA/i.test(line);
+    const flightNoMatch = line.match(/\b([A-Z]{2}\d{2,4})\b/);
+    const flightNumber = hasTransavia ? "" : (flightNoMatch?.[1] ?? "");
 
-    if (flightNumber || hasCarrierMarker) {
-      const carrierHint = hasCarrierMarker ? "MARKER" : "FLIGHTNO";
-      expected.push({ route, carrierHint, flightNumber, raw: line });
+    const airlineHint = hasTransavia ? "HV" : (flightNumber.slice(0, 2) || null);
+
+    // Find flight date from "op <date>" pattern in nearby lines
+    let flightDate: string | null = null;
+    for (let j = i + 1; j <= Math.min(i + 5, lines.length - 1); j++) {
+      const m = lines[j].match(/\bop\s+(\d{1,2}\s+\w+\s+\d{4})\b/i);
+      if (m) { 
+        flightDate = m[1]; 
+        break; 
+      }
+    }
+
+    // Accept if it looks like a flight segment
+    if (flightNumber || hasTransavia) {
+      out.push({ route, flightNumber, airlineHint, flightDate, rawLine: line });
     }
   }
 
-  const keySet = new Set<string>();
-  const deduped: typeof expected = [];
-  for (const e of expected) {
-    const k = `${e.route}|${e.flightNumber ?? ""}|${e.raw}`;
-    if (keySet.has(k)) continue;
-    keySet.add(k);
-    deduped.push(e);
-  }
-
-  const expectedRoutes = [...new Set(deduped.map(e => e.route))];
-  const hasALC = /(\bALC\b)/.test(pdfText);
-
-  return { expectedSegments: deduped, expectedRoutes, hasALC };
+  return out;
 }
 
+/**
+ * Count expected status events in PDF
+ */
+function countExpectedStatusEvents(pdfText: string): number {
+  const patterns = [
+    /Aftrek XP-?\s*teller/gi,
+    /Surplus XP beschikbaar/gi,
+    /Reset XP-?\s*teller/gi,
+  ];
+  
+  let count = 0;
+  for (const pattern of patterns) {
+    const matches = pdfText.match(pattern);
+    if (matches) count += matches.length;
+  }
+  return count;
+}
+
+/**
+ * Count duplicate patterns for validation
+ */
 function countDuplicatePatterns(pdfText: string): Map<string, number> {
   const duplicateCounts = new Map<string, number>();
   
   const patterns = [
     /Air adjustment\s+0 Miles\s+20 XP/gi,
-    /Lastminute-upgrade\s+-47000 Miles/gi,
-    /Sustainable Aviation Fuel/gi,
+    /Lastminute-upgrade\s+-?\d+ Miles/gi,
   ];
   
   for (const pattern of patterns) {
@@ -322,75 +352,93 @@ function countDuplicatePatterns(pdfText: string): Map<string, number> {
 }
 
 /**
- * Count expected status events in PDF text
+ * Segment-based coverage check
  */
-function countExpectedStatusEvents(pdfText: string): number {
-  const patterns = [
-    /Aftrek XP-?\s*teller/gi,
-    /Surplus XP beschikbaar/gi,
-    /Reset XP-?\s*teller/gi,
-  ];
-  
-  let count = 0;
-  for (const pattern of patterns) {
-    const matches = pdfText.match(pattern);
-    if (matches) {
-      count += matches.length;
-    }
+function coverageCheckFlights(
+  flights: FlightsOutput['flights'], 
+  expected: ReturnType<typeof extractExpectedFlightPostings>
+) {
+  const key = (r: string, fn: string) => `${r}|${fn}`;
+
+  const expectedCounts = new Map<string, number>();
+  for (const e of expected) {
+    const k = key(e.route, e.flightNumber);
+    expectedCounts.set(k, (expectedCounts.get(k) ?? 0) + 1);
   }
-  return count;
+
+  const actualCounts = new Map<string, number>();
+  for (const f of flights) {
+    const k = key(f.route, f.flightNumber ?? "");
+    actualCounts.set(k, (actualCounts.get(k) ?? 0) + 1);
+  }
+
+  const missing: Array<{ key: string; expected: number; actual: number }> = [];
+  for (const [k, exp] of expectedCounts.entries()) {
+    const act = actualCounts.get(k) ?? 0;
+    if (act < exp) missing.push({ key: k, expected: exp, actual: act });
+  }
+
+  return { missing, expectedCount: expected.length, actualCount: flights.length };
 }
 
-function validateDuplicates(parsed: ParsedOut, pdfText: string): string[] {
+/**
+ * Validate basic flight rules
+ */
+function validateFlights(flights: FlightsOutput['flights']) {
+  const errors: string[] = [];
+
+  for (const f of flights) {
+    if (!/^[A-Z]{3}-[A-Z]{3}$/.test(f.route)) {
+      errors.push(`Invalid route format: "${f.route}"`);
+    }
+    if (f.airline !== "KL" && f.airline !== "AF" && f.uxp !== 0) {
+      errors.push(`UXP must be 0 for ${f.airline}: route=${f.route}, uxp=${f.uxp}`);
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validate duplicate transactions were preserved
+ */
+function validateDuplicates(activities: ActivitiesOutput, pdfText: string): string[] {
   const errors: string[] = [];
   
   const airAdjustmentInPdf = (pdfText.match(/Air adjustment\s+0 Miles\s+20 XP/gi) || []).length;
-  const airAdjustmentInOutput = parsed.milesActivities.filter(
+  const airAdjustmentInOutput = activities.milesActivities.filter(
     a => a.type === 'adjustment' && a.xp === 20 && a.miles === 0
   ).length;
   
   if (airAdjustmentInPdf > 0 && airAdjustmentInOutput < airAdjustmentInPdf) {
-    errors.push(
-      `DUPLICATE_MISSING: Found ${airAdjustmentInPdf}x "Air adjustment 20 XP" in PDF but only ${airAdjustmentInOutput}x in output`
-    );
+    errors.push(`Air adjustment: expected ${airAdjustmentInPdf}, got ${airAdjustmentInOutput}`);
   }
   
-  const upgradeInPdf = (pdfText.match(/Lastminute-upgrade\s+-47000 Miles/gi) || []).length;
-  const upgradeInOutput = parsed.milesActivities.filter(
-    a => a.type === 'redemption' && a.miles === -47000
+  const upgradeInPdf = (pdfText.match(/Lastminute-upgrade\s+-?\d+ Miles/gi) || []).length;
+  const upgradeInOutput = activities.milesActivities.filter(
+    a => a.type === 'redemption' && a.description.toLowerCase().includes('lastminute-upgrade')
   ).length;
   
   if (upgradeInPdf > 0 && upgradeInOutput < upgradeInPdf) {
-    errors.push(
-      `DUPLICATE_MISSING: Found ${upgradeInPdf}x "Lastminute-upgrade -47000" in PDF but only ${upgradeInOutput}x in output`
-    );
+    errors.push(`Lastminute-upgrade: expected ${upgradeInPdf}, got ${upgradeInOutput}`);
   }
   
   return errors;
 }
 
-function validateOutputBasic(parsed: ParsedOut) {
-  const errors: string[] = [];
+// ============================================================================
+// API CALL HELPERS
+// ============================================================================
 
-  for (const f of parsed.flights || []) {
-    if (!/^[A-Z]{3}-[A-Z]{3}$/.test(f.route)) {
-      errors.push(`Invalid route format in flight: "${f.route}"`);
-    }
-    if (f.airline !== "KL" && f.airline !== "AF" && f.uxp !== 0) {
-      errors.push(`UXP must be 0 for non-KL/AF flight: airline=${f.airline}, uxp=${f.uxp}, route=${f.route}`);
-    }
-  }
-
-  return errors;
-}
-
-function coverageCheck(parsed: ParsedOut, expectedRoutes: string[]) {
-  const extractedRoutes = new Set<string>((parsed.flights || []).map(f => f.route));
-  const missingRoutes = expectedRoutes.filter(r => !extractedRoutes.has(r));
-  return { missingRoutes };
-}
-
-async function callOpenAIJSON(apiKey: string, model: string, pdfText: string, userPrompt: string) {
+async function callOpenAI<T>(
+  apiKey: string, 
+  model: string, 
+  systemPrompt: string,
+  userPrompt: string,
+  schema: object,
+  schemaName: string
+): Promise<{ ok: true; data: T; usage: any } | { ok: false; status: number; error: string }> {
+  
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -400,15 +448,15 @@ async function callOpenAIJSON(apiKey: string, model: string, pdfText: string, us
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ] as OpenAIMessage[],
       response_format: {
         type: 'json_schema',
         json_schema: {
-          name: 'flying_blue_pdf',
+          name: schemaName,
           strict: true,
-          schema: JSON_SCHEMA,
+          schema,
         },
       },
       temperature: 0.1,
@@ -418,27 +466,22 @@ async function callOpenAIJSON(apiKey: string, model: string, pdfText: string, us
 
   if (!response.ok) {
     const errorText = await response.text();
-    return { ok: false as const, status: response.status, errorText };
+    return { ok: false, status: response.status, error: errorText };
   }
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
+  
   if (!content) {
-    return { ok: false as const, status: 500, errorText: 'EMPTY_RESPONSE' };
+    return { ok: false, status: 500, error: 'Empty response from OpenAI' };
   }
 
-  let parsedContent: ParsedOut;
   try {
-    parsedContent = JSON.parse(content);
+    const parsed = JSON.parse(content) as T;
+    return { ok: true, data: parsed, usage: data.usage || {} };
   } catch {
-    return { ok: false as const, status: 500, errorText: 'PARSE_ERROR' };
+    return { ok: false, status: 500, error: 'Failed to parse JSON response' };
   }
-
-  return {
-    ok: true as const,
-    parsedContent,
-    usage: data.usage || {},
-  };
 }
 
 // ============================================================================
@@ -475,123 +518,228 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const startTime = Date.now();
 
-  // Pre-scan
-  const { expectedSegments, expectedRoutes, hasALC } = extractExpectedSegments(pdfText);
-  const duplicatePatterns = countDuplicatePatterns(pdfText);
-  const duplicateInfo = Array.from(duplicatePatterns.entries())
-    .map(([pattern, count]) => `${pattern}: ${count}x`)
-    .join(', ');
+  // Pre-scan for validation
+  const expectedSegments = extractExpectedFlightPostings(pdfText);
   const expectedStatusEventCount = countExpectedStatusEvents(pdfText);
+  const duplicatePatterns = countDuplicatePatterns(pdfText);
 
-  const expectedRoutesList = expectedRoutes.slice(0, 50).join(', ');
-  const expectedSegmentCount = expectedSegments.length;
+  // ========================================================================
+  // CALL 1: Extract flights + header
+  // ========================================================================
+  
+  const flightsUserPrompt = `Extract the header and ALL flight transactions from this Flying Blue PDF.
 
-  const baseUserPrompt = `Extract all data from this Flying Blue PDF statement.
+CRITICAL REQUIREMENTS:
+- Extract EVERY flight segment individually
+- A trip with 4 segments = 4 separate flight entries
+- Include SAF bonus in the flight's safMiles/safXp fields
+- Use actual flight date from "op [date]" pattern, not posting date
+- UXP is only for KL and AF flights, set to 0 for others
+- Transavia: airline="HV", flightNumber=""
+- NEVER deduplicate - if same route appears twice, output twice
 
-CRITICAL RULES:
-- Extract EACH FLIGHT SEGMENT separately. Never use trip totals as a flight segment.
-- Flight segments are detected by route + flight number, OR route + carrier label (for example TRANSAVIA HOLLAND).
-- For SAF: attribute SAF miles and SAF XP to the immediately preceding flight segment until the next flight segment starts.
-- Use the actual flight date from "op [date]" or "on [date]".
-- UXP is only for KL and AF flights. For all other airlines, uxp must be 0.
-- Transavia flights: airline must be HV and flightNumber must be empty string "".
-
-CRITICAL - DUPLICATE TRANSACTIONS:
-- The PDF may contain IDENTICAL transactions on the SAME DATE
-- This is NOT an error - Flying Blue legitimately posts duplicates
-- NEVER merge or deduplicate - count EXACTLY what the PDF shows
-${duplicateInfo ? `- Detected duplicate patterns in this PDF: ${duplicateInfo}` : ''}
-
-CRITICAL - STATUS EVENTS:
-- Extract ALL status events (XP resets, surplus/rollover) to the statusEvents array
-- Look for: "Aftrek XP-teller", "Surplus XP beschikbaar", "Reset XP-teller"
-- These have 0 Miles but positive or negative XP values
-- Expected status events in this PDF: approximately ${expectedStatusEventCount}
-- DO NOT put these in milesActivities - they MUST go in statusEvents
-
-COVERAGE REQUIREMENT:
-- Expected distinct routes: ${expectedRoutes.length}
-- Expected route list: ${expectedRoutesList}
-- Expected segment count: ${expectedSegmentCount}
-- Raw text contains ALC: ${hasALC ? "yes" : "no"}
+Expected flight segments in this PDF: approximately ${expectedSegments.length}
 
 PDF CONTENT:
 \`\`\`
 ${pdfText}
 \`\`\`
 
-Return the complete JSON with all transactions, including ALL status events.`;
+Return header and ALL flights.`;
 
-  // First attempt
-  const first = await callOpenAIJSON(apiKey, model, pdfText, baseUserPrompt);
-  if (!first.ok) {
-    return res.status(500).json({ error: `OpenAI error: ${first.status}`, code: 'OPENAI_ERROR', details: first.errorText });
+  const flightsResult = await callOpenAI<FlightsOutput>(
+    apiKey, model, SYSTEM_PROMPT_FLIGHTS, flightsUserPrompt, SCHEMA_FLIGHTS, 'flying_blue_flights'
+  );
+
+  if (!flightsResult.ok) {
+    return res.status(500).json({ 
+      error: `OpenAI error (flights): ${flightsResult.status}`, 
+      code: 'OPENAI_ERROR',
+      details: flightsResult.error 
+    });
   }
 
-  let parsed = first.parsedContent;
+  let flightsData = flightsResult.data;
+  const flightsUsage = flightsResult.usage;
 
-  // Validation
-  const basicErrors1 = validateOutputBasic(parsed);
-  const duplicateErrors1 = validateDuplicates(parsed, pdfText);
-  const { missingRoutes: missing1 } = coverageCheck(parsed, expectedRoutes);
+  // Validate and retry if needed
+  const flightErrors = validateFlights(flightsData.flights);
+  const coverage = coverageCheckFlights(flightsData.flights, expectedSegments);
   
-  // Check if status events are missing
-  const statusEventsMissing = expectedStatusEventCount > 0 && parsed.statusEvents.length === 0;
+  let flightsDidRetry = false;
+  let flightsRetryReason: string | null = null;
 
-  let didRetry = false;
-  let retryReason: string | null = null;
+  if (coverage.missing.length > 0 || flightErrors.length > 0) {
+    flightsDidRetry = true;
+    flightsRetryReason = [
+      coverage.missing.length > 0 ? `missing ${coverage.missing.length} segments` : null,
+      flightErrors.length > 0 ? `${flightErrors.length} validation errors` : null,
+    ].filter(Boolean).join('; ');
 
-  if (missing1.length > 0 || basicErrors1.length > 0 || duplicateErrors1.length > 0 || statusEventsMissing) {
-    didRetry = true;
-    retryReason = [
-      missing1.length > 0 ? `missingRoutes=${missing1.slice(0, 20).join(',')}` : null,
-      basicErrors1.length > 0 ? `basicErrors=${basicErrors1.slice(0, 10).join(' | ')}` : null,
-      duplicateErrors1.length > 0 ? `duplicateErrors=${duplicateErrors1.join(' | ')}` : null,
-      statusEventsMissing ? `statusEventsMissing: expected ~${expectedStatusEventCount}, got 0` : null,
-    ].filter(Boolean).join(' ; ');
+    const missingList = coverage.missing.slice(0, 20)
+      .map(m => `${m.key} (expected ${m.expected}, got ${m.actual})`)
+      .join('\n');
 
-    const retryPrompt = `${baseUserPrompt}
+    const retryPrompt = `${flightsUserPrompt}
 
-RETRY - YOUR PREVIOUS OUTPUT HAD ISSUES:
-${missing1.length > 0 ? `- Missing routes: ${missing1.slice(0, 50).join(', ')}` : ''}
-${basicErrors1.length > 0 ? `- Validation errors: ${basicErrors1.slice(0, 10).join('; ')}` : ''}
-${duplicateErrors1.length > 0 ? `- DUPLICATE TRANSACTION ERRORS: ${duplicateErrors1.join('; ')}` : ''}
-${statusEventsMissing ? `- STATUS EVENTS MISSING: You returned 0 statusEvents but the PDF contains ~${expectedStatusEventCount} status events (Aftrek XP-teller, Surplus XP beschikbaar, etc.). These MUST be in the statusEvents array, NOT in milesActivities.` : ''}
+RETRY - MISSING FLIGHT SEGMENTS:
+Your previous output had ${flightsData.flights.length} flights but we expected ~${expectedSegments.length}.
 
-Return the corrected complete JSON with ALL status events included.`;
+Missing segments:
+${missingList}
 
-    const second = await callOpenAIJSON(apiKey, model, pdfText, retryPrompt);
-    if (second.ok) {
-      parsed = second.parsedContent;
+${flightErrors.length > 0 ? `Validation errors:\n${flightErrors.slice(0, 10).join('\n')}` : ''}
+
+Please extract ALL flight segments. Do not skip any.`;
+
+    const retryResult = await callOpenAI<FlightsOutput>(
+      apiKey, model, SYSTEM_PROMPT_FLIGHTS, retryPrompt, SCHEMA_FLIGHTS, 'flying_blue_flights'
+    );
+
+    if (retryResult.ok && retryResult.data.flights.length > flightsData.flights.length) {
+      flightsData = retryResult.data;
     }
   }
 
+  // ========================================================================
+  // CALL 2: Extract miles activities + status events
+  // ========================================================================
+
+  const duplicateInfo = Array.from(duplicatePatterns.entries())
+    .map(([pattern, count]) => `${pattern}: ${count}x`)
+    .join(', ');
+
+  const activitiesUserPrompt = `Extract ALL non-flight transactions from this Flying Blue PDF.
+
+CRITICAL REQUIREMENTS:
+- Extract ALL miles activities (subscriptions, AMEX, hotels, shopping, transfers, donations, redemptions, adjustments)
+- Extract ALL status events (XP resets and surpluses)
+- Status events go in statusEvents array, NOT milesActivities
+- NEVER deduplicate - identical transactions on same date = multiple entries
+${duplicateInfo ? `- Known duplicates in this PDF: ${duplicateInfo}` : ''}
+
+Expected status events: approximately ${expectedStatusEventCount}
+
+STATUS EVENT PATTERNS:
+- "Aftrek XP-teller" or "Aftrek XP- teller" → xp_reset, negative xpChange
+  - If -300 XP → statusReached: "Platinum"
+  - If -180 XP → statusReached: "Gold"
+  - If -100 XP → statusReached: "Silver"
+- "Surplus XP beschikbaar" → xp_surplus, positive/zero xpChange, statusReached: null
+- "Reset XP-teller" → xp_reset (annual), statusReached: null
+
+PDF CONTENT:
+\`\`\`
+${pdfText}
+\`\`\`
+
+Return ALL milesActivities and statusEvents.`;
+
+  const activitiesResult = await callOpenAI<ActivitiesOutput>(
+    apiKey, model, SYSTEM_PROMPT_ACTIVITIES, activitiesUserPrompt, SCHEMA_ACTIVITIES, 'flying_blue_activities'
+  );
+
+  if (!activitiesResult.ok) {
+    return res.status(500).json({ 
+      error: `OpenAI error (activities): ${activitiesResult.status}`, 
+      code: 'OPENAI_ERROR',
+      details: activitiesResult.error 
+    });
+  }
+
+  let activitiesData = activitiesResult.data;
+  const activitiesUsage = activitiesResult.usage;
+
+  // Validate and retry if needed
+  const duplicateErrors = validateDuplicates(activitiesData, pdfText);
+  const statusEventsMissing = expectedStatusEventCount > 0 && activitiesData.statusEvents.length === 0;
+
+  let activitiesDidRetry = false;
+  let activitiesRetryReason: string | null = null;
+
+  if (duplicateErrors.length > 0 || statusEventsMissing) {
+    activitiesDidRetry = true;
+    activitiesRetryReason = [
+      duplicateErrors.length > 0 ? duplicateErrors.join('; ') : null,
+      statusEventsMissing ? `expected ~${expectedStatusEventCount} status events, got 0` : null,
+    ].filter(Boolean).join('; ');
+
+    const retryPrompt = `${activitiesUserPrompt}
+
+RETRY - ISSUES FOUND:
+${duplicateErrors.length > 0 ? `- Duplicate transactions missing: ${duplicateErrors.join('; ')}` : ''}
+${statusEventsMissing ? `- Status events missing: expected ~${expectedStatusEventCount}, got 0. Look for "Aftrek XP-teller" and "Surplus XP beschikbaar" lines.` : ''}
+
+Please extract ALL transactions including duplicates and status events.`;
+
+    const retryResult = await callOpenAI<ActivitiesOutput>(
+      apiKey, model, SYSTEM_PROMPT_ACTIVITIES, retryPrompt, SCHEMA_ACTIVITIES, 'flying_blue_activities'
+    );
+
+    if (retryResult.ok) {
+      // Use retry if it has more status events or fixed duplicates
+      const retryHasMoreStatusEvents = retryResult.data.statusEvents.length > activitiesData.statusEvents.length;
+      const retryHasMoreActivities = retryResult.data.milesActivities.length > activitiesData.milesActivities.length;
+      
+      if (retryHasMoreStatusEvents || retryHasMoreActivities) {
+        activitiesData = retryResult.data;
+      }
+    }
+  }
+
+  // ========================================================================
+  // MERGE RESULTS
+  // ========================================================================
+
+  const merged: ParsedOut = {
+    header: flightsData.header,
+    flights: flightsData.flights,
+    milesActivities: activitiesData.milesActivities,
+    statusEvents: activitiesData.statusEvents,
+  };
+
   // Final validation
-  const basicErrors2 = validateOutputBasic(parsed);
-  const duplicateErrors2 = validateDuplicates(parsed, pdfText);
-  const { missingRoutes: missing2 } = coverageCheck(parsed, expectedRoutes);
+  const finalCoverage = coverageCheckFlights(merged.flights, expectedSegments);
+  const finalFlightErrors = validateFlights(merged.flights);
+  const finalDuplicateErrors = validateDuplicates(activitiesData, pdfText);
 
   const parseTimeMs = Date.now() - startTime;
+  const totalTokens = (flightsUsage.total_tokens ?? 0) + (activitiesUsage.total_tokens ?? 0);
 
   return res.status(200).json({
     success: true,
-    data: parsed,
+    data: merged,
     metadata: {
       model,
       parseTimeMs,
-      didRetry,
-      retryReason,
-      tokensUsed: first.usage?.total_tokens ?? 0,
-      inputTokens: first.usage?.prompt_tokens ?? 0,
-      outputTokens: first.usage?.completion_tokens ?? 0,
-      expectedRoutesCount: expectedRoutes.length,
-      expectedSegmentCount,
-      expectedStatusEventCount,
-      actualStatusEventCount: parsed.statusEvents.length,
-      missingRoutes: missing2,
-      basicErrors: basicErrors2,
-      duplicateErrors: duplicateErrors2,
-      duplicatePatternsDetected: Object.fromEntries(duplicatePatterns),
+      totalTokens,
+      
+      // Flights call info
+      flightsCall: {
+        didRetry: flightsDidRetry,
+        retryReason: flightsRetryReason,
+        tokensUsed: flightsUsage.total_tokens ?? 0,
+        expectedSegments: expectedSegments.length,
+        actualFlights: merged.flights.length,
+        missingSegments: finalCoverage.missing,
+        validationErrors: finalFlightErrors,
+      },
+      
+      // Activities call info
+      activitiesCall: {
+        didRetry: activitiesDidRetry,
+        retryReason: activitiesRetryReason,
+        tokensUsed: activitiesUsage.total_tokens ?? 0,
+        expectedStatusEvents: expectedStatusEventCount,
+        actualStatusEvents: merged.statusEvents.length,
+        actualMilesActivities: merged.milesActivities.length,
+        duplicateErrors: finalDuplicateErrors,
+      },
+      
+      // Legacy fields for compatibility
+      didRetry: flightsDidRetry || activitiesDidRetry,
+      retryReason: [flightsRetryReason, activitiesRetryReason].filter(Boolean).join(' | ') || null,
+      tokensUsed: totalTokens,
     },
   });
 }
