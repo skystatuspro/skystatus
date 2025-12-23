@@ -313,8 +313,28 @@ export function detectQualificationSettings(
     return null;
   }
   
-  const cycleStartDate = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
-  const cycleStartMonth = cycleStartDate.toISOString().slice(0, 7);
+  // Flying Blue qualification cycle logic:
+  // - You qualify on date X (e.g., Oct 7) and get the new status IMMEDIATELY
+  // - Your new qualification year OFFICIALLY starts on the 1st of the NEXT month (Nov 1)
+  // - BUT: All XP earned AFTER the qualification date (Oct 8-31) counts toward the new cycle
+  // - PLUS: Any rollover XP from exceeding the threshold
+  //
+  // So we need:
+  // - cycleStartMonth = "2025-11" (the official cycle start, for UI display)
+  // - cycleStartDate = "2025-10-07" (the qualification date, for XP filtering)
+  // 
+  // The XP Engine uses cycleStartDate to filter flights:
+  // - Flights ON or BEFORE cycleStartDate are excluded (they belonged to previous cycle)
+  // - Flights AFTER cycleStartDate count toward the new cycle
+  const cycleStartMonthDate = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
+  const cycleStartMonth = cycleStartMonthDate.toISOString().slice(0, 7);  // e.g., "2025-11"
+  
+  console.log('[Converter] Detected requalification:', {
+    requalificationDate: latestReset.date,
+    cycleStartMonth,
+    statusReached: latestReset.statusReached,
+    xpReset: latestReset.xpChange,
+  });
   
   let startingStatus: StatusLevel = headerStatus;
   if (latestReset.statusReached) {

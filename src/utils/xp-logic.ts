@@ -1165,18 +1165,65 @@ export const calculateQualificationCycles = (
   
   const excludeBeforeDate = qualificationSettings?.cycleStartDate;
   
-  // Debug logging
-  console.log('[XP Engine] Qualification settings:', {
+  // Debug logging - ENHANCED for debugging XP calculation issues
+  console.log('[XP Engine] ============================================');
+  console.log('[XP Engine] Qualification settings received:', {
     cycleStartMonth: qualificationSettings?.cycleStartMonth,
     cycleStartDate: qualificationSettings?.cycleStartDate,
     startingStatus: qualificationSettings?.startingStatus,
     startingXP: qualificationSettings?.startingXP,
-    excludeBeforeDate,
+    ultimateCycleType: qualificationSettings?.ultimateCycleType,
   });
+  console.log('[XP Engine] Computed excludeBeforeDate:', excludeBeforeDate);
+  console.log('[XP Engine] Total flights to process:', flights?.length ?? 0);
   
-  // excludeBeforeMonth: filter out manual ledger and legacy data from months before cycle start
-  // This ensures XP from previous cycles doesn't count towards the current cycle
-  const excludeBeforeMonth = qualificationSettings?.cycleStartMonth;
+  // Log flights that would be filtered
+  if (flights && excludeBeforeDate) {
+    const filteredFlights = flights.filter(f => f.date <= excludeBeforeDate);
+    const includedFlights = flights.filter(f => f.date > excludeBeforeDate);
+    console.log('[XP Engine] Flights that will be EXCLUDED (on or before', excludeBeforeDate + '):', 
+      filteredFlights.length, 'flights totaling', 
+      filteredFlights.reduce((sum, f) => sum + (f.earnedXP ?? 0) + (f.safXp ?? 0), 0), 'XP');
+    console.log('[XP Engine] Flights that will be INCLUDED (after', excludeBeforeDate + '):', 
+      includedFlights.length, 'flights totaling', 
+      includedFlights.reduce((sum, f) => sum + (f.earnedXP ?? 0) + (f.safXp ?? 0), 0), 'XP');
+  } else if (flights && !excludeBeforeDate) {
+    console.log('[XP Engine] WARNING: No excludeBeforeDate set - ALL', flights.length, 'flights will be included!');
+    console.log('[XP Engine] Total flight XP without filtering:', 
+      flights.reduce((sum, f) => sum + (f.earnedXP ?? 0) + (f.safXp ?? 0), 0), 'XP');
+  }
+  console.log('[XP Engine] ============================================');
+  
+  // IMPORTANT: Flying Blue mid-cycle qualification logic:
+  // - cycleStartMonth is the OFFICIAL cycle start (e.g., "2025-11")
+  // - cycleStartDate is when you QUALIFIED (e.g., "2025-10-08")
+  // - Flights AFTER cycleStartDate count toward the new cycle, even if before cycleStartMonth
+  //
+  // So if you qualified on Oct 8, 2025:
+  // - Official cycle: Nov 2025 - Oct 2026
+  // - But flights Oct 9-31 should count!
+  //
+  // We need to:
+  // 1. Filter flights by cycleStartDate (exclude ON or BEFORE)
+  // 2. Include months starting from the month of cycleStartDate (not cycleStartMonth)
+  //
+  // Example: cycleStartDate = "2025-10-08"
+  // - excludeBeforeDate = "2025-10-08" (flights Oct 8 and earlier excluded)
+  // - dataStartMonth = "2025-10" (include Oct in month data so Oct 9-31 flights count)
+  
+  // Get the month from cycleStartDate for data inclusion
+  const dataStartMonth = excludeBeforeDate?.slice(0, 7);  // e.g., "2025-10"
+  
+  // For month filtering, use the month of cycleStartDate (not cycleStartMonth)
+  // This ensures flights between cycleStartDate and cycleStartMonth are included
+  const excludeBeforeMonth = dataStartMonth;
+  
+  console.log('[XP Engine] Month filtering:', {
+    cycleStartMonth: qualificationSettings?.cycleStartMonth,
+    cycleStartDate: qualificationSettings?.cycleStartDate,
+    dataStartMonth,
+    excludeBeforeMonth,
+  });
   
   const monthDataList = buildMonthDataList(
     flights ?? [],
@@ -1243,6 +1290,31 @@ export const calculateQualificationCycles = (
   const initialCycleStart = qualificationSettings?.cycleStartMonth ??
     (firstDataMonth < currentYearNov ? firstDataMonth : currentYearNov);
 
+  // IMPORTANT: Handle "pre-cycle" XP for mid-month qualification
+  // When you qualify on Oct 8 and cycle starts Nov 1, flights Oct 9-31 should count
+  // These are in a month BEFORE cycleStartMonth but AFTER cycleStartDate
+  // We add this XP to the initialRollover so it's included in the cycle
+  let preCycleXP = 0;
+  let preCycleUXP = 0;
+  if (dataStartMonth && qualificationSettings?.cycleStartMonth && dataStartMonth < qualificationSettings.cycleStartMonth) {
+    // There's a gap between the qualification date month and the cycle start month
+    // Get XP from that period and add it to rollover
+    const preCycleMonthData = dataByMonth.get(dataStartMonth);
+    if (preCycleMonthData) {
+      preCycleXP = preCycleMonthData.actualFlightXP + preCycleMonthData.actualFlightSafXP;
+      preCycleUXP = preCycleMonthData.actualFlightUXP;
+      console.log('[XP Engine] Pre-cycle XP (between cycleStartDate and cycleStartMonth):', {
+        month: dataStartMonth,
+        preCycleXP,
+        preCycleUXP,
+        flightXP: preCycleMonthData.flightXP,
+        flightSafXP: preCycleMonthData.flightSafXP,
+      });
+    }
+  }
+
+  const adjustedInitialRollover = clamp(initialRollover + preCycleXP, 0, PLATINUM_THRESHOLD);
+
   // Tot waar moet je überhaupt cycli bouwen?
   // Altijd tot minimaal de laatste maand met data of de huidige maand.
   // PLUS: voeg 12 maanden toe zodat er altijd minstens één toekomstige cyclus is.
@@ -1258,18 +1330,18 @@ export const calculateQualificationCycles = (
 
   let state: CycleProcessingState = {
     status: initialStatus,
-    balance: initialRollover,
+    balance: adjustedInitialRollover,
     cycleStartMonth: initialCycleStart,
     actualStatus: initialStatus,
-    actualBalance: initialRollover,
+    actualBalance: adjustedInitialRollover,
     actualLevelUpOccurred: false,
     actualLevelUpMonth: null,
   };
 
   let cycleStartMonth = initialCycleStart;
   let cycleStartStatus: StatusLevel = state.status;
-  let rolloverIn = initialRollover;
-  let uxpRolloverIn = 0; // UXP rollover starts at 0 (no prior Ultimate history)
+  let rolloverIn = adjustedInitialRollover;
+  let uxpRolloverIn = preCycleUXP; // Include pre-cycle UXP in rollover
 
   // Bouw cycli door totdat de start van een volgende cyclus
   // voorbij de relevante horizon ligt.
