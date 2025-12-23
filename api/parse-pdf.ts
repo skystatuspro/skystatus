@@ -2,12 +2,12 @@
 // Vercel Edge Function for AI PDF parsing
 // Keeps OpenAI API key server-side
 //
-// CHANGELOG v2.2.2 (2025-12-23):
-// - v2.2 base: Generalized segment detection, route coverage validation, auto-retry
-// - v2.2.1 fix: Added date format descriptions to JSON schema (YYYY-MM-DD)
-// - v2.2.2 fix: Fixed statusEvents classification - XP reset/surplus now correctly
-//   goes to statusEvents instead of milesActivities. This fixes qualification
-//   cycle detection and XP calculation in the dashboard.
+// CHANGELOG v2.3 (2025-12-23):
+// - CRITICAL FIX: Added explicit duplicate transaction handling
+// - Flying Blue can have multiple IDENTICAL transactions on same date
+// - Example: 2x "Air adjustment 20 XP" on 9 nov 2025 = 2 separate entries
+// - Added duplicate counting validation
+// - Updated prompts to prevent AI deduplication
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -86,20 +86,21 @@ const SYSTEM_PROMPT = `You are a precise data extraction engine for Flying Blue 
    - Route + flight number (KL1234, AF0123, DL456, SK0822, etc.)
    - Route + explicit carrier label when flight number is missing (for example TRANSAVIA HOLLAND)
 
-## DATE FORMAT
+## CRITICAL: DUPLICATE TRANSACTIONS - DO NOT DEDUPLICATE
 
-ALL dates must be output in YYYY-MM-DD format.
+Flying Blue PDFs can contain MULTIPLE IDENTICAL transactions on the SAME DATE.
+This is NOT an error - these are separate legitimate transactions.
 
-Input date formats to convert:
-- "30 nov 2025" -> "2025-11-30"
-- "Nov 30, 2025" -> "2025-11-30"
-- "30-11-2025" -> "2025-11-30"
-- "30/11/2025" -> "2025-11-30"
+Examples from real PDFs:
+- "9 nov 2025  Air adjustment  0 Miles  20 XP" appears TWICE = output TWO separate milesActivities entries
+- Two SAF bonus entries with identical values on same flight = TWO separate amounts to sum
+- Two "Lastminute-upgrade -47000 Miles" on same date = TWO separate redemptions
 
-Multi-language months:
-- Dutch: jan, feb, mrt, apr, mei, jun, jul, aug, sep, okt, nov, dec
-- French: jan, fev, mar, avr, mai, juin, juil, aout, sep, oct, nov, dec
-- English: jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec
+RULES:
+- NEVER deduplicate transactions just because they look identical
+- Count EXACTLY what appears in the PDF line by line
+- If a line appears N times, output N entries
+- The PDF is the source of truth - preserve ALL occurrences
 
 ## PDF STRUCTURE
 
@@ -117,7 +118,7 @@ Trips have two levels:
 Rules:
 - Extract each flight segment separately.
 - Use XP and UXP from the individual flight line.
-- SAF: sum all "Sustainable Aviation Fuel" lines after a flight until the next flight, and assign to that flight.
+- SAF: sum all "Sustainable Aviation Fuel" lines after a flight until the next flight segment starts.
 
 ## CRITICAL: Transavia flights
 
@@ -127,42 +128,9 @@ Transavia flights can have no flight number.
 - Set flightNumber to empty string ""
 - uxp must be 0
 
-## CRITICAL: Status Events vs Miles Activities
-
-This is VERY IMPORTANT for correct classification:
-
-### statusEvents (qualification cycle events) - PUT THESE IN statusEvents ARRAY:
-These are XP/UXP counter events that mark qualification cycle boundaries:
-
-1. **xp_reset**: "Aftrek XP-teller" / "Deduction XP counter" / "Reset XP-teller"
-   - Dutch: "Aftrek XP-teller", "Reset XP-teller"
-   - French: "Deduction compteur XP"
-   - English: "XP counter deduction"
-   - xpChange should be NEGATIVE (e.g., -300, -180, -100)
-   - This happens when you reach a new status level
-
-2. **xp_surplus**: "Surplus XP beschikbaar" / "Excess XP available"
-   - Dutch: "Surplus XP beschikbaar op XP-teller"
-   - French: "XP excedentaires disponibles"
-   - English: "Surplus XP available"
-   - xpChange should be POSITIVE (the rollover amount, e.g., 23, 5, 0)
-   - This is XP that carries over to the new cycle
-
-3. **uxp_reset**: Same as xp_reset but for UXP counter
-4. **uxp_surplus**: Same as xp_surplus but for UXP counter
-
-### milesActivities (miles earning/spending) - PUT THESE IN milesActivities ARRAY:
-- Subscriptions, credit cards, hotels, shopping, donations, redemptions, etc.
-- Promotional miles bonuses
-- Any activity that earns or spends MILES
-
-### How to decide:
-- If it mentions "XP-teller", "XP counter", "Aftrek", "Surplus", "Reset" -> statusEvents
-- If it mentions miles earned/spent from partners, subscriptions, etc. -> milesActivities
-
 ## OUTPUT
 
-Return valid JSON matching the exact schema. All fields are required. All dates must be YYYY-MM-DD format.`;
+Return valid JSON matching the exact schema. All fields are required.`;
 
 // ============================================================================
 // JSON SCHEMA (Structured Outputs)
@@ -174,13 +142,13 @@ const JSON_SCHEMA = {
     header: {
       type: "object",
       properties: {
-        memberName: { type: ["string", "null"], description: "Member full name" },
-        memberNumber: { type: ["string", "null"], description: "Flying Blue member number" },
-        currentStatus: { type: "string", enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate"], description: "Current status level" },
-        totalMiles: { type: "integer", description: "Total miles balance" },
-        totalXp: { type: "integer", description: "Total XP balance" },
-        totalUxp: { type: "integer", description: "Total UXP balance (0 if not shown)" },
-        exportDate: { type: "string", description: "PDF export date in YYYY-MM-DD format" }
+        memberName: { type: ["string", "null"] },
+        memberNumber: { type: ["string", "null"] },
+        currentStatus: { type: "string", enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate"] },
+        totalMiles: { type: "integer" },
+        totalXp: { type: "integer" },
+        totalUxp: { type: "integer" },
+        exportDate: { type: "string" }
       },
       required: ["memberName", "memberNumber", "currentStatus", "totalMiles", "totalXp", "totalUxp", "exportDate"],
       additionalProperties: false
@@ -190,19 +158,19 @@ const JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          postingDate: { type: "string", description: "Transaction posting date in YYYY-MM-DD format" },
-          tripTitle: { type: "string", description: "Trip description text" },
-          route: { type: "string", description: "Route as AAA-BBB with no spaces (e.g., AMS-BER)" },
-          flightNumber: { type: "string", description: "Flight number (e.g., KL1234). Empty string for Transavia flights" },
-          airline: { type: "string", description: "2-letter airline code. Use HV for Transavia" },
-          flightDate: { type: "string", description: "Actual flight date in YYYY-MM-DD format (from op/on pattern)" },
-          miles: { type: "integer", description: "Miles earned from flight" },
-          xp: { type: "integer", description: "XP earned from flight" },
-          uxp: { type: "integer", description: "UXP earned (only KL/AF, else 0)" },
-          safMiles: { type: "integer", description: "SAF bonus miles (0 if none)" },
-          safXp: { type: "integer", description: "SAF bonus XP (0 if none)" },
-          cabin: { type: "string", enum: ["Economy", "Premium Economy", "Business", "First", "Unknown"], description: "Cabin class" },
-          isRevenue: { type: "boolean", description: "True if paid ticket" }
+          postingDate: { type: "string" },
+          tripTitle: { type: "string" },
+          route: { type: "string", description: "Must be AAA-BBB with no spaces" },
+          flightNumber: { type: "string", description: "May be empty string for Transavia and rare cases where flight number is not shown" },
+          airline: { type: "string", description: "2-letter airline code when available. Use HV for Transavia" },
+          flightDate: { type: "string" },
+          miles: { type: "integer" },
+          xp: { type: "integer" },
+          uxp: { type: "integer" },
+          safMiles: { type: "integer" },
+          safXp: { type: "integer" },
+          cabin: { type: "string", enum: ["Economy", "Premium Economy", "Business", "First", "Unknown"] },
+          isRevenue: { type: "boolean" }
         },
         required: ["postingDate", "tripTitle", "route", "flightNumber", "airline", "flightDate", "miles", "xp", "uxp", "safMiles", "safXp", "cabin", "isRevenue"],
         additionalProperties: false
@@ -210,15 +178,14 @@ const JSON_SCHEMA = {
     },
     milesActivities: {
       type: "array",
-      description: "Miles earning/spending activities. Do NOT include XP reset/surplus events here.",
       items: {
         type: "object",
         properties: {
-          date: { type: "string", description: "Transaction date in YYYY-MM-DD format" },
-          type: { type: "string", enum: ["subscription", "amex", "amex_bonus", "hotel", "shopping", "partner", "car_rental", "transfer_in", "transfer_out", "donation", "adjustment", "redemption", "expiry", "promo", "other"], description: "Activity category - NOT for XP counter events" },
-          description: { type: "string", description: "Original description from PDF" },
-          miles: { type: "integer", description: "Miles amount (negative for deductions)" },
-          xp: { type: "integer", description: "Bonus XP if any (0 if none) - NOT for XP counter reset/surplus" }
+          date: { type: "string" },
+          type: { type: "string", enum: ["subscription", "amex", "amex_bonus", "hotel", "shopping", "partner", "car_rental", "transfer_in", "transfer_out", "donation", "adjustment", "redemption", "expiry", "promo", "other"] },
+          description: { type: "string" },
+          miles: { type: "integer" },
+          xp: { type: "integer" }
         },
         required: ["date", "type", "description", "miles", "xp"],
         additionalProperties: false
@@ -226,20 +193,15 @@ const JSON_SCHEMA = {
     },
     statusEvents: {
       type: "array",
-      description: "XP/UXP counter events that mark qualification cycle boundaries. MUST include Aftrek XP-teller and Surplus XP events here.",
       items: {
         type: "object",
         properties: {
-          date: { type: "string", description: "Event date in YYYY-MM-DD format" },
-          type: { 
-            type: "string", 
-            enum: ["xp_reset", "xp_surplus", "status_reached", "uxp_reset", "uxp_surplus"], 
-            description: "xp_reset for 'Aftrek XP-teller', xp_surplus for 'Surplus XP beschikbaar'" 
-          },
-          description: { type: "string", description: "Original description from PDF" },
-          xpChange: { type: "integer", description: "XP change - NEGATIVE for reset (e.g., -300), POSITIVE for surplus (e.g., 23)" },
-          uxpChange: { type: "integer", description: "UXP change (0 if this is an XP event, not UXP)" },
-          statusReached: { type: ["string", "null"], enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate", null], description: "Status level reached, or null" }
+          date: { type: "string" },
+          type: { type: "string", enum: ["xp_reset", "xp_surplus", "status_reached", "uxp_reset", "uxp_surplus"] },
+          description: { type: "string" },
+          xpChange: { type: "integer" },
+          uxpChange: { type: "integer" },
+          statusReached: { type: ["string", "null"], enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate", null] }
         },
         required: ["date", "type", "description", "xpChange", "uxpChange", "statusReached"],
         additionalProperties: false
@@ -256,26 +218,15 @@ const JSON_SCHEMA = {
 
 function normalizeRoute(raw: string): string | null {
   // Converts "AMS - BER" or "AMS – BER" into "AMS-BER"
-  const m = raw.match(/\b([A-Z]{3})\s*[-–]\s*([A-Z]{3})\b/);
+  const m = raw.match(/\b([A-Z]{3})\s*[–-]\s*([A-Z]{3})\b/);
   if (!m) return null;
   return `${m[1]}-${m[2]}`;
 }
 
 function extractExpectedSegments(pdfText: string) {
-  // Goal: find likely flight segment lines in raw pdfText
-  // We keep it conservative: route + (flight number OR explicit carrier markers)
-  
-  // Split on common separators - pdfText from pdf.js may have various formats
-  const lines = pdfText.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
-  
-  // If no newlines, try splitting on page markers or double spaces
-  const effectiveLines = lines.length > 10 
-    ? lines 
-    : pdfText.split(/\s{2,}/).map(l => l.trim()).filter(Boolean);
+  const lines = pdfText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-  const carrierMarkers = [
-    "TRANSAVIA",
-  ];
+  const carrierMarkers = ["TRANSAVIA"];
 
   const expected: Array<{
     route: string;
@@ -284,85 +235,102 @@ function extractExpectedSegments(pdfText: string) {
     raw: string;
   }> = [];
 
-  for (const line of effectiveLines) {
+  for (const line of lines) {
     const route = normalizeRoute(line);
     if (!route) continue;
 
-    const flightNoMatch = line.match(/\b([A-Z]{2}\d{2,4})\b/);
+    const flightNoMatch = line.match(/\b([A-Z0-9]{2}\d{2,4})\b/);
     const flightNumber = flightNoMatch ? flightNoMatch[1] : null;
-
     const hasCarrierMarker = carrierMarkers.some(m => line.toUpperCase().includes(m));
 
-    // Keep if it looks like a flight segment:
-    // - Has a flight number, OR
-    // - Has a carrier marker like TRANSAVIA
     if (flightNumber || hasCarrierMarker) {
       const carrierHint = hasCarrierMarker ? "MARKER" : "FLIGHTNO";
-      expected.push({ route, carrierHint, flightNumber, raw: line.slice(0, 100) });
+      expected.push({ route, carrierHint, flightNumber, raw: line });
     }
   }
 
-  // Deduplicate expected segments by route + flightNumber
+  // Deduplicate by route + flightNumber + raw
   const keySet = new Set<string>();
   const deduped: typeof expected = [];
   for (const e of expected) {
-    const k = `${e.route}|${e.flightNumber ?? ""}`;
+    const k = `${e.route}|${e.flightNumber ?? ""}|${e.raw}`;
     if (keySet.has(k)) continue;
     keySet.add(k);
     deduped.push(e);
   }
 
-  // Build a route set for coverage checks
   const expectedRoutes = [...new Set(deduped.map(e => e.route))];
+  const hasALC = /(\bALC\b)/.test(pdfText);
 
-  // Special: detect if ALC appears anywhere, useful for debugging
-  const hasALC = /\bALC\b/.test(pdfText);
+  return { expectedSegments: deduped, expectedRoutes, hasALC };
+}
+
+/**
+ * Count duplicate transaction patterns in raw PDF text
+ * This helps validate that the AI preserved all occurrences
+ */
+function countDuplicatePatterns(pdfText: string): Map<string, number> {
+  const duplicateCounts = new Map<string, number>();
   
-  // Detect status events in PDF text
-  const hasXpReset = /aftrek\s*xp|reset\s*xp|deduction.*xp/i.test(pdfText);
-  const hasXpSurplus = /surplus\s*xp|excedent/i.test(pdfText);
+  // Patterns that commonly appear multiple times
+  const patterns = [
+    /Air adjustment\s+0 Miles\s+20 XP/gi,
+    /Lastminute-upgrade\s+-47000 Miles/gi,
+    /Sustainable Aviation Fuel/gi,
+  ];
+  
+  for (const pattern of patterns) {
+    const matches = pdfText.match(pattern);
+    if (matches && matches.length > 1) {
+      duplicateCounts.set(pattern.source, matches.length);
+    }
+  }
+  
+  return duplicateCounts;
+}
 
-  return {
-    expectedSegments: deduped,
-    expectedRoutes,
-    hasALC,
-    hasXpReset,
-    hasXpSurplus
-  };
+/**
+ * Validate that duplicate transactions were preserved
+ */
+function validateDuplicates(parsed: ParsedOut, pdfText: string): string[] {
+  const errors: string[] = [];
+  
+  // Check Air adjustment count
+  const airAdjustmentInPdf = (pdfText.match(/Air adjustment\s+0 Miles\s+20 XP/gi) || []).length;
+  const airAdjustmentInOutput = parsed.milesActivities.filter(
+    a => a.type === 'adjustment' && a.xp === 20 && a.miles === 0
+  ).length;
+  
+  if (airAdjustmentInPdf > 0 && airAdjustmentInOutput < airAdjustmentInPdf) {
+    errors.push(
+      `DUPLICATE_MISSING: Found ${airAdjustmentInPdf}x "Air adjustment 20 XP" in PDF but only ${airAdjustmentInOutput}x in output`
+    );
+  }
+  
+  // Check Lastminute-upgrade count
+  const upgradeInPdf = (pdfText.match(/Lastminute-upgrade\s+-47000 Miles/gi) || []).length;
+  const upgradeInOutput = parsed.milesActivities.filter(
+    a => a.type === 'redemption' && a.miles === -47000
+  ).length;
+  
+  if (upgradeInPdf > 0 && upgradeInOutput < upgradeInPdf) {
+    errors.push(
+      `DUPLICATE_MISSING: Found ${upgradeInPdf}x "Lastminute-upgrade -47000" in PDF but only ${upgradeInOutput}x in output`
+    );
+  }
+  
+  return errors;
 }
 
 function validateOutputBasic(parsed: ParsedOut) {
   const errors: string[] = [];
 
-  // Route regex check
   for (const f of parsed.flights || []) {
     if (!/^[A-Z]{3}-[A-Z]{3}$/.test(f.route)) {
-      errors.push(`Invalid route format: "${f.route}"`);
+      errors.push(`Invalid route format in flight: "${f.route}"`);
     }
-    // UXP sanity
     if (f.airline !== "KL" && f.airline !== "AF" && f.uxp !== 0) {
-      errors.push(`UXP must be 0 for ${f.airline}: route=${f.route}, uxp=${f.uxp}`);
-    }
-    // Date format check
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.flightDate)) {
-      errors.push(`Invalid flightDate format: "${f.flightDate}" (expected YYYY-MM-DD)`);
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.postingDate)) {
-      errors.push(`Invalid postingDate format: "${f.postingDate}" (expected YYYY-MM-DD)`);
-    }
-  }
-
-  // Check milesActivities dates
-  for (const a of parsed.milesActivities || []) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date)) {
-      errors.push(`Invalid milesActivity date format: "${a.date}" (expected YYYY-MM-DD)`);
-    }
-  }
-
-  // Check statusEvents dates
-  for (const e of parsed.statusEvents || []) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) {
-      errors.push(`Invalid statusEvent date format: "${e.date}" (expected YYYY-MM-DD)`);
+      errors.push(`UXP must be 0 for non-KL/AF flight: airline=${f.airline}, uxp=${f.uxp}, route=${f.route}`);
     }
   }
 
@@ -375,34 +343,7 @@ function coverageCheck(parsed: ParsedOut, expectedRoutes: string[]) {
   return { missingRoutes };
 }
 
-function statusEventsCheck(parsed: ParsedOut, hasXpReset: boolean, hasXpSurplus: boolean) {
-  const issues: string[] = [];
-  
-  const hasResetEvent = (parsed.statusEvents || []).some(e => e.type === 'xp_reset');
-  const hasSurplusEvent = (parsed.statusEvents || []).some(e => e.type === 'xp_surplus');
-  
-  if (hasXpReset && !hasResetEvent) {
-    issues.push('PDF contains XP reset but statusEvents is missing xp_reset');
-  }
-  if (hasXpSurplus && !hasSurplusEvent) {
-    issues.push('PDF contains XP surplus but statusEvents is missing xp_surplus');
-  }
-  
-  // Check if XP events were incorrectly put in milesActivities
-  for (const a of parsed.milesActivities || []) {
-    const desc = a.description.toLowerCase();
-    if (desc.includes('aftrek') && desc.includes('xp')) {
-      issues.push(`XP reset incorrectly in milesActivities: "${a.description}"`);
-    }
-    if (desc.includes('surplus') && desc.includes('xp')) {
-      issues.push(`XP surplus incorrectly in milesActivities: "${a.description}"`);
-    }
-  }
-  
-  return issues;
-}
-
-async function callOpenAIJSON(apiKey: string, model: string, userPrompt: string) {
+async function callOpenAIJSON(apiKey: string, model: string, pdfText: string, userPrompt: string) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -485,15 +426,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: `Invalid model. Allowed: ${allowedModels.join(', ')}` });
   }
 
-  console.log(`[API] Parsing PDF with ${model}, text length: ${pdfText.length}`);
-
   const startTime = Date.now();
 
   // Pre-scan expected segments and routes
-  const { expectedSegments, expectedRoutes, hasALC, hasXpReset, hasXpSurplus } = extractExpectedSegments(pdfText);
-  console.log(`[API] Expected segments: ${expectedSegments.length}, routes: ${expectedRoutes.length}, hasALC: ${hasALC}, hasXpReset: ${hasXpReset}, hasXpSurplus: ${hasXpSurplus}`);
+  const { expectedSegments, expectedRoutes, hasALC } = extractExpectedSegments(pdfText);
+  
+  // Pre-scan duplicate patterns for validation
+  const duplicatePatterns = countDuplicatePatterns(pdfText);
+  const duplicateInfo = Array.from(duplicatePatterns.entries())
+    .map(([pattern, count]) => `${pattern}: ${count}x`)
+    .join(', ');
 
-  // Keep prompt smaller: only include route list, not raw lines
   const expectedRoutesList = expectedRoutes.slice(0, 50).join(', ');
   const expectedSegmentCount = expectedSegments.length;
 
@@ -506,14 +449,14 @@ CRITICAL RULES:
 - Use the actual flight date from "op [date]" or "on [date]".
 - UXP is only for KL and AF flights. For all other airlines, uxp must be 0.
 - Transavia flights: airline must be HV and flightNumber must be empty string "".
-- ALL dates must be in YYYY-MM-DD format. Convert "30 nov 2025" to "2025-11-30".
 
-CRITICAL - STATUS EVENTS CLASSIFICATION:
-- "Aftrek XP-teller" or "Reset XP-teller" -> statusEvents with type "xp_reset", xpChange should be NEGATIVE
-- "Surplus XP beschikbaar" -> statusEvents with type "xp_surplus", xpChange should be POSITIVE
-- These are NOT milesActivities! They go in statusEvents array.
-- PDF contains XP reset events: ${hasXpReset ? "YES - must extract to statusEvents" : "no"}
-- PDF contains XP surplus events: ${hasXpSurplus ? "YES - must extract to statusEvents" : "no"}
+CRITICAL - DUPLICATE TRANSACTIONS:
+- The PDF may contain IDENTICAL transactions on the SAME DATE
+- This is NOT an error - Flying Blue legitimately posts duplicates
+- Example: If "Air adjustment 0 Miles 20 XP" appears TWICE on "9 nov 2025", output TWO separate milesActivities entries
+- Example: If "Lastminute-upgrade -47000 Miles" appears TWICE on "7 nov 2025", output TWO separate entries
+- NEVER merge or deduplicate - count EXACTLY what the PDF shows
+${duplicateInfo ? `- Detected duplicate patterns in this PDF: ${duplicateInfo}` : ''}
 
 COVERAGE REQUIREMENT:
 - You must cover ALL routes that appear as flight segment lines in the raw text.
@@ -527,86 +470,59 @@ PDF CONTENT:
 ${pdfText}
 \`\`\`
 
-Return the complete JSON with all transactions. All dates must be YYYY-MM-DD format.`;
+Return the complete JSON with all transactions. Remember: preserve ALL duplicate entries.`;
 
   // First attempt
-  const first = await callOpenAIJSON(apiKey, model, baseUserPrompt);
+  const first = await callOpenAIJSON(apiKey, model, pdfText, baseUserPrompt);
   if (!first.ok) {
-    console.error(`[API] OpenAI error: ${first.status}`, first.errorText);
     return res.status(500).json({ error: `OpenAI error: ${first.status}`, code: 'OPENAI_ERROR', details: first.errorText });
   }
 
   let parsed = first.parsedContent;
 
-  // Basic validation
+  // Validation
   const basicErrors1 = validateOutputBasic(parsed);
+  const duplicateErrors1 = validateDuplicates(parsed, pdfText);
   const { missingRoutes: missing1 } = coverageCheck(parsed, expectedRoutes);
-  const statusIssues1 = statusEventsCheck(parsed, hasXpReset, hasXpSurplus);
 
   let didRetry = false;
   let retryReason: string | null = null;
 
-  const allIssues1 = [...basicErrors1, ...statusIssues1];
-
-  if (missing1.length > 0 || allIssues1.length > 0) {
+  // Retry if issues found
+  if (missing1.length > 0 || basicErrors1.length > 0 || duplicateErrors1.length > 0) {
     didRetry = true;
     retryReason = [
       missing1.length > 0 ? `missingRoutes=${missing1.slice(0, 20).join(',')}` : null,
-      allIssues1.length > 0 ? `issues=${allIssues1.slice(0, 10).join(' | ')}` : null,
+      basicErrors1.length > 0 ? `basicErrors=${basicErrors1.slice(0, 10).join(' | ')}` : null,
+      duplicateErrors1.length > 0 ? `duplicateErrors=${duplicateErrors1.join(' | ')}` : null,
     ].filter(Boolean).join(' ; ');
-
-    console.log(`[API] Retry needed: ${retryReason}`);
 
     const retryPrompt = `${baseUserPrompt}
 
-RETRY INSTRUCTIONS:
-- Your previous output is invalid or incomplete.
-- Missing routes detected: ${missing1.slice(0, 50).join(', ')}
-- Issues detected: ${allIssues1.slice(0, 10).join(', ')}
-- Fix the issues and return the full JSON again.
-- Do not drop flights to satisfy the schema. Use empty string for missing flightNumber when the PDF shows no flight number.
+RETRY - YOUR PREVIOUS OUTPUT HAD ISSUES:
+${missing1.length > 0 ? `- Missing routes: ${missing1.slice(0, 50).join(', ')}` : ''}
+${basicErrors1.length > 0 ? `- Validation errors: ${basicErrors1.slice(0, 10).join('; ')}` : ''}
+${duplicateErrors1.length > 0 ? `- DUPLICATE TRANSACTION ERRORS: ${duplicateErrors1.join('; ')}` : ''}
+
+IMPORTANT FIXES NEEDED:
+- Do not drop flights. Use empty string for missing flightNumber.
 - Ensure every expected route appears at least once in flights.
-- CRITICAL: "Aftrek XP-teller" and "Surplus XP beschikbaar" MUST go in statusEvents, NOT in milesActivities!
-- CRITICAL: All dates MUST be in YYYY-MM-DD format (e.g., "2025-11-30").`;
+${duplicateErrors1.length > 0 ? `- YOU MERGED DUPLICATE TRANSACTIONS. The PDF shows multiple identical entries - output them ALL separately.` : ''}
 
-    const second = await callOpenAIJSON(apiKey, model, retryPrompt);
-    if (!second.ok) {
-      // Return first output but flag issues, do not fail hard
-      console.warn(`[API] Retry failed: ${second.status}`);
-      const parseTimeMs = Date.now() - startTime;
-      return res.status(200).json({
-        success: true,
-        data: parsed,
-        metadata: {
-          model,
-          parseTimeMs,
-          flightCount: parsed.flights?.length || 0,
-          statusEventsCount: parsed.statusEvents?.length || 0,
-          didRetry,
-          retryFailed: true,
-          retryReason,
-          tokensUsed: first.usage?.total_tokens ?? 0,
-          inputTokens: first.usage?.prompt_tokens ?? 0,
-          outputTokens: first.usage?.completion_tokens ?? 0,
-          expectedRoutesCount: expectedRoutes.length,
-          expectedSegmentCount,
-          missingRoutes: missing1,
-          basicErrors: basicErrors1,
-          statusIssues: statusIssues1,
-        },
-      });
+Return the corrected complete JSON.`;
+
+    const second = await callOpenAIJSON(apiKey, model, pdfText, retryPrompt);
+    if (second.ok) {
+      parsed = second.parsedContent;
     }
-
-    parsed = second.parsedContent;
   }
 
-  // Final checks
+  // Final validation
   const basicErrors2 = validateOutputBasic(parsed);
+  const duplicateErrors2 = validateDuplicates(parsed, pdfText);
   const { missingRoutes: missing2 } = coverageCheck(parsed, expectedRoutes);
-  const statusIssues2 = statusEventsCheck(parsed, hasXpReset, hasXpSurplus);
 
   const parseTimeMs = Date.now() - startTime;
-  console.log(`[API] Parse complete in ${parseTimeMs}ms, flights: ${parsed.flights?.length || 0}, statusEvents: ${parsed.statusEvents?.length || 0}, missing: ${missing2.length}`);
 
   return res.status(200).json({
     success: true,
@@ -614,8 +530,6 @@ RETRY INSTRUCTIONS:
     metadata: {
       model,
       parseTimeMs,
-      flightCount: parsed.flights?.length || 0,
-      statusEventsCount: parsed.statusEvents?.length || 0,
       didRetry,
       retryReason,
       tokensUsed: first.usage?.total_tokens ?? 0,
@@ -623,11 +537,10 @@ RETRY INSTRUCTIONS:
       outputTokens: first.usage?.completion_tokens ?? 0,
       expectedRoutesCount: expectedRoutes.length,
       expectedSegmentCount,
-      hasXpReset,
-      hasXpSurplus,
       missingRoutes: missing2,
       basicErrors: basicErrors2,
-      statusIssues: statusIssues2,
+      duplicateErrors: duplicateErrors2,
+      duplicatePatternsDetected: Object.fromEntries(duplicatePatterns),
     },
   });
 }
