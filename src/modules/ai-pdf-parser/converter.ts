@@ -313,28 +313,11 @@ export function detectQualificationSettings(
     return null;
   }
   
-  // Calculate the NEXT month after qualification date
-  // Flying Blue rule: official cycle starts on 1st of the NEXT month
-  const requalYear = requalDate.getFullYear();
-  const requalMonth = requalDate.getMonth(); // 0-indexed (Oct = 9)
-  
-  // Calculate next month (handle December -> January rollover)
-  let nextYear = requalYear;
-  let nextMonth = requalMonth + 1; // +1 to get next month
-  if (nextMonth > 11) {
-    nextMonth = 0;
-    nextYear++;
-  }
-  nextMonth++; // Convert from 0-indexed to 1-indexed for string
-  
-  const cycleStartMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
-  
-  console.log('[Converter] Cycle start calculation:', {
-    qualificationDate: latestReset.date,
-    requalYear,
-    requalMonth: requalMonth + 1, // Show 1-indexed for readability
-    cycleStartMonth,
-  });
+  // The cycle start month is the SAME month as requalification
+  // Flying Blue starts counting XP towards the new cycle IMMEDIATELY after requalification
+  // So if you requalified on Oct 8, your new cycle starts in October (not November)
+  // The XP filtering uses cycleStartDate to exclude flights ON or BEFORE that date
+  const cycleStartMonth = latestReset.date.slice(0, 7);  // e.g., "2025-10"
   
   let startingStatus: StatusLevel = headerStatus;
   if (latestReset.statusReached) {
