@@ -255,6 +255,28 @@ const isMonthFullyPast = (month: string): boolean => {
   return isFlown(lastDay);
 };
 
+/**
+ * Calculate the official Flying Blue cycle start month for UI display.
+ * 
+ * When leveling up mid-cycle (e.g., Oct 8), the new qualification year
+ * officially starts on the 1st of the NEXT month (Nov 1).
+ * 
+ * This is separate from data filtering, which needs to include flights
+ * from the day after qualification (Oct 9+).
+ */
+const getOfficialCycleStartMonth = (
+  cycleStartDate?: string,
+  fallbackMonth?: string
+): string => {
+  if (cycleStartDate) {
+    // Add noon time to avoid timezone edge cases
+    const qualDate = new Date(cycleStartDate + 'T12:00:00Z');
+    const nextMonth = new Date(qualDate.getFullYear(), qualDate.getMonth() + 1, 1);
+    return `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+  }
+  return fallbackMonth || getCurrentMonth();
+};
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -787,6 +809,7 @@ interface FinalizeCycleParams {
   actualStatus: StatusLevel;
   actualBalance: number;
   uxpRolloverIn: number;
+  cycleStartDate?: string;  // Exact qualification date for official cycle calculation
 }
 
 const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => {
@@ -805,6 +828,7 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
     actualStatus,
     actualBalance,
     uxpRolloverIn,
+    cycleStartDate,
   } = params;
 
   const grossXP =
@@ -826,7 +850,14 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
   const endMonth =
     ledger.length > 0 ? ledger[ledger.length - 1].month : startMonth;
 
-  const startDate = getMonthStartISO(startMonth);
+  // Calculate official cycle start for UI display
+  // When leveling up mid-cycle (e.g., Oct 8), the official cycle starts Nov 1
+  // But data processing still uses startMonth (Oct) to include Oct 9-31 flights
+  const officialStartMonth = cycleStartDate
+    ? getOfficialCycleStartMonth(cycleStartDate, startMonth)
+    : startMonth;
+
+  const startDate = getMonthStartISO(officialStartMonth);
 
   let endDate: string;
   if (endedByLevelUp && levelUpMonth && levelUpIsActual) {
@@ -834,7 +865,7 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
     endDate = getLastDayOfMonth(levelUpMonth);
   } else {
     // Normale cyclus OF projected level-up: toon het natuurlijke einde (12 maanden)
-    endDate = getCycleEndDate(startMonth);
+    endDate = getCycleEndDate(officialStartMonth);
   }
 
   // ACTUAL snapshot (gebaseerd op gevlogen vluchten)
@@ -902,7 +933,7 @@ const finalizeCycle = (params: FinalizeCycleParams): QualificationCycleStats => 
     cycleIndex,
     startDate,
     endDate,
-    startMonth,
+    startMonth: officialStartMonth,
     endMonth,
     startStatus,
     endStatus: effectiveEndStatus,
@@ -1380,6 +1411,9 @@ export const calculateQualificationCycles = (
       actualStatus: state.actualStatus,
       actualBalance: state.actualBalance,
       uxpRolloverIn,
+      // Only pass cycleStartDate for the first cycle (from PDF import)
+      // Subsequent cycles don't have mid-cycle level-ups from qualification settings
+      cycleStartDate: cycleIndex === 0 ? qualificationSettings?.cycleStartDate : undefined,
     });
 
     cycles.push(cycle);
