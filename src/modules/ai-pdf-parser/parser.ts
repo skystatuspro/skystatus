@@ -1,5 +1,6 @@
 // src/modules/ai-pdf-parser/parser.ts
-// Frontend AI parser - calls our server-side API (keeps OpenAI key secure)
+// Frontend AI parser - calls server-side API
+// CLEAN VERSION - pdfHeader for preview only
 
 import type { 
   AIRawResponse, 
@@ -16,26 +17,9 @@ import {
   validateConversion,
 } from './converter';
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
 const DEFAULT_MODEL = 'gpt-4o';
-const DEFAULT_TIMEOUT = 120000; // 120 seconds (AI parsing can take time)
+const DEFAULT_TIMEOUT = 120000;
 
-// ============================================================================
-// MAIN PARSER FUNCTION
-// ============================================================================
-
-/**
- * Parse Flying Blue PDF text using our server-side AI API
- * 
- * The API key is stored securely on the server - never exposed to frontend
- * 
- * @param pdfText - Extracted text from PDF
- * @param options - Parser options (model, timeout, debug)
- * @returns Parsed result or error
- */
 export async function aiParseFlyingBlue(
   pdfText: string,
   options: AIParserOptions = {}
@@ -51,71 +35,47 @@ export async function aiParseFlyingBlue(
   }
   
   try {
-    // Call our server-side API (key is stored there securely)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
     const response = await fetch('/api/parse-pdf', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        pdfText,
-        model,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pdfText, model }),
       signal: controller.signal,
     });
     
     clearTimeout(timeoutId);
     
-    // Handle HTTP errors
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({ error: 'Unknown error' }));
       
       if (response.status === 429) {
         return {
           success: false,
-          error: {
-            code: 'RATE_LIMIT',
-            message: 'Rate limit exceeded. Please try again in a moment.',
-            details: errorBody,
-          },
+          error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded. Please try again.', details: errorBody },
         };
       }
       
       if (response.status === 500 && errorBody.code === 'API_KEY_MISSING') {
         return {
           success: false,
-          error: {
-            code: 'API_ERROR',
-            message: 'AI Parser is not configured. Please contact support.',
-            details: errorBody,
-          },
+          error: { code: 'API_ERROR', message: 'AI Parser not configured.', details: errorBody },
         };
       }
       
       return {
         success: false,
-        error: {
-          code: 'API_ERROR',
-          message: errorBody.error || `Server error: ${response.status}`,
-          details: errorBody,
-        },
+        error: { code: 'API_ERROR', message: errorBody.error || `Server error: ${response.status}`, details: errorBody },
       };
     }
     
-    // Parse response
     const responseData = await response.json();
     
     if (!responseData.success) {
       return {
         success: false,
-        error: {
-          code: 'PARSE_ERROR',
-          message: responseData.error || 'Failed to parse PDF',
-          details: responseData,
-        },
+        error: { code: 'PARSE_ERROR', message: responseData.error || 'Failed to parse PDF', details: responseData },
       };
     }
     
@@ -123,19 +83,13 @@ export async function aiParseFlyingBlue(
     
     if (debug) {
       console.log('[AI Parser] Raw response:', rawResponse);
-      console.log('[AI Parser] API metadata:', responseData.metadata);
     }
     
-    // Validate raw response structure
     const validationResult = validateRawResponse(rawResponse);
     if (!validationResult.isValid) {
       return {
         success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid response structure from AI',
-          details: validationResult.errors,
-        },
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid response structure', details: validationResult.errors },
       };
     }
     
@@ -149,25 +103,15 @@ export async function aiParseFlyingBlue(
     );
     const pdfHeader = createPdfHeader(rawResponse);
     
-    // Validate conversion
-    const conversionValidation = validateConversion(
-      flights,
-      milesRecords,
-      pdfHeader,
-      bonusXpByMonth
-    );
+    const conversionValidation = validateConversion(flights, milesRecords, pdfHeader, bonusXpByMonth);
     
     if (debug && conversionValidation.warnings.length > 0) {
-      console.log('[AI Parser] Conversion warnings:', conversionValidation.warnings);
+      console.log('[AI Parser] Warnings:', conversionValidation.warnings);
     }
     
-    // Calculate total parse time (including network)
     const parseTimeMs = Math.round(performance.now() - startTime);
-    
-    // Detect language from PDF content
     const language = detectLanguage(pdfText);
     
-    // Build result
     const result: AIParsedResult = {
       flights,
       milesRecords,
@@ -184,58 +128,36 @@ export async function aiParseFlyingBlue(
     };
     
     if (debug) {
-      console.log('[AI Parser] Parse complete:', {
+      console.log('[AI Parser] Complete:', {
         flights: flights.length,
         milesRecords: milesRecords.length,
-        bonusXpMonths: Object.keys(bonusXpByMonth).length,
         parseTimeMs,
-        tokensUsed: responseData.metadata?.tokensUsed,
       });
     }
     
-    return {
-      success: true,
-      data: result,
-    };
+    return { success: true, data: result };
     
   } catch (error) {
-    // Handle abort/timeout
     if (error instanceof Error && error.name === 'AbortError') {
       return {
         success: false,
-        error: {
-          code: 'TIMEOUT',
-          message: `Request timed out after ${Math.round(timeout / 1000)} seconds. Try with a smaller PDF.`,
-        },
+        error: { code: 'TIMEOUT', message: `Timeout after ${Math.round(timeout / 1000)}s` },
       };
     }
     
-    // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return {
         success: false,
-        error: {
-          code: 'NETWORK_ERROR',
-          message: 'Network error. Please check your connection and try again.',
-        },
+        error: { code: 'NETWORK_ERROR', message: 'Network error. Check connection.' },
       };
     }
     
-    // Handle other errors
     return {
       success: false,
-      error: {
-        code: 'API_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
-        details: error,
-      },
+      error: { code: 'API_ERROR', message: error instanceof Error ? error.message : 'Unknown error', details: error },
     };
   }
 }
-
-// ============================================================================
-// VALIDATION HELPERS
-// ============================================================================
 
 interface ValidationResult {
   isValid: boolean;
@@ -251,7 +173,6 @@ function validateRawResponse(response: unknown): ValidationResult {
   
   const r = response as Record<string, unknown>;
   
-  // Validate header
   if (!r.header || typeof r.header !== 'object') {
     errors.push('Missing or invalid header');
   } else {
@@ -262,42 +183,19 @@ function validateRawResponse(response: unknown): ValidationResult {
     if (!header.exportDate) errors.push('Missing header.exportDate');
   }
   
-  // Validate arrays exist
   if (!Array.isArray(r.flights)) errors.push('Missing flights array');
   if (!Array.isArray(r.milesActivities)) errors.push('Missing milesActivities array');
   if (!Array.isArray(r.statusEvents)) errors.push('Missing statusEvents array');
   
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: errors.length === 0, errors };
 }
-
-// ============================================================================
-// LANGUAGE DETECTION
-// ============================================================================
 
 function detectLanguage(text: string): string {
   const lower = text.toLowerCase();
-  
-  // Dutch indicators
-  if (lower.includes('vlucht') || lower.includes('aftrek') || lower.includes('beschikbaar')) {
-    return 'nl';
-  }
-  
-  // French indicators
-  if (lower.includes('vol ') || lower.includes('déduction') || lower.includes('excédentaires')) {
-    return 'fr';
-  }
-  
-  // German indicators
-  if (lower.includes('flug') || lower.includes('abzug') || lower.includes('verfügbar')) {
-    return 'de';
-  }
-  
-  // Default to English
+  if (lower.includes('vlucht') || lower.includes('aftrek')) return 'nl';
+  if (lower.includes('vol ') || lower.includes('déduction')) return 'fr';
+  if (lower.includes('flug') || lower.includes('abzug')) return 'de';
   return 'en';
 }
 
-// Re-export types for convenience
 export type { AIParserOptions, AIParserResult, AIParsedResult } from './types';

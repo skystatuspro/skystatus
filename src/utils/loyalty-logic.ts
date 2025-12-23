@@ -1,10 +1,54 @@
 import {
   MilesRecord,
-  MilesStats,
   RedemptionRecord,
-  BurnStats,
-  ProcessedRedemption,
 } from '../types';
+
+// Types needed for this file
+export interface MilesStats {
+  earnedPast: number;
+  burnPast: number;
+  netCurrent: number;
+  earnedAll: number;
+  burnAll: number;
+  netProjected: number;
+  totalCost: number;
+  globalCPM: number;
+  cpmCurrent: number;
+  cpmProjected: number;
+  costPast: number;
+  costAll: number;
+  savingsCurrent: number;
+  savingsProjected: number;
+  targetCPM: number;
+  avgBurnCpm: number;
+  roiMultiplier: number;
+  totalBurnValue: number;
+  redeemedMiles: number;
+}
+
+export interface BurnStats {
+  last12M: {
+    avgBurnCpm: number;
+    bestBurnCpm: number;
+    worstBurnCpm: number;
+    totalValueVsTarget: number;
+    totalMilesRedeemed: number;
+    count: number;
+  };
+  lifetime: {
+    avgBurnCpm: number;
+    totalMilesRedeemed: number;
+    count: number;
+  };
+}
+
+export interface ProcessedRedemption extends RedemptionRecord {
+  cpm: number;
+  value: number;
+  vsTarget: number;
+  vsAcquisition: number;
+  classification: 'Excellent' | 'Good' | 'Average' | 'Poor' | 'Unknown';
+}
 
 // --- Revenue Based Logic ---
 
@@ -19,12 +63,11 @@ export const getStatusMultiplier = (status: string): number => {
 
 export const isRevenueAirline = (airline: string): boolean => {
   const code = airline.toUpperCase();
-  // Belangrijkste Revenue Based airlines voor FB
   return ['KLM', 'KL', 'AIR FRANCE', 'AF', 'AIRFRANCE', 'TRANSAVIA', 'HV', 'DELTA', 'DL', 'VIRGIN', 'VS'].some(a => code.includes(a));
 };
 
 /**
- * Miles Engine core stats
+ * Miles Engine core stats - CLEAN VERSION without miles_correction
  */
 export const calculateMilesStats = (
   milesData: MilesRecord[],
@@ -38,7 +81,6 @@ export const calculateMilesStats = (
   let burnAll = 0;
   let costPast = 0;
   let costAll = 0;
-  let correctionTotal = 0;
 
   milesData.forEach((r) => {
     const rowEarned =
@@ -49,17 +91,10 @@ export const calculateMilesStats = (
     const rowBurn = r.miles_debit;
     const rowCost =
       r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
-    const rowCorrection = r.miles_correction || 0;
-
-    // Debug: log any records with corrections
-    if (rowCorrection !== 0) {
-      console.log(`[calculateMilesStats] Found correction in month ${r.month}: ${rowCorrection}`);
-    }
 
     earnedAll += rowEarned;
     burnAll += rowBurn;
     costAll += rowCost;
-    correctionTotal += rowCorrection;
 
     if (r.month <= currentMonth) {
       earnedPast += rowEarned;
@@ -68,32 +103,22 @@ export const calculateMilesStats = (
     }
   });
 
-  console.log(`[calculateMilesStats] Total correction: ${correctionTotal}, earnedPast: ${earnedPast}, burnPast: ${burnPast}, netCurrent will be: ${earnedPast - burnPast + correctionTotal}`);
-
-  // Include correction in net calculations (correction can be positive or negative)
-  const netCurrent = earnedPast - burnPast + correctionTotal;
-  const netProjected = earnedAll - burnAll + correctionTotal;
+  const netCurrent = earnedPast - burnPast;
+  const netProjected = earnedAll - burnAll;
 
   const totalCost = costAll;
-
   const globalCPM = earnedAll > 0 ? (costAll / earnedAll) * 100 : 0;
-
-  const cpmCurrent = earnedPast > 0 ? costPast / earnedPast : 0; // EUR per mile
-  const cpmProjected = earnedAll > 0 ? costAll / earnedAll : 0; // EUR per mile
+  const cpmCurrent = earnedPast > 0 ? costPast / earnedPast : 0;
+  const cpmProjected = earnedAll > 0 ? costAll / earnedAll : 0;
 
   const savingsCurrent = (targetCPM - cpmCurrent) * earnedPast;
   const savingsProjected = (targetCPM - cpmProjected) * earnedAll;
 
   const burnStats = calculateBurnStats(redemptions, targetCPM, cpmCurrent, 0);
 
-  // FIX: Gebruik totalMilesRedeemed ipv count voor correcte value berekening
   const totalMilesRedeemed = burnStats.lifetime.totalMilesRedeemed || 0;
-  const avgBurnCpmEur = burnStats.lifetime.avgBurnCpm / 100; // Convert cents to EUR
-  
-  // Total value created = (waarde per mile bij redemption - acquisitiekost per mile) * aantal miles
+  const avgBurnCpmEur = burnStats.lifetime.avgBurnCpm / 100;
   const totalBurnValue = totalMilesRedeemed * (avgBurnCpmEur - cpmCurrent);
-  
-  // ROI multiplier = redemption waarde / acquisitie kost
   const roiMultiplier = cpmCurrent > 0 ? avgBurnCpmEur / cpmCurrent : 0;
 
   return {
@@ -123,7 +148,7 @@ export const calculateBurnStats = (
   redemptions: RedemptionRecord[] = [],
   targetCpm: number,
   acquisitionCpmCurrent: number,
-  acquisitionCpmProjected: number
+  _acquisitionCpmProjected: number
 ): BurnStats & { processed: ProcessedRedemption[] } => {
   let lifetimeMiles = 0;
   let lifetimeWeightedCpmSum = 0;
@@ -133,16 +158,13 @@ export const calculateBurnStats = (
   let l12mWeightedCpmSum = 0;
   let l12mCount = 0;
   let l12mValueVsTarget = 0;
-  
   let l12mBest = 0;
-  // FIX: Start met Infinity zodat elk lager getal wordt opgepikt
-  let l12mWorst = Infinity; 
+  let l12mWorst = Infinity;
 
   const now = new Date();
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(now.getFullYear() - 1);
 
-  // Defensief filteren
   const safeRedemptions = (redemptions || []).filter(
     (r): r is RedemptionRecord => !!r && typeof r === 'object'
   );
@@ -151,17 +173,16 @@ export const calculateBurnStats = (
     let burnCpm = 0;
     let value = 0;
 
-    if (r.override_cpm && r.override_cpm > 0) {
-      burnCpm = r.override_cpm;
+    if ((r as any).override_cpm && (r as any).override_cpm > 0) {
+      burnCpm = (r as any).override_cpm;
       value = (burnCpm / 100) * r.award_miles;
-    } else if (r.cash_price_estimate > 0 && r.award_miles > 0) {
-      value = r.cash_price_estimate - r.surcharges;
+    } else if ((r.cash_price_estimate ?? 0) > 0 && r.award_miles > 0) {
+      value = (r.cash_price_estimate ?? 0) - r.surcharges;
       burnCpm = (value / r.award_miles) * 100;
     }
 
     const targetCpmCents = targetCpm * 100;
-    let classification: 'Excellent' | 'Good' | 'Average' | 'Poor' | 'Unknown' =
-      'Unknown';
+    let classification: 'Excellent' | 'Good' | 'Average' | 'Poor' | 'Unknown' = 'Unknown';
 
     if (burnCpm > 0) {
       if (burnCpm >= targetCpmCents * 1.5) classification = 'Excellent';
@@ -171,8 +192,7 @@ export const calculateBurnStats = (
     }
 
     const vsTarget = (burnCpm / 100 - targetCpm) * r.award_miles;
-    const vsAcquisition =
-      (burnCpm / 100 - acquisitionCpmCurrent) * r.award_miles;
+    const vsAcquisition = (burnCpm / 100 - acquisitionCpmCurrent) * r.award_miles;
 
     if (burnCpm > 0) {
       lifetimeMiles += r.award_miles;
@@ -185,8 +205,6 @@ export const calculateBurnStats = (
         l12mWeightedCpmSum += burnCpm * r.award_miles;
         l12mCount++;
         l12mValueVsTarget += vsTarget;
-        
-        // Bereken min/max
         l12mBest = Math.max(l12mBest, burnCpm);
         l12mWorst = Math.min(l12mWorst, burnCpm);
       }
@@ -202,7 +220,6 @@ export const calculateBurnStats = (
     };
   });
 
-  // Als er geen redemptions waren, reset worst naar 0 ipv Infinity
   if (l12mWorst === Infinity) l12mWorst = 0;
 
   return {
@@ -217,7 +234,7 @@ export const calculateBurnStats = (
     },
     lifetime: {
       avgBurnCpm: lifetimeMiles > 0 ? lifetimeWeightedCpmSum / lifetimeMiles : 0,
-      totalMilesRedeemed: lifetimeMiles, // ADDED: voor correcte totalBurnValue
+      totalMilesRedeemed: lifetimeMiles,
       count: lifetimeCount,
     },
   };

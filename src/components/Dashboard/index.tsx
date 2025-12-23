@@ -30,7 +30,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
-import PdfImportModal from '../PdfImportModal';
 import { FAQModal } from '../FAQModal';
 import { FeedbackCard } from '../FeedbackCard';
 import { shouldShowDashboardFeedback, incrementSessionCount } from '../../lib/feedbackService';
@@ -81,7 +80,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const { format: formatCurrency, symbol: currencySymbol, formatPrecise } = useCurrency();
   const { isSimpleMode } = useViewMode();
-  const [showPdfImport, setShowPdfImport] = useState(false);
   // Skip welcome screen if user already has flights (returning user)
   const [skipWelcome, setSkipWelcome] = useState(state.flights.length > 0);
   const [showFaqModal, setShowFaqModal] = useState(false);
@@ -219,7 +217,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }
 
   // Welcome screen for new users
-  if ((hasNoFlights || showPdfImport) && onPdfImport && !skipWelcome) {
+  if (hasNoFlights && onPdfImport && !skipWelcome) {
     return (
       <div className="space-y-8 animate-in fade-in duration-500 pb-12">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -258,13 +256,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => setShowPdfImport(true)}
-                className="flex items-center justify-center gap-3 bg-white text-brand-600 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+              <a
+                href="/ai-parser"
+                className="flex items-center justify-center gap-3 bg-white text-brand-600 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] no-underline"
               >
                 <Upload size={22} />
                 Import PDF
-              </button>
+              </a>
 
               <button
                 onClick={() => navigateTo('addFlight')}
@@ -323,18 +321,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             Skip for now — view empty dashboard →
           </button>
         </div>
-
-        {onPdfImport && (
-          <PdfImportModal
-            isOpen={showPdfImport}
-            onClose={() => setShowPdfImport(false)}
-            onImport={(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-              onPdfImport?.(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth);
-            }}
-            existingFlights={state.flights}
-            existingMiles={state.milesData}
-          />
-        )}
 
         <FAQModal isOpen={showFaqModal} onClose={() => setShowFaqModal(false)} />
       </div>
@@ -720,18 +706,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <>
       {commandCenterContent}
-
-      {onPdfImport && (
-        <PdfImportModal
-          isOpen={showPdfImport}
-          onClose={() => setShowPdfImport(false)}
-          onImport={(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-            onPdfImport(flights, miles, xpCorrection, cycleSettings, bonusXpByMonth);
-          }}
-          existingFlights={state.flights}
-          existingMiles={state.milesData}
-        />
-      )}
     </>
   );
 };

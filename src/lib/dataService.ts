@@ -231,6 +231,7 @@ export async function fetchMilesTransactions(userId: string): Promise<MilesRecor
         cost_amex: 0,
         cost_flight: 0,
         cost_other: 0,
+
       };
     }
 
@@ -308,6 +309,8 @@ export async function saveMilesRecord(userId: string, record: MilesRecord): Prom
     });
   }
 
+  }
+
   if (transactions.length === 0) return true;
 
   // Delete existing transactions for this month first
@@ -381,6 +384,8 @@ export async function saveMilesRecords(userId: string, records: MilesRecord[]): 
         cost: 0,
         is_projected: false,
       });
+    }
+
     }
   });
 
@@ -526,6 +531,7 @@ export async function updateProfile(userId: string, updates: {
   email_consent?: boolean;
   miles_balance?: number;
   current_uxp?: number;
+  // PDF Baseline fields
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -646,6 +652,7 @@ export interface UserData {
     emailConsent: boolean;
     milesBalance: number;
     currentUXP: number;
+    // PDF Baseline
   } | null;
 }
 
@@ -678,6 +685,7 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       emailConsent: profile.email_consent || false,
       milesBalance: profile.miles_balance || 0,
       currentUXP: profile.current_uxp || 0,
+      // PDF Baseline
     } : null,
   };
 }

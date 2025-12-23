@@ -21,7 +21,6 @@ import { SettingsModal } from './components/SettingsModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { OnboardingFlow, OnboardingData } from './components/OnboardingFlow';
 import { LoginPage } from './components/LoginPage';
-import PdfImportModal from './components/PdfImportModal';
 import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage, CookiePolicy } from './components/LegalPages';
 import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
@@ -55,7 +54,6 @@ export default function App() {
   const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | 'cookies' | 'ai-parser' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const [showPdfInstructions, setShowPdfInstructions] = useState(false);
   
   // Onboarding state
@@ -279,14 +277,14 @@ export default function App() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setShowPdfImportModal(true)}
-          className="flex-shrink-0 flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+        <a
+          href="/ai-parser"
+          className="flex-shrink-0 flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors no-underline"
         >
           <Upload size={16} />
           <span className="hidden sm:inline">Import PDF</span>
           <span className="sm:hidden">Import</span>
-        </button>
+        </a>
       </div>
 
       {showPdfInstructions && (
@@ -559,43 +557,6 @@ export default function App() {
           }}
         />
       )}
-
-      {/* PDF Import Modal for Onboarding */}
-      <PdfImportModal
-        isOpen={showOnboardingPdfModal}
-        onClose={() => setShowOnboardingPdfModal(false)}
-        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-          // Save the flights
-          actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
-          
-          // Calculate summary for onboarding display
-          const totalXP = importedFlights.reduce((sum, f) => sum + (f.earnedXP || 0), 0);
-          const milesBalance = importedMiles.reduce((sum, m) => 
-            sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit, 0
-          );
-          
-          setOnboardingPdfResult({
-            flightsCount: importedFlights.length,
-            xpDetected: totalXP,
-            statusDetected: cycleSettings?.startingStatus || null,
-            milesBalance: Math.max(0, milesBalance),
-          });
-          
-          setShowOnboardingPdfModal(false);
-        }}
-        existingFlights={state.flights}
-        existingMiles={state.baseMilesData}
-      />
-
-      <PdfImportModal
-        isOpen={showPdfImportModal}
-        onClose={() => setShowPdfImportModal(false)}
-        onImport={(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth) => {
-          handlePdfImportWithToast(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
-        }}
-        existingFlights={state.flights}
-        existingMiles={state.baseMilesData}
-      />
 
       <SettingsModal
         isOpen={isSettingsOpen}

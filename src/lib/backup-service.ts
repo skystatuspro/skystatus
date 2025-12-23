@@ -1,8 +1,6 @@
 /**
  * Backup Service - Simple localStorage backup before imports
- * Provides undo functionality for PDF imports
- * 
- * Location: src/lib/backup-service.ts
+ * CLEAN VERSION - No pdfBaseline
  */
 
 const BACKUP_KEY = 'skystatus_import_backup';
@@ -17,12 +15,9 @@ export interface ImportBackup {
   currency: string;
   targetCPM: number;
   timestamp: string;
-  source: string; // filename of imported PDF
+  source: string;
 }
 
-/**
- * Create a backup of current user data before import
- */
 export function createBackup(
   currentData: {
     flights: unknown[];
@@ -51,39 +46,25 @@ export function createBackup(
   }
 }
 
-/**
- * Check if a backup exists
- */
 export function hasBackup(): boolean {
   return localStorage.getItem(BACKUP_KEY) !== null;
 }
 
-/**
- * Get backup info without loading full data
- */
 export function getBackupInfo(): { timestamp: string; source: string } | null {
   try {
     const data = localStorage.getItem(BACKUP_KEY);
     if (!data) return null;
-    
     const backup = JSON.parse(data) as ImportBackup;
-    return {
-      timestamp: backup.timestamp,
-      source: backup.source,
-    };
+    return { timestamp: backup.timestamp, source: backup.source };
   } catch {
     return null;
   }
 }
 
-/**
- * Restore data from backup
- */
 export function restoreBackup(): ImportBackup | null {
   try {
     const data = localStorage.getItem(BACKUP_KEY);
     if (!data) return null;
-    
     const backup = JSON.parse(data) as ImportBackup;
     console.log('[BackupService] Restoring backup from:', backup.timestamp);
     return backup;
@@ -93,18 +74,12 @@ export function restoreBackup(): ImportBackup | null {
   }
 }
 
-/**
- * Clear the backup (call after user confirms import is OK)
- */
 export function clearBackup(): void {
   localStorage.removeItem(BACKUP_KEY);
   localStorage.removeItem(BACKUP_TIMESTAMP_KEY);
   console.log('[BackupService] Backup cleared');
 }
 
-/**
- * Get human-readable time since backup
- */
 export function getBackupAge(): string | null {
   const timestamp = localStorage.getItem(BACKUP_TIMESTAMP_KEY);
   if (!timestamp) return null;

@@ -358,7 +358,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       showToast(message, 'success');
     }
     
-    // Close the PDF import modal (handled by setShowPdfImport(false) in the modal)
+    // Close the settings modal
     // Also close the settings modal
     onClose();
   };

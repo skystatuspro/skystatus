@@ -1,16 +1,12 @@
 // src/types.ts
 // Central type definitions for SkyStatus Pro
+// CLEAN VERSION - No pdfBaseline, no miles_correction
 
 // ============================================================================
 // STATUS TYPES
 // ============================================================================
 
-// Base XP-determined status levels
-// Note: In Flying Blue, Ultimate is technically Platinum + 900 UXP, but for UI purposes
-// we allow selecting "Ultimate" as a starting status to simplify the user experience
 export type StatusLevel = 'Explorer' | 'Silver' | 'Gold' | 'Platinum' | 'Ultimate';
-
-// View states for the app
 export type ViewState = 'xp' | 'miles' | 'analytics' | 'calculator' | 'faq' | 'redemption' | 'mileagerun' | 'profile';
 
 // ============================================================================
@@ -30,8 +26,8 @@ export interface FlightRecord {
   safXp?: number;         // SAF (Sustainable Aviation Fuel) XP
   uxp?: number;           // Ultimate XP - only KLM/AF flights generate UXP
   // Import tracking
-  importSource?: 'pdf' | 'manual';  // How was this flight added
-  importedAt?: string;              // ISO timestamp of when it was imported
+  importSource?: 'pdf' | 'manual';
+  importedAt?: string;
 }
 
 // ============================================================================
@@ -53,11 +49,11 @@ export interface MilesRecord {
 }
 
 // ============================================================================
-// XP RECORDS (Legacy format)
+// XP RECORDS
 // ============================================================================
 
 export interface XPRecord {
-  month: string;          // YYYY-MM format
+  month: string;
   f1: number;
   f2: number;
   f3: number;
@@ -74,15 +70,15 @@ export interface XPRecord {
 
 export interface RedemptionRecord {
   id: string;
-  date: string;              // YYYY-MM-DD format
+  date: string;
   description: string;
-  award_miles: number;       // Miles used for this redemption
-  surcharges: number;        // Taxes/fees paid in cash
-  cash_price_estimate?: number;  // Estimated cash value of what was redeemed
+  award_miles: number;
+  surcharges: number;
+  cash_price_estimate?: number;
 }
 
 // ============================================================================
-// MANUAL LEDGER (User-entered monthly adjustments)
+// MANUAL LEDGER
 // ============================================================================
 
 export interface ManualMonthXP {
@@ -93,7 +89,6 @@ export interface ManualMonthXP {
 }
 
 export type ManualLedger = Record<string, ManualMonthXP>;
-
 export type ManualField = 'amexXp' | 'bonusSafXp' | 'miscXp' | 'correctionXp';
 
 // ============================================================================
@@ -117,7 +112,7 @@ export interface QualificationSettings {
   cycleStartMonth: string;
   startingStatus: StatusLevel;
   startingXP: number;
-  startingUXP?: number;     // UXP carried over from previous cycle
-  ultimateCycleType?: 'qualification' | 'calendar'; // Legacy Ultimate members may use calendar year
-  cycleStartDate?: string;  // Full date (YYYY-MM-DD) for precise cycle start
+  startingUXP?: number;
+  ultimateCycleType?: 'qualification' | 'calendar';
+  cycleStartDate?: string;
 }

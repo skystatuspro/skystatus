@@ -125,11 +125,11 @@ export const AIParserTest: React.FC = () => {
   const handleImportToDashboard = useCallback(() => {
     if (!result) return;
     
-    // Use the clean handlePdfImport - no bypass, data goes through engines
+    // Use clean handlePdfImport - data flows through XP/Miles Engines
     actions.handlePdfImport(
       result.flights,
       result.milesRecords,
-      undefined, // xpCorrection - not needed with AI parser
+      undefined, // xpCorrection not needed with AI parser
       result.qualificationSettings ? {
         cycleStartMonth: result.qualificationSettings.cycleStartMonth,
         cycleStartDate: result.qualificationSettings.cycleStartDate,
