@@ -310,6 +310,7 @@ export function useUserData(): UseUserDataReturn {
         if (data.profile.qualificationStartMonth) {
           setQualificationSettingsInternal({
             cycleStartMonth: data.profile.qualificationStartMonth,
+            cycleStartDate: data.profile.qualificationStartDate || undefined,
             startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
             startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
             ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
@@ -355,6 +356,7 @@ export function useUserData(): UseUserDataReturn {
           xp_rollover: xpRollover,
           currency: currency,
           qualification_start_month: qualificationSettings?.cycleStartMonth,
+          qualification_start_date: qualificationSettings?.cycleStartDate || null,
           starting_status: qualificationSettings?.startingStatus,
           starting_xp: qualificationSettings?.startingXP,
           ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
@@ -753,6 +755,7 @@ export function useUserData(): UseUserDataReturn {
           updateProfile(user.id, {
             xp_rollover: 0,
             qualification_start_month: undefined,
+            qualification_start_date: undefined,
             starting_status: undefined,
             starting_xp: undefined,
             ultimate_cycle_type: undefined,
