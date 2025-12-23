@@ -2,12 +2,10 @@
 // Vercel Edge Function for AI PDF parsing
 // Keeps OpenAI API key server-side
 //
-// CHANGELOG v2.2 (2025-12-23):
-// - Generalized "missing partner flight" fix beyond Transavia
-// - Added generic segment pre-scan from pdfText (route + carrier markers)
-// - Added route and date coverage validation
-// - Added one automatic retry with a stricter prompt if coverage fails
-// - Kept Structured Outputs (JSON Schema) strict mode
+// CHANGELOG v2.2.1 (2025-12-23):
+// - v2.2 base: Generalized segment detection, route coverage validation, auto-retry
+// - v2.2.1 fix: Added date format descriptions to JSON schema (YYYY-MM-DD)
+//   This fixes "Invalid time value" error in frontend
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -86,6 +84,21 @@ const SYSTEM_PROMPT = `You are a precise data extraction engine for Flying Blue 
    - Route + flight number (KL1234, AF0123, DL456, SK0822, etc.)
    - Route + explicit carrier label when flight number is missing (for example TRANSAVIA HOLLAND)
 
+## DATE FORMAT
+
+ALL dates must be output in YYYY-MM-DD format.
+
+Input date formats to convert:
+- "30 nov 2025" -> "2025-11-30"
+- "Nov 30, 2025" -> "2025-11-30"
+- "30-11-2025" -> "2025-11-30"
+- "30/11/2025" -> "2025-11-30"
+
+Multi-language months:
+- Dutch: jan, feb, mrt, apr, mei, jun, jul, aug, sep, okt, nov, dec
+- French: jan, fev, mar, avr, mai, juin, juil, aout, sep, oct, nov, dec
+- English: jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec
+
 ## PDF STRUCTURE
 
 Flying Blue PDFs have:
@@ -114,7 +127,7 @@ Transavia flights can have no flight number.
 
 ## OUTPUT
 
-Return valid JSON matching the exact schema. All fields are required.`;
+Return valid JSON matching the exact schema. All fields are required. All dates must be YYYY-MM-DD format.`;
 
 // ============================================================================
 // JSON SCHEMA (Structured Outputs)
@@ -126,13 +139,13 @@ const JSON_SCHEMA = {
     header: {
       type: "object",
       properties: {
-        memberName: { type: ["string", "null"] },
-        memberNumber: { type: ["string", "null"] },
-        currentStatus: { type: "string", enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate"] },
-        totalMiles: { type: "integer" },
-        totalXp: { type: "integer" },
-        totalUxp: { type: "integer" },
-        exportDate: { type: "string" }
+        memberName: { type: ["string", "null"], description: "Member full name" },
+        memberNumber: { type: ["string", "null"], description: "Flying Blue member number" },
+        currentStatus: { type: "string", enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate"], description: "Current status level" },
+        totalMiles: { type: "integer", description: "Total miles balance" },
+        totalXp: { type: "integer", description: "Total XP balance" },
+        totalUxp: { type: "integer", description: "Total UXP balance (0 if not shown)" },
+        exportDate: { type: "string", description: "PDF export date in YYYY-MM-DD format" }
       },
       required: ["memberName", "memberNumber", "currentStatus", "totalMiles", "totalXp", "totalUxp", "exportDate"],
       additionalProperties: false
@@ -142,19 +155,19 @@ const JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          postingDate: { type: "string" },
-          tripTitle: { type: "string" },
-          route: { type: "string", description: "Must be AAA-BBB with no spaces" },
-          flightNumber: { type: "string", description: "May be empty string for Transavia and rare cases where flight number is not shown" },
-          airline: { type: "string", description: "2-letter airline code when available. Use HV for Transavia" },
-          flightDate: { type: "string" },
-          miles: { type: "integer" },
-          xp: { type: "integer" },
-          uxp: { type: "integer" },
-          safMiles: { type: "integer" },
-          safXp: { type: "integer" },
-          cabin: { type: "string", enum: ["Economy", "Premium Economy", "Business", "First", "Unknown"] },
-          isRevenue: { type: "boolean" }
+          postingDate: { type: "string", description: "Transaction posting date in YYYY-MM-DD format" },
+          tripTitle: { type: "string", description: "Trip description text" },
+          route: { type: "string", description: "Route as AAA-BBB with no spaces (e.g., AMS-BER)" },
+          flightNumber: { type: "string", description: "Flight number (e.g., KL1234). Empty string for Transavia flights" },
+          airline: { type: "string", description: "2-letter airline code. Use HV for Transavia" },
+          flightDate: { type: "string", description: "Actual flight date in YYYY-MM-DD format (from op/on pattern)" },
+          miles: { type: "integer", description: "Miles earned from flight" },
+          xp: { type: "integer", description: "XP earned from flight" },
+          uxp: { type: "integer", description: "UXP earned (only KL/AF, else 0)" },
+          safMiles: { type: "integer", description: "SAF bonus miles (0 if none)" },
+          safXp: { type: "integer", description: "SAF bonus XP (0 if none)" },
+          cabin: { type: "string", enum: ["Economy", "Premium Economy", "Business", "First", "Unknown"], description: "Cabin class" },
+          isRevenue: { type: "boolean", description: "True if paid ticket" }
         },
         required: ["postingDate", "tripTitle", "route", "flightNumber", "airline", "flightDate", "miles", "xp", "uxp", "safMiles", "safXp", "cabin", "isRevenue"],
         additionalProperties: false
@@ -165,11 +178,11 @@ const JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          date: { type: "string" },
-          type: { type: "string", enum: ["subscription", "amex", "amex_bonus", "hotel", "shopping", "partner", "car_rental", "transfer_in", "transfer_out", "donation", "adjustment", "redemption", "expiry", "promo", "other"] },
-          description: { type: "string" },
-          miles: { type: "integer" },
-          xp: { type: "integer" }
+          date: { type: "string", description: "Transaction date in YYYY-MM-DD format" },
+          type: { type: "string", enum: ["subscription", "amex", "amex_bonus", "hotel", "shopping", "partner", "car_rental", "transfer_in", "transfer_out", "donation", "adjustment", "redemption", "expiry", "promo", "other"], description: "Activity category" },
+          description: { type: "string", description: "Original description from PDF" },
+          miles: { type: "integer", description: "Miles amount (negative for deductions)" },
+          xp: { type: "integer", description: "Bonus XP if any (0 if none)" }
         },
         required: ["date", "type", "description", "miles", "xp"],
         additionalProperties: false
@@ -180,12 +193,12 @@ const JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          date: { type: "string" },
-          type: { type: "string", enum: ["xp_reset", "xp_surplus", "status_reached", "uxp_reset", "uxp_surplus"] },
-          description: { type: "string" },
-          xpChange: { type: "integer" },
-          uxpChange: { type: "integer" },
-          statusReached: { type: ["string", "null"], enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate", null] }
+          date: { type: "string", description: "Event date in YYYY-MM-DD format" },
+          type: { type: "string", enum: ["xp_reset", "xp_surplus", "status_reached", "uxp_reset", "uxp_surplus"], description: "Type of status event" },
+          description: { type: "string", description: "Original description" },
+          xpChange: { type: "integer", description: "XP change (negative for reset)" },
+          uxpChange: { type: "integer", description: "UXP change (0 if N/A)" },
+          statusReached: { type: ["string", "null"], enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate", null], description: "Status reached if applicable" }
         },
         required: ["date", "type", "description", "xpChange", "uxpChange", "statusReached"],
         additionalProperties: false
@@ -282,6 +295,27 @@ function validateOutputBasic(parsed: ParsedOut) {
     // UXP sanity
     if (f.airline !== "KL" && f.airline !== "AF" && f.uxp !== 0) {
       errors.push(`UXP must be 0 for ${f.airline}: route=${f.route}, uxp=${f.uxp}`);
+    }
+    // Date format check
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.flightDate)) {
+      errors.push(`Invalid flightDate format: "${f.flightDate}" (expected YYYY-MM-DD)`);
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.postingDate)) {
+      errors.push(`Invalid postingDate format: "${f.postingDate}" (expected YYYY-MM-DD)`);
+    }
+  }
+
+  // Check milesActivities dates
+  for (const a of parsed.milesActivities || []) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date)) {
+      errors.push(`Invalid milesActivity date format: "${a.date}" (expected YYYY-MM-DD)`);
+    }
+  }
+
+  // Check statusEvents dates
+  for (const e of parsed.statusEvents || []) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) {
+      errors.push(`Invalid statusEvent date format: "${e.date}" (expected YYYY-MM-DD)`);
     }
   }
 
@@ -398,6 +432,7 @@ CRITICAL RULES:
 - Use the actual flight date from "op [date]" or "on [date]".
 - UXP is only for KL and AF flights. For all other airlines, uxp must be 0.
 - Transavia flights: airline must be HV and flightNumber must be empty string "".
+- ALL dates must be in YYYY-MM-DD format. Convert "30 nov 2025" to "2025-11-30".
 
 COVERAGE REQUIREMENT:
 - You must cover ALL routes that appear as flight segment lines in the raw text.
@@ -411,7 +446,7 @@ PDF CONTENT:
 ${pdfText}
 \`\`\`
 
-Return the complete JSON with all transactions.`;
+Return the complete JSON with all transactions. All dates must be YYYY-MM-DD format.`;
 
   // First attempt
   const first = await callOpenAIJSON(apiKey, model, baseUserPrompt);
@@ -443,9 +478,11 @@ Return the complete JSON with all transactions.`;
 RETRY INSTRUCTIONS:
 - Your previous output is invalid or incomplete.
 - Missing routes detected: ${missing1.slice(0, 50).join(', ')}
+- Errors detected: ${basicErrors1.slice(0, 10).join(', ')}
 - Fix the issues and return the full JSON again.
 - Do not drop flights to satisfy the schema. Use empty string for missing flightNumber when the PDF shows no flight number.
-- Ensure every expected route appears at least once in flights.`;
+- Ensure every expected route appears at least once in flights.
+- CRITICAL: All dates MUST be in YYYY-MM-DD format (e.g., "2025-11-30").`;
 
     const second = await callOpenAIJSON(apiKey, model, retryPrompt);
     if (!second.ok) {
