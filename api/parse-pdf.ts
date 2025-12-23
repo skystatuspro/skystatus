@@ -2,10 +2,12 @@
 // Vercel Edge Function for AI PDF parsing
 // Keeps OpenAI API key server-side
 //
-// CHANGELOG v2.2.1 (2025-12-23):
+// CHANGELOG v2.2.2 (2025-12-23):
 // - v2.2 base: Generalized segment detection, route coverage validation, auto-retry
 // - v2.2.1 fix: Added date format descriptions to JSON schema (YYYY-MM-DD)
-//   This fixes "Invalid time value" error in frontend
+// - v2.2.2 fix: Fixed statusEvents classification - XP reset/surplus now correctly
+//   goes to statusEvents instead of milesActivities. This fixes qualification
+//   cycle detection and XP calculation in the dashboard.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -125,6 +127,39 @@ Transavia flights can have no flight number.
 - Set flightNumber to empty string ""
 - uxp must be 0
 
+## CRITICAL: Status Events vs Miles Activities
+
+This is VERY IMPORTANT for correct classification:
+
+### statusEvents (qualification cycle events) - PUT THESE IN statusEvents ARRAY:
+These are XP/UXP counter events that mark qualification cycle boundaries:
+
+1. **xp_reset**: "Aftrek XP-teller" / "Deduction XP counter" / "Reset XP-teller"
+   - Dutch: "Aftrek XP-teller", "Reset XP-teller"
+   - French: "Deduction compteur XP"
+   - English: "XP counter deduction"
+   - xpChange should be NEGATIVE (e.g., -300, -180, -100)
+   - This happens when you reach a new status level
+
+2. **xp_surplus**: "Surplus XP beschikbaar" / "Excess XP available"
+   - Dutch: "Surplus XP beschikbaar op XP-teller"
+   - French: "XP excedentaires disponibles"
+   - English: "Surplus XP available"
+   - xpChange should be POSITIVE (the rollover amount, e.g., 23, 5, 0)
+   - This is XP that carries over to the new cycle
+
+3. **uxp_reset**: Same as xp_reset but for UXP counter
+4. **uxp_surplus**: Same as xp_surplus but for UXP counter
+
+### milesActivities (miles earning/spending) - PUT THESE IN milesActivities ARRAY:
+- Subscriptions, credit cards, hotels, shopping, donations, redemptions, etc.
+- Promotional miles bonuses
+- Any activity that earns or spends MILES
+
+### How to decide:
+- If it mentions "XP-teller", "XP counter", "Aftrek", "Surplus", "Reset" -> statusEvents
+- If it mentions miles earned/spent from partners, subscriptions, etc. -> milesActivities
+
 ## OUTPUT
 
 Return valid JSON matching the exact schema. All fields are required. All dates must be YYYY-MM-DD format.`;
@@ -175,14 +210,15 @@ const JSON_SCHEMA = {
     },
     milesActivities: {
       type: "array",
+      description: "Miles earning/spending activities. Do NOT include XP reset/surplus events here.",
       items: {
         type: "object",
         properties: {
           date: { type: "string", description: "Transaction date in YYYY-MM-DD format" },
-          type: { type: "string", enum: ["subscription", "amex", "amex_bonus", "hotel", "shopping", "partner", "car_rental", "transfer_in", "transfer_out", "donation", "adjustment", "redemption", "expiry", "promo", "other"], description: "Activity category" },
+          type: { type: "string", enum: ["subscription", "amex", "amex_bonus", "hotel", "shopping", "partner", "car_rental", "transfer_in", "transfer_out", "donation", "adjustment", "redemption", "expiry", "promo", "other"], description: "Activity category - NOT for XP counter events" },
           description: { type: "string", description: "Original description from PDF" },
           miles: { type: "integer", description: "Miles amount (negative for deductions)" },
-          xp: { type: "integer", description: "Bonus XP if any (0 if none)" }
+          xp: { type: "integer", description: "Bonus XP if any (0 if none) - NOT for XP counter reset/surplus" }
         },
         required: ["date", "type", "description", "miles", "xp"],
         additionalProperties: false
@@ -190,15 +226,20 @@ const JSON_SCHEMA = {
     },
     statusEvents: {
       type: "array",
+      description: "XP/UXP counter events that mark qualification cycle boundaries. MUST include Aftrek XP-teller and Surplus XP events here.",
       items: {
         type: "object",
         properties: {
           date: { type: "string", description: "Event date in YYYY-MM-DD format" },
-          type: { type: "string", enum: ["xp_reset", "xp_surplus", "status_reached", "uxp_reset", "uxp_surplus"], description: "Type of status event" },
-          description: { type: "string", description: "Original description" },
-          xpChange: { type: "integer", description: "XP change (negative for reset)" },
-          uxpChange: { type: "integer", description: "UXP change (0 if N/A)" },
-          statusReached: { type: ["string", "null"], enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate", null], description: "Status reached if applicable" }
+          type: { 
+            type: "string", 
+            enum: ["xp_reset", "xp_surplus", "status_reached", "uxp_reset", "uxp_surplus"], 
+            description: "xp_reset for 'Aftrek XP-teller', xp_surplus for 'Surplus XP beschikbaar'" 
+          },
+          description: { type: "string", description: "Original description from PDF" },
+          xpChange: { type: "integer", description: "XP change - NEGATIVE for reset (e.g., -300), POSITIVE for surplus (e.g., 23)" },
+          uxpChange: { type: "integer", description: "UXP change (0 if this is an XP event, not UXP)" },
+          statusReached: { type: ["string", "null"], enum: ["Explorer", "Silver", "Gold", "Platinum", "Ultimate", null], description: "Status level reached, or null" }
         },
         required: ["date", "type", "description", "xpChange", "uxpChange", "statusReached"],
         additionalProperties: false
@@ -276,11 +317,17 @@ function extractExpectedSegments(pdfText: string) {
 
   // Special: detect if ALC appears anywhere, useful for debugging
   const hasALC = /\bALC\b/.test(pdfText);
+  
+  // Detect status events in PDF text
+  const hasXpReset = /aftrek\s*xp|reset\s*xp|deduction.*xp/i.test(pdfText);
+  const hasXpSurplus = /surplus\s*xp|excedent/i.test(pdfText);
 
   return {
     expectedSegments: deduped,
     expectedRoutes,
-    hasALC
+    hasALC,
+    hasXpReset,
+    hasXpSurplus
   };
 }
 
@@ -326,6 +373,33 @@ function coverageCheck(parsed: ParsedOut, expectedRoutes: string[]) {
   const extractedRoutes = new Set<string>((parsed.flights || []).map(f => f.route));
   const missingRoutes = expectedRoutes.filter(r => !extractedRoutes.has(r));
   return { missingRoutes };
+}
+
+function statusEventsCheck(parsed: ParsedOut, hasXpReset: boolean, hasXpSurplus: boolean) {
+  const issues: string[] = [];
+  
+  const hasResetEvent = (parsed.statusEvents || []).some(e => e.type === 'xp_reset');
+  const hasSurplusEvent = (parsed.statusEvents || []).some(e => e.type === 'xp_surplus');
+  
+  if (hasXpReset && !hasResetEvent) {
+    issues.push('PDF contains XP reset but statusEvents is missing xp_reset');
+  }
+  if (hasXpSurplus && !hasSurplusEvent) {
+    issues.push('PDF contains XP surplus but statusEvents is missing xp_surplus');
+  }
+  
+  // Check if XP events were incorrectly put in milesActivities
+  for (const a of parsed.milesActivities || []) {
+    const desc = a.description.toLowerCase();
+    if (desc.includes('aftrek') && desc.includes('xp')) {
+      issues.push(`XP reset incorrectly in milesActivities: "${a.description}"`);
+    }
+    if (desc.includes('surplus') && desc.includes('xp')) {
+      issues.push(`XP surplus incorrectly in milesActivities: "${a.description}"`);
+    }
+  }
+  
+  return issues;
 }
 
 async function callOpenAIJSON(apiKey: string, model: string, userPrompt: string) {
@@ -416,8 +490,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const startTime = Date.now();
 
   // Pre-scan expected segments and routes
-  const { expectedSegments, expectedRoutes, hasALC } = extractExpectedSegments(pdfText);
-  console.log(`[API] Expected segments: ${expectedSegments.length}, routes: ${expectedRoutes.length}, hasALC: ${hasALC}`);
+  const { expectedSegments, expectedRoutes, hasALC, hasXpReset, hasXpSurplus } = extractExpectedSegments(pdfText);
+  console.log(`[API] Expected segments: ${expectedSegments.length}, routes: ${expectedRoutes.length}, hasALC: ${hasALC}, hasXpReset: ${hasXpReset}, hasXpSurplus: ${hasXpSurplus}`);
 
   // Keep prompt smaller: only include route list, not raw lines
   const expectedRoutesList = expectedRoutes.slice(0, 50).join(', ');
@@ -433,6 +507,13 @@ CRITICAL RULES:
 - UXP is only for KL and AF flights. For all other airlines, uxp must be 0.
 - Transavia flights: airline must be HV and flightNumber must be empty string "".
 - ALL dates must be in YYYY-MM-DD format. Convert "30 nov 2025" to "2025-11-30".
+
+CRITICAL - STATUS EVENTS CLASSIFICATION:
+- "Aftrek XP-teller" or "Reset XP-teller" -> statusEvents with type "xp_reset", xpChange should be NEGATIVE
+- "Surplus XP beschikbaar" -> statusEvents with type "xp_surplus", xpChange should be POSITIVE
+- These are NOT milesActivities! They go in statusEvents array.
+- PDF contains XP reset events: ${hasXpReset ? "YES - must extract to statusEvents" : "no"}
+- PDF contains XP surplus events: ${hasXpSurplus ? "YES - must extract to statusEvents" : "no"}
 
 COVERAGE REQUIREMENT:
 - You must cover ALL routes that appear as flight segment lines in the raw text.
@@ -460,15 +541,18 @@ Return the complete JSON with all transactions. All dates must be YYYY-MM-DD for
   // Basic validation
   const basicErrors1 = validateOutputBasic(parsed);
   const { missingRoutes: missing1 } = coverageCheck(parsed, expectedRoutes);
+  const statusIssues1 = statusEventsCheck(parsed, hasXpReset, hasXpSurplus);
 
   let didRetry = false;
   let retryReason: string | null = null;
 
-  if (missing1.length > 0 || basicErrors1.length > 0) {
+  const allIssues1 = [...basicErrors1, ...statusIssues1];
+
+  if (missing1.length > 0 || allIssues1.length > 0) {
     didRetry = true;
     retryReason = [
       missing1.length > 0 ? `missingRoutes=${missing1.slice(0, 20).join(',')}` : null,
-      basicErrors1.length > 0 ? `basicErrors=${basicErrors1.slice(0, 10).join(' | ')}` : null,
+      allIssues1.length > 0 ? `issues=${allIssues1.slice(0, 10).join(' | ')}` : null,
     ].filter(Boolean).join(' ; ');
 
     console.log(`[API] Retry needed: ${retryReason}`);
@@ -478,10 +562,11 @@ Return the complete JSON with all transactions. All dates must be YYYY-MM-DD for
 RETRY INSTRUCTIONS:
 - Your previous output is invalid or incomplete.
 - Missing routes detected: ${missing1.slice(0, 50).join(', ')}
-- Errors detected: ${basicErrors1.slice(0, 10).join(', ')}
+- Issues detected: ${allIssues1.slice(0, 10).join(', ')}
 - Fix the issues and return the full JSON again.
 - Do not drop flights to satisfy the schema. Use empty string for missing flightNumber when the PDF shows no flight number.
 - Ensure every expected route appears at least once in flights.
+- CRITICAL: "Aftrek XP-teller" and "Surplus XP beschikbaar" MUST go in statusEvents, NOT in milesActivities!
 - CRITICAL: All dates MUST be in YYYY-MM-DD format (e.g., "2025-11-30").`;
 
     const second = await callOpenAIJSON(apiKey, model, retryPrompt);
@@ -496,6 +581,7 @@ RETRY INSTRUCTIONS:
           model,
           parseTimeMs,
           flightCount: parsed.flights?.length || 0,
+          statusEventsCount: parsed.statusEvents?.length || 0,
           didRetry,
           retryFailed: true,
           retryReason,
@@ -506,6 +592,7 @@ RETRY INSTRUCTIONS:
           expectedSegmentCount,
           missingRoutes: missing1,
           basicErrors: basicErrors1,
+          statusIssues: statusIssues1,
         },
       });
     }
@@ -516,9 +603,10 @@ RETRY INSTRUCTIONS:
   // Final checks
   const basicErrors2 = validateOutputBasic(parsed);
   const { missingRoutes: missing2 } = coverageCheck(parsed, expectedRoutes);
+  const statusIssues2 = statusEventsCheck(parsed, hasXpReset, hasXpSurplus);
 
   const parseTimeMs = Date.now() - startTime;
-  console.log(`[API] Parse complete in ${parseTimeMs}ms, flights: ${parsed.flights?.length || 0}, missing: ${missing2.length}`);
+  console.log(`[API] Parse complete in ${parseTimeMs}ms, flights: ${parsed.flights?.length || 0}, statusEvents: ${parsed.statusEvents?.length || 0}, missing: ${missing2.length}`);
 
   return res.status(200).json({
     success: true,
@@ -527,6 +615,7 @@ RETRY INSTRUCTIONS:
       model,
       parseTimeMs,
       flightCount: parsed.flights?.length || 0,
+      statusEventsCount: parsed.statusEvents?.length || 0,
       didRetry,
       retryReason,
       tokensUsed: first.usage?.total_tokens ?? 0,
@@ -534,8 +623,11 @@ RETRY INSTRUCTIONS:
       outputTokens: first.usage?.completion_tokens ?? 0,
       expectedRoutesCount: expectedRoutes.length,
       expectedSegmentCount,
+      hasXpReset,
+      hasXpSurplus,
       missingRoutes: missing2,
       basicErrors: basicErrors2,
+      statusIssues: statusIssues2,
     },
   });
 }
