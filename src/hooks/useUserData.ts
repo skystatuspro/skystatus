@@ -1099,9 +1099,12 @@ export function useUserData(): UseUserDataReturn {
 
     // =========================================================================
     // STEP 7: SAVE TO DATABASE
+    // CRITICAL: Save BOTH pdfBaseline AND qualificationSettings in one call
+    // to prevent race conditions with autosave
     // =========================================================================
     if (user) {
-      updateProfile(user.id, {
+      const profileUpdates: Record<string, unknown> = {
+        // PDF Baseline
         pdf_baseline_xp: aiResult.pdfBaseline.xp,
         pdf_baseline_uxp: aiResult.pdfBaseline.uxp,
         pdf_baseline_miles: aiResult.pdfBaseline.miles,
@@ -1109,11 +1112,26 @@ export function useUserData(): UseUserDataReturn {
         pdf_export_date: aiResult.pdfBaseline.pdfExportDate,
         pdf_imported_at: new Date().toISOString(),
         pdf_source_filename: 'AI PDF Import',
-      }).then(success => {
+      };
+      
+      // CRITICAL FIX: Also save qualification settings to database
+      // Without this, autosave would overwrite with null values from stale closure
+      if (aiResult.qualificationSettings) {
+        profileUpdates.qualification_start_month = aiResult.qualificationSettings.cycleStartMonth;
+        profileUpdates.qualification_start_date = aiResult.qualificationSettings.cycleStartDate || null;
+        profileUpdates.starting_status = aiResult.qualificationSettings.startingStatus;
+        profileUpdates.starting_xp = aiResult.qualificationSettings.startingXP ?? 0;
+        profileUpdates.starting_uxp = aiResult.qualificationSettings.startingUXP ?? 0;
+        profileUpdates.xp_rollover = aiResult.qualificationSettings.startingXP ?? 0;
+        profileUpdates.ultimate_cycle_type = aiResult.qualificationSettings.ultimateCycleType || 'qualification';
+        console.log('[handlePdfImportAI] Qualification settings included in DB save:', aiResult.qualificationSettings);
+      }
+      
+      updateProfile(user.id, profileUpdates).then(success => {
         if (success) {
-          console.log('[handlePdfImportAI] PDF Baseline saved to database');
+          console.log('[handlePdfImportAI] PDF Baseline + Qualification settings saved to database');
         } else {
-          console.error('[handlePdfImportAI] Failed to save PDF Baseline to database');
+          console.error('[handlePdfImportAI] Failed to save to database');
         }
       });
     }
