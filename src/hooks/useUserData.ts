@@ -45,6 +45,7 @@ import {
   clearBackup,
   getBackupAge,
 } from '../modules/pdf-import/services/backup-service';
+import type { AIParsedResult } from '../modules/ai-pdf-parser';
 
 // ============================================================================
 // TYPES
@@ -133,6 +134,7 @@ export interface UserDataActions {
   handleUndoImport: () => boolean;
   canUndoImport: boolean;
   importBackupInfo: { timestamp: string; source: string } | null;
+  handlePdfImportAI: (aiResult: AIParsedResult) => void;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
   
   // Demo/Local mode
@@ -968,6 +970,158 @@ export function useUserData(): UseUserDataReturn {
     return true;
   }, [markDataChanged]);
 
+  // ===========================================================================
+  // AI PDF IMPORT HANDLER (No workarounds - trust AI parser 100%)
+  // ===========================================================================
+  
+  /**
+   * Handle PDF import from AI parser
+   * 
+   * CRITICAL DIFFERENCE FROM handlePdfImport:
+   * - NO XP correction calculation
+   * - NO Miles correction calculation
+   * - Parser data is trusted 100%
+   * - bonusXP IS written to manualLedger.miscXp
+   * - Direct write to data layer without workarounds
+   */
+  const handlePdfImportAI = useCallback((aiResult: AIParsedResult) => {
+    console.log('[handlePdfImportAI] Starting AI parser import');
+    console.log('[handlePdfImportAI] Flights:', aiResult.flights.length);
+    console.log('[handlePdfImportAI] Miles records:', aiResult.milesRecords.length);
+    console.log('[handlePdfImportAI] Bonus XP months:', Object.keys(aiResult.bonusXpByMonth).length);
+    
+    // CRITICAL: Mark as loaded so autosave works for new users
+    if (user) {
+      hasInitiallyLoaded.current = true;
+      loadedForUserId.current = user.id;
+      setHasAttemptedLoad(true);
+    }
+
+    // =========================================================================
+    // STEP 1: CREATE BACKUP (same as local parser)
+    // =========================================================================
+    try {
+      createBackup(
+        {
+          flights: flights,
+          milesRecords: baseMilesData,
+          qualificationSettings: qualificationSettings,
+          manualLedger: manualLedger,
+          xpRollover: xpRollover,
+          pdfBaseline: pdfBaseline,
+          currency: currency,
+          targetCPM: targetCPM,
+        },
+        'AI PDF Import'
+      );
+      console.log('[handlePdfImportAI] Backup created before import');
+    } catch (e) {
+      console.error('[handlePdfImportAI] Failed to create backup:', e);
+    }
+
+    // =========================================================================
+    // STEP 2: SET PDF BASELINE (Source of Truth)
+    // AI parser baseline includes parserUsed: 'ai'
+    // =========================================================================
+    setPdfBaselineInternal(aiResult.pdfBaseline);
+    console.log('[handlePdfImportAI] PDF Baseline set:', aiResult.pdfBaseline);
+
+    // =========================================================================
+    // STEP 3: MERGE FLIGHTS (Skip duplicates by date + route)
+    // =========================================================================
+    const existingFlightKeys = new Set(
+      flights.map(f => `${f.date}|${f.route}`)
+    );
+    
+    const newFlights = aiResult.flights.filter(f => {
+      const key = `${f.date}|${f.route}`;
+      return !existingFlightKeys.has(key);
+    });
+    
+    const mergedFlights = [...flights, ...newFlights];
+    mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
+    setFlightsInternal(mergedFlights);
+    
+    console.log(`[handlePdfImportAI] Merged flights: ${flights.length} existing + ${newFlights.length} new = ${mergedFlights.length} total`);
+
+    // =========================================================================
+    // STEP 4: SET MILES RECORDS DIRECTLY (No correction needed!)
+    // AI parser data is authoritative
+    // =========================================================================
+    const existingMilesByMonth = new Map(
+      baseMilesData.map(m => [m.month, m])
+    );
+    
+    for (const importedMonth of aiResult.milesRecords) {
+      // AI parser data replaces existing for months it contains
+      existingMilesByMonth.set(importedMonth.month, importedMonth);
+    }
+    
+    const mergedMiles = Array.from(existingMilesByMonth.values());
+    mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
+    setBaseMilesDataInternal(mergedMiles);
+    
+    console.log(`[handlePdfImportAI] Merged miles: ${baseMilesData.length} existing + ${aiResult.milesRecords.length} from AI = ${mergedMiles.length} total`);
+
+    // =========================================================================
+    // STEP 5: SET QUALIFICATION SETTINGS (if detected)
+    // =========================================================================
+    if (aiResult.qualificationSettings) {
+      setQualificationSettingsInternal(aiResult.qualificationSettings);
+      
+      // Sync rollover to top-level xpRollover state
+      if (aiResult.qualificationSettings.startingXP !== undefined) {
+        setXpRolloverInternal(aiResult.qualificationSettings.startingXP);
+      }
+      
+      console.log('[handlePdfImportAI] Qualification settings set:', aiResult.qualificationSettings);
+    }
+
+    // =========================================================================
+    // STEP 6: WRITE BONUS XP TO MANUAL LEDGER (This was missing in local parser!)
+    // AI parser properly extracts XP from non-flight activities
+    // =========================================================================
+    if (Object.keys(aiResult.bonusXpByMonth).length > 0) {
+      const updatedLedger: ManualLedger = { ...manualLedger };
+      
+      for (const [month, xp] of Object.entries(aiResult.bonusXpByMonth)) {
+        updatedLedger[month] = {
+          ...updatedLedger[month],
+          // Add to existing miscXp (don't replace)
+          miscXp: (updatedLedger[month]?.miscXp ?? 0) + xp,
+        };
+        console.log(`[handlePdfImportAI] Added ${xp} bonus XP to ${month}`);
+      }
+      
+      setManualLedgerInternal(updatedLedger);
+      console.log('[handlePdfImportAI] Bonus XP written to manualLedger');
+    }
+
+    // =========================================================================
+    // STEP 7: SAVE TO DATABASE
+    // =========================================================================
+    if (user) {
+      updateProfile(user.id, {
+        pdf_baseline_xp: aiResult.pdfBaseline.xp,
+        pdf_baseline_uxp: aiResult.pdfBaseline.uxp,
+        pdf_baseline_miles: aiResult.pdfBaseline.miles,
+        pdf_baseline_status: aiResult.pdfBaseline.status,
+        pdf_export_date: aiResult.pdfBaseline.pdfExportDate,
+        pdf_imported_at: new Date().toISOString(),
+        pdf_source_filename: 'AI PDF Import',
+      }).then(success => {
+        if (success) {
+          console.log('[handlePdfImportAI] PDF Baseline saved to database');
+        } else {
+          console.error('[handlePdfImportAI] Failed to save PDF Baseline to database');
+        }
+      });
+    }
+
+    markDataChanged();
+    console.log('[handlePdfImportAI] Import complete');
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, pdfBaseline]);
+
   // Backup state - refreshed when data changes
   const [backupState, setBackupState] = useState<{
     canUndo: boolean;
@@ -1478,6 +1632,7 @@ export function useUserData(): UseUserDataReturn {
       handleManualXPLedgerUpdate,
       handleXPRolloverUpdate,
       handlePdfImport,
+      handlePdfImportAI,
       handleUndoImport,
       canUndoImport,
       importBackupInfo,

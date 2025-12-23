@@ -1,72 +1,30 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
-    { "source": "/faq", "destination": "/" },
-    { "source": "/privacy", "destination": "/" },
-    { "source": "/terms", "destination": "/" },
-    { "source": "/cookies", "destination": "/" },
-    { "source": "/contact", "destination": "/" },
-    { "source": "/calculator", "destination": "/" },
-    { "source": "/reset-password", "destination": "/" },
-    { "source": "/help", "destination": "/" }
-  ],
-  "redirects": [
-    {
-      "source": "/guide/what-is-uxp-ultimate-xp",
-      "destination": "/guide/flying-blue-uxp-explained",
-      "permanent": true
-    },
-    {
-      "source": "/guide/how-xp-rollover-works",
-      "destination": "/guide/flying-blue-xp-rollover",
-      "permanent": true
-    },
-    {
-      "source": "/guide/how-to-reach-gold-status-fast",
-      "destination": "/guide/flying-blue-gold-status",
-      "permanent": true
-    },
-    {
-      "source": "/guide/how-to-reach-platinum-status",
-      "destination": "/guide/flying-blue-platinum-status",
-      "permanent": true
-    },
-    {
-      "source": "/guide/ultimate-status-guide",
-      "destination": "/guide/flying-blue-ultimate-status",
-      "permanent": true
-    },
-    {
-      "source": "/guide/mileage-run-planning",
-      "destination": "/guide/mileage-run-calculator",
-      "permanent": true
-    },
-    {
-      "source": "/guide/subscribe-to-miles-worth-it",
-      "destination": "/guide/flying-blue-subscription",
-      "permanent": true
-    },
-    {
-      "source": "/guide/cost-per-mile-explained",
-      "destination": "/guide/flying-blue-cost-per-mile",
-      "permanent": true
-    }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
-      "source": "/sitemap.xml",
+      "source": "/assets/(.*)",
       "headers": [
-        { "key": "Content-Type", "value": "application/xml; charset=utf-8" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/guide/(.*)",
+      "source": "/(.*).js",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "index, follow" },
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*).css",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/parse-pdf.ts": {
+      "maxDuration": 120
+    }
+  }
 }

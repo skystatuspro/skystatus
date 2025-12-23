@@ -26,6 +26,7 @@ import { PrivacyPolicy, TermsOfService, AboutPage, ContactPage, CookiePolicy } f
 import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
+import { AIParserTest } from './components/AIParserTest';
 import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { MaintenanceNotice } from './components/MaintenanceNotice';
@@ -51,7 +52,7 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   const [view, setView] = useState<ViewState>('dashboard');
-  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | 'cookies' | null>(null);
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | 'cookies' | 'ai-parser' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
@@ -92,6 +93,9 @@ export default function App() {
       window.scrollTo(0, 0);
     } else if (path === '/cookies') {
       setLegalPage('cookies');
+      window.scrollTo(0, 0);
+    } else if (path === '/ai-parser') {
+      setLegalPage('ai-parser');
       window.scrollTo(0, 0);
     } else {
       setLegalPage(null);
@@ -177,6 +181,12 @@ export default function App() {
   if (legalPage === 'calculator') return (
     <CookieConsentProvider>
       <CalculatorPage onBack={handleLegalBack} />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'ai-parser') return (
+    <CookieConsentProvider>
+      <AIParserTest />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
