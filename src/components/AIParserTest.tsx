@@ -134,6 +134,7 @@ export const AIParserTest: React.FC = () => {
         cycleStartMonth: result.qualificationSettings.cycleStartMonth,
         cycleStartDate: result.qualificationSettings.cycleStartDate,
         startingStatus: result.qualificationSettings.startingStatus,
+        startingXP: result.qualificationSettings.startingXP,      
       } : undefined,
       result.bonusXpByMonth
     );
