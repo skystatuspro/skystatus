@@ -1287,12 +1287,31 @@ export const calculateQualificationCycles = (
   // Use the OFFICIAL cycle start month (e.g., "2025-11") not the data start month (e.g., "2025-10")
   // The pre-cycle XP handles flights between cycleStartDate and cycleStartMonth
   //
+  // IMPORTANT: Auto-correct cycleStartMonth if it's the same as the cycleStartDate month
+  // This handles the case where old data has cycleStartMonth = "2025-10" but should be "2025-11"
+  // Flying Blue rule: official cycle starts on 1st of the NEXT month after qualification
+  let correctedCycleStartMonth = qualificationSettings?.cycleStartMonth;
+  const qualDateMonth = qualificationSettings?.cycleStartDate?.slice(0, 7);
+  
+  if (correctedCycleStartMonth && qualDateMonth && correctedCycleStartMonth === qualDateMonth) {
+    // cycleStartMonth is same as qualification date month - this is wrong!
+    // It should be the NEXT month
+    const qualDate = new Date(qualificationSettings.cycleStartDate!);
+    const nextMonth = new Date(qualDate.getFullYear(), qualDate.getMonth() + 1, 1);
+    correctedCycleStartMonth = nextMonth.toISOString().slice(0, 7);
+    console.log('[XP Engine] AUTO-CORRECTED cycleStartMonth:', {
+      original: qualificationSettings.cycleStartMonth,
+      corrected: correctedCycleStartMonth,
+      reason: 'cycleStartMonth was same as qualification date month, should be next month',
+    });
+  }
+  
   // Fallback logic when no qualificationSettings:
   // - If first data is before November, assume standard Nov-Oct cycle from that year's November
   // - Otherwise use the current year's November
   let initialCycleStart: string;
-  if (qualificationSettings?.cycleStartMonth) {
-    initialCycleStart = qualificationSettings.cycleStartMonth;
+  if (correctedCycleStartMonth) {
+    initialCycleStart = correctedCycleStartMonth;
   } else {
     // No qualification settings - use standard Flying Blue Nov-Oct cycle
     // Find which November to use based on first data month
@@ -1310,6 +1329,7 @@ export const calculateQualificationCycles = (
   
   console.log('[XP Engine] Cycle start determination:', {
     officialCycleStartMonth: qualificationSettings?.cycleStartMonth,
+    correctedCycleStartMonth,
     firstDataMonth,
     currentYearNov,
     initialCycleStart,
@@ -1324,7 +1344,8 @@ export const calculateQualificationCycles = (
   
   // Calculate pre-cycle XP if there's a gap between cycleStartDate and cycleStartMonth
   const cycleStartDateMonth = excludeBeforeDate?.slice(0, 7);  // e.g., "2025-10" from "2025-10-08"
-  const officialCycleStartMonth = qualificationSettings?.cycleStartMonth;  // e.g., "2025-11"
+  // Use the CORRECTED cycle start month for comparison
+  const officialCycleStartMonth = correctedCycleStartMonth;  // e.g., "2025-11"
   
   if (cycleStartDateMonth && officialCycleStartMonth && cycleStartDateMonth < officialCycleStartMonth) {
     // There's a gap between the qualification date month and the official cycle start month
