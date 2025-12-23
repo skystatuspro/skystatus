@@ -1,6 +1,6 @@
 // src/modules/ai-pdf-parser/parser.ts
 // Frontend AI parser - calls our server-side API (keeps OpenAI key secure)
-// v2.3 - Updated to work with new converter (createPdfHeader, parseToISODate)
+// v2.4 - Increased timeout to 300s to match Vercel maxDuration for 2-call parsing
 
 import type { 
   AIRawResponse, 
@@ -22,7 +22,7 @@ import {
 // ============================================================================
 
 const DEFAULT_MODEL = 'gpt-4o';
-const DEFAULT_TIMEOUT = 120000; // 120 seconds (AI parsing can take time)
+const DEFAULT_TIMEOUT = 300000; // 300 seconds (match Vercel maxDuration for 2-call parsing)
 
 // ============================================================================
 // MAIN PARSER FUNCTION
