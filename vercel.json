@@ -24,7 +24,7 @@
   ],
   "functions": {
     "api/parse-pdf.ts": {
-      "maxDuration": 120
+      "maxDuration": 300
     }
   }
 }
