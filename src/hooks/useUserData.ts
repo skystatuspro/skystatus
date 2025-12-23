@@ -1,16 +1,19 @@
 // src/hooks/useUserData.ts
 // Custom hook that manages all user data state, persistence, and handlers
+// 
+// ARCHITECTURE: Clean pattern - XP/Miles Engines are the single source of truth
+// No pdfBaseline bypass - all data flows through the engines
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import {
   fetchAllUserData,
   saveFlights,
-  replaceAllFlights,
   saveMilesRecords,
   saveRedemptions,
   saveXPLedger,
   updateProfile,
+  replaceAllFlights,
   XPLedgerEntry,
 } from '../lib/dataService';
 import {
@@ -20,32 +23,22 @@ import {
   FlightRecord,
   ManualLedger,
   StatusLevel,
-  PdfBaseline,
 } from '../types';
-import {
-  INITIAL_MILES_DATA,
-  INITIAL_XP_DATA,
-  INITIAL_REDEMPTIONS,
-  INITIAL_FLIGHTS,
-  INITIAL_MANUAL_LEDGER,
-} from '../demoData';
 import { generateDemoDataForStatus } from '../lib/demoDataGenerator';
 import {
   rebuildLedgersFromFlights,
   FlightIntakePayload,
   createFlightRecord,
 } from '../utils/flight-intake';
-import { calculateMultiYearStats, calculateQualificationCycles } from '../utils/xp-logic';
+import { calculateMultiYearStats } from '../utils/xp-logic';
 import { CurrencyCode } from '../utils/format';
 import {
   createBackup,
   restoreBackup,
+  clearBackup,
   hasBackup,
   getBackupInfo,
-  clearBackup,
-  getBackupAge,
-} from '../modules/pdf-import/services/backup-service';
-import type { AIParsedResult } from '../modules/ai-pdf-parser';
+} from '../lib/backup-service';
 
 // ============================================================================
 // TYPES
@@ -53,11 +46,11 @@ import type { AIParsedResult } from '../modules/ai-pdf-parser';
 
 export interface QualificationSettings {
   cycleStartMonth: string;
-  cycleStartDate?: string;  // Full date (YYYY-MM-DD) for precise cycle start
   startingStatus: StatusLevel;
   startingXP: number;
   startingUXP?: number;     // UXP carried over from previous cycle
   ultimateCycleType?: 'qualification' | 'calendar'; // 'calendar' for legacy Ultimate members
+  cycleStartDate?: string;  // Full date (YYYY-MM-DD) for precise cycle start
 }
 
 export interface UserDataState {
@@ -72,24 +65,18 @@ export interface UserDataState {
   currency: CurrencyCode;
   qualificationSettings: QualificationSettings | null;
   
-  // PDF Baseline - Source of truth from most recent PDF import
-  pdfBaseline: PdfBaseline | null;
-  
   // Computed data (derived from base + flights)
   milesData: MilesRecord[];
   xpData: XPRecord[];
   
-  // Current balances (computed from baseline + delta)
-  displayXP: number;        // XP to show in UI (baseline + manual delta)
-  displayUXP: number;       // UXP to show in UI
-  displayMiles: number;     // Miles to show in UI
-  displayStatus: StatusLevel; // Status to show in UI
-  
-  // Current status (computed)
+  // Current status (computed by XP Engine)
   currentStatus: StatusLevel;
   
   // UI state
   currentMonth: string;
+  homeAirport: string | null;
+  milesBalance: number;
+  currentUXP: number;
 }
 
 export interface UserDataActions {
@@ -114,28 +101,31 @@ export interface UserDataActions {
   handleCurrencyUpdate: (currency: CurrencyCode) => void;
   handleManualXPLedgerUpdate: (ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => void;
   handleXPRolloverUpdate: (rollover: number) => void;
+  handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
+  
+  // PDF Import (clean pattern - no bypass)
   handlePdfImport: (
     flights: FlightRecord[],
     miles: MilesRecord[],
-    pdfHeader: {
-      xp: number;
-      uxp: number;
-      miles: number;
-      status: StatusLevel;
-      exportDate: string;  // Date of newest transaction in PDF
-    },
-    cycleInfo?: {
-      cycleStartMonth: string;
-      cycleStartDate?: string;
-      rolloverXP?: number;
-    },
-    sourceFileName?: string
+    xpCorrection?: { month: string; correctionXp: number; reason: string },
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
+    bonusXpByMonth?: Record<string, number>
   ) => void;
   handleUndoImport: () => boolean;
-  canUndoImport: boolean;
-  importBackupInfo: { timestamp: string; source: string } | null;
-  handlePdfImportAI: (aiResult: AIParsedResult) => void;
-  handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
+  
+  // JSON Import/Export
+  handleJsonImport: (data: {
+    flights?: FlightRecord[];
+    baseMilesData?: MilesRecord[];
+    baseXpData?: XPRecord[];
+    redemptions?: RedemptionRecord[];
+    manualLedger?: ManualLedger;
+    qualificationSettings?: QualificationSettings;
+    xpRollover?: number;
+    homeAirport?: string | null;
+    currency?: CurrencyCode;
+    targetCPM?: number;
+  }) => Promise<boolean>;
   
   // Demo/Local mode
   handleLoadDemo: () => void;
@@ -146,25 +136,31 @@ export interface UserDataActions {
   handleExitDemoMode: () => void;
   handleSetDemoStatus: (status: StatusLevel) => void;
   
+  // Onboarding
+  handleOnboardingComplete: (data: {
+    currency: CurrencyCode;
+    homeAirport: string | null;
+    currentStatus: StatusLevel;
+    currentXP: number;
+    currentUXP: number;
+    rolloverXP: number;
+    milesBalance: number;
+    ultimateCycleType: 'qualification' | 'calendar';
+    targetCPM: number;
+    emailConsent: boolean;
+    isReturningUser?: boolean;
+  }) => Promise<void>;
+  handleRerunOnboarding: () => void;
+  handleEmailConsentChange: (consent: boolean) => Promise<void>;
+  
   // Utility
   markDataChanged: () => void;
   calculateGlobalCPM: () => number;
+  
+  // Backup
+  canUndoImport: boolean;
+  importBackupInfo: { timestamp: string; source: string } | null;
   forceSave: () => Promise<void>;
-  handleJsonImport: (data: {
-    flights?: FlightRecord[];
-    baseMilesData?: MilesRecord[];
-    baseXpData?: XPRecord[];
-    redemptions?: RedemptionRecord[];
-    manualLedger?: ManualLedger;
-    qualificationSettings?: QualificationSettings;
-    xpRollover?: number;
-    // FIX: Added missing fields
-    currency?: CurrencyCode;
-    targetCPM?: number;
-    // FIX Issue 3: Added homeAirport and pdfBaseline
-    homeAirport?: string | null;
-    pdfBaseline?: PdfBaseline | null;
-  }) => Promise<boolean>;
 }
 
 export interface UserDataMeta {
@@ -175,6 +171,8 @@ export interface UserDataMeta {
   demoStatus: StatusLevel;
   showWelcome: boolean;
   setShowWelcome: (show: boolean) => void;
+  onboardingCompleted: boolean;
+  emailConsent: boolean;
 }
 
 export interface UseUserDataReturn {
@@ -214,7 +212,7 @@ export function useUserData(): UseUserDataReturn {
   // STATE
   // -------------------------------------------------------------------------
 
-  // Current month (UI state, but closely tied to data)
+  // Current month (UI state)
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
@@ -230,7 +228,7 @@ export function useUserData(): UseUserDataReturn {
   const [currency, setCurrencyInternal] = useState<CurrencyCode>('EUR');
   const [qualificationSettings, setQualificationSettingsInternal] = useState<QualificationSettings | null>(null);
   const [homeAirport, setHomeAirportInternal] = useState<string | null>(null);
-  const [onboardingCompleted, setOnboardingCompletedInternal] = useState<boolean>(true); // Default true to prevent flash
+  const [onboardingCompleted, setOnboardingCompletedInternal] = useState<boolean>(true);
   const [emailConsent, setEmailConsentInternal] = useState<boolean>(false);
   const [milesBalance, setMilesBalanceInternal] = useState<number>(0);
   const [currentUXP, setCurrentUXPInternal] = useState<number>(0);
@@ -239,13 +237,8 @@ export function useUserData(): UseUserDataReturn {
   const [dataLoading, setDataLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [dataVersion, setDataVersion] = useState(0);
-  const debouncedDataVersion = useDebounce(dataVersion, 2000);
-  
-  // PDF Baseline - Source of truth from most recent PDF import
-  const [pdfBaseline, setPdfBaselineInternal] = useState<PdfBaseline | null>(null);
-  
-  // Track if we've attempted to load data (prevents flash of empty state)
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+  const debouncedDataVersion = useDebounce(dataVersion, 2000);
 
   // Mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -253,12 +246,18 @@ export function useUserData(): UseUserDataReturn {
   const [demoStatus, setDemoStatus] = useState<StatusLevel>('Platinum');
   const [showWelcome, setShowWelcome] = useState(false);
 
+  // Backup state
+  const [backupState, setBackupState] = useState<{
+    canUndo: boolean;
+    info: { timestamp: string; source: string } | null;
+  }>({ canUndo: false, info: null });
+
   // Refs for tracking load state
   const hasInitiallyLoaded = useRef(false);
   const loadedForUserId = useRef<string | null>(null);
 
   // -------------------------------------------------------------------------
-  // COMPUTED DATA
+  // COMPUTED DATA (XP/Miles Engines are source of truth)
   // -------------------------------------------------------------------------
 
   const { miles: milesData, xp: xpData } = useMemo(
@@ -266,8 +265,7 @@ export function useUserData(): UseUserDataReturn {
     [baseMilesData, baseXpData, flights]
   );
 
-  // In demo mode, use the selected demo status directly
-  // Otherwise, calculate from XP stats
+  // Current status - calculated from XP Engine (no bypass!)
   const currentStatus = useMemo((): StatusLevel => {
     if (isDemoMode) {
       return demoStatus;
@@ -280,61 +278,6 @@ export function useUserData(): UseUserDataReturn {
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
   // -------------------------------------------------------------------------
-  // DISPLAY VALUES (PDF Baseline + Manual Delta)
-  // -------------------------------------------------------------------------
-  // These are the values shown in the UI. If we have a PDF baseline, we use that
-  // as the source of truth and add any manual additions made AFTER the PDF date.
-
-  const { displayXP, displayUXP, displayMiles, displayStatus } = useMemo(() => {
-    // If no PDF baseline, fall back to calculated values
-    if (!pdfBaseline) {
-      const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
-      const now = new Date();
-      const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-      const cycle = stats[currentQYear];
-      
-      // Calculate total XP from flights
-      const totalFlightXP = flights.reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0);
-      const totalUXP = flights.reduce((sum, f) => sum + (f.uxp || 0), 0);
-      const totalMiles = milesData.reduce((sum, m) => 
-        sum + m.miles_subscription + m.miles_amex + m.miles_flight + m.miles_other - m.miles_debit + (m.miles_correction || 0), 0
-      );
-      
-      return {
-        displayXP: cycle?.totalXP || totalFlightXP,
-        displayUXP: totalUXP,
-        displayMiles: totalMiles,
-        displayStatus: currentStatus,
-      };
-    }
-
-    // We have a PDF baseline - use it as source of truth
-    // Calculate delta from manual flights added AFTER the PDF export date
-    const pdfDate = pdfBaseline.pdfExportDate;
-    
-    const manualFlightsAfterPdf = flights.filter(f => 
-      f.importSource === 'manual' && f.date > pdfDate
-    );
-    
-    const deltaXP = manualFlightsAfterPdf.reduce((sum, f) => 
-      sum + (f.earnedXP || 0) + (f.safXp || 0), 0
-    );
-    const deltaUXP = manualFlightsAfterPdf.reduce((sum, f) => 
-      sum + (f.uxp || 0), 0
-    );
-    const deltaMiles = manualFlightsAfterPdf.reduce((sum, f) => 
-      sum + (f.earnedMiles || 0), 0
-    );
-    
-    return {
-      displayXP: pdfBaseline.xp + deltaXP,
-      displayUXP: pdfBaseline.uxp + deltaUXP,
-      displayMiles: pdfBaseline.miles + deltaMiles,
-      displayStatus: pdfBaseline.status,
-    };
-  }, [pdfBaseline, flights, xpData, xpRollover, manualLedger, milesData, currentStatus]);
-
-  // -------------------------------------------------------------------------
   // DATA PERSISTENCE
   // -------------------------------------------------------------------------
 
@@ -345,8 +288,6 @@ export function useUserData(): UseUserDataReturn {
     try {
       const data = await fetchAllUserData(user.id);
 
-      // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
-      // Load all data regardless of whether flights exist
       setFlightsInternal(data.flights);
       setBaseMilesDataInternal(data.milesData);
       setRedemptionsInternal(data.redemptions);
@@ -363,7 +304,7 @@ export function useUserData(): UseUserDataReturn {
       });
       setManualLedgerInternal(loadedLedger);
 
-      // Determine if this is an existing user (has any data)
+      // Determine if this is an existing user
       const hasExistingData = data.flights.length > 0 || data.milesData.length > 0 || data.redemptions.length > 0;
 
       if (data.profile) {
@@ -375,35 +316,19 @@ export function useUserData(): UseUserDataReturn {
         setCurrentUXPInternal(data.profile.currentUXP || 0);
         setEmailConsentInternal(data.profile.emailConsent ?? false);
         
-        // CRITICAL: For existing users without the new column, default to TRUE (they've already been using the app)
-        // Only new users (no data AND onboarding_completed explicitly false) should see onboarding
         const onboardingStatus = data.profile.onboardingCompleted ?? hasExistingData;
         setOnboardingCompletedInternal(onboardingStatus);
 
         if (data.profile.qualificationStartMonth) {
           setQualificationSettingsInternal({
             cycleStartMonth: data.profile.qualificationStartMonth,
-            cycleStartDate: data.profile.qualificationStartDate || undefined,  // Full date for precise XP filtering
+            cycleStartDate: data.profile.qualificationStartDate || undefined,
             startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
             startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
-            startingUXP: data.profile.startingUXP || 0,
             ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
           });
         }
-        
-        // Load PDF Baseline from database
-        if (data.profile.pdfBaselineXp !== null && data.profile.pdfBaselineXp !== undefined) {
-          setPdfBaselineInternal({
-            xp: data.profile.pdfBaselineXp,
-            uxp: data.profile.pdfBaselineUxp || 0,
-            miles: data.profile.pdfBaselineMiles || 0,
-            status: (data.profile.pdfBaselineStatus || 'Explorer') as StatusLevel,
-            pdfExportDate: data.profile.pdfExportDate || '',
-            importedAt: data.profile.pdfImportedAt || '',
-          });
-        }
       } else {
-        // No profile at all - new user, show onboarding
         setOnboardingCompletedInternal(false);
       }
 
@@ -412,7 +337,6 @@ export function useUserData(): UseUserDataReturn {
       setHasAttemptedLoad(true);
     } catch (error) {
       console.error('Error loading user data:', error);
-      setHasAttemptedLoad(true); // Still mark as attempted even on error
     } finally {
       setDataLoading(false);
     }
@@ -443,13 +367,11 @@ export function useUserData(): UseUserDataReturn {
           target_cpm: targetCPM,
           xp_rollover: xpRollover,
           currency: currency,
-          // IMPORTANT: Use ?? null to ensure undefined values are sent as null to clear DB fields
-          qualification_start_month: qualificationSettings?.cycleStartMonth ?? null,
-          qualification_start_date: qualificationSettings?.cycleStartDate ?? null,
-          starting_status: qualificationSettings?.startingStatus ?? null,
-          starting_xp: qualificationSettings?.startingXP ?? 0,
-          starting_uxp: qualificationSettings?.startingUXP ?? 0,
-          ultimate_cycle_type: qualificationSettings?.ultimateCycleType ?? null,
+          qualification_start_month: qualificationSettings?.cycleStartMonth,
+          qualification_start_date: qualificationSettings?.cycleStartDate,
+          starting_status: qualificationSettings?.startingStatus,
+          starting_xp: qualificationSettings?.startingXP,
+          ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
         }),
       ]);
     } catch (error) {
@@ -469,36 +391,20 @@ export function useUserData(): UseUserDataReturn {
     }
   }, [user, isDemoMode, loadUserData]);
 
-  // CRITICAL: Reset state when user logs out or changes
-  // This prevents stale data from mixing with new user data
-  useEffect(() => {
-    if (!user && !isDemoMode && !isLocalMode) {
-      // User logged out - clear all state
-      setBaseMilesDataInternal([]);
-      setBaseXpDataInternal([]);
-      setRedemptionsInternal([]);
-      setFlightsInternal([]);
-      setXpRolloverInternal(0);
-      setManualLedgerInternal({});
-      setQualificationSettingsInternal(null);
-      setHomeAirportInternal(null);
-      setMilesBalanceInternal(0);
-      setCurrentUXPInternal(0);
-      setTargetCPMInternal(0.012);
-      hasInitiallyLoaded.current = false;
-      loadedForUserId.current = null;
-      setHasAttemptedLoad(false);
-      setShowWelcome(true);
-    }
-  }, [user, isDemoMode, isLocalMode]);
-
   // Auto-save on debounced data change
-  // CRITICAL: Only save if data has been loaded first to prevent wiping user data
   useEffect(() => {
     if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
       saveUserData();
     }
   }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
+
+  // Refresh backup state after import or undo
+  useEffect(() => {
+    setBackupState({
+      canUndo: hasBackup(),
+      info: getBackupInfo(),
+    });
+  }, [flights]); // Refresh when flights change (after import/undo)
 
   // -------------------------------------------------------------------------
   // MARK DATA CHANGED (triggers auto-save)
@@ -611,31 +517,31 @@ export function useUserData(): UseUserDataReturn {
     setQualificationSettings(settings);
   }, [setQualificationSettings]);
 
+  // -------------------------------------------------------------------------
+  // PDF IMPORT (Clean Pattern - No Bypass)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle PDF import - clean pattern following v2.2 architecture
+   * 
+   * Data flows: PDF → flights[] + milesRecords[] → XP/Miles Engines → Dashboard
+   * NO pdfBaseline bypass - engines are the single source of truth
+   */
   const handlePdfImport = useCallback((
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
-    pdfHeader: {
-      xp: number;
-      uxp: number;
-      miles: number;
-      status: StatusLevel;
-      exportDate: string;
-    },
-    cycleInfo?: {
-      cycleStartMonth: string;
-      cycleStartDate?: string;
-      rolloverXP?: number;
-    },
-    sourceFileName?: string
+    xpCorrection?: { month: string; correctionXp: number; reason: string },
+    cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel },
+    bonusXpByMonth?: Record<string, number>
   ) => {
-    // CRITICAL: Mark as loaded so autosave works for new users
+    // Mark as loaded for new users
     if (user) {
       hasInitiallyLoaded.current = true;
       loadedForUserId.current = user.id;
       setHasAttemptedLoad(true);
     }
 
-    // CREATE BACKUP before modifying data (for undo functionality)
+    // Create backup before modifying data
     try {
       createBackup(
         {
@@ -643,298 +549,97 @@ export function useUserData(): UseUserDataReturn {
           milesRecords: baseMilesData,
           qualificationSettings: qualificationSettings,
           manualLedger: manualLedger,
-          // FIX Issue 2: Added missing fields for complete restore
           xpRollover: xpRollover,
-          pdfBaseline: pdfBaseline,
           currency: currency,
           targetCPM: targetCPM,
         },
-        sourceFileName || 'PDF Import'
+        'PDF Import'
       );
-      console.log('[handlePdfImport] Backup created before import');
+      console.log('[handlePdfImport] Backup created');
     } catch (e) {
       console.error('[handlePdfImport] Failed to create backup:', e);
     }
 
-    // =========================================================================
-    // STEP 1: Store PDF Header as Baseline (Source of Truth)
-    // =========================================================================
-    const newBaseline: PdfBaseline = {
-      xp: pdfHeader.xp,
-      uxp: pdfHeader.uxp,
-      miles: pdfHeader.miles,
-      status: pdfHeader.status,
-      pdfExportDate: pdfHeader.exportDate,
-      importedAt: new Date().toISOString(),
-      cycleStartMonth: cycleInfo?.cycleStartMonth,
-      cycleStartDate: cycleInfo?.cycleStartDate,
-      rolloverXP: cycleInfo?.rolloverXP,
-    };
-    setPdfBaselineInternal(newBaseline);
-    console.log('[handlePdfImport] PDF Baseline set:', newBaseline);
-
-    // =========================================================================
-    // STEP 2: Mark all imported flights with source and timestamp
-    // =========================================================================
+    // Tag imported flights
     const now = new Date().toISOString();
     const taggedFlights = importedFlights.map(f => ({
       ...f,
       importSource: 'pdf' as const,
-      importedAt: now,
+      importedAt: f.importedAt || now,
     }));
 
-    // =========================================================================
-    // STEP 3: Merge Flights - Skip duplicates by date + route
-    // =========================================================================
-    const existingFlightKeys = new Set(
-      flights.map(f => `${f.date}|${f.route}`)
-    );
-    
-    const newFlights = taggedFlights.filter(f => {
-      const key = `${f.date}|${f.route}`;
-      return !existingFlightKeys.has(key);
-    });
-    
-    // Keep existing flights, add new ones
-    // Note: Manual flights added AFTER previous PDF remain with their importSource
-    const mergedFlights = [...flights, ...newFlights];
-    mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
-    setFlightsInternal(mergedFlights);
-    
-    console.log(`[handlePdfImport] Merged flights: ${flights.length} existing + ${newFlights.length} new = ${mergedFlights.length} total`);
-
-    // =========================================================================
-    // STEP 4: Merge Miles Records
-    // =========================================================================
-    const existingMilesByMonth = new Map(
-      baseMilesData.map(m => [m.month, m])
-    );
-    
-    for (const importedMonth of importedMiles) {
-      // PDF data is authoritative for months it contains
-      existingMilesByMonth.set(importedMonth.month, importedMonth);
-    }
-    
-    const mergedMiles = Array.from(existingMilesByMonth.values());
-    mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-    // NOTE: Don't set state here yet - we need to add miles correction in Step 7 first
-    
-    console.log(`[handlePdfImport] Merged miles: ${baseMilesData.length} existing months, ${importedMiles.length} from PDF = ${mergedMiles.length} total`);
-
-    // =========================================================================
-    // STEP 5: Update Qualification Settings if cycle info detected
-    // =========================================================================
-    if (cycleInfo?.cycleStartMonth) {
-      setQualificationSettingsInternal({
-        cycleStartMonth: cycleInfo.cycleStartMonth,
-        cycleStartDate: cycleInfo.cycleStartDate,
-        startingStatus: pdfHeader.status,
-        startingXP: cycleInfo.rolloverXP ?? 0,
-      });
-      
-      // FIX: Sync rollover to top-level xpRollover state for XP Engine UI
-      if (cycleInfo.rolloverXP !== undefined) {
-        setXpRolloverInternal(cycleInfo.rolloverXP);
-      }
-      
-      console.log('[handlePdfImport] Qualification settings updated from PDF cycle info');
-    } else if (!qualificationSettings) {
-      // No cycle info detected and no existing settings
-      // User needs to set this manually - will be handled by UI
-      console.log('[handlePdfImport] No cycle info detected - user needs to set qualification date');
-    }
-
-    // =========================================================================
-    // STEP 6: Calculate XP correction and store in manualLedger
-    // =========================================================================
-    const newQualificationSettings = cycleInfo?.cycleStartMonth ? {
-      cycleStartMonth: cycleInfo.cycleStartMonth,
-      cycleStartDate: cycleInfo.cycleStartDate,
-      startingStatus: pdfHeader.status,
-      startingXP: cycleInfo.rolloverXP ?? 0,
-    } : qualificationSettings;
-
-    if (newQualificationSettings?.cycleStartMonth) {
-      const { cycles } = calculateQualificationCycles(
-        baseXpData,
-        xpRollover,
-        mergedFlights,
-        manualLedger,
-        newQualificationSettings
-      );
-      
-      const today = new Date().toISOString().slice(0, 10);
-      const activeCycle = cycles.find(c => today >= c.startDate && today <= c.endDate)
-        || cycles.find(c => c.endDate >= today)
-        || cycles[cycles.length - 1];
-      
-      if (activeCycle) {
-        const engineXP = activeCycle.actualXP ?? 0;
-        const xpCorrection = pdfHeader.xp - engineXP;
-        
-        console.log(`[handlePdfImport] XP Engine calculated: ${engineXP}, PDF header: ${pdfHeader.xp}, correction: ${xpCorrection}`);
-        
-        if (xpCorrection !== 0) {
-          const correctionMonth = newQualificationSettings.cycleStartMonth;
-          const updatedLedger: ManualLedger = {
-            ...manualLedger,
-            [correctionMonth]: {
-              ...manualLedger[correctionMonth],
-              correctionXp: (manualLedger[correctionMonth]?.correctionXp ?? 0) + xpCorrection,
-            },
-          };
-          setManualLedgerInternal(updatedLedger);
-          console.log(`[handlePdfImport] Stored XP correction ${xpCorrection} in ledger month ${correctionMonth}`);
-        }
-      }
-    } else {
-      // Fallback: simple validation logging if no cycle settings
-      const calculatedXP = mergedFlights
-        .filter(f => {
-          if (!cycleInfo?.cycleStartDate) return true;
-          return f.date >= cycleInfo.cycleStartDate;
-        })
-        .reduce((sum, f) => sum + (f.earnedXP || 0) + (f.safXp || 0), 0) + (cycleInfo?.rolloverXP || 0);
-      
-      const xpDifference = pdfHeader.xp - calculatedXP;
-      if (Math.abs(xpDifference) > 0) {
-        console.log(`[handlePdfImport] XP validation: PDF header=${pdfHeader.xp}, calculated=${calculatedXP}, difference=${xpDifference}`);
-      }
-    }
-
-    // =========================================================================
-    // STEP 7: Calculate Miles correction and store in milesData
-    // =========================================================================
-    // Same pattern as XP: PDF header is source of truth
-    // IMPORTANT: We must calculate the correction based on what the Dashboard will see,
-    // which is AFTER rebuildLedgersFromFlights adds flight miles to the records.
-    
-    // First, simulate what rebuildLedgersFromFlights will produce
-    const { miles: simulatedMilesData } = rebuildLedgersFromFlights(mergedMiles, baseXpData, mergedFlights);
-    
-    // CRITICAL FIX: Calculate engine miles the same way calculateMilesStats does
-    // calculateMilesStats filters on month <= currentMonth for earnedPast/burnPast,
-    // so we must apply the same filter here to get a matching correction value.
-    const nowForCorrection = new Date();
-    const currentMonthForCorrection = `${nowForCorrection.getFullYear()}-${String(nowForCorrection.getMonth() + 1).padStart(2, '0')}`;
-    
-    const engineMilesWithoutCorrection = simulatedMilesData
-      .filter(m => m.month <= currentMonthForCorrection)  // Match calculateMilesStats filter
-      .reduce((sum, m) => 
-        sum 
-        + (m.miles_subscription || 0)
-        + (m.miles_amex || 0) 
-        + (m.miles_flight || 0) 
-        + (m.miles_other || 0) 
-        - (m.miles_debit || 0),
-        // Deliberately NOT including miles_correction here
-      0);
-
-    let milesCorrection = pdfHeader.miles - engineMilesWithoutCorrection;
-
-    // Validation guard: abort if correction is invalid (prevents data corruption)
-    if (!Number.isFinite(milesCorrection)) {
-      console.error('[handlePdfImport] Invalid miles correction calculated:', {
-        pdfHeaderMiles: pdfHeader.miles,
-        engineMiles: engineMilesWithoutCorrection,
-        result: milesCorrection
-      });
-      return;  // Abort - better to show wrong balance than corrupt data
-    }
-
-    console.log(`[handlePdfImport] Miles Engine calculated (after rebuildLedgers, filtered to ${currentMonthForCorrection}): ${engineMilesWithoutCorrection}, PDF header: ${pdfHeader.miles}, new correction: ${milesCorrection}`);
-
-    // First, clear ALL existing corrections (we only want one correction, replacing any old ones)
-    let hadExistingCorrections = false;
-    mergedMiles.forEach(m => {
-      if (m.miles_correction) {
-        hadExistingCorrections = true;
-        m.miles_correction = 0;
-      }
+    // Merge flights (skip duplicates by date + route)
+    setFlightsInternal((prevFlights) => {
+      const existingFlightKeys = new Set(prevFlights.map((f) => `${f.date}|${f.route}`));
+      const newFlights = taggedFlights.filter((f) => !existingFlightKeys.has(`${f.date}|${f.route}`));
+      const merged = [...prevFlights, ...newFlights];
+      merged.sort((a, b) => b.date.localeCompare(a.date));
+      console.log(`[handlePdfImport] Merged flights: ${prevFlights.length} existing + ${newFlights.length} new`);
+      return merged;
     });
 
-    if (milesCorrection !== 0) {
-      // Determine correction month: prefer cycle start, fallback to most recent month or current month
-      const correctionMonth = newQualificationSettings?.cycleStartMonth 
-        || cycleInfo?.cycleStartMonth
-        || (mergedMiles.length > 0 ? mergedMiles[0].month : new Date().toISOString().slice(0, 7));
-      
-      // Find or create the record for this month
-      const existingRecordIndex = mergedMiles.findIndex(m => m.month === correctionMonth);
-      
-      if (existingRecordIndex >= 0) {
-        // Update existing record - REPLACE, don't add (prevents double correction on re-import)
-        mergedMiles[existingRecordIndex] = {
-          ...mergedMiles[existingRecordIndex],
-          miles_correction: milesCorrection,
+    // Merge miles (PDF data is authoritative for months it contains)
+    setBaseMilesDataInternal((prevMiles) => {
+      const milesByMonth = new Map(prevMiles.map(m => [m.month, m]));
+      for (const incoming of importedMiles) {
+        milesByMonth.set(incoming.month, incoming);
+      }
+      const merged = Array.from(milesByMonth.values());
+      merged.sort((a, b) => b.month.localeCompare(a.month));
+      console.log(`[handlePdfImport] Merged miles: ${prevMiles.length} existing, ${importedMiles.length} from PDF`);
+      return merged;
+    });
+
+    // Handle XP correction (goes into manualLedger.correctionXp)
+    if (xpCorrection && xpCorrection.correctionXp !== 0) {
+      setManualLedgerInternal((prev) => {
+        const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+        return {
+          ...prev,
+          [xpCorrection.month]: {
+            ...existing,
+            correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
+          },
         };
-      } else {
-        // Create new record for correction month
-        mergedMiles.push({
-          id: `correction-${correctionMonth}`,
-          month: correctionMonth,
-          miles_subscription: 0,
-          miles_amex: 0,
-          miles_flight: 0,
-          miles_other: 0,
-          miles_debit: 0,
-          cost_subscription: 0,
-          cost_amex: 0,
-          cost_flight: 0,
-          cost_other: 0,
-          miles_correction: milesCorrection,
-        });
-      }
-      
-      // Re-sort and update state
-      mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-      
-      // Debug: verify correction is in the data
-      const recordWithCorrection = mergedMiles.find(m => m.month === correctionMonth);
-      console.log(`[handlePdfImport] Verifying correction in data:`, {
-        month: correctionMonth,
-        miles_correction: recordWithCorrection?.miles_correction,
-        fullRecord: recordWithCorrection
       });
-      
-      setBaseMilesDataInternal([...mergedMiles]); // New array reference to ensure React updates
-      
-      console.log(`[handlePdfImport] Stored Miles correction ${milesCorrection} in month ${correctionMonth}`);
-    } else {
-      // No correction needed - still need to update state with merged miles (new array reference)
-      setBaseMilesDataInternal([...mergedMiles]);
-      if (hadExistingCorrections) {
-        console.log(`[handlePdfImport] Cleared old Miles corrections, no new correction needed`);
-      } else {
-        console.log(`[handlePdfImport] Miles match PDF header, no correction needed`);
-      }
+      console.log(`[handlePdfImport] XP correction: ${xpCorrection.correctionXp} in ${xpCorrection.month}`);
     }
 
-    // =========================================================================
-    // STEP 8: Save PDF Baseline to Database
-    // =========================================================================
-    if (user) {
-      updateProfile(user.id, {
-        pdf_baseline_xp: pdfHeader.xp,
-        pdf_baseline_uxp: pdfHeader.uxp,
-        pdf_baseline_miles: pdfHeader.miles,
-        pdf_baseline_status: pdfHeader.status,
-        pdf_export_date: pdfHeader.exportDate,
-        pdf_imported_at: new Date().toISOString(),
-        pdf_source_filename: sourceFileName || null,
-      }).then(success => {
-        if (success) {
-          console.log('[handlePdfImport] PDF Baseline saved to database');
-        } else {
-          console.error('[handlePdfImport] Failed to save PDF Baseline to database');
+    // Handle bonus XP from non-flight activities (goes into manualLedger.miscXp)
+    if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
+      setManualLedgerInternal((prev) => {
+        const updated = { ...prev };
+        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+          const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+          updated[month] = {
+            ...existing,
+            miscXp: (existing.miscXp || 0) + xp,
+          };
         }
+        return updated;
       });
+      console.log(`[handlePdfImport] Bonus XP added to ${Object.keys(bonusXpByMonth).length} months`);
+    }
+
+    // Handle cycle settings
+    if (cycleSettings) {
+      setQualificationSettingsInternal({
+        cycleStartMonth: cycleSettings.cycleStartMonth,
+        cycleStartDate: cycleSettings.cycleStartDate,
+        startingStatus: cycleSettings.startingStatus,
+        startingXP: 0,
+      });
+      console.log(`[handlePdfImport] Cycle settings: ${cycleSettings.startingStatus} from ${cycleSettings.cycleStartMonth}`);
     }
 
     markDataChanged();
-  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, baseXpData, xpRollover, currency, targetCPM, pdfBaseline]);
+    console.log('[handlePdfImport] Import complete');
+  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM]);
 
-  // UNDO IMPORT: Restore data from backup
+  // -------------------------------------------------------------------------
+  // UNDO IMPORT
+  // -------------------------------------------------------------------------
+
   const handleUndoImport = useCallback(() => {
     const backup = restoreBackup();
     if (!backup) {
@@ -948,12 +653,8 @@ export function useUserData(): UseUserDataReturn {
     setQualificationSettingsInternal(backup.qualificationSettings as QualificationSettings | null);
     setManualLedgerInternal(backup.manualLedger as ManualLedger);
     
-    // FIX Issue 2: Also restore xpRollover, pdfBaseline, currency, targetCPM
     if (typeof backup.xpRollover === 'number') {
       setXpRolloverInternal(backup.xpRollover);
-    }
-    if (backup.pdfBaseline !== undefined) {
-      setPdfBaselineInternal(backup.pdfBaseline as PdfBaseline | null);
     }
     if (backup.currency) {
       setCurrencyInternal(backup.currency as CurrencyCode);
@@ -962,200 +663,157 @@ export function useUserData(): UseUserDataReturn {
       setTargetCPMInternal(backup.targetCPM);
     }
 
-    // Clear the backup after successful restore
     clearBackup();
-    
     markDataChanged();
     console.log('[handleUndoImport] Data restored from backup');
     return true;
   }, [markDataChanged]);
 
-  // ===========================================================================
-  // AI PDF IMPORT HANDLER (No workarounds - trust AI parser 100%)
-  // ===========================================================================
-  
-  /**
-   * Handle PDF import from AI parser
-   * 
-   * CRITICAL DIFFERENCE FROM handlePdfImport:
-   * - NO XP correction calculation
-   * - NO Miles correction calculation
-   * - Parser data is trusted 100%
-   * - bonusXP IS written to manualLedger.miscXp
-   * - Direct write to data layer without workarounds
-   */
-  const handlePdfImportAI = useCallback((aiResult: AIParsedResult) => {
-    console.log('[handlePdfImportAI] Starting AI parser import');
-    console.log('[handlePdfImportAI] Flights:', aiResult.flights.length);
-    console.log('[handlePdfImportAI] Miles records:', aiResult.milesRecords.length);
-    console.log('[handlePdfImportAI] Bonus XP months:', Object.keys(aiResult.bonusXpByMonth).length);
-    
-    // CRITICAL: Mark as loaded so autosave works for new users
-    if (user) {
-      hasInitiallyLoaded.current = true;
-      loadedForUserId.current = user.id;
-      setHasAttemptedLoad(true);
+  // -------------------------------------------------------------------------
+  // JSON IMPORT
+  // -------------------------------------------------------------------------
+
+  const handleJsonImport = useCallback(async (importData: {
+    flights?: FlightRecord[];
+    baseMilesData?: MilesRecord[];
+    baseXpData?: XPRecord[];
+    redemptions?: RedemptionRecord[];
+    manualLedger?: ManualLedger;
+    qualificationSettings?: QualificationSettings;
+    xpRollover?: number;
+    homeAirport?: string | null;
+    currency?: CurrencyCode;
+    targetCPM?: number;
+  }): Promise<boolean> => {
+    // Local/demo mode: just update state directly
+    if (!user || isDemoMode || isLocalMode) {
+      if (importData.flights) setFlightsInternal(importData.flights);
+      if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
+      if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
+      if (importData.redemptions) setRedemptionsInternal(importData.redemptions);
+      if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
+      if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
+      if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
+      if (importData.homeAirport !== undefined) setHomeAirportInternal(importData.homeAirport);
+      if (importData.currency) setCurrencyInternal(importData.currency);
+      if (typeof importData.targetCPM === 'number') setTargetCPMInternal(importData.targetCPM);
+      return true;
     }
 
-    // =========================================================================
-    // STEP 1: CREATE BACKUP (same as local parser)
-    // =========================================================================
+    setIsSaving(true);
+    hasInitiallyLoaded.current = true;
+    loadedForUserId.current = user.id;
+    setHasAttemptedLoad(true);
+
     try {
-      createBackup(
-        {
-          flights: flights,
-          milesRecords: baseMilesData,
-          qualificationSettings: qualificationSettings,
-          manualLedger: manualLedger,
-          xpRollover: xpRollover,
-          pdfBaseline: pdfBaseline,
-          currency: currency,
-          targetCPM: targetCPM,
-        },
-        'AI PDF Import'
-      );
-      console.log('[handlePdfImportAI] Backup created before import');
-    } catch (e) {
-      console.error('[handlePdfImportAI] Failed to create backup:', e);
-    }
-
-    // =========================================================================
-    // STEP 2: SET PDF BASELINE (Source of Truth)
-    // AI parser baseline includes parserUsed: 'ai'
-    // =========================================================================
-    setPdfBaselineInternal(aiResult.pdfBaseline);
-    console.log('[handlePdfImportAI] PDF Baseline set:', aiResult.pdfBaseline);
-
-    // =========================================================================
-    // STEP 3: MERGE FLIGHTS (Skip duplicates by date + route)
-    // =========================================================================
-    const existingFlightKeys = new Set(
-      flights.map(f => `${f.date}|${f.route}`)
-    );
-    
-    const newFlights = aiResult.flights.filter(f => {
-      const key = `${f.date}|${f.route}`;
-      return !existingFlightKeys.has(key);
-    });
-    
-    const mergedFlights = [...flights, ...newFlights];
-    mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
-    setFlightsInternal(mergedFlights);
-    
-    console.log(`[handlePdfImportAI] Merged flights: ${flights.length} existing + ${newFlights.length} new = ${mergedFlights.length} total`);
-
-    // =========================================================================
-    // STEP 4: SET MILES RECORDS DIRECTLY (No correction needed!)
-    // AI parser data is authoritative
-    // =========================================================================
-    const existingMilesByMonth = new Map(
-      baseMilesData.map(m => [m.month, m])
-    );
-    
-    for (const importedMonth of aiResult.milesRecords) {
-      // AI parser data replaces existing for months it contains
-      existingMilesByMonth.set(importedMonth.month, importedMonth);
-    }
-    
-    const mergedMiles = Array.from(existingMilesByMonth.values());
-    mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-    setBaseMilesDataInternal(mergedMiles);
-    
-    console.log(`[handlePdfImportAI] Merged miles: ${baseMilesData.length} existing + ${aiResult.milesRecords.length} from AI = ${mergedMiles.length} total`);
-
-    // =========================================================================
-    // STEP 5: SET QUALIFICATION SETTINGS (if detected)
-    // =========================================================================
-    if (aiResult.qualificationSettings) {
-      setQualificationSettingsInternal(aiResult.qualificationSettings);
-      
-      // Sync rollover to top-level xpRollover state
-      if (aiResult.qualificationSettings.startingXP !== undefined) {
-        setXpRolloverInternal(aiResult.qualificationSettings.startingXP);
+      // Prepare XP ledger for database format
+      const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
+      if (importData.manualLedger) {
+        Object.entries(importData.manualLedger).forEach(([month, entry]) => {
+          xpLedgerToSave[month] = {
+            month,
+            amexXp: entry.amexXp || 0,
+            bonusSafXp: entry.bonusSafXp || 0,
+            miscXp: entry.miscXp || 0,
+            correctionXp: entry.correctionXp || 0,
+          };
+        });
       }
-      
-      console.log('[handlePdfImportAI] Qualification settings set:', aiResult.qualificationSettings);
-    }
 
-    // =========================================================================
-    // STEP 6: WRITE BONUS XP TO MANUAL LEDGER (This was missing in local parser!)
-    // AI parser properly extracts XP from non-flight activities
-    // =========================================================================
-    if (Object.keys(aiResult.bonusXpByMonth).length > 0) {
-      const updatedLedger: ManualLedger = { ...manualLedger };
-      
-      for (const [month, xp] of Object.entries(aiResult.bonusXpByMonth)) {
-        updatedLedger[month] = {
-          ...updatedLedger[month],
-          // Add to existing miscXp (don't replace)
-          miscXp: (updatedLedger[month]?.miscXp ?? 0) + xp,
+      // Write ALL data to database in parallel
+      const savePromises: Promise<boolean>[] = [];
+
+      if (importData.flights) {
+        savePromises.push(replaceAllFlights(user.id, importData.flights));
+      }
+      if (importData.baseMilesData) {
+        savePromises.push(saveMilesRecords(user.id, importData.baseMilesData));
+      }
+      if (importData.redemptions) {
+        savePromises.push(saveRedemptions(user.id, importData.redemptions));
+      }
+      if (importData.manualLedger && Object.keys(xpLedgerToSave).length > 0) {
+        savePromises.push(saveXPLedger(user.id, xpLedgerToSave));
+      }
+
+      // Profile updates
+      const profileUpdates: Record<string, unknown> = {};
+      if (importData.qualificationSettings) {
+        profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth || null;
+        profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate || null;
+        profileUpdates.starting_status = importData.qualificationSettings.startingStatus || null;
+        profileUpdates.starting_xp = importData.qualificationSettings.startingXP ?? 0;
+        profileUpdates.starting_uxp = importData.qualificationSettings.startingUXP ?? 0;
+        profileUpdates.ultimate_cycle_type = importData.qualificationSettings.ultimateCycleType || null;
+      }
+      if (typeof importData.xpRollover === 'number') {
+        profileUpdates.xp_rollover = importData.xpRollover;
+      }
+      if (importData.homeAirport !== undefined) {
+        profileUpdates.home_airport = importData.homeAirport;
+      }
+      if (importData.currency) {
+        profileUpdates.currency = importData.currency;
+      }
+      if (typeof importData.targetCPM === 'number') {
+        profileUpdates.target_cpm = importData.targetCPM;
+      }
+      if (Object.keys(profileUpdates).length > 0) {
+        savePromises.push(updateProfile(user.id, profileUpdates));
+      }
+
+      const results = await Promise.all(savePromises);
+      const allSucceeded = results.every(r => r);
+
+      if (!allSucceeded) {
+        console.error('JSON import: some saves failed');
+        return false;
+      }
+
+      // Reload from database
+      const freshData = await fetchAllUserData(user.id);
+
+      setFlightsInternal(freshData.flights);
+      setBaseMilesDataInternal(freshData.milesData);
+      setRedemptionsInternal(freshData.redemptions);
+
+      const loadedLedger: ManualLedger = {};
+      Object.entries(freshData.xpLedger).forEach(([month, entry]) => {
+        loadedLedger[month] = {
+          amexXp: entry.amexXp,
+          bonusSafXp: entry.bonusSafXp,
+          miscXp: entry.miscXp,
+          correctionXp: entry.correctionXp,
         };
-        console.log(`[handlePdfImportAI] Added ${xp} bonus XP to ${month}`);
-      }
-      
-      setManualLedgerInternal(updatedLedger);
-      console.log('[handlePdfImportAI] Bonus XP written to manualLedger');
-    }
-
-    // =========================================================================
-    // STEP 7: SAVE TO DATABASE
-    // CRITICAL: Save BOTH pdfBaseline AND qualificationSettings in one call
-    // to prevent race conditions with autosave
-    // =========================================================================
-    if (user) {
-      const profileUpdates: Record<string, unknown> = {
-        // PDF Baseline
-        pdf_baseline_xp: aiResult.pdfBaseline.xp,
-        pdf_baseline_uxp: aiResult.pdfBaseline.uxp,
-        pdf_baseline_miles: aiResult.pdfBaseline.miles,
-        pdf_baseline_status: aiResult.pdfBaseline.status,
-        pdf_export_date: aiResult.pdfBaseline.pdfExportDate,
-        pdf_imported_at: new Date().toISOString(),
-        pdf_source_filename: 'AI PDF Import',
-      };
-      
-      // CRITICAL FIX: Also save qualification settings to database
-      // Without this, autosave would overwrite with null values from stale closure
-      if (aiResult.qualificationSettings) {
-        profileUpdates.qualification_start_month = aiResult.qualificationSettings.cycleStartMonth;
-        profileUpdates.qualification_start_date = aiResult.qualificationSettings.cycleStartDate || null;
-        profileUpdates.starting_status = aiResult.qualificationSettings.startingStatus;
-        profileUpdates.starting_xp = aiResult.qualificationSettings.startingXP ?? 0;
-        profileUpdates.starting_uxp = aiResult.qualificationSettings.startingUXP ?? 0;
-        profileUpdates.xp_rollover = aiResult.qualificationSettings.startingXP ?? 0;
-        profileUpdates.ultimate_cycle_type = aiResult.qualificationSettings.ultimateCycleType || 'qualification';
-        console.log('[handlePdfImportAI] Qualification settings included in DB save:', aiResult.qualificationSettings);
-      }
-      
-      updateProfile(user.id, profileUpdates).then(success => {
-        if (success) {
-          console.log('[handlePdfImportAI] PDF Baseline + Qualification settings saved to database');
-        } else {
-          console.error('[handlePdfImportAI] Failed to save to database');
-        }
       });
+      setManualLedgerInternal(loadedLedger);
+
+      if (freshData.profile) {
+        setTargetCPMInternal(freshData.profile.targetCPM || 0.012);
+        setXpRolloverInternal(freshData.profile.xpRollover || 0);
+        setCurrencyInternal((freshData.profile.currency || 'EUR') as CurrencyCode);
+        setHomeAirportInternal(freshData.profile.homeAirport || null);
+
+        if (freshData.profile.qualificationStartMonth) {
+          setQualificationSettingsInternal({
+            cycleStartMonth: freshData.profile.qualificationStartMonth,
+            cycleStartDate: freshData.profile.qualificationStartDate || undefined,
+            startingStatus: (freshData.profile.startingStatus || 'Explorer') as StatusLevel,
+            startingXP: freshData.profile.startingXP ?? 0,
+            ultimateCycleType: freshData.profile.ultimateCycleType || 'qualification',
+          });
+        }
+      }
+
+      console.log('[handleJsonImport] Import complete, data reloaded from database');
+      return true;
+    } catch (error) {
+      console.error('JSON import error:', error);
+      return false;
+    } finally {
+      setIsSaving(false);
     }
-
-    markDataChanged();
-    console.log('[handlePdfImportAI] Import complete');
-  }, [user, markDataChanged, flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, pdfBaseline]);
-
-  // Backup state - refreshed when data changes
-  const [backupState, setBackupState] = useState<{
-    canUndo: boolean;
-    info: { timestamp: string; source: string } | null;
-  }>({ canUndo: false, info: null });
-
-  // Refresh backup state after import or undo
-  useEffect(() => {
-    setBackupState({
-      canUndo: hasBackup(),
-      info: getBackupInfo(),
-    });
-  }, [flights]); // Refresh when flights change (after import/undo)
-
-  const canUndoImport = backupState.canUndo;
-  const importBackupInfo = backupState.info;
+  }, [user, isDemoMode, isLocalMode]);
 
   // -------------------------------------------------------------------------
   // DEMO / LOCAL MODE HANDLERS
@@ -1174,7 +832,6 @@ export function useUserData(): UseUserDataReturn {
   }, []);
 
   const handleLoadDemo = useCallback(() => {
-    // Use the current demo status (default Platinum)
     loadDemoDataForStatus(demoStatus);
     setIsDemoMode(true);
     setShowWelcome(false);
@@ -1193,7 +850,6 @@ export function useUserData(): UseUserDataReturn {
     setFlightsInternal([]);
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
-    setQualificationSettingsInternal(null);
     setShowWelcome(false);
     markDataChanged();
   }, [markDataChanged]);
@@ -1203,7 +859,6 @@ export function useUserData(): UseUserDataReturn {
       return;
     }
 
-    // Reset ALL data state
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
     setRedemptionsInternal([]);
@@ -1211,15 +866,9 @@ export function useUserData(): UseUserDataReturn {
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
     setQualificationSettingsInternal(null);
-    setHomeAirportInternal(null);
-    setMilesBalanceInternal(0);
-    setCurrentUXPInternal(0);
-    setTargetCPMInternal(0.012); // Reset to default
     setIsDemoMode(false);
     setIsLocalMode(false);
 
-    // Explicitly save empty data to database when user confirms wipe
-    // IMPORTANT: Use null instead of undefined - undefined is not serialized to JSON!
     if (user) {
       try {
         await Promise.all([
@@ -1229,15 +878,11 @@ export function useUserData(): UseUserDataReturn {
           saveXPLedger(user.id, {}),
           updateProfile(user.id, {
             xp_rollover: 0,
-            qualification_start_month: null,
-            qualification_start_date: null,  // CRITICAL: Also clear this!
-            starting_status: null,
-            starting_xp: 0,
-            ultimate_cycle_type: null,
-            home_airport: null,
-            miles_balance: 0,
-            current_uxp: 0,
-            target_cpm: 0.012,
+            qualification_start_month: undefined,
+            qualification_start_date: undefined,
+            starting_status: undefined,
+            starting_xp: undefined,
+            ultimate_cycle_type: undefined,
           }),
         ]);
       } catch (error) {
@@ -1247,31 +892,23 @@ export function useUserData(): UseUserDataReturn {
 
     hasInitiallyLoaded.current = false;
     loadedForUserId.current = null;
-    setHasAttemptedLoad(true); // Data is "loaded" (empty)
     setShowWelcome(true);
   }, [user]);
 
   const handleEnterDemoMode = useCallback(() => {
     setIsDemoMode(true);
-    setDemoStatus('Platinum'); // Default to Platinum
-    setHasAttemptedLoad(true); // No server load needed for demo
+    setDemoStatus('Platinum');
     loadDemoDataForStatus('Platinum');
   }, [loadDemoDataForStatus]);
 
   const handleEnterLocalMode = useCallback(() => {
     setIsLocalMode(true);
-    setHasAttemptedLoad(true); // No server load needed for local mode
-    // Reset ALL data state for clean local mode start
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
     setRedemptionsInternal([]);
     setFlightsInternal([]);
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
-    setQualificationSettingsInternal(null);
-    setHomeAirportInternal(null);
-    setMilesBalanceInternal(0);
-    setCurrentUXPInternal(0);
   }, []);
 
   const handleExitDemoMode = useCallback(() => {
@@ -1279,23 +916,16 @@ export function useUserData(): UseUserDataReturn {
     setIsLocalMode(false);
     hasInitiallyLoaded.current = false;
     loadedForUserId.current = null;
-    setHasAttemptedLoad(false);
 
     if (user) {
       loadUserData();
     } else {
-      // Reset ALL state when exiting demo without user
       setBaseMilesDataInternal([]);
       setBaseXpDataInternal([]);
       setRedemptionsInternal([]);
       setFlightsInternal([]);
       setXpRolloverInternal(0);
       setManualLedgerInternal({});
-      setQualificationSettingsInternal(null);
-      setHomeAirportInternal(null);
-      setMilesBalanceInternal(0);
-      setCurrentUXPInternal(0);
-      setTargetCPMInternal(0.012);
     }
   }, [user, loadUserData]);
 
@@ -1314,23 +944,19 @@ export function useUserData(): UseUserDataReturn {
     ultimateCycleType: 'qualification' | 'calendar';
     targetCPM: number;
     emailConsent: boolean;
-    isReturningUser?: boolean;  // If true, don't overwrite qualification settings
+    isReturningUser?: boolean;
   }) => {
-    // Update local state - these are always safe to update
     setCurrencyInternal(data.currency);
     setHomeAirportInternal(data.homeAirport);
     setTargetCPMInternal(data.targetCPM);
     setEmailConsentInternal(data.emailConsent);
     setOnboardingCompletedInternal(true);
 
-    // Only update these for NEW users (not returning users who already have flight data)
-    // For returning users, XP is calculated from flights, not from manual entry
     if (!data.isReturningUser) {
       setXpRolloverInternal(data.rolloverXP);
       setMilesBalanceInternal(data.milesBalance);
       setCurrentUXPInternal(data.currentUXP);
 
-      // Set qualification settings only for new users
       if (data.currentStatus !== 'Explorer' || data.currentXP > 0) {
         const now = new Date();
         const qYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
@@ -1340,16 +966,13 @@ export function useUserData(): UseUserDataReturn {
           cycleStartMonth,
           startingStatus: data.currentStatus,
           startingXP: data.currentXP,
-          startingUXP: data.currentUXP || 0,
           ultimateCycleType: data.ultimateCycleType,
         });
       }
     }
 
-    // Save to database if logged in
     if (user && !isDemoMode) {
       try {
-        // For returning users, only save preference-type settings
         const profileUpdates: Record<string, unknown> = {
           currency: data.currency,
           home_airport: data.homeAirport,
@@ -1358,7 +981,6 @@ export function useUserData(): UseUserDataReturn {
           onboarding_completed: true,
         };
 
-        // Only save XP/status data for new users
         if (!data.isReturningUser) {
           profileUpdates.xp_rollover = data.rolloverXP;
           profileUpdates.miles_balance = data.milesBalance;
@@ -1382,7 +1004,6 @@ export function useUserData(): UseUserDataReturn {
   const handleEmailConsentChange = useCallback(async (consent: boolean) => {
     setEmailConsentInternal(consent);
     
-    // Save to database if logged in
     if (user && !isDemoMode) {
       try {
         await updateProfile(user.id, {
@@ -1411,197 +1032,6 @@ export function useUserData(): UseUserDataReturn {
   }, [milesData]);
 
   // -------------------------------------------------------------------------
-  // JSON IMPORT - Direct database write then reload from database
-  // -------------------------------------------------------------------------
-
-  const handleJsonImport = useCallback(async (importData: {
-    flights?: FlightRecord[];
-    baseMilesData?: MilesRecord[];
-    baseXpData?: XPRecord[];
-    redemptions?: RedemptionRecord[];
-    manualLedger?: ManualLedger;
-    qualificationSettings?: QualificationSettings;
-    xpRollover?: number;
-    homeAirport?: string | null;
-    pdfBaseline?: PdfBaseline | null;
-    // FIX: Added missing fields that are exported but weren't imported
-    currency?: CurrencyCode;
-    targetCPM?: number;
-  }): Promise<boolean> => {
-    // Local/demo mode: just update state directly
-    if (!user || isDemoMode || isLocalMode) {
-      if (importData.flights) setFlightsInternal(importData.flights);
-      if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
-      if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
-      if (importData.redemptions) setRedemptionsInternal(importData.redemptions);
-      if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
-      if (importData.qualificationSettings) setQualificationSettingsInternal(importData.qualificationSettings);
-      if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
-      if (importData.homeAirport !== undefined) setHomeAirportInternal(importData.homeAirport);
-      if (importData.pdfBaseline !== undefined) setPdfBaselineInternal(importData.pdfBaseline);
-      // FIX: Import currency and targetCPM settings
-      if (importData.currency) setCurrencyInternal(importData.currency);
-      if (typeof importData.targetCPM === 'number') setTargetCPMInternal(importData.targetCPM);
-      return true;
-    }
-
-    setIsSaving(true);
-
-    // CRITICAL: Mark as loaded to prevent loadUserData from overwriting our import
-    hasInitiallyLoaded.current = true;
-    loadedForUserId.current = user.id;
-    setHasAttemptedLoad(true);
-
-    try {
-      // Prepare XP ledger for database format
-      const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
-      if (importData.manualLedger) {
-        Object.entries(importData.manualLedger).forEach(([month, entry]) => {
-          xpLedgerToSave[month] = {
-            month,
-            amexXp: entry.amexXp || 0,
-            bonusSafXp: entry.bonusSafXp || 0,
-            miscXp: entry.miscXp || 0,
-            correctionXp: entry.correctionXp || 0,
-          };
-        });
-      }
-
-      // Write ALL data to database in parallel
-      const savePromises: Promise<boolean>[] = [];
-
-      if (importData.flights) {
-        // Use replaceAllFlights to delete all existing and insert with fresh IDs
-        savePromises.push(replaceAllFlights(user.id, importData.flights));
-      }
-      if (importData.baseMilesData) {
-        savePromises.push(saveMilesRecords(user.id, importData.baseMilesData));
-      }
-      if (importData.redemptions) {
-        savePromises.push(saveRedemptions(user.id, importData.redemptions));
-      }
-      if (importData.manualLedger && Object.keys(xpLedgerToSave).length > 0) {
-        savePromises.push(saveXPLedger(user.id, xpLedgerToSave));
-      }
-
-      // Profile updates (qualification settings, xpRollover)
-      // IMPORTANT: Set null explicitly for missing fields to clear old database values
-      const profileUpdates: Record<string, unknown> = {};
-      if (importData.qualificationSettings) {
-        profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth || null;
-        // CRITICAL: Explicitly set to null if not present, to clear any old value
-        profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate || null;
-        profileUpdates.starting_status = importData.qualificationSettings.startingStatus || null;
-        profileUpdates.starting_xp = importData.qualificationSettings.startingXP ?? 0;
-        profileUpdates.starting_uxp = importData.qualificationSettings.startingUXP ?? 0;
-        profileUpdates.ultimate_cycle_type = importData.qualificationSettings.ultimateCycleType || null;
-      }
-      if (typeof importData.xpRollover === 'number') {
-        profileUpdates.xp_rollover = importData.xpRollover;
-      }
-      if (importData.homeAirport !== undefined) {
-        profileUpdates.home_airport = importData.homeAirport;
-      }
-      // FIX: Import currency and targetCPM to database
-      if (importData.currency) {
-        profileUpdates.currency = importData.currency;
-      }
-      if (typeof importData.targetCPM === 'number') {
-        profileUpdates.target_cpm = importData.targetCPM;
-      }
-      // PDF Baseline
-      if (importData.pdfBaseline !== undefined) {
-        if (importData.pdfBaseline) {
-          profileUpdates.pdf_baseline_xp = importData.pdfBaseline.xp;
-          profileUpdates.pdf_baseline_uxp = importData.pdfBaseline.uxp;
-          profileUpdates.pdf_baseline_miles = importData.pdfBaseline.miles;
-          profileUpdates.pdf_baseline_status = importData.pdfBaseline.status;
-          profileUpdates.pdf_export_date = importData.pdfBaseline.pdfExportDate;
-          profileUpdates.pdf_imported_at = importData.pdfBaseline.importedAt;
-        } else {
-          // Explicitly clear pdfBaseline if null
-          profileUpdates.pdf_baseline_xp = null;
-          profileUpdates.pdf_baseline_uxp = null;
-          profileUpdates.pdf_baseline_miles = null;
-          profileUpdates.pdf_baseline_status = null;
-          profileUpdates.pdf_export_date = null;
-          profileUpdates.pdf_imported_at = null;
-        }
-      }
-      if (Object.keys(profileUpdates).length > 0) {
-        savePromises.push(updateProfile(user.id, profileUpdates));
-      }
-
-      // Wait for ALL saves to complete
-      const results = await Promise.all(savePromises);
-      const allSucceeded = results.every(r => r);
-
-      if (!allSucceeded) {
-        console.error('JSON import: some saves failed');
-        return false;
-      }
-
-      // CRITICAL: Reload data from database to ensure state matches database
-      // This prevents any race conditions with loadUserData
-      const freshData = await fetchAllUserData(user.id);
-
-      // Update state from database (single source of truth)
-      setFlightsInternal(freshData.flights);
-      setBaseMilesDataInternal(freshData.milesData);
-      setRedemptionsInternal(freshData.redemptions);
-      
-      // Load XP Ledger
-      const loadedLedger: ManualLedger = {};
-      Object.entries(freshData.xpLedger).forEach(([month, entry]) => {
-        loadedLedger[month] = {
-          amexXp: entry.amexXp,
-          bonusSafXp: entry.bonusSafXp,
-          miscXp: entry.miscXp,
-          correctionXp: entry.correctionXp,
-        };
-      });
-      setManualLedgerInternal(loadedLedger);
-
-      if (freshData.profile) {
-        setXpRolloverInternal(freshData.profile.xpRollover || 0);
-        // FIX: Also reload currency and targetCPM after import
-        setCurrencyInternal((freshData.profile.currency || 'EUR') as CurrencyCode);
-        setTargetCPMInternal(freshData.profile.targetCPM || 0.012);
-        if (freshData.profile.qualificationStartMonth) {
-          setQualificationSettingsInternal({
-            cycleStartMonth: freshData.profile.qualificationStartMonth,
-            cycleStartDate: freshData.profile.qualificationStartDate || undefined,
-            startingStatus: (freshData.profile.startingStatus || 'Explorer') as StatusLevel,
-            startingXP: freshData.profile.startingXP ?? 0,
-            startingUXP: freshData.profile.startingUXP ?? 0,
-            ultimateCycleType: freshData.profile.ultimateCycleType || 'qualification',
-          });
-        }
-        // Load PDF Baseline from database
-        if (freshData.profile.pdfBaselineXp !== null) {
-          setPdfBaselineInternal({
-            xp: freshData.profile.pdfBaselineXp,
-            uxp: freshData.profile.pdfBaselineUxp || 0,
-            miles: freshData.profile.pdfBaselineMiles || 0,
-            status: (freshData.profile.pdfBaselineStatus || 'Explorer') as StatusLevel,
-            pdfExportDate: freshData.profile.pdfExportDate || '',
-            importedAt: freshData.profile.pdfImportedAt || '',
-          });
-        } else {
-          setPdfBaselineInternal(null);
-        }
-      }
-
-      return true;
-    } catch (error) {
-      console.error('JSON import error:', error);
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [user, isDemoMode, isLocalMode]);
-
-  // -------------------------------------------------------------------------
   // RETURN
   // -------------------------------------------------------------------------
 
@@ -1616,14 +1046,8 @@ export function useUserData(): UseUserDataReturn {
       targetCPM,
       currency,
       qualificationSettings,
-      pdfBaseline,
       milesData,
       xpData,
-      // Display values (PDF baseline + manual delta)
-      displayXP,
-      displayUXP,
-      displayMiles,
-      displayStatus,
       currentStatus,
       currentMonth,
       homeAirport,
@@ -1650,10 +1074,8 @@ export function useUserData(): UseUserDataReturn {
       handleManualXPLedgerUpdate,
       handleXPRolloverUpdate,
       handlePdfImport,
-      handlePdfImportAI,
       handleUndoImport,
-      canUndoImport,
-      importBackupInfo,
+      handleJsonImport,
       handleQualificationSettingsUpdate,
       handleLoadDemo,
       handleStartEmpty,
@@ -1664,14 +1086,14 @@ export function useUserData(): UseUserDataReturn {
       handleSetDemoStatus,
       markDataChanged,
       calculateGlobalCPM,
-      forceSave: saveUserData,
-      handleJsonImport,
       handleOnboardingComplete,
       handleRerunOnboarding,
       handleEmailConsentChange,
+      canUndoImport: backupState.canUndo,
+      importBackupInfo: backupState.info,
+      forceSave: saveUserData,
     },
     meta: {
-      // Show loading if actively loading OR if we have a user but haven't attempted load yet
       isLoading: dataLoading || (!!user && !isDemoMode && !isLocalMode && !hasAttemptedLoad),
       isSaving,
       isDemoMode,

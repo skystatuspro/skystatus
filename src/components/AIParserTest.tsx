@@ -125,7 +125,18 @@ export const AIParserTest: React.FC = () => {
   const handleImportToDashboard = useCallback(() => {
     if (!result) return;
     
-    actions.handlePdfImportAI(result);
+    // Use the clean handlePdfImport - no bypass, data goes through engines
+    actions.handlePdfImport(
+      result.flights,
+      result.milesRecords,
+      undefined, // xpCorrection - not needed with AI parser
+      result.qualificationSettings ? {
+        cycleStartMonth: result.qualificationSettings.cycleStartMonth,
+        cycleStartDate: result.qualificationSettings.cycleStartDate,
+        startingStatus: result.qualificationSettings.startingStatus,
+      } : undefined,
+      result.bonusXpByMonth
+    );
     setImportComplete(true);
   }, [result, actions]);
 
@@ -329,7 +340,7 @@ export const AIParserTest: React.FC = () => {
                     <span className="text-xs">Status</span>
                   </div>
                   <p className="text-2xl font-bold text-slate-900">
-                    {result.pdfBaseline.status}
+                    {result.pdfHeader.status}
                   </p>
                 </div>
               </div>
@@ -342,25 +353,25 @@ export const AIParserTest: React.FC = () => {
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Total XP</p>
                   <p className="text-2xl font-bold text-violet-600">
-                    {result.pdfBaseline.xp.toLocaleString()}
+                    {result.pdfHeader.xp.toLocaleString()}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Total UXP</p>
                   <p className="text-2xl font-bold text-amber-600">
-                    {result.pdfBaseline.uxp.toLocaleString()}
+                    {result.pdfHeader.uxp.toLocaleString()}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Total Miles</p>
                   <p className="text-2xl font-bold text-emerald-600">
-                    {result.pdfBaseline.miles.toLocaleString()}
+                    {result.pdfHeader.miles.toLocaleString()}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Export Date</p>
                   <p className="text-lg font-medium text-slate-700">
-                    {result.pdfBaseline.pdfExportDate}
+                    {result.pdfHeader.exportDate}
                   </p>
                 </div>
               </div>

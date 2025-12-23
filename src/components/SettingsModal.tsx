@@ -1,4 +1,4 @@
-import React, { useRef, useState, lazy, Suspense } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Database,
   X,
@@ -22,18 +22,6 @@ import { useAuth } from '../lib/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { CurrencyCode, SUPPORTED_CURRENCIES } from '../utils/format';
 
-// Lazy load PdfImportModal to reduce initial bundle
-const PdfImportModal = lazy(() => import('./PdfImportModal'));
-
-const ModalLoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
-      <Loader2 size={24} className="animate-spin text-blue-500" />
-      <span className="text-slate-600">Loading...</span>
-    </div>
-  </div>
-);
-
 import {
   MilesRecord,
   XPRecord,
@@ -43,7 +31,6 @@ import {
   StatusLevel,
 } from '../types';
 import { QualificationSettings } from '../hooks/useUserData';
-import { PdfBaseline } from '../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -60,7 +47,6 @@ interface SettingsModalProps {
     manualLedger: ManualLedger;
     qualificationSettings: QualificationSettings | null;
     homeAirport: string | null;
-    pdfBaseline: PdfBaseline | null;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;
@@ -100,9 +86,7 @@ interface SettingsModalProps {
     // FIX: Added missing fields
     currency?: CurrencyCode;
     targetCPM?: number;
-    // FIX Issue 1: Added homeAirport and pdfBaseline
     homeAirport?: string | null;
-    pdfBaseline?: PdfBaseline | null;
   }) => Promise<boolean>;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -133,7 +117,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { signOut, user, deleteAccount } = useAuth();
   const { trackExport, trackImport, trackSettings } = useAnalytics();
-  const [showPdfImport, setShowPdfImport] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -219,9 +202,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           // FIX: Also import user preferences
           currency: parsed.currency,
           targetCPM: parsed.targetCPM,
-          // FIX Issue 1: Also import homeAirport and pdfBaseline
           homeAirport: parsed.homeAirport,
-          pdfBaseline: parsed.pdfBaseline,
         });
 
         if (!success) {
@@ -571,9 +552,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
               Import from Flying Blue
             </p>
-            <button
-              onClick={() => setShowPdfImport(true)}
-              className="w-full rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all px-4 py-5 flex items-center gap-4"
+            <a
+              href="/ai-parser"
+              className="w-full rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all px-4 py-5 flex items-center gap-4 no-underline"
             >
               <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500 shadow-lg shadow-blue-200">
                 <FileText className="text-white" size={24} />
@@ -582,7 +563,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <p className="text-sm font-bold text-slate-800">Import Flying Blue PDF</p>
                 <p className="text-xs text-slate-500">Upload your transaction history from flyingblue.com</p>
               </div>
-            </button>
+            </a>
           </div>
 
           {/* Preferences */}
@@ -978,19 +959,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
         </div>
       </div>
-
-      {/* PDF Import Modal */}
-      {showPdfImport && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <PdfImportModal
-            isOpen={showPdfImport}
-            onClose={() => setShowPdfImport(false)}
-            onImport={handlePdfImport}
-            existingFlights={data.flights}
-            existingMiles={data.baseMilesData}
-          />
-        </Suspense>
-      )}
     </div>
   );
 };
