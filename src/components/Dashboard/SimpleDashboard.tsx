@@ -1,7 +1,7 @@
 // src/components/Dashboard/SimpleDashboard.tsx
 // Simplified dashboard view for casual users
 
-import React, { useMemo, useState, lazy, Suspense } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, ViewState } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
@@ -21,21 +21,8 @@ import {
   Gauge,
   Crown,
   Target,
-  Loader2,
 } from 'lucide-react';
 import { StatusLevel, getStatusTheme, getTargetXP, findActiveCycle } from './helpers';
-
-// Lazy load PdfImportModal to reduce initial bundle
-const PdfImportModal = lazy(() => import('../PdfImportModal'));
-
-const ModalLoadingFallback = () => (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white rounded-2xl p-8 flex items-center gap-3">
-      <Loader2 size={24} className="animate-spin text-blue-500" />
-      <span className="text-slate-600">Loading...</span>
-    </div>
-  </div>
-);
 
 interface SimpleDashboardState {
   milesData: { month: string; totalMiles: number }[];
@@ -75,7 +62,6 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
 }) => {
   const { format: formatCurrency } = useCurrency();
   const { setViewMode } = useViewMode();
-  const [showPdfImport, setShowPdfImport] = useState(false);
 
   // Calculate miles stats
   const milesStats = useMemo(
@@ -180,13 +166,13 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => setShowPdfImport(true)}
-              className="flex items-center justify-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
+            <a
+              href="/ai-parser"
+              className="flex items-center justify-center gap-2 bg-white text-brand-600 px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all no-underline"
             >
               <Upload size={20} />
               Import PDF
-            </button>
+            </a>
             <button
               onClick={() => navigateTo('addFlight')}
               className="flex items-center justify-center gap-2 bg-white/20 text-white px-6 py-3 rounded-xl font-bold border border-white/30 hover:bg-white/30 transition-all"
@@ -196,19 +182,6 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
             </button>
           </div>
         </div>
-
-        {/* PDF Import Modal */}
-        {onPdfImport && showPdfImport && (
-          <Suspense fallback={<ModalLoadingFallback />}>
-            <PdfImportModal
-              isOpen={showPdfImport}
-              onClose={() => setShowPdfImport(false)}
-              onImport={onPdfImport}
-              existingFlights={state.flights}
-              existingMiles={state.milesData}
-            />
-          </Suspense>
-        )}
       </div>
     );
   }
@@ -360,13 +333,13 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setShowPdfImport(true)}
-          className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-semibold transition-all"
+        <a
+          href="/ai-parser"
+          className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-semibold transition-all no-underline"
         >
           <Upload size={18} />
           Import PDF
-        </button>
+        </a>
         <button
           onClick={() => navigateTo('addFlight')}
           className="flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-3 rounded-xl font-semibold transition-all"
@@ -385,19 +358,6 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
           Want more details? Switch to Full View →
         </button>
       </div>
-
-      {/* PDF Import Modal */}
-      {onPdfImport && showPdfImport && (
-        <Suspense fallback={<ModalLoadingFallback />}>
-          <PdfImportModal
-            isOpen={showPdfImport}
-            onClose={() => setShowPdfImport(false)}
-            onImport={onPdfImport}
-            existingFlights={state.flights}
-            existingMiles={state.milesData}
-          />
-        </Suspense>
-      )}
     </div>
   );
 };
