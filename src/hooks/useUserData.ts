@@ -583,16 +583,29 @@ export function useUserData(): UseUserDataReturn {
 
     // Handle cycle settings
     if (cycleSettings) {
-      setQualificationSettingsInternal({
+      const newSettings = {
         cycleStartMonth: cycleSettings.cycleStartMonth,
         cycleStartDate: cycleSettings.cycleStartDate,
         startingStatus: cycleSettings.startingStatus,
         startingXP: cycleSettings.startingXP ?? 0,
-      });
+      };
+      setQualificationSettingsInternal(newSettings);
+      
+      // IMPORTANT: Immediately save qualification settings to database
+      // This prevents the race condition where logout/login before debounced save
+      // would lose the cycleStartDate
+      if (user && !isDemoMode) {
+        updateProfile(user.id, {
+          qualification_start_month: newSettings.cycleStartMonth,
+          qualification_start_date: newSettings.cycleStartDate || null,
+          starting_status: newSettings.startingStatus,
+          starting_xp: newSettings.startingXP,
+        }).catch(err => console.error('[handlePdfImport] Failed to save qualification settings:', err));
+      }
     }
 
     markDataChanged();
-  }, [flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, markDataChanged]);
+  }, [flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, markDataChanged, user, isDemoMode]);
 
   // -------------------------------------------------------------------------
   // UNDO IMPORT

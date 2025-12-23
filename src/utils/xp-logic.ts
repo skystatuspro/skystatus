@@ -1284,11 +1284,36 @@ export const calculateQualificationCycles = (
       : `${now.getFullYear() - 1}-11`;
 
   // Start de allereerste cyclus:
-  // If qualification settings provided, use that
-  // Otherwise: or bij eerste data (als dat vóór die november ligt),
-  // of bij de november rond het huidige jaar.
-  const initialCycleStart = qualificationSettings?.cycleStartMonth ??
-    (firstDataMonth < currentYearNov ? firstDataMonth : currentYearNov);
+  // Use the OFFICIAL cycle start month (e.g., "2025-11") not the data start month (e.g., "2025-10")
+  // The pre-cycle XP handles flights between cycleStartDate and cycleStartMonth
+  //
+  // Fallback logic when no qualificationSettings:
+  // - If first data is before November, assume standard Nov-Oct cycle from that year's November
+  // - Otherwise use the current year's November
+  let initialCycleStart: string;
+  if (qualificationSettings?.cycleStartMonth) {
+    initialCycleStart = qualificationSettings.cycleStartMonth;
+  } else {
+    // No qualification settings - use standard Flying Blue Nov-Oct cycle
+    // Find which November to use based on first data month
+    const firstDataYear = parseInt(firstDataMonth.slice(0, 4));
+    const firstDataMonthNum = parseInt(firstDataMonth.slice(5, 7));
+    
+    if (firstDataMonthNum >= 11) {
+      // Data starts in Nov or Dec - use that year's November
+      initialCycleStart = `${firstDataYear}-11`;
+    } else {
+      // Data starts Jan-Oct - use previous year's November
+      initialCycleStart = `${firstDataYear - 1}-11`;
+    }
+  }
+  
+  console.log('[XP Engine] Cycle start determination:', {
+    officialCycleStartMonth: qualificationSettings?.cycleStartMonth,
+    firstDataMonth,
+    currentYearNov,
+    initialCycleStart,
+  });
 
   // IMPORTANT: Handle "pre-cycle" XP for mid-month qualification
   // When you qualify on Oct 8 and cycle starts Nov 1, flights Oct 9-31 should count
@@ -1296,24 +1321,37 @@ export const calculateQualificationCycles = (
   // We add this XP to the initialRollover so it's included in the cycle
   let preCycleXP = 0;
   let preCycleUXP = 0;
-  if (dataStartMonth && qualificationSettings?.cycleStartMonth && dataStartMonth < qualificationSettings.cycleStartMonth) {
-    // There's a gap between the qualification date month and the cycle start month
-    // Get XP from that period and add it to rollover
-    const preCycleMonthData = dataByMonth.get(dataStartMonth);
+  
+  // Calculate pre-cycle XP if there's a gap between cycleStartDate and cycleStartMonth
+  const cycleStartDateMonth = excludeBeforeDate?.slice(0, 7);  // e.g., "2025-10" from "2025-10-08"
+  const officialCycleStartMonth = qualificationSettings?.cycleStartMonth;  // e.g., "2025-11"
+  
+  if (cycleStartDateMonth && officialCycleStartMonth && cycleStartDateMonth < officialCycleStartMonth) {
+    // There's a gap between the qualification date month and the official cycle start month
+    // Calculate XP from flights in that gap period (e.g., Oct 9-31)
+    const preCycleMonthData = dataByMonth.get(cycleStartDateMonth);
     if (preCycleMonthData) {
+      // Use ACTUAL flight XP (already filtered by excludeBeforeDate)
       preCycleXP = preCycleMonthData.actualFlightXP + preCycleMonthData.actualFlightSafXP;
       preCycleUXP = preCycleMonthData.actualFlightUXP;
-      console.log('[XP Engine] Pre-cycle XP (between cycleStartDate and cycleStartMonth):', {
-        month: dataStartMonth,
+      console.log('[XP Engine] Pre-cycle XP (gap between cycleStartDate and cycleStartMonth):', {
+        cycleStartDateMonth,
+        officialCycleStartMonth,
         preCycleXP,
         preCycleUXP,
         flightXP: preCycleMonthData.flightXP,
-        flightSafXP: preCycleMonthData.flightSafXP,
+        actualFlightXP: preCycleMonthData.actualFlightXP,
       });
     }
   }
 
   const adjustedInitialRollover = clamp(initialRollover + preCycleXP, 0, PLATINUM_THRESHOLD);
+  
+  console.log('[XP Engine] Initial rollover calculation:', {
+    startingXP: initialRollover,
+    preCycleXP,
+    adjustedInitialRollover,
+  });
 
   // Tot waar moet je überhaupt cycli bouwen?
   // Altijd tot minimaal de laatste maand met data of de huidige maand.

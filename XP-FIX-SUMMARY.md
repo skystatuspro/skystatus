@@ -1,9 +1,14 @@
-# XP Berekening Fix - Samenvatting
+# XP Berekening Fix - Samenvatting v3
 
 ## Datum: 23 december 2025
 
-## Probleem
-Het SkyStatus Pro dashboard toonde **223 XP** in plaats van de correcte **183 XP**. Dit kwam doordat vluchten van vóór de herqualificatiedatum (8 oktober 2025) werden meegeteld, OF vluchten NA de herqualificatiedatum maar VOOR de officiële cyclus start niet werden meegeteld.
+## Problemen
+
+### Probleem 1: 143 XP vs 183 XP (40 XP verschil)
+Na uitloggen en weer inloggen toonde het dashboard 143 XP in plaats van 183 XP. Dit kwam doordat de `cycleStartDate` niet correct werd opgeslagen in de database vóór de logout.
+
+### Probleem 2: Cyclus Oktober-September i.p.v. November-Oktober
+De cyclus periode werd getoond als "Oct 1 - Sep 30" in plaats van "Nov 1 - Oct 31".
 
 ## Root Cause Analyse
 
@@ -14,60 +19,64 @@ Wanneer je mid-maand kwalificeert voor een hogere status:
 3. Maar alle XP verdiend NA je kwalificatiedatum telt al mee voor het nieuwe jaar (9-31 oktober)
 4. PLUS je rollover XP (23 XP in jouw geval)
 
-### Het Probleem
-De originele code had:
-- `cycleStartMonth = "2025-11"` (correct, officiële cyclus start)
-- `cycleStartDate = "2025-10-08"` (correct, kwalificatiedatum)
+### De "Gap" Periode
+Er zit een gap tussen:
+- `cycleStartDate = "2025-10-08"` (wanneer vluchten gaan tellen voor nieuwe cyclus)
+- `cycleStartMonth = "2025-11"` (officiële start van het kwalificatiejaar)
 
-Maar de XP Engine:
-1. Filterde maanden VOOR `cycleStartMonth` ("2025-10" werd niet meegenomen)
-2. Terwijl vluchten werden gefilterd op `cycleStartDate` (8 oktober)
-3. Resultaat: vluchten van 9-31 oktober werden uit de vluchten gefilterd (correct), maar de maand oktober werd niet verwerkt in de cyclus (fout)
+Vluchten van 9-31 oktober vallen in deze gap en moeten worden meegeteld als "pre-cycle XP".
 
-### De Gap
-Er zat een "gap" tussen:
-- `cycleStartDate` = "2025-10-08" (wanneer vluchten gaan tellen)
-- `cycleStartMonth` = "2025-11" (wanneer cyclus officieel begint)
+### Probleem 1 Root Cause
+De `qualification_start_date` werd niet direct naar de database geschreven na PDF import. Door de React state update en debounced save, kon een logout/login plaatsvinden voordat de data was opgeslagen.
 
-Vluchten van 9-31 oktober vielen in deze gap en werden niet meegeteld.
+### Probleem 2 Root Cause
+De fallback logica voor `initialCycleStart` gebruikte `firstDataMonth` (oktober) wanneer geen `cycleStartMonth` beschikbaar was.
 
-## Oplossing
+## Oplossingen
 
-### Fix 1: Data Start Month (xp-logic.ts)
-De maand data filtering moet starten bij de maand van `cycleStartDate`, niet `cycleStartMonth`:
+### Fix 1: Directe Database Save (useUserData.ts)
+Na PDF import worden de qualification settings direct naar de database geschreven, zonder te wachten op de debounced save:
 
 ```typescript
-// Get the month from cycleStartDate for data inclusion
-const dataStartMonth = excludeBeforeDate?.slice(0, 7);  // e.g., "2025-10"
-const excludeBeforeMonth = dataStartMonth;  // Include October in data
-```
-
-### Fix 2: Pre-Cycle XP (xp-logic.ts)
-XP van vluchten tussen `cycleStartDate` en `cycleStartMonth` wordt toegevoegd aan de rollover:
-
-```typescript
-let preCycleXP = 0;
-if (dataStartMonth < cycleStartMonth) {
-  // Get XP from the gap period (e.g., Oct 9-31)
-  const preCycleMonthData = dataByMonth.get(dataStartMonth);
-  if (preCycleMonthData) {
-    preCycleXP = preCycleMonthData.actualFlightXP + preCycleMonthData.actualFlightSafXP;
+if (cycleSettings) {
+  // ...set state...
+  
+  // IMMEDIATELY save to database
+  if (user && !isDemoMode) {
+    updateProfile(user.id, {
+      qualification_start_month: newSettings.cycleStartMonth,
+      qualification_start_date: newSettings.cycleStartDate || null,
+      // ...
+    });
   }
 }
-const adjustedInitialRollover = initialRollover + preCycleXP;
 ```
 
-### Fix 3: Uitgebreide Debug Logging
-Toegevoegd gedetailleerde logging om precies te zien wat er gebeurt.
+### Fix 2: Pre-Cycle XP Berekening (xp-logic.ts)
+De XP van vluchten in de gap periode (9-31 oktober) wordt toegevoegd aan de initial rollover:
 
-## Verwachte Correcte Berekening
+```typescript
+const cycleStartDateMonth = excludeBeforeDate?.slice(0, 7);  // "2025-10"
+const officialCycleStartMonth = qualificationSettings?.cycleStartMonth;  // "2025-11"
 
-| Component | XP |
-|-----------|-----|
-| Rollover (startingXP) | 23 |
-| Pre-cycle vluchten (9-31 okt) | ? |
-| Vluchten vanaf 1 nov 2025 | ? |
-| **Totaal** | **183** |
+if (cycleStartDateMonth < officialCycleStartMonth) {
+  // Get pre-cycle XP from October and add to rollover
+  preCycleXP = monthData.actualFlightXP + monthData.actualFlightSafXP;
+}
+
+adjustedInitialRollover = initialRollover + preCycleXP;
+```
+
+### Fix 3: Correcte Cyclus Start Maand (xp-logic.ts)
+De cyclus start nu altijd in november (of de officiële `cycleStartMonth`), niet in oktober:
+
+```typescript
+if (qualificationSettings?.cycleStartMonth) {
+  initialCycleStart = qualificationSettings.cycleStartMonth;  // "2025-11"
+} else {
+  // Fallback to nearest November based on data
+}
+```
 
 ## Gewijzigde Bestanden
 
@@ -76,29 +85,27 @@ Toegevoegd gedetailleerde logging om precies te zien wat er gebeurt.
    - Debug logging toegevoegd
 
 2. **`src/utils/xp-logic.ts`**
-   - `dataStartMonth` berekening toegevoegd
-   - `excludeBeforeMonth` nu gebaseerd op `cycleStartDate` maand
    - Pre-cycle XP berekening toegevoegd
-   - `adjustedInitialRollover` gebruikt in plaats van `initialRollover`
+   - Correcte cyclus start maand logica
    - Uitgebreide debug logging
+
+3. **`src/hooks/useUserData.ts`**
+   - Directe database save na PDF import voor qualification settings
+
+## Verwachte Resultaten
+
+Na deze fixes:
+- **XP**: 183 (23 rollover + 40 pre-cycle + 120 vanaf november)
+- **Cyclus**: November 2025 - Oktober 2026
+- **Consistent**: Zelfde waarde na refresh, logout/login, etc.
 
 ## Test Instructies
 
 1. Deploy de nieuwe versie
-2. Open de browser console (F12)
-3. Importeer je Flying Blue PDF via de AI Parser
-4. Check de console voor:
-   ```
-   [XP Engine] ============================================
-   [XP Engine] Qualification settings received: { cycleStartMonth: "2025-11", cycleStartDate: "2025-10-08", ... }
-   [XP Engine] Month filtering: { dataStartMonth: "2025-10", excludeBeforeMonth: "2025-10" }
-   [XP Engine] Pre-cycle XP: { month: "2025-10", preCycleXP: XX }
-   [XP Engine] ============================================
-   ```
-5. Verifieer dat de XP op het dashboard **183** is
-
-## Bestaande Gebruikers
-
-Voor bestaande gebruikers die de PDF al hebben geïmporteerd met de oude code:
-- Ze moeten hun PDF **opnieuw importeren** om de correcte instellingen te krijgen
+2. Importeer de Flying Blue PDF
+3. Check: XP moet 183 zijn
+4. Check: Cyclus moet "Nov - Oct" zijn  
+5. Logout en weer inloggen
+6. Check: XP moet nog steeds 183 zijn
+7. Check de console logs voor debug info
 
