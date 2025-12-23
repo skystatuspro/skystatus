@@ -1196,6 +1196,14 @@ export const calculateQualificationCycles = (
   
   const excludeBeforeDate = qualificationSettings?.cycleStartDate;
   
+  // excludeBeforeMonth: filter out manual ledger and legacy data from months before cycle start
+  // This ensures XP from previous cycles doesn't count towards the current cycle
+  // IMPORTANT: Use the month from cycleStartDate (if available) to include partial month data
+  // e.g., if qualified Oct 8, we need October data for flights Oct 9-31
+  const excludeBeforeMonth = qualificationSettings?.cycleStartDate 
+    ? qualificationSettings.cycleStartDate.slice(0, 7)  // "2025-10" from "2025-10-08"
+    : qualificationSettings?.cycleStartMonth;
+  
   // Debug logging
   console.log('[XP Engine] Qualification settings:', {
     cycleStartMonth: qualificationSettings?.cycleStartMonth,
@@ -1203,11 +1211,8 @@ export const calculateQualificationCycles = (
     startingStatus: qualificationSettings?.startingStatus,
     startingXP: qualificationSettings?.startingXP,
     excludeBeforeDate,
+    excludeBeforeMonth,
   });
-  
-  // excludeBeforeMonth: filter out manual ledger and legacy data from months before cycle start
-  // This ensures XP from previous cycles doesn't count towards the current cycle
-  const excludeBeforeMonth = qualificationSettings?.cycleStartMonth;
   
   const monthDataList = buildMonthDataList(
     flights ?? [],
@@ -1268,10 +1273,14 @@ export const calculateQualificationCycles = (
       : `${now.getFullYear() - 1}-11`;
 
   // Start de allereerste cyclus:
-  // If qualification settings provided, use that
-  // Otherwise: or bij eerste data (als dat vóór die november ligt),
-  // of bij de november rond het huidige jaar.
-  const initialCycleStart = qualificationSettings?.cycleStartMonth ??
+  // If qualification settings provided, use the month from cycleStartDate for data processing
+  // This ensures partial month data (e.g., Oct 9-31 flights) is included in the ledger
+  // The UI will show the official cycle start (Nov 1) via finalizeCycle
+  const dataProcessingStartMonth = qualificationSettings?.cycleStartDate
+    ? qualificationSettings.cycleStartDate.slice(0, 7)  // "2025-10" from "2025-10-08"
+    : qualificationSettings?.cycleStartMonth;
+  
+  const initialCycleStart = dataProcessingStartMonth ??
     (firstDataMonth < currentYearNov ? firstDataMonth : currentYearNov);
 
   // Tot waar moet je überhaupt cycli bouwen?
