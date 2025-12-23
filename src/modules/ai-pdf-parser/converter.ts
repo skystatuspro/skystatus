@@ -313,27 +313,27 @@ export function detectQualificationSettings(
     return null;
   }
   
-  // Flying Blue qualification cycle logic:
-  // - You qualify on date X (e.g., Oct 7) and get the new status IMMEDIATELY
-  // - Your new qualification year OFFICIALLY starts on the 1st of the NEXT month (Nov 1)
-  // - BUT: All XP earned AFTER the qualification date (Oct 8-31) counts toward the new cycle
-  // - PLUS: Any rollover XP from exceeding the threshold
-  //
-  // So we need:
-  // - cycleStartMonth = "2025-11" (the official cycle start, for UI display)
-  // - cycleStartDate = "2025-10-07" (the qualification date, for XP filtering)
-  // 
-  // The XP Engine uses cycleStartDate to filter flights:
-  // - Flights ON or BEFORE cycleStartDate are excluded (they belonged to previous cycle)
-  // - Flights AFTER cycleStartDate count toward the new cycle
-  const cycleStartMonthDate = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
-  const cycleStartMonth = cycleStartMonthDate.toISOString().slice(0, 7);  // e.g., "2025-11"
+  // Calculate the NEXT month after qualification date
+  // Flying Blue rule: official cycle starts on 1st of the NEXT month
+  const requalYear = requalDate.getFullYear();
+  const requalMonth = requalDate.getMonth(); // 0-indexed (Oct = 9)
   
-  console.log('[Converter] Detected requalification:', {
-    requalificationDate: latestReset.date,
+  // Calculate next month (handle December -> January rollover)
+  let nextYear = requalYear;
+  let nextMonth = requalMonth + 1; // +1 to get next month
+  if (nextMonth > 11) {
+    nextMonth = 0;
+    nextYear++;
+  }
+  nextMonth++; // Convert from 0-indexed to 1-indexed for string
+  
+  const cycleStartMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+  
+  console.log('[Converter] Cycle start calculation:', {
+    qualificationDate: latestReset.date,
+    requalYear,
+    requalMonth: requalMonth + 1, // Show 1-indexed for readability
     cycleStartMonth,
-    statusReached: latestReset.statusReached,
-    xpReset: latestReset.xpChange,
   });
   
   let startingStatus: StatusLevel = headerStatus;
