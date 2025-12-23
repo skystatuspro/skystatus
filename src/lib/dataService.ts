@@ -309,8 +309,6 @@ export async function saveMilesRecord(userId: string, record: MilesRecord): Prom
     });
   }
 
-  }
-
   if (transactions.length === 0) return true;
 
   // Delete existing transactions for this month first
@@ -384,8 +382,6 @@ export async function saveMilesRecords(userId: string, records: MilesRecord[]): 
         cost: 0,
         is_projected: false,
       });
-    }
-
     }
   });
 
