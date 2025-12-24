@@ -820,6 +820,36 @@ export function useUserData(): UseUserDataReturn {
       return;
     }
 
+    // CRITICAL: First wipe the database BEFORE resetting local state
+    // This prevents the race condition where load triggers before wipe completes
+    if (user) {
+      try {
+        console.log('[handleStartOver] Wiping database...');
+        await Promise.all([
+          saveFlights(user.id, []),
+          saveMilesRecords(user.id, []),
+          saveRedemptions(user.id, []),
+          saveXPLedger(user.id, {}),
+          updateProfile(user.id, {
+            xp_rollover: 0,
+            qualification_start_month: null,
+            qualification_start_date: null,
+            starting_status: null,
+            starting_xp: null,
+            ultimate_cycle_type: null,
+          }),
+        ]);
+        console.log('[handleStartOver] Database wiped successfully');
+      } catch (error) {
+        console.error('Error clearing user data:', error);
+        // Don't proceed with local wipe if database wipe failed
+        alert('Failed to clear data from server. Please try again.');
+        return;
+      }
+    }
+
+    // NOW reset local state (after database is confirmed wiped)
+    console.log('[handleStartOver] Resetting local state...');
     setBaseMilesDataInternal([]);
     setBaseXpDataInternal([]);
     setRedemptionsInternal([]);
@@ -830,31 +860,13 @@ export function useUserData(): UseUserDataReturn {
     setIsDemoMode(false);
     setIsLocalMode(false);
 
-    // Explicitly save empty data to database when user confirms wipe
-    if (user) {
-      try {
-        await Promise.all([
-          saveFlights(user.id, []),
-          saveMilesRecords(user.id, []),
-          saveRedemptions(user.id, []),
-          saveXPLedger(user.id, {}),
-          updateProfile(user.id, {
-            xp_rollover: 0,
-            qualification_start_month: undefined,
-            qualification_start_date: undefined,
-            starting_status: undefined,
-            starting_xp: undefined,
-            ultimate_cycle_type: undefined,
-          }),
-        ]);
-      } catch (error) {
-        console.error('Error clearing user data:', error);
-      }
-    }
-
-    hasInitiallyLoaded.current = false;
-    loadedForUserId.current = null;
+    // Mark as loaded with empty data to prevent re-fetch
+    // We just wiped the database, no need to reload
+    hasInitiallyLoaded.current = true;
+    loadedForUserId.current = user?.id ?? null;
+    
     setShowWelcome(true);
+    console.log('[handleStartOver] Complete');
   }, [user]);
 
   const handleEnterDemoMode = useCallback(() => {
