@@ -1,7 +1,7 @@
 // src/hooks/useUserData.ts
 // Custom hook that manages all user data state, persistence, and handlers
 // CLEAN VERSION - No pdfBaseline bypass, XP/Miles Engines are source of truth
-// v2.1 - Fixed duplication bugs in PDF import (miscXp, correctionXp now replace instead of add)
+// v2.2 - Fixed duplication bugs + manualLedger state race condition in PDF import
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../lib/AuthContext';
@@ -567,41 +567,38 @@ export function useUserData(): UseUserDataReturn {
       return mergedMiles;
     });
 
-    // Handle XP correction
-    // FIX v2.1: REPLACE correctionXp instead of adding to prevent duplication
+    // Handle XP correction and bonus XP
+    // FIX v2.1: REPLACE values instead of adding to prevent duplication
+    // FIX v2.2: Build the complete ledger first, then set state once to avoid race conditions
     let updatedLedger = { ...manualLedger };
+    
+    // Apply XP correction if provided
     if (xpCorrection && xpCorrection.correctionXp !== 0) {
-      setManualLedgerInternal((prev) => {
-        const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-        updatedLedger = {
-          ...prev,
-          [xpCorrection.month]: {
-            ...existing,
-            // FIX: Replace instead of add - the PDF value is authoritative
-            correctionXp: xpCorrection.correctionXp,
-          },
-        };
-        return updatedLedger;
-      });
+      const existing = updatedLedger[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+      updatedLedger = {
+        ...updatedLedger,
+        [xpCorrection.month]: {
+          ...existing,
+          // FIX: Replace instead of add - the PDF value is authoritative
+          correctionXp: xpCorrection.correctionXp,
+        },
+      };
     }
 
-    // Handle bonus XP from non-flight activities
-    // FIX v2.1: REPLACE miscXp instead of adding to prevent duplication
+    // Apply bonus XP from non-flight activities
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      setManualLedgerInternal((prev) => {
-        const updated = { ...prev };
-        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-          const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-          updated[month] = { 
-            ...existing, 
-            // FIX: Replace instead of add - the PDF value is authoritative
-            miscXp: xp 
-          };
-        }
-        updatedLedger = updated;
-        return updated;
-      });
+      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+        const existing = updatedLedger[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+        updatedLedger[month] = { 
+          ...existing, 
+          // FIX: Replace instead of add - the PDF value is authoritative
+          miscXp: xp 
+        };
+      }
     }
+    
+    // Set state once with the complete ledger
+    setManualLedgerInternal(updatedLedger);
 
     // Handle cycle settings
     let newQualificationSettings = qualificationSettings;

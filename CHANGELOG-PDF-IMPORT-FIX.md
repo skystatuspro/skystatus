@@ -1,11 +1,12 @@
-# PDF Import Fix v2.1
+# PDF Import Fix v2.2
 
 ## Samenvatting
-Deze fix lost drie kritieke problemen op met de PDF import functionaliteit:
+Deze fix lost vier kritieke problemen op met de PDF import functionaliteit:
 
 1. **XP Duplicatie** - miscXp en correctionXp werden opgeteld bij herimport
 2. **Miles Duplicatie** - Flight miles werden dubbel geteld  
 3. **Race Condition** - Data ging verloren bij snelle F5 na import
+4. **ManualLedger niet opgeslagen** - XP Ledger (bonusXP) ging verloren na login/refresh (v2.2)
 
 ---
 
@@ -15,7 +16,7 @@ Deze fix lost drie kritieke problemen op met de PDF import functionaliteit:
 
 **Fixes:**
 
-#### Fix 1: miscXp vervangt nu in plaats van optellen (regel ~540)
+#### Fix 1: miscXp vervangt nu in plaats van optellen
 ```typescript
 // OUD (BUG):
 updated[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
@@ -24,7 +25,7 @@ updated[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
 updated[month] = { ...existing, miscXp: xp };
 ```
 
-#### Fix 2: correctionXp vervangt nu in plaats van optellen (regel ~520)
+#### Fix 2: correctionXp vervangt nu in plaats van optellen
 ```typescript
 // OUD (BUG):
 correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
@@ -33,7 +34,7 @@ correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
 correctionXp: xpCorrection.correctionXp,
 ```
 
-#### Fix 3: miles_flight wordt op 0 gezet bij import (regel ~505)
+#### Fix 3: miles_flight wordt op 0 gezet bij import
 ```typescript
 // NIEUW: Clear miles_flight to prevent duplication
 milesByMonth.set(incoming.month, {
@@ -43,7 +44,7 @@ milesByMonth.set(incoming.month, {
 });
 ```
 
-#### Fix 4: Directe database save na import (regel ~560-580)
+#### Fix 4: Directe database save na import (race condition fix)
 ```typescript
 // NIEUW: Immediate save to prevent race condition
 if (user && !isDemoMode) {
@@ -55,6 +56,32 @@ if (user && !isDemoMode) {
   ]);
 }
 ```
+
+#### Fix 5 (v2.2): ManualLedger state wordt nu correct opgebouwd
+```typescript
+// OUD (BUG) - Meerdere setManualLedgerInternal calls met race condition:
+let updatedLedger = { ...manualLedger };
+if (xpCorrection) {
+  setManualLedgerInternal((prev) => { updatedLedger = {...}; return updatedLedger; });
+}
+if (bonusXpByMonth) {
+  setManualLedgerInternal((prev) => { updatedLedger = {...}; return updatedLedger; }); // OVERSCHRIJFT!
+}
+
+// NIEUW (FIX) - Eerst complete ledger opbouwen, dan één keer state zetten:
+let updatedLedger = { ...manualLedger };
+if (xpCorrection) {
+  updatedLedger = { ...updatedLedger, [month]: {...} };
+}
+if (bonusXpByMonth) {
+  for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+    updatedLedger[month] = { ...existing, miscXp: xp };
+  }
+}
+setManualLedgerInternal(updatedLedger);  // Eén keer zetten
+```
+
+**Probleem:** De oude code had meerdere `setManualLedgerInternal` calls die elkaar overschreven door React's async state batching. Dit veroorzaakte dat bonusXP (miscXp) niet werd opgeslagen.
 
 ---
 
