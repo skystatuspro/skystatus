@@ -1,7 +1,6 @@
 // src/hooks/useUserData.ts
 // Custom hook that manages all user data state, persistence, and handlers
 // CLEAN VERSION - No pdfBaseline bypass, XP/Miles Engines are source of truth
-// v2.2 - Fixed duplication bugs + manualLedger state race condition in PDF import
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../lib/AuthContext';
@@ -231,6 +230,7 @@ export function useUserData(): UseUserDataReturn {
   // Refs for tracking load state
   const hasInitiallyLoaded = useRef(false);
   const loadedForUserId = useRef<string | null>(null);
+  const isLoadingInProgress = useRef(false); // CRITICAL: Prevents parallel loads
 
   // Refresh backup state when flights change
   useEffect(() => {
@@ -244,35 +244,38 @@ export function useUserData(): UseUserDataReturn {
   // COMPUTED DATA
   // -------------------------------------------------------------------------
 
-  const { miles: milesData, xp: xpData } = useMemo(() => {
-    console.log('[useMemo:rebuildLedgers] Computing with:', {
-      baseMilesDataCount: baseMilesData.length,
-      baseXpDataCount: baseXpData.length,
-      flightsCount: flights.length,
-    });
-    const result = rebuildLedgersFromFlights(baseMilesData, baseXpData, flights);
-    console.log('[useMemo:rebuildLedgers] Result:', {
-      milesCount: result.miles.length,
-      xpCount: result.xp.length,
-    });
-    return result;
-  }, [baseMilesData, baseXpData, flights]);
+  const { miles: milesData, xp: xpData } = useMemo(
+    () => {
+      console.log('[useMemo:rebuildLedgers] Computing with:', {
+        baseMilesDataCount: baseMilesData.length,
+        baseXpDataCount: baseXpData.length,
+        flightsCount: flights.length,
+      });
+      const result = rebuildLedgersFromFlights(baseMilesData, baseXpData, flights);
+      console.log('[useMemo:rebuildLedgers] Result:', {
+        milesCount: result.miles.length,
+        xpCount: result.xp.length,
+      });
+      return result;
+    },
+    [baseMilesData, baseXpData, flights]
+  );
 
   // In demo mode, use the selected demo status directly
   // Otherwise, calculate from XP stats
   const currentStatus = useMemo((): StatusLevel => {
+    console.log('[useMemo:currentStatus] Computing with manualLedger:', JSON.stringify(manualLedger));
     if (isDemoMode) {
       return demoStatus;
     }
-    console.log('[useMemo:currentStatus] Computing with manualLedger:', JSON.stringify(manualLedger));
     const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
     const now = new Date();
     const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
     const cycle = stats[currentQYear];
-    console.log('[useMemo:currentStatus] Cycle 2026:', cycle ? {
-      actualXP: cycle.actualXP,
-      actualStatus: cycle.actualStatus,
-    } : 'NO CYCLE');
+    console.log(`[useMemo:currentStatus] Cycle ${currentQYear}:`, {
+      actualXP: cycle?.actualXP,
+      actualStatus: cycle?.actualStatus,
+    });
     return (cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer') as StatusLevel;
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
@@ -282,27 +285,39 @@ export function useUserData(): UseUserDataReturn {
 
   const loadUserData = useCallback(async () => {
     if (!user) return;
-
+    
+    // CRITICAL: Prevent parallel loads - this fixes the race condition
+    // where multiple loads can run simultaneously and overwrite each other
+    if (isLoadingInProgress.current) {
+      console.log('[loadUserData] SKIPPED: Load already in progress');
+      return;
+    }
+    
+    // Mark as loading immediately
+    isLoadingInProgress.current = true;
+    setDataLoading(true);
+    
     console.log('[loadUserData] ===== STARTING LOAD =====');
     console.log('[loadUserData] User ID:', user.id);
     console.log('[loadUserData] hasInitiallyLoaded:', hasInitiallyLoaded.current);
     console.log('[loadUserData] loadedForUserId:', loadedForUserId.current);
     
-    setDataLoading(true);
     try {
       const data = await fetchAllUserData(user.id);
+      
+      // Double-check we're still loading for the same user
+      // (user could have changed during the async fetch)
+      if (!user || user.id !== loadedForUserId.current && loadedForUserId.current !== null) {
+        console.log('[loadUserData] ABORTED: User changed during load');
+        return;
+      }
 
-      // DEBUG: Log raw data from database
       console.log('[loadUserData] RAW DATA FROM DB:', {
         flightsCount: data.flights.length,
         milesDataCount: data.milesData.length,
         xpLedgerKeys: Object.keys(data.xpLedger),
         xpLedgerRaw: JSON.stringify(data.xpLedger),
-        profile: data.profile ? {
-          qualificationStartMonth: data.profile.qualificationStartMonth,
-          qualificationStartDate: data.profile.qualificationStartDate,
-          startingXP: data.profile.startingXP,
-        } : null,
+        profile: data.profile,
       });
 
       // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
@@ -321,8 +336,9 @@ export function useUserData(): UseUserDataReturn {
           correctionXp: entry.correctionXp,
         };
       });
-      console.log('[loadUserData] PARSED manualLedger:', JSON.stringify(loadedLedger));
       setManualLedgerInternal(loadedLedger);
+      
+      console.log('[loadUserData] PARSED manualLedger:', JSON.stringify(loadedLedger));
 
       // Determine if this is an existing user (has any data)
       const hasExistingData = data.flights.length > 0 || data.milesData.length > 0 || data.redemptions.length > 0;
@@ -357,10 +373,13 @@ export function useUserData(): UseUserDataReturn {
 
       hasInitiallyLoaded.current = true;
       loadedForUserId.current = user.id;
+      
+      console.log('[loadUserData] ===== LOAD COMPLETE =====');
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
       setDataLoading(false);
+      isLoadingInProgress.current = false; // Release the lock
     }
   }, [user]);
 
@@ -404,7 +423,12 @@ export function useUserData(): UseUserDataReturn {
   }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings]);
 
   // Load on auth change
+  // CRITICAL: Using user?.id instead of user in deps to prevent recreation on every user object change
+  // The loadUserData callback has its own guards for parallel loads
   useEffect(() => {
+    const shouldLoad = user && !isDemoMode &&
+      (!hasInitiallyLoaded.current || loadedForUserId.current !== user.id);
+
     console.log('[useEffect:load] Checking if should load:', {
       hasUser: !!user,
       userId: user?.id,
@@ -412,16 +436,12 @@ export function useUserData(): UseUserDataReturn {
       hasInitiallyLoaded: hasInitiallyLoaded.current,
       loadedForUserId: loadedForUserId.current,
     });
-    
-    const shouldLoad = user && !isDemoMode &&
-      (!hasInitiallyLoaded.current || loadedForUserId.current !== user.id);
+    console.log('[useEffect:load] shouldLoad:', shouldLoad ? true : (user ? false : null));
 
-    console.log('[useEffect:load] shouldLoad:', shouldLoad);
-    
     if (shouldLoad) {
       loadUserData();
     }
-  }, [user, isDemoMode, loadUserData]);
+  }, [user?.id, isDemoMode, loadUserData]);
 
   // Auto-save on debounced data change
   // CRITICAL: Only save if data has been loaded first to prevent wiping user data
@@ -434,7 +454,6 @@ export function useUserData(): UseUserDataReturn {
     });
     
     if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
-      console.log('[useEffect:save] SAVING DATA');
       saveUserData();
     }
   }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
@@ -552,11 +571,9 @@ export function useUserData(): UseUserDataReturn {
 
   // -------------------------------------------------------------------------
   // PDF IMPORT (Clean Pattern - No Bypass)
-  // FIX v2.1: Changed miscXp and correctionXp to REPLACE instead of ADD
-  // This prevents duplication when re-importing the same PDF
   // -------------------------------------------------------------------------
 
-  const handlePdfImport = useCallback(async (
+  const handlePdfImport = useCallback((
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
@@ -590,69 +607,52 @@ export function useUserData(): UseUserDataReturn {
     }));
 
     // Merge flights (skip duplicates by date + route)
-    let mergedFlights: FlightRecord[] = [];
     setFlightsInternal((prevFlights) => {
       const existingFlightKeys = new Set(prevFlights.map((f) => `${f.date}|${f.route}`));
       const newFlights = taggedFlights.filter((f) => !existingFlightKeys.has(`${f.date}|${f.route}`));
-      mergedFlights = [...prevFlights, ...newFlights];
-      mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
-      return mergedFlights;
+      const merged = [...prevFlights, ...newFlights];
+      merged.sort((a, b) => b.date.localeCompare(a.date));
+      return merged;
     });
 
     // Merge miles (PDF data is authoritative for months it contains)
-    // FIX: Clear miles_flight from imported records to prevent double-counting
-    // The rebuildLedgersFromFlights function will recalculate miles_flight from flights
-    let mergedMiles: MilesRecord[] = [];
     setBaseMilesDataInternal((prevMiles) => {
       const milesByMonth = new Map(prevMiles.map(m => [m.month, m]));
       for (const incoming of importedMiles) {
-        // Clear miles_flight to prevent duplication - it will be recalculated
-        milesByMonth.set(incoming.month, {
-          ...incoming,
-          miles_flight: 0,
-          cost_flight: 0,
-        });
+        milesByMonth.set(incoming.month, incoming);
       }
-      mergedMiles = Array.from(milesByMonth.values());
-      mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
-      return mergedMiles;
+      const merged = Array.from(milesByMonth.values());
+      merged.sort((a, b) => b.month.localeCompare(a.month));
+      return merged;
     });
 
-    // Handle XP correction and bonus XP
-    // FIX v2.1: REPLACE values instead of adding to prevent duplication
-    // FIX v2.2: Build the complete ledger first, then set state once to avoid race conditions
-    let updatedLedger = { ...manualLedger };
-    
-    // Apply XP correction if provided
+    // Handle XP correction
     if (xpCorrection && xpCorrection.correctionXp !== 0) {
-      const existing = updatedLedger[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-      updatedLedger = {
-        ...updatedLedger,
-        [xpCorrection.month]: {
-          ...existing,
-          // FIX: Replace instead of add - the PDF value is authoritative
-          correctionXp: xpCorrection.correctionXp,
-        },
-      };
+      setManualLedgerInternal((prev) => {
+        const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+        return {
+          ...prev,
+          [xpCorrection.month]: {
+            ...existing,
+            correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
+          },
+        };
+      });
     }
 
-    // Apply bonus XP from non-flight activities
+    // Handle bonus XP from non-flight activities
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-        const existing = updatedLedger[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-        updatedLedger[month] = { 
-          ...existing, 
-          // FIX: Replace instead of add - the PDF value is authoritative
-          miscXp: xp 
-        };
-      }
+      setManualLedgerInternal((prev) => {
+        const updated = { ...prev };
+        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+          const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+          updated[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
+        }
+        return updated;
+      });
     }
-    
-    // Set state once with the complete ledger
-    setManualLedgerInternal(updatedLedger);
 
     // Handle cycle settings
-    let newQualificationSettings = qualificationSettings;
     if (cycleSettings) {
       const newSettings = {
         cycleStartMonth: cycleSettings.cycleStartMonth,
@@ -660,39 +660,18 @@ export function useUserData(): UseUserDataReturn {
         startingStatus: cycleSettings.startingStatus,
         startingXP: cycleSettings.startingXP ?? 0,
       };
-      newQualificationSettings = newSettings;
       setQualificationSettingsInternal(newSettings);
-    }
-
-    // FIX v2.1: Immediately save all data to database to prevent race condition
-    // Previously, only qualification settings were saved immediately, causing data loss on quick F5
-    if (user && !isDemoMode) {
-      try {
-        const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
-        Object.entries(updatedLedger).forEach(([month, entry]) => {
-          xpLedgerToSave[month] = {
-            month,
-            amexXp: entry.amexXp || 0,
-            bonusSafXp: entry.bonusSafXp || 0,
-            miscXp: entry.miscXp || 0,
-            correctionXp: entry.correctionXp || 0,
-          };
-        });
-
-        await Promise.all([
-          saveFlights(user.id, mergedFlights),
-          saveMilesRecords(user.id, mergedMiles),
-          saveXPLedger(user.id, xpLedgerToSave),
-          updateProfile(user.id, {
-            qualification_start_month: newQualificationSettings?.cycleStartMonth,
-            qualification_start_date: newQualificationSettings?.cycleStartDate || null,
-            starting_status: newQualificationSettings?.startingStatus,
-            starting_xp: newQualificationSettings?.startingXP,
-          }),
-        ]);
-        console.log('[handlePdfImport] All data saved successfully');
-      } catch (err) {
-        console.error('[handlePdfImport] Failed to save data:', err);
+      
+      // IMPORTANT: Immediately save qualification settings to database
+      // This prevents the race condition where logout/login before debounced save
+      // would lose the cycleStartDate
+      if (user && !isDemoMode) {
+        updateProfile(user.id, {
+          qualification_start_month: newSettings.cycleStartMonth,
+          qualification_start_date: newSettings.cycleStartDate || null,
+          starting_status: newSettings.startingStatus,
+          starting_xp: newSettings.startingXP,
+        }).catch(err => console.error('[handlePdfImport] Failed to save qualification settings:', err));
       }
     }
 

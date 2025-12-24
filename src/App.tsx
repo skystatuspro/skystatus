@@ -316,6 +316,26 @@ export default function App() {
   );
 
   // -------------------------------------------------------------------------
+  // DATA LOADING STATE
+  // -------------------------------------------------------------------------
+
+  // Show loading spinner when user data is being loaded
+  // This prevents race conditions where the UI shows incomplete data
+  if (user && meta.isLoading && !meta.isDemoMode && !meta.isLocalMode) {
+    return (
+      <CookieConsentProvider>
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin text-blue-500 mx-auto mb-4" />
+            <p className="text-slate-400">Loading your data...</p>
+          </div>
+        </div>
+        <CookieConsentUI />
+      </CookieConsentProvider>
+    );
+  }
+
+  // -------------------------------------------------------------------------
   // MAIN CONTENT RENDERER
   // -------------------------------------------------------------------------
 

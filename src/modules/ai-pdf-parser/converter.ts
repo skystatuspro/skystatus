@@ -1,7 +1,6 @@
 // src/modules/ai-pdf-parser/converter.ts
 // Converts AI raw response to SkyStatus app types
-// v2.4 - Fixed: miles_flight now set to 0 to prevent double-counting
-//        (rebuildLedgersFromFlights calculates this from flights array)
+// v2.3 - Added robust date parsing for multiple formats
 
 import type { FlightRecord, MilesRecord, StatusLevel } from '../../types';
 import type { QualificationSettings } from '../../hooks/useUserData';
@@ -183,11 +182,6 @@ function normalizeRoute(route: string): string {
 /**
  * Convert AI parsed miles activities to MilesRecord format
  * Aggregates by month
- * 
- * FIX v2.4: miles_flight is now always set to 0
- * The rebuildLedgersFromFlights function in flight-intake.ts calculates
- * miles_flight from the flights array. If we also set it here from rawFlights,
- * it gets counted twice (once here, once in rebuildLedgersFromFlights).
  */
 export function convertMilesRecords(
   rawActivities: AIRawMilesActivity[],
@@ -203,19 +197,19 @@ export function convertMilesRecords(
         month,
         miles_subscription: 0,
         miles_amex: 0,
-        miles_flight: 0,  // Always 0 - calculated by rebuildLedgersFromFlights
+        miles_flight: 0,
         miles_other: 0,
         miles_debit: 0,
         cost_subscription: 0,
         cost_amex: 0,
-        cost_flight: 0,   // Always 0 - calculated by rebuildLedgersFromFlights
+        cost_flight: 0,
         cost_other: 0,
       });
     }
     return monthMap.get(month)!;
   };
   
-  // Process miles activities (non-flight)
+  // Process miles activities
   for (const activity of rawActivities) {
     const record = getMonth(activity.date);
     const miles = activity.miles;
@@ -244,17 +238,16 @@ export function convertMilesRecords(
     }
   }
   
-  // FIX v2.4: DO NOT process flight miles here
-  // Previously this code added flight miles to miles_flight, but rebuildLedgersFromFlights
-  // also adds them, causing double-counting. The flights are already stored in the flights
-  // array and will be processed by rebuildLedgersFromFlights.
-  //
-  // We still need to ensure months with flights have a record (for other fields),
-  // but we don't add the miles.
+  // Process flight miles
   for (const flight of rawFlights) {
-    // Just ensure the month record exists (for consistency)
-    // but don't add miles_flight - that's handled by rebuildLedgersFromFlights
-    getMonth(flight.flightDate);
+    const record = getMonth(flight.flightDate);
+    const totalFlightMiles = flight.miles + flight.safMiles;
+    
+    if (totalFlightMiles > 0) {
+      record.miles_flight += totalFlightMiles;
+    } else if (totalFlightMiles < 0) {
+      record.miles_debit += Math.abs(totalFlightMiles);
+    }
   }
   
   return Array.from(monthMap.values())
@@ -333,22 +326,8 @@ export function detectQualificationSettings(
   // The XP Engine uses cycleStartDate to filter flights:
   // - Flights ON or BEFORE cycleStartDate are excluded (they belonged to previous cycle)
   // - Flights AFTER cycleStartDate count toward the new cycle
-  //
-  // FIX: Don't use Date.toISOString() as it converts to UTC and can shift the month
-  // in timezones ahead of UTC. Instead, calculate the month string directly.
-  const requalYear = requalDate.getFullYear();
-  const requalMonth = requalDate.getMonth(); // 0-indexed (Oct = 9)
-  
-  // Next month calculation
-  let cycleYear = requalYear;
-  let cycleMonth = requalMonth + 1; // +1 for next month (Nov = 10)
-  if (cycleMonth > 11) {
-    cycleMonth = 0; // January
-    cycleYear += 1;
-  }
-  
-  // Format as YYYY-MM (cycleMonth is 0-indexed, so +1 for display)
-  const cycleStartMonth = `${cycleYear}-${String(cycleMonth + 1).padStart(2, '0')}`;
+  const cycleStartMonthDate = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
+  const cycleStartMonth = cycleStartMonthDate.toISOString().slice(0, 7);  // e.g., "2025-11"
   
   console.log('[Converter] Detected requalification:', {
     requalificationDate: latestReset.date,
