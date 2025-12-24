@@ -215,7 +215,11 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   // Cycle info
   const isLevelUpCycle = currentCycle.endedByLevelUp ?? false;
   const levelUpIsActual = currentCycle.levelUpIsActual ?? false;
-  const isChained = selectedIndex > 0;
+  // Show read-only rollover if:
+  // 1. This is a chained cycle (not the first), OR
+  // 2. There are qualificationSettings with a defined startingXP (from PDF import)
+  const hasQualificationRollover = qualificationSettings?.startingXP !== undefined && qualificationSettings.startingXP > 0;
+  const isChained = selectedIndex > 0 || hasQualificationRollover;
 
   // Cycle XP calculations
   const projectedCycleXP = useMemo(
