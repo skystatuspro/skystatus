@@ -148,7 +148,7 @@ export function convertFlights(rawFlights: AIRawFlight[]): FlightRecord[] {
     const flightDate = parseToISODate(f.flightDate);
     
     return {
-      id: `ai-flight-${flightDate}-${f.route.replace(/\s/g, '')}-${index}`,
+      id: `ai-flight-${flightDate}-${f.route.replace(/\s/g, '')}-${index}-${crypto.randomUUID().slice(0, 8)}`,
       date: flightDate,
       route: normalizeRoute(f.route),
       airline: f.airline.toUpperCase(),
