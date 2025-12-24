@@ -1,6 +1,7 @@
 // src/modules/ai-pdf-parser/converter.ts
 // Converts AI raw response to SkyStatus app types
-// v2.3 - Added robust date parsing for multiple formats
+// v2.4 - Fixed: miles_flight now set to 0 to prevent double-counting
+//        (rebuildLedgersFromFlights calculates this from flights array)
 
 import type { FlightRecord, MilesRecord, StatusLevel } from '../../types';
 import type { QualificationSettings } from '../../hooks/useUserData';
@@ -182,6 +183,11 @@ function normalizeRoute(route: string): string {
 /**
  * Convert AI parsed miles activities to MilesRecord format
  * Aggregates by month
+ * 
+ * FIX v2.4: miles_flight is now always set to 0
+ * The rebuildLedgersFromFlights function in flight-intake.ts calculates
+ * miles_flight from the flights array. If we also set it here from rawFlights,
+ * it gets counted twice (once here, once in rebuildLedgersFromFlights).
  */
 export function convertMilesRecords(
   rawActivities: AIRawMilesActivity[],
@@ -197,19 +203,19 @@ export function convertMilesRecords(
         month,
         miles_subscription: 0,
         miles_amex: 0,
-        miles_flight: 0,
+        miles_flight: 0,  // Always 0 - calculated by rebuildLedgersFromFlights
         miles_other: 0,
         miles_debit: 0,
         cost_subscription: 0,
         cost_amex: 0,
-        cost_flight: 0,
+        cost_flight: 0,   // Always 0 - calculated by rebuildLedgersFromFlights
         cost_other: 0,
       });
     }
     return monthMap.get(month)!;
   };
   
-  // Process miles activities
+  // Process miles activities (non-flight)
   for (const activity of rawActivities) {
     const record = getMonth(activity.date);
     const miles = activity.miles;
@@ -238,16 +244,17 @@ export function convertMilesRecords(
     }
   }
   
-  // Process flight miles
+  // FIX v2.4: DO NOT process flight miles here
+  // Previously this code added flight miles to miles_flight, but rebuildLedgersFromFlights
+  // also adds them, causing double-counting. The flights are already stored in the flights
+  // array and will be processed by rebuildLedgersFromFlights.
+  //
+  // We still need to ensure months with flights have a record (for other fields),
+  // but we don't add the miles.
   for (const flight of rawFlights) {
-    const record = getMonth(flight.flightDate);
-    const totalFlightMiles = flight.miles + flight.safMiles;
-    
-    if (totalFlightMiles > 0) {
-      record.miles_flight += totalFlightMiles;
-    } else if (totalFlightMiles < 0) {
-      record.miles_debit += Math.abs(totalFlightMiles);
-    }
+    // Just ensure the month record exists (for consistency)
+    // but don't add miles_flight - that's handled by rebuildLedgersFromFlights
+    getMonth(flight.flightDate);
   }
   
   return Array.from(monthMap.values())

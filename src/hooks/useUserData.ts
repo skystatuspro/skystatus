@@ -1,6 +1,7 @@
 // src/hooks/useUserData.ts
 // Custom hook that manages all user data state, persistence, and handlers
 // CLEAN VERSION - No pdfBaseline bypass, XP/Miles Engines are source of truth
+// v2.1 - Fixed duplication bugs in PDF import (miscXp, correctionXp now replace instead of add)
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../lib/AuthContext';
@@ -500,9 +501,11 @@ export function useUserData(): UseUserDataReturn {
 
   // -------------------------------------------------------------------------
   // PDF IMPORT (Clean Pattern - No Bypass)
+  // FIX v2.1: Changed miscXp and correctionXp to REPLACE instead of ADD
+  // This prevents duplication when re-importing the same PDF
   // -------------------------------------------------------------------------
 
-  const handlePdfImport = useCallback((
+  const handlePdfImport = useCallback(async (
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
@@ -536,52 +539,72 @@ export function useUserData(): UseUserDataReturn {
     }));
 
     // Merge flights (skip duplicates by date + route)
+    let mergedFlights: FlightRecord[] = [];
     setFlightsInternal((prevFlights) => {
       const existingFlightKeys = new Set(prevFlights.map((f) => `${f.date}|${f.route}`));
       const newFlights = taggedFlights.filter((f) => !existingFlightKeys.has(`${f.date}|${f.route}`));
-      const merged = [...prevFlights, ...newFlights];
-      merged.sort((a, b) => b.date.localeCompare(a.date));
-      return merged;
+      mergedFlights = [...prevFlights, ...newFlights];
+      mergedFlights.sort((a, b) => b.date.localeCompare(a.date));
+      return mergedFlights;
     });
 
     // Merge miles (PDF data is authoritative for months it contains)
+    // FIX: Clear miles_flight from imported records to prevent double-counting
+    // The rebuildLedgersFromFlights function will recalculate miles_flight from flights
+    let mergedMiles: MilesRecord[] = [];
     setBaseMilesDataInternal((prevMiles) => {
       const milesByMonth = new Map(prevMiles.map(m => [m.month, m]));
       for (const incoming of importedMiles) {
-        milesByMonth.set(incoming.month, incoming);
+        // Clear miles_flight to prevent duplication - it will be recalculated
+        milesByMonth.set(incoming.month, {
+          ...incoming,
+          miles_flight: 0,
+          cost_flight: 0,
+        });
       }
-      const merged = Array.from(milesByMonth.values());
-      merged.sort((a, b) => b.month.localeCompare(a.month));
-      return merged;
+      mergedMiles = Array.from(milesByMonth.values());
+      mergedMiles.sort((a, b) => b.month.localeCompare(a.month));
+      return mergedMiles;
     });
 
     // Handle XP correction
+    // FIX v2.1: REPLACE correctionXp instead of adding to prevent duplication
+    let updatedLedger = { ...manualLedger };
     if (xpCorrection && xpCorrection.correctionXp !== 0) {
       setManualLedgerInternal((prev) => {
         const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-        return {
+        updatedLedger = {
           ...prev,
           [xpCorrection.month]: {
             ...existing,
-            correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
+            // FIX: Replace instead of add - the PDF value is authoritative
+            correctionXp: xpCorrection.correctionXp,
           },
         };
+        return updatedLedger;
       });
     }
 
     // Handle bonus XP from non-flight activities
+    // FIX v2.1: REPLACE miscXp instead of adding to prevent duplication
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
       setManualLedgerInternal((prev) => {
         const updated = { ...prev };
         for (const [month, xp] of Object.entries(bonusXpByMonth)) {
           const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-          updated[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
+          updated[month] = { 
+            ...existing, 
+            // FIX: Replace instead of add - the PDF value is authoritative
+            miscXp: xp 
+          };
         }
+        updatedLedger = updated;
         return updated;
       });
     }
 
     // Handle cycle settings
+    let newQualificationSettings = qualificationSettings;
     if (cycleSettings) {
       const newSettings = {
         cycleStartMonth: cycleSettings.cycleStartMonth,
@@ -589,18 +612,39 @@ export function useUserData(): UseUserDataReturn {
         startingStatus: cycleSettings.startingStatus,
         startingXP: cycleSettings.startingXP ?? 0,
       };
+      newQualificationSettings = newSettings;
       setQualificationSettingsInternal(newSettings);
-      
-      // IMPORTANT: Immediately save qualification settings to database
-      // This prevents the race condition where logout/login before debounced save
-      // would lose the cycleStartDate
-      if (user && !isDemoMode) {
-        updateProfile(user.id, {
-          qualification_start_month: newSettings.cycleStartMonth,
-          qualification_start_date: newSettings.cycleStartDate || null,
-          starting_status: newSettings.startingStatus,
-          starting_xp: newSettings.startingXP,
-        }).catch(err => console.error('[handlePdfImport] Failed to save qualification settings:', err));
+    }
+
+    // FIX v2.1: Immediately save all data to database to prevent race condition
+    // Previously, only qualification settings were saved immediately, causing data loss on quick F5
+    if (user && !isDemoMode) {
+      try {
+        const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
+        Object.entries(updatedLedger).forEach(([month, entry]) => {
+          xpLedgerToSave[month] = {
+            month,
+            amexXp: entry.amexXp || 0,
+            bonusSafXp: entry.bonusSafXp || 0,
+            miscXp: entry.miscXp || 0,
+            correctionXp: entry.correctionXp || 0,
+          };
+        });
+
+        await Promise.all([
+          saveFlights(user.id, mergedFlights),
+          saveMilesRecords(user.id, mergedMiles),
+          saveXPLedger(user.id, xpLedgerToSave),
+          updateProfile(user.id, {
+            qualification_start_month: newQualificationSettings?.cycleStartMonth,
+            qualification_start_date: newQualificationSettings?.cycleStartDate || null,
+            starting_status: newQualificationSettings?.startingStatus,
+            starting_xp: newQualificationSettings?.startingXP,
+          }),
+        ]);
+        console.log('[handlePdfImport] All data saved successfully');
+      } catch (err) {
+        console.error('[handlePdfImport] Failed to save data:', err);
       }
     }
 
