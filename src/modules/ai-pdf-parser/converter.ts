@@ -333,8 +333,22 @@ export function detectQualificationSettings(
   // The XP Engine uses cycleStartDate to filter flights:
   // - Flights ON or BEFORE cycleStartDate are excluded (they belonged to previous cycle)
   // - Flights AFTER cycleStartDate count toward the new cycle
-  const cycleStartMonthDate = new Date(requalDate.getFullYear(), requalDate.getMonth() + 1, 1);
-  const cycleStartMonth = cycleStartMonthDate.toISOString().slice(0, 7);  // e.g., "2025-11"
+  //
+  // FIX: Don't use Date.toISOString() as it converts to UTC and can shift the month
+  // in timezones ahead of UTC. Instead, calculate the month string directly.
+  const requalYear = requalDate.getFullYear();
+  const requalMonth = requalDate.getMonth(); // 0-indexed (Oct = 9)
+  
+  // Next month calculation
+  let cycleYear = requalYear;
+  let cycleMonth = requalMonth + 1; // +1 for next month (Nov = 10)
+  if (cycleMonth > 11) {
+    cycleMonth = 0; // January
+    cycleYear += 1;
+  }
+  
+  // Format as YYYY-MM (cycleMonth is 0-indexed, so +1 for display)
+  const cycleStartMonth = `${cycleYear}-${String(cycleMonth + 1).padStart(2, '0')}`;
   
   console.log('[Converter] Detected requalification:', {
     requalificationDate: latestReset.date,
