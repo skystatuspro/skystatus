@@ -447,18 +447,27 @@ export function useUserData(): UseUserDataReturn {
 
   // Auto-save on debounced data change
   // CRITICAL: Only save if data has been loaded first to prevent wiping user data
+  // CRITICAL: Only save if not already saving to prevent overlapping saves
   useEffect(() => {
     console.log('[useEffect:save] Checking if should save:', {
       hasUser: !!user,
       isDemoMode,
       debouncedDataVersion,
       hasInitiallyLoaded: hasInitiallyLoaded.current,
+      isSaving,
     });
+    
+    // Guard against overlapping saves - if already saving, skip this trigger
+    // The debounce will catch the next change
+    if (isSaving) {
+      console.log('[useEffect:save] SKIPPED: Save already in progress');
+      return;
+    }
     
     if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
       saveUserData();
     }
-  }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
+  }, [debouncedDataVersion, user, isDemoMode, saveUserData, isSaving]);
 
   // -------------------------------------------------------------------------
   // MARK DATA CHANGED (triggers auto-save)
@@ -835,8 +844,10 @@ export function useUserData(): UseUserDataReturn {
             qualification_start_month: null,
             qualification_start_date: null,
             starting_status: null,
-            starting_xp: null,
+            starting_xp: 0,
+            starting_uxp: 0,
             ultimate_cycle_type: null,
+            current_uxp: 0,
           }),
         ]);
         console.log('[handleStartOver] Database wiped successfully');
@@ -857,6 +868,7 @@ export function useUserData(): UseUserDataReturn {
     setXpRolloverInternal(0);
     setManualLedgerInternal({});
     setQualificationSettingsInternal(null);
+    setCurrentUXPInternal(0);
     setIsDemoMode(false);
     setIsLocalMode(false);
 
