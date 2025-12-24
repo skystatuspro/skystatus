@@ -345,7 +345,9 @@ export function useUserData(): UseUserDataReturn {
 
       if (data.profile) {
         setTargetCPMInternal(data.profile.targetCPM || 0.012);
-        setXpRolloverInternal(data.profile.xpRollover || 0);
+        // CRITICAL: Use startingXP if available, fall back to xpRollover for backwards compatibility
+        // This ensures the UI shows the correct rollover from the PDF import
+        setXpRolloverInternal(data.profile.startingXP ?? data.profile.xpRollover ?? 0);
         setCurrencyInternal((data.profile.currency || 'EUR') as CurrencyCode);
         setHomeAirportInternal(data.profile.homeAirport || null);
         setMilesBalanceInternal(data.profile.milesBalance || 0);
