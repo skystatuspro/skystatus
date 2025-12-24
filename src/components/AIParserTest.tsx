@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { aiParseFlyingBlue, type AIParsedResult, type AIParserError } from '../modules/ai-pdf-parser';
-import { useUserData } from '../hooks/useUserData';
+import { useUserData } from '../hooks/useUserDataV2';
 import { useAuth } from '../lib/AuthContext';
 
 // PDF.js worker setup

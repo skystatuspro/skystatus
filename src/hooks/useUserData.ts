@@ -185,6 +185,19 @@ export function useUserData(): UseUserDataReturn {
   const { user } = useAuth();
 
   // -------------------------------------------------------------------------
+  // DEBUG LOGGING
+  // -------------------------------------------------------------------------
+  
+  // Unique instance ID for debugging multiple hook instances
+  const instanceId = useRef(Math.random().toString(36).slice(2, 8));
+  
+  // Enhanced logging function
+  const log = useCallback((action: string, data?: Record<string, unknown>) => {
+    const timestamp = new Date().toISOString().slice(11, 23);
+    console.log(`[useUserData:${instanceId.current}] ${timestamp} ${action}`, data || '');
+  }, []);
+
+  // -------------------------------------------------------------------------
   // STATE
   // -------------------------------------------------------------------------
 
@@ -231,6 +244,14 @@ export function useUserData(): UseUserDataReturn {
   const hasInitiallyLoaded = useRef(false);
   const loadedForUserId = useRef<string | null>(null);
   const isLoadingInProgress = useRef(false); // CRITICAL: Prevents parallel loads
+  
+  // Ref to track the latest manualLedger for immediate saves (prevents stale closure)
+  const manualLedgerRef = useRef<ManualLedger>({});
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    manualLedgerRef.current = manualLedger;
+  }, [manualLedger]);
 
   // Refresh backup state when flights change
   useEffect(() => {
@@ -289,7 +310,7 @@ export function useUserData(): UseUserDataReturn {
     // CRITICAL: Prevent parallel loads - this fixes the race condition
     // where multiple loads can run simultaneously and overwrite each other
     if (isLoadingInProgress.current) {
-      console.log('[loadUserData] SKIPPED: Load already in progress');
+      log('LOAD_SKIPPED', { reason: 'already in progress' });
       return;
     }
     
@@ -297,10 +318,11 @@ export function useUserData(): UseUserDataReturn {
     isLoadingInProgress.current = true;
     setDataLoading(true);
     
-    console.log('[loadUserData] ===== STARTING LOAD =====');
-    console.log('[loadUserData] User ID:', user.id);
-    console.log('[loadUserData] hasInitiallyLoaded:', hasInitiallyLoaded.current);
-    console.log('[loadUserData] loadedForUserId:', loadedForUserId.current);
+    log('LOAD_START', {
+      userId: user.id,
+      hasInitiallyLoaded: hasInitiallyLoaded.current,
+      loadedForUserId: loadedForUserId.current,
+    });
     
     try {
       const data = await fetchAllUserData(user.id);
@@ -308,16 +330,17 @@ export function useUserData(): UseUserDataReturn {
       // Double-check we're still loading for the same user
       // (user could have changed during the async fetch)
       if (!user || user.id !== loadedForUserId.current && loadedForUserId.current !== null) {
-        console.log('[loadUserData] ABORTED: User changed during load');
+        log('LOAD_ABORTED', { reason: 'user changed during load' });
         return;
       }
 
-      console.log('[loadUserData] RAW DATA FROM DB:', {
+      log('LOAD_DATA_RECEIVED', {
         flightsCount: data.flights.length,
         milesDataCount: data.milesData.length,
         xpLedgerKeys: Object.keys(data.xpLedger),
-        xpLedgerRaw: JSON.stringify(data.xpLedger),
-        profile: data.profile,
+        xpLedgerEntries: Object.entries(data.xpLedger).map(([m, e]) => 
+          `${m}: corr=${e.correctionXp}, misc=${e.miscXp}`
+        ),
       });
 
       // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
@@ -337,8 +360,6 @@ export function useUserData(): UseUserDataReturn {
         };
       });
       setManualLedgerInternal(loadedLedger);
-      
-      console.log('[loadUserData] PARSED manualLedger:', JSON.stringify(loadedLedger));
 
       // Determine if this is an existing user (has any data)
       const hasExistingData = data.flights.length > 0 || data.milesData.length > 0 || data.redemptions.length > 0;
@@ -376,22 +397,39 @@ export function useUserData(): UseUserDataReturn {
       hasInitiallyLoaded.current = true;
       loadedForUserId.current = user.id;
       
-      console.log('[loadUserData] ===== LOAD COMPLETE =====');
+      log('LOAD_COMPLETE', {
+        manualLedgerKeys: Object.keys(loadedLedger),
+      });
     } catch (error) {
       console.error('Error loading user data:', error);
+      log('LOAD_ERROR', { error: String(error) });
     } finally {
       setDataLoading(false);
       isLoadingInProgress.current = false; // Release the lock
     }
-  }, [user]);
+  }, [user, log]);
 
   const saveUserData = useCallback(async () => {
-    if (!user || isDemoMode) return;
+    if (!user || isDemoMode) {
+      log('SAVE_SKIPPED', { reason: !user ? 'no user' : 'demo mode' });
+      return;
+    }
+
+    // Use ref to get the latest manualLedger value, avoiding stale closure issues
+    const currentLedger = manualLedgerRef.current;
+    
+    log('SAVE_START', {
+      flightsCount: flights.length,
+      manualLedgerKeys: Object.keys(currentLedger),
+      manualLedgerEntries: Object.entries(currentLedger).map(([m, e]) => 
+        `${m}: corr=${e.correctionXp || 0}, misc=${e.miscXp || 0}`
+      ),
+    });
 
     setIsSaving(true);
     try {
       const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
-      Object.entries(manualLedger).forEach(([month, entry]) => {
+      Object.entries(currentLedger).forEach(([month, entry]) => {
         xpLedgerToSave[month] = {
           month,
           amexXp: entry.amexXp || 0,
@@ -417,12 +455,15 @@ export function useUserData(): UseUserDataReturn {
           ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
         }),
       ]);
+      
+      log('SAVE_COMPLETE');
     } catch (error) {
       console.error('Error saving user data:', error);
+      log('SAVE_ERROR', { error: String(error) });
     } finally {
       setIsSaving(false);
     }
-  }, [user, isDemoMode, flights, baseMilesData, redemptions, manualLedger, targetCPM, xpRollover, currency, qualificationSettings]);
+  }, [user, isDemoMode, flights, baseMilesData, redemptions, targetCPM, xpRollover, currency, qualificationSettings, log]);
 
   // Load on auth change
   // CRITICAL: Using user?.id instead of user in deps to prevent recreation on every user object change
@@ -591,15 +632,25 @@ export function useUserData(): UseUserDataReturn {
 
   // -------------------------------------------------------------------------
   // PDF IMPORT (Clean Pattern - No Bypass)
+  // CRITICAL: This function builds the complete new state BEFORE updating,
+  // then saves with those exact values to avoid stale closure issues.
   // -------------------------------------------------------------------------
 
-  const handlePdfImport = useCallback((
+  const handlePdfImport = useCallback(async (
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
     cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
     bonusXpByMonth?: Record<string, number>
   ) => {
+    log('PDF_IMPORT_START', {
+      flightsCount: importedFlights.length,
+      milesCount: importedMiles.length,
+      hasCorrection: !!xpCorrection,
+      correctionXp: xpCorrection?.correctionXp,
+      bonusXpMonths: bonusXpByMonth ? Object.keys(bonusXpByMonth) : [],
+    });
+
     // Create backup before modifying data
     try {
       createBackup(
@@ -626,51 +677,55 @@ export function useUserData(): UseUserDataReturn {
       importedAt: f.importedAt || now,
     }));
 
-    // Merge flights (skip duplicates by date + route)
-    setFlightsInternal((prevFlights) => {
-      const existingFlightKeys = new Set(prevFlights.map((f) => `${f.date}|${f.route}`));
-      const newFlights = taggedFlights.filter((f) => !existingFlightKeys.has(`${f.date}|${f.route}`));
-      const merged = [...prevFlights, ...newFlights];
-      merged.sort((a, b) => b.date.localeCompare(a.date));
-      return merged;
-    });
+    // =========================================================================
+    // STEP 1: Build complete new state values BEFORE any React state updates
+    // This prevents stale closure issues in the save
+    // =========================================================================
 
-    // Merge miles (PDF data is authoritative for months it contains)
-    setBaseMilesDataInternal((prevMiles) => {
-      const milesByMonth = new Map(prevMiles.map(m => [m.month, m]));
-      for (const incoming of importedMiles) {
-        milesByMonth.set(incoming.month, incoming);
-      }
-      const merged = Array.from(milesByMonth.values());
-      merged.sort((a, b) => b.month.localeCompare(a.month));
-      return merged;
-    });
+    // Build new flights array
+    const existingFlightKeys = new Set(flights.map((f) => `${f.date}|${f.route}`));
+    const newFlightsToAdd = taggedFlights.filter((f) => !existingFlightKeys.has(`${f.date}|${f.route}`));
+    const mergedFlights = [...flights, ...newFlightsToAdd].sort((a, b) => b.date.localeCompare(a.date));
 
-    // Handle XP correction
+    // Build new miles array
+    const milesByMonth = new Map(baseMilesData.map(m => [m.month, m]));
+    for (const incoming of importedMiles) {
+      milesByMonth.set(incoming.month, incoming);
+    }
+    const mergedMiles = Array.from(milesByMonth.values()).sort((a, b) => b.month.localeCompare(a.month));
+
+    // Build new manual ledger (start from current value via ref to ensure freshness)
+    const newManualLedger: ManualLedger = { ...manualLedgerRef.current };
+    
+    // Add XP correction
     if (xpCorrection && xpCorrection.correctionXp !== 0) {
-      setManualLedgerInternal((prev) => {
-        const existing = prev[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-        return {
-          ...prev,
-          [xpCorrection.month]: {
-            ...existing,
-            correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
-          },
-        };
+      const existing = newManualLedger[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+      newManualLedger[xpCorrection.month] = {
+        ...existing,
+        correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
+      };
+      log('PDF_IMPORT_CORRECTION_ADDED', {
+        month: xpCorrection.month,
+        newCorrectionXp: newManualLedger[xpCorrection.month].correctionXp,
       });
     }
 
-    // Handle bonus XP from non-flight activities
+    // Add bonus XP from non-flight activities
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-      setManualLedgerInternal((prev) => {
-        const updated = { ...prev };
-        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-          const existing = updated[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
-          updated[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
-        }
-        return updated;
-      });
+      for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+        const existing = newManualLedger[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
+        newManualLedger[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
+      }
+      log('PDF_IMPORT_BONUS_XP_ADDED', { bonusXpByMonth });
     }
+
+    // =========================================================================
+    // STEP 2: Update React state with the pre-calculated values
+    // =========================================================================
+
+    setFlightsInternal(mergedFlights);
+    setBaseMilesDataInternal(mergedMiles);
+    setManualLedgerInternal(newManualLedger);
 
     // Handle cycle settings
     if (cycleSettings) {
@@ -681,30 +736,35 @@ export function useUserData(): UseUserDataReturn {
         startingXP: cycleSettings.startingXP ?? 0,
       };
       setQualificationSettingsInternal(newSettings);
-      
-      // IMPORTANT: Immediately save qualification settings to database
-      // This prevents the race condition where logout/login before debounced save
-      // would lose the cycleStartDate
-      if (user && !isDemoMode) {
-        updateProfile(user.id, {
-          qualification_start_month: newSettings.cycleStartMonth,
-          qualification_start_date: newSettings.cycleStartDate || null,
-          starting_status: newSettings.startingStatus,
-          starting_xp: newSettings.startingXP,
-        }).catch(err => console.error('[handlePdfImport] Failed to save qualification settings:', err));
-      }
+      log('PDF_IMPORT_CYCLE_SETTINGS', newSettings);
     }
 
-    // IMPORTANT: Immediately save XP ledger to database
-    // The debounced save might not fire correctly due to timing issues
-    // We need to ensure corrections and bonus XP are persisted
+    // =========================================================================
+    // STEP 3: Immediately save to database with the EXACT same values
+    // This ensures no stale closure issues - we save what we just set
+    // =========================================================================
+
     if (user && !isDemoMode) {
-      // Build the ledger from state updates - need to do this manually since 
-      // state updates are async and we can't access the new value immediately
-      const ledgerToSave: Record<string, XPLedgerEntry> = {};
+      log('PDF_IMPORT_SAVING_TO_DB', { userId: user.id });
       
-      // Start with existing manual ledger
-      Object.entries(manualLedger).forEach(([month, entry]) => {
+      // Save qualification settings
+      if (cycleSettings) {
+        try {
+          await updateProfile(user.id, {
+            qualification_start_month: cycleSettings.cycleStartMonth,
+            qualification_start_date: cycleSettings.cycleStartDate || null,
+            starting_status: cycleSettings.startingStatus,
+            starting_xp: cycleSettings.startingXP ?? 0,
+          });
+          log('PDF_IMPORT_SAVED_PROFILE');
+        } catch (err) {
+          console.error('[handlePdfImport] Failed to save qualification settings:', err);
+        }
+      }
+
+      // Save XP ledger with the EXACT ledger we calculated above
+      const ledgerToSave: Record<string, XPLedgerEntry> = {};
+      Object.entries(newManualLedger).forEach(([month, entry]) => {
         ledgerToSave[month] = {
           month,
           amexXp: entry.amexXp || 0,
@@ -713,49 +773,41 @@ export function useUserData(): UseUserDataReturn {
           correctionXp: entry.correctionXp || 0,
         };
       });
-      
-      // Add XP correction
-      if (xpCorrection && xpCorrection.correctionXp !== 0) {
-        const existing = ledgerToSave[xpCorrection.month] || {
-          month: xpCorrection.month,
-          amexXp: 0,
-          bonusSafXp: 0,
-          miscXp: 0,
-          correctionXp: 0,
-        };
-        ledgerToSave[xpCorrection.month] = {
-          ...existing,
-          correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
-        };
-      }
-      
-      // Add bonus XP
-      if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
-        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
-          const existing = ledgerToSave[month] || {
-            month,
-            amexXp: 0,
-            bonusSafXp: 0,
-            miscXp: 0,
-            correctionXp: 0,
-          };
-          ledgerToSave[month] = {
-            ...existing,
-            miscXp: (existing.miscXp || 0) + xp,
-          };
+
+      if (Object.keys(ledgerToSave).length > 0) {
+        log('PDF_IMPORT_SAVING_LEDGER', { 
+          entries: Object.entries(ledgerToSave).map(([m, e]) => `${m}: corr=${e.correctionXp}, misc=${e.miscXp}`)
+        });
+        try {
+          await saveXPLedger(user.id, ledgerToSave);
+          log('PDF_IMPORT_SAVED_LEDGER');
+        } catch (err) {
+          console.error('[handlePdfImport] Failed to save XP ledger:', err);
         }
       }
-      
-      // Only save if there's actually data to save
-      if (Object.keys(ledgerToSave).length > 0) {
-        console.log('[handlePdfImport] Saving XP ledger immediately:', ledgerToSave);
-        saveXPLedger(user.id, ledgerToSave)
-          .catch(err => console.error('[handlePdfImport] Failed to save XP ledger:', err));
+
+      // Save flights
+      try {
+        await saveFlights(user.id, mergedFlights);
+        log('PDF_IMPORT_SAVED_FLIGHTS', { count: mergedFlights.length });
+      } catch (err) {
+        console.error('[handlePdfImport] Failed to save flights:', err);
+      }
+
+      // Save miles
+      try {
+        await saveMilesRecords(user.id, mergedMiles);
+        log('PDF_IMPORT_SAVED_MILES', { count: mergedMiles.length });
+      } catch (err) {
+        console.error('[handlePdfImport] Failed to save miles:', err);
       }
     }
 
+    // Still trigger debounced save for any other fields
     markDataChanged();
-  }, [flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, markDataChanged, user, isDemoMode]);
+    
+    log('PDF_IMPORT_COMPLETE');
+  }, [flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, markDataChanged, user, isDemoMode, log]);
 
   // -------------------------------------------------------------------------
   // UNDO IMPORT

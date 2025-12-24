@@ -583,17 +583,6 @@ export async function fetchXPLedger(userId: string): Promise<Record<string, XPLe
 }
 
 export async function saveXPLedger(userId: string, ledger: Record<string, XPLedgerEntry>): Promise<boolean> {
-  // Delete all existing entries for this user
-  const { error: deleteError } = await supabase
-    .from('xp_ledger')
-    .delete()
-    .eq('user_id', userId);
-
-  if (deleteError) {
-    console.error('Error deleting XP ledger:', deleteError);
-    return false;
-  }
-
   // Filter out empty entries and convert to DB format
   const entries = Object.entries(ledger)
     .filter(([_, entry]) => 
@@ -611,7 +600,25 @@ export async function saveXPLedger(userId: string, ledger: Record<string, XPLedg
       correction_xp: entry.correctionXp,
     }));
 
-  if (entries.length === 0) return true;
+  // CRITICAL SAFETY CHECK: If no entries to save, preserve existing data
+  // This prevents stale closure bugs from accidentally wiping the database
+  if (entries.length === 0) {
+    console.log('[saveXPLedger] No entries to save - preserving existing data to prevent race condition data loss');
+    return true;
+  }
+
+  console.log('[saveXPLedger] Saving entries:', entries.map(e => `${e.month}: corr=${e.correction_xp}, misc=${e.misc_xp}`));
+
+  // Delete all existing entries for this user
+  const { error: deleteError } = await supabase
+    .from('xp_ledger')
+    .delete()
+    .eq('user_id', userId);
+
+  if (deleteError) {
+    console.error('Error deleting XP ledger:', deleteError);
+    return false;
+  }
 
   const { error: insertError } = await supabase
     .from('xp_ledger')
@@ -621,6 +628,8 @@ export async function saveXPLedger(userId: string, ledger: Record<string, XPLedg
     console.error('Error saving XP ledger:', insertError);
     return false;
   }
+  
+  console.log('[saveXPLedger] Successfully saved', entries.length, 'entries');
   return true;
 }
 
