@@ -448,18 +448,27 @@ export function useUserData(): UseUserDataReturn {
   // Auto-save on debounced data change
   // CRITICAL: Only save if data has been loaded first to prevent wiping user data
   // CRITICAL: Only save if not already saving to prevent overlapping saves
+  // NOTE: We use isSavingRef to check inside the effect, but don't include isSaving in deps
+  // to prevent the effect from re-running when save completes
+  const isSavingRef = useRef(false);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    isSavingRef.current = isSaving;
+  }, [isSaving]);
+  
   useEffect(() => {
     console.log('[useEffect:save] Checking if should save:', {
       hasUser: !!user,
       isDemoMode,
       debouncedDataVersion,
       hasInitiallyLoaded: hasInitiallyLoaded.current,
-      isSaving,
+      isSaving: isSavingRef.current,
     });
     
     // Guard against overlapping saves - if already saving, skip this trigger
     // The debounce will catch the next change
-    if (isSaving) {
+    if (isSavingRef.current) {
       console.log('[useEffect:save] SKIPPED: Save already in progress');
       return;
     }
@@ -467,7 +476,7 @@ export function useUserData(): UseUserDataReturn {
     if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
       saveUserData();
     }
-  }, [debouncedDataVersion, user, isDemoMode, saveUserData, isSaving]);
+  }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
 
   // -------------------------------------------------------------------------
   // MARK DATA CHANGED (triggers auto-save)
@@ -683,6 +692,65 @@ export function useUserData(): UseUserDataReturn {
           starting_status: newSettings.startingStatus,
           starting_xp: newSettings.startingXP,
         }).catch(err => console.error('[handlePdfImport] Failed to save qualification settings:', err));
+      }
+    }
+
+    // IMPORTANT: Immediately save XP ledger to database
+    // The debounced save might not fire correctly due to timing issues
+    // We need to ensure corrections and bonus XP are persisted
+    if (user && !isDemoMode) {
+      // Build the ledger from state updates - need to do this manually since 
+      // state updates are async and we can't access the new value immediately
+      const ledgerToSave: Record<string, XPLedgerEntry> = {};
+      
+      // Start with existing manual ledger
+      Object.entries(manualLedger).forEach(([month, entry]) => {
+        ledgerToSave[month] = {
+          month,
+          amexXp: entry.amexXp || 0,
+          bonusSafXp: entry.bonusSafXp || 0,
+          miscXp: entry.miscXp || 0,
+          correctionXp: entry.correctionXp || 0,
+        };
+      });
+      
+      // Add XP correction
+      if (xpCorrection && xpCorrection.correctionXp !== 0) {
+        const existing = ledgerToSave[xpCorrection.month] || {
+          month: xpCorrection.month,
+          amexXp: 0,
+          bonusSafXp: 0,
+          miscXp: 0,
+          correctionXp: 0,
+        };
+        ledgerToSave[xpCorrection.month] = {
+          ...existing,
+          correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
+        };
+      }
+      
+      // Add bonus XP
+      if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
+        for (const [month, xp] of Object.entries(bonusXpByMonth)) {
+          const existing = ledgerToSave[month] || {
+            month,
+            amexXp: 0,
+            bonusSafXp: 0,
+            miscXp: 0,
+            correctionXp: 0,
+          };
+          ledgerToSave[month] = {
+            ...existing,
+            miscXp: (existing.miscXp || 0) + xp,
+          };
+        }
+      }
+      
+      // Only save if there's actually data to save
+      if (Object.keys(ledgerToSave).length > 0) {
+        console.log('[handlePdfImport] Saving XP ledger immediately:', ledgerToSave);
+        saveXPLedger(user.id, ledgerToSave)
+          .catch(err => console.error('[handlePdfImport] Failed to save XP ledger:', err));
       }
     }
 
