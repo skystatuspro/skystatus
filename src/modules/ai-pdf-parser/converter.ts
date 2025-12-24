@@ -262,13 +262,36 @@ export function convertMilesRecords(
  * Extract bonus XP by month from non-flight activities
  */
 export function extractBonusXpByMonth(
-  rawActivities: AIRawMilesActivity[]
+  rawActivities: AIRawMilesActivity[],
+  qualificationSettings?: QualificationSettings | null
 ): Record<string, number> {
   const bonusXp: Record<string, number> = {};
+  
+  // Get the cycle start info to avoid double-counting rollover XP
+  const cycleStartMonth = qualificationSettings?.cycleStartMonth;
+  const cycleStartDate = qualificationSettings?.cycleStartDate;
+  const startingXP = qualificationSettings?.startingXP ?? 0;
+  
+  // Determine which month the rollover belongs to
+  // If cycleStartDate is e.g. "2025-10-08", the rollover was added in October
+  const rolloverMonth = cycleStartDate ? cycleStartDate.slice(0, 7) : cycleStartMonth;
   
   for (const activity of rawActivities) {
     if (activity.xp > 0) {
       const month = extractMonth(activity.date);
+      
+      // Skip if this looks like the rollover XP (same month as cycle start, same value)
+      // This prevents double-counting when startingXP is already set
+      if (startingXP > 0 && month === rolloverMonth && activity.xp === startingXP) {
+        console.log('[extractBonusXpByMonth] Skipping rollover XP to prevent double-count:', {
+          month,
+          xp: activity.xp,
+          startingXP,
+          description: activity.description?.slice(0, 50)
+        });
+        continue;
+      }
+      
       bonusXp[month] = (bonusXp[month] ?? 0) + activity.xp;
     }
   }

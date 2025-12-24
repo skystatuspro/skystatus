@@ -143,11 +143,12 @@ export async function aiParseFlyingBlue(
     // Convert to app types
     const flights = convertFlights(rawResponse.flights);
     const milesRecords = convertMilesRecords(rawResponse.milesActivities, rawResponse.flights);
-    const bonusXpByMonth = extractBonusXpByMonth(rawResponse.milesActivities);
     const qualificationSettings = detectQualificationSettings(
       rawResponse.statusEvents,
       rawResponse.header.currentStatus
     );
+    // Pass qualificationSettings to filter out rollover XP from bonus XP
+    const bonusXpByMonth = extractBonusXpByMonth(rawResponse.milesActivities, qualificationSettings);
     const pdfHeader = createPdfHeader(rawResponse);
     
     if (debug) {
