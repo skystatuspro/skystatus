@@ -244,10 +244,19 @@ export function useUserData(): UseUserDataReturn {
   // COMPUTED DATA
   // -------------------------------------------------------------------------
 
-  const { miles: milesData, xp: xpData } = useMemo(
-    () => rebuildLedgersFromFlights(baseMilesData, baseXpData, flights),
-    [baseMilesData, baseXpData, flights]
-  );
+  const { miles: milesData, xp: xpData } = useMemo(() => {
+    console.log('[useMemo:rebuildLedgers] Computing with:', {
+      baseMilesDataCount: baseMilesData.length,
+      baseXpDataCount: baseXpData.length,
+      flightsCount: flights.length,
+    });
+    const result = rebuildLedgersFromFlights(baseMilesData, baseXpData, flights);
+    console.log('[useMemo:rebuildLedgers] Result:', {
+      milesCount: result.miles.length,
+      xpCount: result.xp.length,
+    });
+    return result;
+  }, [baseMilesData, baseXpData, flights]);
 
   // In demo mode, use the selected demo status directly
   // Otherwise, calculate from XP stats
@@ -255,10 +264,15 @@ export function useUserData(): UseUserDataReturn {
     if (isDemoMode) {
       return demoStatus;
     }
+    console.log('[useMemo:currentStatus] Computing with manualLedger:', JSON.stringify(manualLedger));
     const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
     const now = new Date();
     const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
     const cycle = stats[currentQYear];
+    console.log('[useMemo:currentStatus] Cycle 2026:', cycle ? {
+      actualXP: cycle.actualXP,
+      actualStatus: cycle.actualStatus,
+    } : 'NO CYCLE');
     return (cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer') as StatusLevel;
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
@@ -269,9 +283,27 @@ export function useUserData(): UseUserDataReturn {
   const loadUserData = useCallback(async () => {
     if (!user) return;
 
+    console.log('[loadUserData] ===== STARTING LOAD =====');
+    console.log('[loadUserData] User ID:', user.id);
+    console.log('[loadUserData] hasInitiallyLoaded:', hasInitiallyLoaded.current);
+    console.log('[loadUserData] loadedForUserId:', loadedForUserId.current);
+    
     setDataLoading(true);
     try {
       const data = await fetchAllUserData(user.id);
+
+      // DEBUG: Log raw data from database
+      console.log('[loadUserData] RAW DATA FROM DB:', {
+        flightsCount: data.flights.length,
+        milesDataCount: data.milesData.length,
+        xpLedgerKeys: Object.keys(data.xpLedger),
+        xpLedgerRaw: JSON.stringify(data.xpLedger),
+        profile: data.profile ? {
+          qualificationStartMonth: data.profile.qualificationStartMonth,
+          qualificationStartDate: data.profile.qualificationStartDate,
+          startingXP: data.profile.startingXP,
+        } : null,
+      });
 
       // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
       // Load all data regardless of whether flights exist
@@ -289,6 +321,7 @@ export function useUserData(): UseUserDataReturn {
           correctionXp: entry.correctionXp,
         };
       });
+      console.log('[loadUserData] PARSED manualLedger:', JSON.stringify(loadedLedger));
       setManualLedgerInternal(loadedLedger);
 
       // Determine if this is an existing user (has any data)
@@ -372,9 +405,19 @@ export function useUserData(): UseUserDataReturn {
 
   // Load on auth change
   useEffect(() => {
+    console.log('[useEffect:load] Checking if should load:', {
+      hasUser: !!user,
+      userId: user?.id,
+      isDemoMode,
+      hasInitiallyLoaded: hasInitiallyLoaded.current,
+      loadedForUserId: loadedForUserId.current,
+    });
+    
     const shouldLoad = user && !isDemoMode &&
       (!hasInitiallyLoaded.current || loadedForUserId.current !== user.id);
 
+    console.log('[useEffect:load] shouldLoad:', shouldLoad);
+    
     if (shouldLoad) {
       loadUserData();
     }
@@ -383,7 +426,15 @@ export function useUserData(): UseUserDataReturn {
   // Auto-save on debounced data change
   // CRITICAL: Only save if data has been loaded first to prevent wiping user data
   useEffect(() => {
+    console.log('[useEffect:save] Checking if should save:', {
+      hasUser: !!user,
+      isDemoMode,
+      debouncedDataVersion,
+      hasInitiallyLoaded: hasInitiallyLoaded.current,
+    });
+    
     if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
+      console.log('[useEffect:save] SAVING DATA');
       saveUserData();
     }
   }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
