@@ -1,8 +1,8 @@
 // src/modules/ai-pdf-parser/types.ts
 // Type definitions for AI-powered PDF parsing
-// v2.3 - Changed pdfBaseline to pdfHeader (preview only, not stored)
+// v3.0 - Added activityTransactions for deduplication (Dec 2025)
 
-import type { FlightRecord, MilesRecord, StatusLevel } from '../../types';
+import type { FlightRecord, MilesRecord, StatusLevel, ActivityTransaction } from '../../types';
 import type { QualificationSettings } from '../../hooks/useUserData';
 import type { PdfHeader } from './converter';
 
@@ -140,7 +140,10 @@ export interface AIParsedResult {
   /** Flight records in app format */
   flights: FlightRecord[];
   
-  /** Miles records aggregated by month */
+  /** Activity transactions with unique IDs for deduplication (NEW) */
+  activityTransactions: ActivityTransaction[];
+  
+  /** Miles records aggregated by month (LEGACY - kept for backwards compatibility) */
   milesRecords: MilesRecord[];
   
   /** PDF header info (for preview display, not stored) */
@@ -149,7 +152,7 @@ export interface AIParsedResult {
   /** Qualification settings if cycle info detected */
   qualificationSettings: QualificationSettings | null;
   
-  /** Bonus XP by month (for manualLedger.miscXp) */
+  /** Bonus XP by month (LEGACY - kept for backwards compatibility) */
   bonusXpByMonth: Record<string, number>;
   
   /** Raw response for debugging */

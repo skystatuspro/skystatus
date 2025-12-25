@@ -32,7 +32,7 @@ import { useToast } from './components/Toast';
 import { MaintenanceNotice } from './components/MaintenanceNotice';
 import { UpdateNotice } from './components/UpdateNotice';
 import { Loader2, FileText, Upload } from 'lucide-react';
-import { ViewState, StatusLevel } from './types';
+import { ViewState, StatusLevel, ActivityTransaction, FlightRecord } from './types';
 
 // Inner component that uses page tracking (must be inside CookieConsentProvider)
 function PageTracker() {
@@ -103,11 +103,12 @@ export default function App() {
 
   // -------------------------------------------------------------------------
   // PDF IMPORT HANDLER (wraps actions.handlePdfImport with toast)
+  // Updated Dec 2025: Uses ActivityTransaction[] for deduplication
   // -------------------------------------------------------------------------
 
   const handlePdfImportWithToast = (
-    importedFlights: typeof state.flights,
-    importedMiles: typeof state.milesData,
+    importedFlights: FlightRecord[],
+    importedTransactions: ActivityTransaction[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
     cycleSettings?: { 
       cycleStartMonth: string; 
@@ -115,20 +116,17 @@ export default function App() {
       startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
       startingXP?: number;
     },
-    bonusXpByMonth?: Record<string, number>
   ) => {
-    // Count new flights before import (note: in replace mode, all flights are "new")
-    const newFlightCount = importedFlights.length;
+    // Count flights for toast message
+    const flightCount = importedFlights.length;
+    const txCount = importedTransactions.length;
 
-    actions.handlePdfImport(importedFlights, importedMiles, xpCorrection, cycleSettings, bonusXpByMonth);
+    actions.handlePdfImport(importedFlights, importedTransactions, xpCorrection, cycleSettings);
 
-    // Show success toast - note: actual merge happens in handlePdfImport
-    // newFlightCount here is what PDF contained, actual added may be less due to duplicates
+    // Show success toast
     const rolloverMsg = cycleSettings?.startingXP ? ` (${cycleSettings.startingXP} XP rollover)` : '';
     const cycleMsg = cycleSettings ? ` · Cycle: ${cycleSettings.startingStatus} from ${cycleSettings.cycleStartMonth}${rolloverMsg}` : '';
-    const bonusXpTotal = bonusXpByMonth ? Object.values(bonusXpByMonth).reduce((a, b) => a + b, 0) : 0;
-    const bonusMsg = bonusXpTotal > 0 ? ` (+${bonusXpTotal} bonus XP)` : '';
-    showToast(`Merged ${newFlightCount} flights from PDF${bonusMsg}${cycleMsg}. Duplicates skipped. Use Data Settings to undo.`, 'success');
+    showToast(`Imported ${flightCount} flights, ${txCount} transactions${cycleMsg}. Duplicates auto-skipped.`, 'success');
   };
 
   // -------------------------------------------------------------------------

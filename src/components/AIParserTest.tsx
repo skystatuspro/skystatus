@@ -125,10 +125,10 @@ export const AIParserTest: React.FC = () => {
   const handleImportToDashboard = useCallback(() => {
     if (!result) return;
     
-    // Use clean handlePdfImport - data flows through XP/Miles Engines
+    // Use new transaction-based handlePdfImport with deduplication
     actions.handlePdfImport(
       result.flights,
-      result.milesRecords,
+      result.activityTransactions,  // NEW: Individual transactions instead of milesRecords
       undefined, // xpCorrection not needed with AI parser
       result.qualificationSettings ? {
         cycleStartMonth: result.qualificationSettings.cycleStartMonth,
@@ -136,7 +136,6 @@ export const AIParserTest: React.FC = () => {
         startingStatus: result.qualificationSettings.startingStatus,
         startingXP: result.qualificationSettings.startingXP,      
       } : undefined,
-      result.bonusXpByMonth
     );
     setImportComplete(true);
   }, [result, actions]);

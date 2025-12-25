@@ -1,32 +1,48 @@
 /**
  * Backup Service - Simple localStorage backup before imports
- * CLEAN VERSION - No pdfBaseline
+ * Updated Dec 2025: Support for new transaction-based system + legacy
  */
+
+import type { ActivityTransaction, FlightRecord, MilesRecord, ManualLedger } from '../types';
+import type { QualificationSettings } from '../types/qualification';
 
 const BACKUP_KEY = 'skystatus_import_backup';
 const BACKUP_TIMESTAMP_KEY = 'skystatus_import_backup_timestamp';
 
 export interface ImportBackup {
-  flights: unknown[];
-  milesRecords: unknown[];
-  qualificationSettings: unknown;
-  manualLedger: unknown;
+  // Core data
+  flights: FlightRecord[];
+  qualificationSettings: QualificationSettings | null;
   xpRollover: number;
   currency: string;
   targetCPM: number;
+  
+  // New transaction system
+  activityTransactions?: ActivityTransaction[];
+  useNewTransactions?: boolean;
+  
+  // Legacy data (for backwards compatible restore)
+  milesRecords?: MilesRecord[];
+  manualLedger?: ManualLedger;
+  
+  // Metadata
   timestamp: string;
   source: string;
 }
 
 export function createBackup(
   currentData: {
-    flights: unknown[];
-    milesRecords: unknown[];
-    qualificationSettings: unknown;
-    manualLedger: unknown;
+    flights: FlightRecord[];
+    qualificationSettings: QualificationSettings | null;
     xpRollover: number;
     currency: string;
     targetCPM: number;
+    // New system
+    activityTransactions?: ActivityTransaction[];
+    useNewTransactions?: boolean;
+    // Legacy
+    milesRecords?: MilesRecord[];
+    manualLedger?: ManualLedger;
   },
   source: string
 ): void {
@@ -39,7 +55,13 @@ export function createBackup(
   try {
     localStorage.setItem(BACKUP_KEY, JSON.stringify(backup));
     localStorage.setItem(BACKUP_TIMESTAMP_KEY, backup.timestamp);
-    console.log('[BackupService] Backup created:', backup.timestamp);
+    console.log('[BackupService] Backup created:', {
+      timestamp: backup.timestamp,
+      source: backup.source,
+      flights: backup.flights?.length ?? 0,
+      activityTransactions: backup.activityTransactions?.length ?? 0,
+      useNewTransactions: backup.useNewTransactions,
+    });
   } catch (e) {
     console.error('[BackupService] Failed to create backup:', e);
     throw new Error('Could not create backup before import');
@@ -66,7 +88,11 @@ export function restoreBackup(): ImportBackup | null {
     const data = localStorage.getItem(BACKUP_KEY);
     if (!data) return null;
     const backup = JSON.parse(data) as ImportBackup;
-    console.log('[BackupService] Restoring backup from:', backup.timestamp);
+    console.log('[BackupService] Restoring backup from:', backup.timestamp, {
+      useNewTransactions: backup.useNewTransactions,
+      hasActivityTransactions: !!backup.activityTransactions?.length,
+      hasLegacyData: !!backup.milesRecords?.length || !!backup.manualLedger,
+    });
     return backup;
   } catch (e) {
     console.error('[BackupService] Failed to restore backup:', e);
@@ -95,4 +121,21 @@ export function getBackupAge(): string | null {
   if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
   return 'just now';
+}
+
+/**
+ * Check if backup is from new transaction system
+ */
+export function isNewSystemBackup(backup: ImportBackup): boolean {
+  return backup.useNewTransactions === true && 
+         Array.isArray(backup.activityTransactions) && 
+         backup.activityTransactions.length > 0;
+}
+
+/**
+ * Check if backup has legacy data
+ */
+export function hasLegacyData(backup: ImportBackup): boolean {
+  return (Array.isArray(backup.milesRecords) && backup.milesRecords.length > 0) ||
+         (backup.manualLedger && Object.keys(backup.manualLedger).length > 0);
 }

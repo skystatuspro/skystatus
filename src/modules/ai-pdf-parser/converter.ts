@@ -467,3 +467,113 @@ export function validateConversion(
     warnings,
   };
 }
+
+// ============================================================================
+// ACTIVITY TRANSACTION CONVERSION (New deduplication system)
+// ============================================================================
+
+import { generateTransactionId } from '../../utils/transaction-id';
+import type { ActivityTransaction, ActivityTransactionType } from '../../types';
+
+/**
+ * Map AI parser activity type to ActivityTransactionType
+ */
+function mapToActivityType(aiType: string): ActivityTransactionType {
+  const typeMap: Record<string, ActivityTransactionType> = {
+    // Direct mappings
+    'subscription': 'subscription',
+    'amex': 'amex',
+    'amex_bonus': 'amex_bonus',
+    'hotel': 'hotel',
+    'shopping': 'shopping',
+    'partner': 'partner',
+    'transfer_in': 'transfer_in',
+    'transfer_out': 'transfer_out',
+    'redemption': 'redemption',
+    'donation': 'donation',
+    'adjustment': 'adjustment',
+    'car_rental': 'car_rental',
+    'expiry': 'expiry',
+    'status_extension': 'status_extension',
+    // Aliases
+    'credit_card': 'amex',
+    'transfer': 'transfer_in', // Default to in, negative miles will indicate out
+    'award': 'redemption',
+    'promo': 'other',
+    'bonus': 'other',
+  };
+  
+  return typeMap[aiType.toLowerCase()] || 'other';
+}
+
+/**
+ * Convert AI parsed activities to ActivityTransaction format.
+ * Each transaction gets a unique, deterministic ID for deduplication.
+ * 
+ * @param rawActivities - Activities from AI parser
+ * @param pdfExportDate - Export date of the PDF (for tracking)
+ * @returns Array of ActivityTransaction ready for database upsert
+ */
+export function convertToActivityTransactions(
+  rawActivities: AIRawMilesActivity[],
+  pdfExportDate: string
+): ActivityTransaction[] {
+  const transactions: ActivityTransaction[] = [];
+  
+  for (const activity of rawActivities) {
+    const date = parseToISODate(activity.date);
+    const type = mapToActivityType(activity.type);
+    const description = activity.description || '';
+    const miles = activity.miles;
+    const xp = activity.xp;
+    
+    // Skip transactions with no value
+    if (miles === 0 && xp === 0) {
+      continue;
+    }
+    
+    // Generate deterministic ID for deduplication
+    const id = generateTransactionId(date, type, miles, xp, description);
+    
+    transactions.push({
+      id,
+      date,
+      type,
+      description,
+      miles,
+      xp,
+      source: 'pdf',
+      sourceDate: pdfExportDate,
+    });
+  }
+  
+  // Sort by date descending (newest first)
+  transactions.sort((a, b) => b.date.localeCompare(a.date));
+  
+  console.log(`[convertToActivityTransactions] Converted ${transactions.length} transactions from ${rawActivities.length} raw activities`);
+  
+  return transactions;
+}
+
+/**
+ * Create a manual adjustment transaction (for XP corrections, etc.)
+ */
+export function createAdjustmentTransaction(
+  date: string,
+  miles: number,
+  xp: number,
+  description: string
+): ActivityTransaction {
+  const normalizedDate = parseToISODate(date);
+  const id = generateTransactionId(normalizedDate, 'adjustment', miles, xp, description);
+  
+  return {
+    id,
+    date: normalizedDate,
+    type: 'adjustment',
+    description,
+    miles,
+    xp,
+    source: 'manual',
+  };
+}

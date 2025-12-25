@@ -1,5 +1,13 @@
 import { supabase } from './supabase';
-import type { FlightRecord, MilesRecord, RedemptionRecord, ManualLedger } from '../types';
+import type { 
+  FlightRecord, 
+  MilesRecord, 
+  RedemptionRecord, 
+  ManualLedger,
+  ActivityTransaction,
+  ActivityTransactionType,
+  MonthlyActivitySummary,
+} from '../types';
 
 // ============================================
 // FLIGHTS
@@ -527,7 +535,7 @@ export async function updateProfile(userId: string, updates: {
   email_consent?: boolean;
   miles_balance?: number;
   current_uxp?: number;
-  // PDF Baseline fields
+  use_new_transactions?: boolean;  // Migration flag for new transaction system
 }): Promise<boolean> {
   const { error } = await supabase
     .from('profiles')
@@ -642,6 +650,8 @@ export interface UserData {
   milesData: MilesRecord[];
   redemptions: RedemptionRecord[];
   xpLedger: Record<string, XPLedgerEntry>;
+  // New transaction system
+  activityTransactions: ActivityTransaction[];
   profile: {
     targetCPM: number;
     qualificationStartMonth: string;
@@ -657,24 +667,45 @@ export interface UserData {
     emailConsent: boolean;
     milesBalance: number;
     currentUXP: number;
-    // PDF Baseline
+    useNewTransactions: boolean;  // Migration flag
   } | null;
 }
 
 export async function fetchAllUserData(userId: string): Promise<UserData> {
-  const [flights, milesData, redemptions, xpLedger, profile] = await Promise.all([
+  // First fetch profile to check migration status
+  const profile = await fetchProfile(userId);
+  const useNewTransactions = profile?.use_new_transactions ?? false;
+  
+  // Fetch data based on migration status
+  const [flights, redemptions] = await Promise.all([
     fetchFlights(userId),
-    fetchMilesTransactions(userId),
     fetchRedemptions(userId),
-    fetchXPLedger(userId),
-    fetchProfile(userId),
   ]);
+  
+  // Fetch activity data using hybrid approach
+  const { transactions, xpByMonth, milesRecords } = await fetchHybridActivityData(
+    userId,
+    useNewTransactions
+  );
+  
+  // Convert xpByMonth to xpLedger format for backwards compatibility
+  const xpLedger: Record<string, XPLedgerEntry> = {};
+  for (const [month, data] of Object.entries(xpByMonth)) {
+    xpLedger[month] = {
+      month,
+      amexXp: data.amexXp,
+      bonusSafXp: 0, // Not tracked separately in new system
+      miscXp: data.miscXp,
+      correctionXp: data.correctionXp,
+    };
+  }
 
   return {
     flights,
-    milesData,
+    milesData: milesRecords,
     redemptions,
     xpLedger,
+    activityTransactions: transactions,
     profile: profile ? {
       targetCPM: profile.target_cpm,
       qualificationStartMonth: profile.qualification_start_month,
@@ -690,7 +721,7 @@ export async function fetchAllUserData(userId: string): Promise<UserData> {
       emailConsent: profile.email_consent || false,
       milesBalance: profile.miles_balance || 0,
       currentUXP: profile.current_uxp || 0,
-      // PDF Baseline
+      useNewTransactions: profile.use_new_transactions || false,
     } : null,
   };
 }
@@ -743,23 +774,18 @@ export async function saveAllUserData(
 
 export async function deleteAllUserData(userId: string): Promise<boolean> {
   try {
-    // Delete from all tables in parallel
-    const [flightsResult, milesResult, redemptionsResult, profileResult, xpLedgerResult] = await Promise.all([
+    // Delete from all tables in parallel (including new activity_transactions)
+    const results = await Promise.all([
       supabase.from('flights').delete().eq('user_id', userId),
       supabase.from('miles_transactions').delete().eq('user_id', userId),
       supabase.from('redemptions').delete().eq('user_id', userId),
       supabase.from('profiles').delete().eq('user_id', userId),
       supabase.from('xp_ledger').delete().eq('user_id', userId),
+      supabase.from('activity_transactions').delete().eq('user_id', userId),
     ]);
 
     // Check for errors
-    const errors = [
-      flightsResult.error,
-      milesResult.error,
-      redemptionsResult.error,
-      profileResult.error,
-      xpLedgerResult.error,
-    ].filter(Boolean);
+    const errors = results.map(r => r.error).filter(Boolean);
 
     if (errors.length > 0) {
       console.error('Errors deleting user data:', errors);
@@ -772,3 +798,408 @@ export async function deleteAllUserData(userId: string): Promise<boolean> {
     return false;
   }
 }
+
+// ============================================
+// ACTIVITY TRANSACTIONS (New unified system)
+// ============================================
+
+/**
+ * Fetch all activity transactions for a user
+ */
+export async function fetchActivityTransactions(
+  userId: string
+): Promise<ActivityTransaction[]> {
+  const { data, error } = await supabase
+    .from('activity_transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching activity transactions:', error);
+    return [];
+  }
+
+  return (data || []).map(row => ({
+    id: row.id,
+    date: row.date,
+    type: row.type as ActivityTransactionType,
+    description: row.description || '',
+    miles: row.miles ?? 0,
+    xp: row.xp ?? 0,
+    source: row.source as 'pdf' | 'manual',
+    sourceDate: row.source_date || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+/**
+ * Upsert activity transactions with deduplication.
+ * Uses ON CONFLICT DO NOTHING - existing transactions are skipped, not updated.
+ * 
+ * @returns Count of inserted and skipped transactions
+ */
+export async function upsertActivityTransactions(
+  userId: string,
+  transactions: ActivityTransaction[]
+): Promise<{ inserted: number; skipped: number }> {
+  if (transactions.length === 0) {
+    return { inserted: 0, skipped: 0 };
+  }
+
+  // Prepare records for database
+  const records = transactions.map(tx => ({
+    id: tx.id,
+    user_id: userId,
+    date: tx.date,
+    type: tx.type,
+    description: tx.description || '',
+    miles: tx.miles,
+    xp: tx.xp,
+    source: tx.source,
+    source_date: tx.sourceDate || null,
+  }));
+
+  console.log(`[upsertActivityTransactions] Upserting ${records.length} transactions`);
+
+  // Use upsert with ignoreDuplicates for deduplication
+  // This means: INSERT new records, SKIP existing ones (DO NOTHING on conflict)
+  const { data, error } = await supabase
+    .from('activity_transactions')
+    .upsert(records, {
+      onConflict: 'user_id,id',
+      ignoreDuplicates: true,
+    })
+    .select('id');
+
+  if (error) {
+    console.error('Error upserting activity transactions:', error);
+    throw error;
+  }
+
+  // Note: When ignoreDuplicates is true, Supabase returns only inserted rows
+  const inserted = data?.length ?? 0;
+  const skipped = transactions.length - inserted;
+
+  console.log(`[upsertActivityTransactions] Result: ${inserted} inserted, ${skipped} skipped (duplicates)`);
+  
+  return { inserted, skipped };
+}
+
+/**
+ * Delete specific activity transactions by ID
+ */
+export async function deleteActivityTransactions(
+  userId: string,
+  transactionIds: string[]
+): Promise<boolean> {
+  if (transactionIds.length === 0) return true;
+
+  const { error } = await supabase
+    .from('activity_transactions')
+    .delete()
+    .eq('user_id', userId)
+    .in('id', transactionIds);
+
+  if (error) {
+    console.error('Error deleting activity transactions:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Delete ALL activity transactions for a user
+ * Used for undo functionality
+ */
+export async function deleteAllActivityTransactions(userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('activity_transactions')
+    .delete()
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error deleting all activity transactions:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Delete only PDF-sourced transactions (keep manual edits)
+ * Useful for "re-import from scratch" functionality
+ */
+export async function deletePdfActivityTransactions(userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('activity_transactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('source', 'pdf');
+
+  if (error) {
+    console.error('Error deleting PDF activity transactions:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Update a single transaction (for manual edits)
+ * Changes source to 'manual' to preserve during re-import
+ */
+export async function updateActivityTransaction(
+  userId: string,
+  transactionId: string,
+  updates: Partial<Pick<ActivityTransaction, 'miles' | 'xp' | 'description' | 'type'>>
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('activity_transactions')
+    .update({
+      ...updates,
+      source: 'manual', // Mark as manually edited
+    })
+    .eq('user_id', userId)
+    .eq('id', transactionId);
+
+  if (error) {
+    console.error('Error updating activity transaction:', error);
+    return false;
+  }
+  return true;
+}
+
+// ============================================
+// ACTIVITY TRANSACTION AGGREGATION
+// ============================================
+
+/**
+ * Aggregate transactions by month for UI display.
+ * Creates MonthlyActivitySummary from raw transactions.
+ */
+export function aggregateTransactionsByMonth(
+  transactions: ActivityTransaction[]
+): Map<string, MonthlyActivitySummary> {
+  const byMonth = new Map<string, MonthlyActivitySummary>();
+
+  const getMonth = (date: string): string => date.slice(0, 7);
+
+  const getOrCreate = (month: string): MonthlyActivitySummary => {
+    if (!byMonth.has(month)) {
+      byMonth.set(month, {
+        month,
+        // Miles earned
+        miles_subscription: 0,
+        miles_amex: 0,
+        miles_hotel: 0,
+        miles_shopping: 0,
+        miles_partner: 0,
+        miles_transfer_in: 0,
+        miles_adjustment: 0,
+        miles_other: 0,
+        // Miles spent (stored as positive)
+        miles_transfer_out: 0,
+        miles_redemption: 0,
+        miles_donation: 0,
+        miles_expiry: 0,
+        // XP
+        xp_amex_bonus: 0,
+        xp_donation: 0,
+        xp_subscription: 0,
+        xp_adjustment: 0,
+        xp_hotel: 0,
+        xp_other: 0,
+        // Totals
+        total_miles_earned: 0,
+        total_miles_spent: 0,
+        total_xp: 0,
+      });
+    }
+    return byMonth.get(month)!;
+  };
+
+  for (const tx of transactions) {
+    const summary = getOrCreate(getMonth(tx.date));
+    const miles = tx.miles;
+    const xp = tx.xp;
+
+    // Categorize based on transaction type
+    switch (tx.type) {
+      case 'subscription':
+        if (miles > 0) summary.miles_subscription += miles;
+        if (xp > 0) summary.xp_subscription += xp;
+        break;
+        
+      case 'amex':
+        if (miles > 0) summary.miles_amex += miles;
+        break;
+        
+      case 'amex_bonus':
+        if (miles > 0) summary.miles_amex += miles;
+        if (xp > 0) summary.xp_amex_bonus += xp;
+        break;
+        
+      case 'hotel':
+        if (miles > 0) summary.miles_hotel += miles;
+        if (xp > 0) summary.xp_hotel += xp;
+        break;
+        
+      case 'shopping':
+        if (miles > 0) summary.miles_shopping += miles;
+        break;
+        
+      case 'partner':
+        if (miles > 0) summary.miles_partner += miles;
+        break;
+        
+      case 'transfer_in':
+        if (miles > 0) summary.miles_transfer_in += miles;
+        break;
+        
+      case 'transfer_out':
+        summary.miles_transfer_out += Math.abs(miles);
+        break;
+        
+      case 'redemption':
+        summary.miles_redemption += Math.abs(miles);
+        break;
+        
+      case 'donation':
+        if (miles < 0) summary.miles_donation += Math.abs(miles);
+        if (xp > 0) summary.xp_donation += xp;
+        break;
+        
+      case 'adjustment':
+        if (miles > 0) summary.miles_adjustment += miles;
+        else if (miles < 0) summary.miles_other += miles; // Negative adjustments
+        if (xp > 0) summary.xp_adjustment += xp;
+        break;
+        
+      case 'expiry':
+        summary.miles_expiry += Math.abs(miles);
+        break;
+        
+      default:
+        if (miles > 0) summary.miles_other += miles;
+        else if (miles < 0) summary.miles_redemption += Math.abs(miles);
+        if (xp > 0) summary.xp_other += xp;
+    }
+
+    // Update totals
+    if (miles > 0) {
+      summary.total_miles_earned += miles;
+    } else if (miles < 0) {
+      summary.total_miles_spent += Math.abs(miles);
+    }
+    summary.total_xp += xp;
+  }
+
+  return byMonth;
+}
+
+/**
+ * Convert aggregated transactions to legacy MilesRecord format.
+ * For backwards compatibility with existing UI components.
+ */
+export function convertToLegacyMilesRecords(
+  summaries: Map<string, MonthlyActivitySummary>
+): MilesRecord[] {
+  return Array.from(summaries.values()).map(s => ({
+    id: `computed-${s.month}`,
+    month: s.month,
+    miles_subscription: s.miles_subscription,
+    miles_amex: s.miles_amex,
+    miles_flight: 0, // Flight miles come from flights table, not here
+    miles_other: s.miles_hotel + s.miles_shopping + s.miles_partner + 
+                 s.miles_transfer_in + s.miles_adjustment + s.miles_other,
+    miles_debit: s.miles_transfer_out + s.miles_redemption + s.miles_donation + s.miles_expiry,
+    // Costs are not tracked in PDF imports
+    cost_subscription: 0,
+    cost_amex: 0,
+    cost_flight: 0,
+    cost_other: 0,
+  })).sort((a, b) => b.month.localeCompare(a.month));
+}
+
+/**
+ * Extract XP totals by month for the XP Engine.
+ * Returns format compatible with existing manualLedger usage.
+ */
+export function getXpByMonthFromTransactions(
+  summaries: Map<string, MonthlyActivitySummary>
+): Record<string, { miscXp: number; amexXp: number; correctionXp: number }> {
+  const result: Record<string, { miscXp: number; amexXp: number; correctionXp: number }> = {};
+  
+  for (const [month, summary] of summaries) {
+    const miscXp = summary.xp_donation + summary.xp_subscription + 
+                   summary.xp_hotel + summary.xp_other;
+    const amexXp = summary.xp_amex_bonus;
+    const correctionXp = summary.xp_adjustment;
+    
+    if (miscXp > 0 || amexXp > 0 || correctionXp > 0) {
+      result[month] = { miscXp, amexXp, correctionXp };
+    }
+  }
+  
+  return result;
+}
+
+// ============================================
+// HYBRID DATA FETCHING
+// ============================================
+
+/**
+ * Fetch activity data using hybrid approach:
+ * - If user has migrated (useNewTransactions=true): read from activity_transactions
+ * - If NOT migrated: read from legacy tables and convert to same format
+ * 
+ * This ensures UI always gets consistent data shape regardless of migration status.
+ */
+export async function fetchHybridActivityData(
+  userId: string,
+  useNewTransactions: boolean
+): Promise<{
+  transactions: ActivityTransaction[];
+  xpByMonth: Record<string, { miscXp: number; amexXp: number; correctionXp: number }>;
+  milesRecords: MilesRecord[];
+}> {
+  if (useNewTransactions) {
+    // NEW PATH: Read from activity_transactions
+    console.log('[fetchHybridActivityData] Using new transaction system');
+    const transactions = await fetchActivityTransactions(userId);
+    const aggregated = aggregateTransactionsByMonth(transactions);
+    
+    return {
+      transactions,
+      xpByMonth: getXpByMonthFromTransactions(aggregated),
+      milesRecords: convertToLegacyMilesRecords(aggregated),
+    };
+  } else {
+    // LEGACY PATH: Read from old tables
+    console.log('[fetchHybridActivityData] Using legacy system');
+    const [xpLedger, milesData] = await Promise.all([
+      fetchXPLedger(userId),
+      fetchMilesTransactions(userId),
+    ]);
+    
+    // Convert legacy xpLedger to xpByMonth format
+    const xpByMonth: Record<string, { miscXp: number; amexXp: number; correctionXp: number }> = {};
+    for (const [month, entry] of Object.entries(xpLedger)) {
+      const miscXp = (entry.miscXp || 0) + (entry.bonusSafXp || 0);
+      const amexXp = entry.amexXp || 0;
+      const correctionXp = entry.correctionXp || 0;
+      if (miscXp > 0 || amexXp > 0 || correctionXp > 0) {
+        xpByMonth[month] = { miscXp, amexXp, correctionXp };
+      }
+    }
+    
+    // Legacy users don't have individual transactions to return
+    // (They will get them after first PDF import)
+    return {
+      transactions: [],
+      xpByMonth,
+      milesRecords: milesData,
+    };
+  }
+}
+

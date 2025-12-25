@@ -12,9 +12,11 @@ import {
   saveXPLedger,
   updateProfile,
   deleteAllUserData,
+  upsertActivityTransactions,
+  deleteAllActivityTransactions,
   XPLedgerEntry,
 } from '../../lib/dataService';
-import type { FlightRecord, MilesRecord, RedemptionRecord, ManualLedger } from '../../types';
+import type { FlightRecord, MilesRecord, RedemptionRecord, ManualLedger, ActivityTransaction } from '../../types';
 import type { QualificationSettings } from '../../types/qualification';
 import type { CurrencyCode } from '../../utils/format';
 
@@ -30,6 +32,7 @@ export const queryKeys = {
   redemptions: (userId: string) => ['userData', userId, 'redemptions'] as const,
   xpLedger: (userId: string) => ['userData', userId, 'xpLedger'] as const,
   profile: (userId: string) => ['userData', userId, 'profile'] as const,
+  activityTransactions: (userId: string) => ['userData', userId, 'activityTransactions'] as const,
 };
 
 // ============================================================================
@@ -41,6 +44,7 @@ export interface UserDataQueryResult {
   milesData: MilesRecord[];
   redemptions: RedemptionRecord[];
   xpLedger: Record<string, XPLedgerEntry>;
+  activityTransactions: ActivityTransaction[];  // New transaction system
   profile: {
     targetCPM: number;
     qualificationStartMonth: string;
@@ -56,6 +60,7 @@ export interface UserDataQueryResult {
     emailConsent: boolean;
     milesBalance: number;
     currentUXP: number;
+    useNewTransactions: boolean;  // Migration flag
   } | null;
 }
 
@@ -70,6 +75,8 @@ export function useUserDataQuery(userId: string | undefined) {
         flights: data.flights.length,
         miles: data.milesData.length,
         xpLedgerKeys: Object.keys(data.xpLedger),
+        activityTransactions: data.activityTransactions.length,
+        useNewTransactions: data.profile?.useNewTransactions,
       });
       return data;
     },
@@ -292,9 +299,11 @@ export function useDeleteAllData() {
 
 export interface PdfImportData {
   flights: FlightRecord[];
-  milesData: MilesRecord[];
-  xpLedger: Record<string, XPLedgerEntry>;
+  activityTransactions: ActivityTransaction[];  // New: individual transactions
   profile: Parameters<typeof updateProfile>[1];
+  // Legacy fields - kept for backwards compatibility during migration
+  milesData?: MilesRecord[];
+  xpLedger?: Record<string, XPLedgerEntry>;
 }
 
 export function usePdfImportMutation() {
@@ -307,20 +316,26 @@ export function usePdfImportMutation() {
       
       console.log('[usePdfImportMutation] Saving all import data:', {
         flights: data.flights.length,
-        miles: data.milesData.length,
-        xpLedgerKeys: Object.keys(data.xpLedger),
+        activityTransactions: data.activityTransactions.length,
+        useNewSystem: true,
       });
 
-      // Save everything in parallel
-      const results = await Promise.all([
-        saveFlights(user.id, data.flights),
-        saveMilesRecords(user.id, data.milesData),
-        saveXPLedger(user.id, data.xpLedger),
-        updateProfile(user.id, data.profile),
-      ]);
+      // Save flights
+      const flightsResult = await saveFlights(user.id, data.flights);
+      
+      // Save activity transactions with deduplication
+      // This is the key change: upsert with ON CONFLICT DO NOTHING
+      const txResult = await upsertActivityTransactions(user.id, data.activityTransactions);
+      console.log(`[usePdfImportMutation] Transactions: ${txResult.inserted} inserted, ${txResult.skipped} skipped (duplicates)`);
+      
+      // Update profile (includes setting use_new_transactions = true)
+      const profileResult = await updateProfile(user.id, {
+        ...data.profile,
+        use_new_transactions: true,  // Migrate user to new system
+      });
 
       console.log('[usePdfImportMutation] All saves complete');
-      return results.every(r => r);
+      return flightsResult && profileResult;
     },
     onMutate: async (newData) => {
       if (!user?.id) return;
@@ -328,17 +343,17 @@ export function usePdfImportMutation() {
       await queryClient.cancelQueries({ queryKey: queryKeys.user(user.id) });
       const previous = queryClient.getQueryData<UserDataQueryResult>(queryKeys.user(user.id));
       
-      // Optimistically update with all new data
+      // Optimistically update with new data
       if (previous) {
         queryClient.setQueryData<UserDataQueryResult>(queryKeys.user(user.id), {
           ...previous,
           flights: newData.flights,
-          milesData: newData.milesData,
-          xpLedger: newData.xpLedger,
+          activityTransactions: newData.activityTransactions,
           // Profile updates are partial, so we merge
           profile: previous.profile ? {
             ...previous.profile,
             ...newData.profile,
+            useNewTransactions: true,
           } : null,
         });
       }

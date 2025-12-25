@@ -1,6 +1,6 @@
 // src/modules/ai-pdf-parser/parser.ts
 // Frontend AI parser - calls our server-side API (keeps OpenAI key secure)
-// v2.4 - Increased timeout to 300s to match Vercel maxDuration for 2-call parsing
+// v3.0 - Added activityTransactions for deduplication (Dec 2025)
 
 import type { 
   AIRawResponse, 
@@ -15,6 +15,7 @@ import {
   detectQualificationSettings,
   createPdfHeader,
   validateConversion,
+  convertToActivityTransactions,
 } from './converter';
 
 // ============================================================================
@@ -151,9 +152,16 @@ export async function aiParseFlyingBlue(
     const bonusXpByMonth = extractBonusXpByMonth(rawResponse.milesActivities, qualificationSettings);
     const pdfHeader = createPdfHeader(rawResponse);
     
+    // NEW: Convert to activity transactions for deduplication
+    const activityTransactions = convertToActivityTransactions(
+      rawResponse.milesActivities,
+      pdfHeader.exportDate
+    );
+    
     if (debug) {
       console.log('[AI Parser] Qualification settings detected:', qualificationSettings);
       console.log('[AI Parser] PDF header:', pdfHeader);
+      console.log('[AI Parser] Activity transactions:', activityTransactions.length);
     }
     
     // Validate conversion
@@ -177,6 +185,7 @@ export async function aiParseFlyingBlue(
     // Build result
     const result: AIParsedResult = {
       flights,
+      activityTransactions,  // NEW
       milesRecords,
       pdfHeader,
       qualificationSettings,

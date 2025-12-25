@@ -1,22 +1,26 @@
 // src/modules/ai-pdf-parser/index.ts
 // AI PDF Parser Module for SkyStatus Pro
-// v2.3 - Updated exports for pdfHeader (was pdfBaseline)
+// v3.0 - Transaction-based deduplication (Dec 2025)
 //
 // This module provides an AI-powered alternative to the local regex parser.
 // It uses OpenAI's GPT-4o to extract transaction data with high accuracy.
 //
-// KEY DIFFERENCE FROM LOCAL PARSER:
-// - AI parser output is trusted 100% - no corrections needed
-// - Data goes directly to the data layer without workarounds
-// - bonusXP is properly extracted and stored in manualLedger
+// KEY FEATURES:
+// - Each transaction gets a unique, deterministic ID
+// - Re-importing the same PDF skips existing transactions automatically
+// - Individual bonus XP activities are preserved, not just monthly totals
 //
 // Usage:
 // ```typescript
-// import { aiParseFlyingBlue } from './modules/ai-pdf-parser';
+// import { aiParseFlyingBlue, convertToActivityTransactions } from './modules/ai-pdf-parser';
 //
 // const result = await aiParseFlyingBlue(pdfText, { debug: true });
 // if (result.success) {
-//   // Use result.data.flights, result.data.milesRecords, etc.
+//   const transactions = convertToActivityTransactions(
+//     result.data.rawResponse.milesActivities,
+//     result.data.pdfHeader.exportDate
+//   );
+//   // Use transactions for deduplication-aware import
 // }
 // ```
 
@@ -35,8 +39,9 @@ export type {
   AIParserError,
 } from './types';
 
-// Converter utilities (for advanced usage)
+// Converter utilities
 export {
+  // Legacy converters (still used for flights and MilesRecord aggregation)
   convertFlights,
   convertMilesRecords,
   extractBonusXpByMonth,
@@ -45,6 +50,9 @@ export {
   validateConversion,
   parseToISODate,
   extractMonth,
+  // NEW: Transaction-based conversion for deduplication
+  convertToActivityTransactions,
+  createAdjustmentTransaction,
 } from './converter';
 
 // Re-export PdfHeader type from converter
