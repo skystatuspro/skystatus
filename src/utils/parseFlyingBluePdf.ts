@@ -698,11 +698,18 @@ export function parseFlyingBlueText(text: string): ParseResult {
         }
       }
       
-      // === REDEMPTIONS / DEBIT ===
+      // === REDEMPTIONS / DEBIT / TRANSFERS ===
+      // Flying Blue Family allows members to share miles
+      // - Outgoing transfer: negative miles = debit
+      // - Incoming transfer: positive miles = credit (goes to "other")
       else if (/upgrade|award|overdragen|transfer|Lastminute/i.test(content.toLowerCase())) {
         const { miles } = extractNumbers(content);
         if (miles < 0) {
+          // Outgoing: award booking, upgrade, or outgoing transfer
           getOrCreateMonth(month).debit += Math.abs(miles);
+        } else if (miles > 0) {
+          // Incoming: Flying Blue Family transfer received
+          getOrCreateMonth(month).other += miles;
         }
       }
       
