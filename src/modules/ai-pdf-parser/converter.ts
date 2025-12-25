@@ -536,7 +536,6 @@ export function convertToActivityTransactions(
     if (type === 'transfer_out' && miles > 0) {
       type = 'transfer_in';
     }
-    const xp = activity.xp;
     
     // Skip transactions with no value
     if (miles === 0 && xp === 0) {
