@@ -520,6 +520,9 @@ export function convertToActivityTransactions(
 ): ActivityTransaction[] {
   const transactions: ActivityTransaction[] = [];
   
+  // Track seen IDs to detect duplicates and add index
+  const seenIds = new Map<string, number>();
+  
   for (const activity of rawActivities) {
     const date = parseToISODate(activity.date);
     const type = mapToActivityType(activity.type);
@@ -532,8 +535,17 @@ export function convertToActivityTransactions(
       continue;
     }
     
-    // Generate deterministic ID for deduplication
-    const id = generateTransactionId(date, type, miles, xp, description);
+    // Generate base ID (without index)
+    const baseId = generateTransactionId(date, type, miles, xp, description);
+    
+    // Check if we've seen this exact ID before
+    const existingCount = seenIds.get(baseId) || 0;
+    seenIds.set(baseId, existingCount + 1);
+    
+    // Generate final ID with index if duplicate
+    const id = existingCount > 0 
+      ? generateTransactionId(date, type, miles, xp, description, existingCount)
+      : baseId;
     
     transactions.push({
       id,

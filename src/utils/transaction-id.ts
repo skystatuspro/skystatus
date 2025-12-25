@@ -17,18 +17,26 @@
  * @param miles - Miles value (can be negative for redemptions)
  * @param xp - XP value (usually 0, sometimes positive for bonuses)
  * @param description - Original description for additional uniqueness
+ * @param index - Optional index for multiple identical transactions on same day
  * @returns Deterministic transaction ID
  * 
  * @example
  * generateTransactionId('2025-11-17', 'amex', 10811, 0, 'AMERICAN EXPRESS PLATINUM')
  * // Returns: 'tx-2025-11-17-amex-10811-0-a3f2b1c4'
+ * 
+ * // For duplicate entries on same day:
+ * generateTransactionId('2025-11-09', 'adjustment', 0, 20, 'Air adjustment', 0)
+ * // Returns: 'tx-2025-11-09-adjustment-0-20-0341caf0'
+ * generateTransactionId('2025-11-09', 'adjustment', 0, 20, 'Air adjustment', 1)
+ * // Returns: 'tx-2025-11-09-adjustment-0-20-1-0341caf0'
  */
 export function generateTransactionId(
   date: string,
   type: string,
   miles: number,
   xp: number,
-  description: string
+  description: string,
+  index?: number
 ): string {
   // Sanitize type: lowercase, replace non-alphanumeric with underscore, limit length
   const sanitizedType = type
@@ -45,7 +53,10 @@ export function generateTransactionId(
   // Ensure date is in correct format
   const normalizedDate = normalizeDate(date);
   
-  return `tx-${normalizedDate}-${sanitizedType}-${miles}-${xp}-${hash}`;
+  // Add index suffix for duplicate transactions on same day
+  const indexSuffix = (index !== undefined && index > 0) ? `-${index}` : '';
+  
+  return `tx-${normalizedDate}-${sanitizedType}-${miles}-${xp}${indexSuffix}-${hash}`;
 }
 
 /**
