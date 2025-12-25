@@ -80,6 +80,9 @@ export interface UserDataState {
   homeAirport: string | null;
   milesBalance: number;
   currentUXP: number;
+  // New transaction system
+  activityTransactions: ActivityTransaction[];
+  useNewTransactions: boolean;
 }
 
 export interface UserDataActions {
@@ -120,6 +123,8 @@ export interface UserDataActions {
     homeAirport?: string | null;
     currency?: CurrencyCode;
     targetCPM?: number;
+    // New transaction system
+    activityTransactions?: ActivityTransaction[];
   }) => Promise<boolean>;
   handleLoadDemo: () => void;
   handleStartEmpty: () => void;
@@ -660,8 +665,16 @@ export function useUserData(): UseUserDataReturn {
     homeAirport?: string | null;
     currency?: CurrencyCode;
     targetCPM?: number;
+    // New transaction system
+    activityTransactions?: ActivityTransaction[];
   }): Promise<boolean> => {
     try {
+      // Detect if this is a new format import (has activityTransactions)
+      const hasNewTransactions = Array.isArray(importData.activityTransactions) && 
+                                  importData.activityTransactions.length > 0;
+      
+      console.log('[handleJsonImport] Format:', hasNewTransactions ? 'new (transactions)' : 'legacy');
+      
       const newFlights = importData.flights ?? flights;
       const newMiles = importData.baseMilesData ?? baseMilesData;
       const newLedger = importData.manualLedger ?? manualLedger;
@@ -689,12 +702,29 @@ export function useUserData(): UseUserDataReturn {
         return true;
       }
 
-      await pdfImportMutation.mutateAsync({
-        flights: newFlights,
-        milesData: newMiles,
-        xpLedger: convertToXPLedger(newLedger),
-        profile: profileUpdates,
-      });
+      // If we have activityTransactions, use the new import path
+      if (hasNewTransactions) {
+        console.log('[handleJsonImport] Using new transaction system with', importData.activityTransactions!.length, 'transactions');
+        
+        // Set flag to use new transactions
+        profileUpdates.use_new_transactions = true;
+        
+        await pdfImportMutation.mutateAsync({
+          flights: newFlights,
+          activityTransactions: importData.activityTransactions,
+          profile: profileUpdates,
+        });
+      } else {
+        // Legacy import path
+        console.log('[handleJsonImport] Using legacy import path');
+        
+        await pdfImportMutation.mutateAsync({
+          flights: newFlights,
+          milesData: newMiles,
+          xpLedger: convertToXPLedger(newLedger),
+          profile: profileUpdates,
+        });
+      }
 
       if (importData.redemptions) {
         await saveRedemptionsMutation.mutateAsync(importData.redemptions);
@@ -901,6 +931,9 @@ export function useUserData(): UseUserDataReturn {
       homeAirport,
       milesBalance,
       currentUXP,
+      // New transaction system
+      activityTransactions: queryData?.activityTransactions ?? [],
+      useNewTransactions: queryData?.profile?.useNewTransactions ?? false,
     },
     actions: {
       setFlights,

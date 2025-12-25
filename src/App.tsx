@@ -592,6 +592,9 @@ export default function App() {
           manualLedger: state.manualLedger,
           qualificationSettings: state.qualificationSettings,
           homeAirport: state.homeAirport,
+          // New transaction system
+          activityTransactions: state.activityTransactions,
+          useNewTransactions: state.useNewTransactions,
         }}
         setters={{
           setBaseMilesData: actions.setBaseMilesData,

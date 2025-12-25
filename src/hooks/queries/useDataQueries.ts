@@ -299,9 +299,9 @@ export function useDeleteAllData() {
 
 export interface PdfImportData {
   flights: FlightRecord[];
-  activityTransactions: ActivityTransaction[];  // New: individual transactions
+  activityTransactions?: ActivityTransaction[];  // New: individual transactions (optional for legacy)
   profile: Parameters<typeof updateProfile>[1];
-  // Legacy fields - kept for backwards compatibility during migration
+  // Legacy fields - used when activityTransactions is not provided
   milesData?: MilesRecord[];
   xpLedger?: Record<string, XPLedgerEntry>;
 }
@@ -314,31 +314,53 @@ export function usePdfImportMutation() {
     mutationFn: async (data: PdfImportData) => {
       if (!user?.id) throw new Error('No user');
       
+      // Detect which system to use based on data provided
+      const useNewSystem = Array.isArray(data.activityTransactions) && data.activityTransactions.length > 0;
+      
       console.log('[usePdfImportMutation] Saving all import data:', {
         flights: data.flights.length,
-        activityTransactions: data.activityTransactions.length,
-        useNewSystem: true,
+        activityTransactions: data.activityTransactions?.length ?? 0,
+        useNewSystem,
       });
 
       // Save flights
       const flightsResult = await saveFlights(user.id, data.flights);
       
-      // Save activity transactions with deduplication
-      // This is the key change: upsert with ON CONFLICT DO NOTHING
-      const txResult = await upsertActivityTransactions(user.id, data.activityTransactions);
-      console.log(`[usePdfImportMutation] Transactions: ${txResult.inserted} inserted, ${txResult.skipped} skipped (duplicates)`);
-      
-      // Update profile (includes setting use_new_transactions = true)
-      const profileResult = await updateProfile(user.id, {
-        ...data.profile,
-        use_new_transactions: true,  // Migrate user to new system
-      });
-
-      console.log('[usePdfImportMutation] All saves complete');
-      return flightsResult && profileResult;
+      if (useNewSystem) {
+        // NEW SYSTEM: Save activity transactions with deduplication
+        const txResult = await upsertActivityTransactions(user.id, data.activityTransactions!);
+        console.log(`[usePdfImportMutation] Transactions: ${txResult.inserted} inserted, ${txResult.skipped} skipped (duplicates)`);
+        
+        // Update profile (includes setting use_new_transactions = true)
+        const profileResult = await updateProfile(user.id, {
+          ...data.profile,
+          use_new_transactions: true,  // Migrate user to new system
+        });
+        
+        console.log('[usePdfImportMutation] All saves complete (new system)');
+        return flightsResult && profileResult;
+      } else {
+        // LEGACY SYSTEM: Save milesData and xpLedger
+        console.log('[usePdfImportMutation] Using legacy save path');
+        
+        if (data.milesData) {
+          await saveMilesRecords(user.id, data.milesData);
+        }
+        if (data.xpLedger) {
+          await saveXPLedger(user.id, data.xpLedger);
+        }
+        
+        // Update profile WITHOUT setting use_new_transactions
+        const profileResult = await updateProfile(user.id, data.profile);
+        
+        console.log('[usePdfImportMutation] All saves complete (legacy system)');
+        return flightsResult && profileResult;
+      }
     },
     onMutate: async (newData) => {
       if (!user?.id) return;
+      
+      const useNewSystem = Array.isArray(newData.activityTransactions) && newData.activityTransactions.length > 0;
       
       await queryClient.cancelQueries({ queryKey: queryKeys.user(user.id) });
       const previous = queryClient.getQueryData<UserDataQueryResult>(queryKeys.user(user.id));
@@ -348,12 +370,12 @@ export function usePdfImportMutation() {
         queryClient.setQueryData<UserDataQueryResult>(queryKeys.user(user.id), {
           ...previous,
           flights: newData.flights,
-          activityTransactions: newData.activityTransactions,
+          activityTransactions: useNewSystem ? newData.activityTransactions! : previous.activityTransactions,
           // Profile updates are partial, so we merge
           profile: previous.profile ? {
             ...previous.profile,
             ...newData.profile,
-            useNewTransactions: true,
+            useNewTransactions: useNewSystem ? true : previous.profile.useNewTransactions,
           } : null,
         });
       }

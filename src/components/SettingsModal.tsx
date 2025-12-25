@@ -47,6 +47,18 @@ interface SettingsModalProps {
     manualLedger: ManualLedger;
     qualificationSettings: QualificationSettings | null;
     homeAirport: string | null;
+    // New transaction system
+    activityTransactions?: Array<{
+      id: string;
+      date: string;
+      type: string;
+      description: string;
+      miles: number;
+      xp: number;
+      source?: string;
+      sourceDate?: string;
+    }>;
+    useNewTransactions?: boolean;
   };
   setters: {
     setBaseMilesData: React.Dispatch<React.SetStateAction<MilesRecord[]>>;
@@ -87,6 +99,17 @@ interface SettingsModalProps {
     currency?: CurrencyCode;
     targetCPM?: number;
     homeAirport?: string | null;
+    // New transaction system
+    activityTransactions?: Array<{
+      id: string;
+      date: string;
+      type: string;
+      description: string;
+      miles: number;
+      xp: number;
+      source?: string;
+      sourceDate?: string;
+    }>;
   }) => Promise<boolean>;
   showToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -128,6 +151,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       // Ensure qualificationSettings has all fields with explicit values (not undefined)
       // This prevents data loss when importing older backups
       const exportData = {
+        // Version indicator for future compatibility
+        exportVersion: 2,
+        exportDate: new Date().toISOString(),
+        // Core data
         ...data,
         qualificationSettings: data.qualificationSettings ? {
           cycleStartMonth: data.qualificationSettings.cycleStartMonth,
@@ -137,6 +164,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           startingUXP: data.qualificationSettings.startingUXP ?? 0,
           ultimateCycleType: data.qualificationSettings.ultimateCycleType ?? 'qualification',
         } : null,
+        // New transaction system - include if available
+        activityTransactions: data.activityTransactions ?? [],
+        useNewTransactions: data.useNewTransactions ?? false,
       };
       
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -177,16 +207,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       // =======================================================================
       // REPLACE MODE: JSON is the single source of truth for all data
-      // User preferences (currency, homeAirport, emailConsent, targetCPM) are NOT touched
+      // Supports both legacy format and new transaction-based format
       // =======================================================================
 
+      // Detect format: new format has activityTransactions array
+      const isNewFormat = Array.isArray(parsed.activityTransactions) && parsed.activityTransactions.length > 0;
+      
       // Track what was imported
       const importedCounts = {
         miles: parsed.baseMilesData?.length || 0,
         flights: parsed.flights?.length || 0,
         redemptions: parsed.redemptions?.length || 0,
         manualLedgerMonths: parsed.manualLedger ? Object.keys(parsed.manualLedger).length : 0,
+        activityTransactions: parsed.activityTransactions?.length || 0,
       };
+
+      console.log('[JSON Import] Format detected:', isNewFormat ? 'new (transactions)' : 'legacy', importedCounts);
 
       // Use handleJsonImport for direct database write + state update
       // handleJsonImport internally checks for user/demo/local mode
@@ -203,6 +239,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           currency: parsed.currency,
           targetCPM: parsed.targetCPM,
           homeAirport: parsed.homeAirport,
+          // New transaction system - pass through if present
+          activityTransactions: parsed.activityTransactions,
         });
 
         if (!success) {
