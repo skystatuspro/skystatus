@@ -884,6 +884,3 @@ export function useUserData(): UseUserDataReturn {
     },
   };
 }
-
-// Default export
-export { useUserData };
