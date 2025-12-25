@@ -1,19 +1,32 @@
 // src/hooks/useUserData.ts
-// Custom hook that manages all user data state, persistence, and handlers
-// CLEAN VERSION - No pdfBaseline bypass, XP/Miles Engines are source of truth
+// React Query-based user data management hook
+// 
+// Architecture: React Query handles all server state synchronization
+// - No debounced auto-save - mutations save immediately
+// - No stale closures - React Query cache is always fresh
+// - Optimistic updates with automatic rollback on error
+// - Server is source of truth, not local state
+//
+// Migrated from useState-based implementation (Dec 2024) to fix
+// data synchronization issues (XP oscillation bug)
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../lib/AuthContext';
 import {
-  fetchAllUserData,
-  saveFlights,
-  saveMilesRecords,
-  saveRedemptions,
-  saveXPLedger,
-  updateProfile,
-  replaceAllFlights,
-  XPLedgerEntry,
-} from '../lib/dataService';
+  useUserDataQuery,
+  useSaveFlights,
+  useSaveMilesRecords,
+  useSaveRedemptions,
+  useSaveXPLedger,
+  useSaveProfile,
+  useDeleteAllData,
+  usePdfImportMutation,
+  convertToManualLedger,
+  convertToXPLedger,
+  queryKeys,
+  UserDataQueryResult,
+} from './queries/useDataQueries';
 import {
   MilesRecord,
   XPRecord,
@@ -38,21 +51,15 @@ import {
   getBackupInfo,
 } from '../lib/backup-service';
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// Type imports
+import type { QualificationSettings } from '../types/qualification';
+export type { QualificationSettings } from '../types/qualification';
 
-export interface QualificationSettings {
-  cycleStartMonth: string;
-  startingStatus: StatusLevel;
-  startingXP: number;
-  startingUXP?: number;
-  ultimateCycleType?: 'qualification' | 'calendar';
-  cycleStartDate?: string;  // Full date for precise XP filtering
-}
+// ============================================================================
+// TYPES (same as useUserData for compatibility)
+// ============================================================================
 
 export interface UserDataState {
-  // Base data (stored in DB)
   baseMilesData: MilesRecord[];
   baseXpData: XPRecord[];
   manualLedger: ManualLedger;
@@ -62,20 +69,16 @@ export interface UserDataState {
   targetCPM: number;
   currency: CurrencyCode;
   qualificationSettings: QualificationSettings | null;
-  
-  // Computed data (derived from base + flights)
   milesData: MilesRecord[];
   xpData: XPRecord[];
-  
-  // Current status (computed)
   currentStatus: StatusLevel;
-  
-  // UI state
   currentMonth: string;
+  homeAirport: string | null;
+  milesBalance: number;
+  currentUXP: number;
 }
 
 export interface UserDataActions {
-  // Data setters (with auto-save)
   setFlights: (flights: FlightRecord[]) => void;
   setBaseMilesData: (data: MilesRecord[]) => void;
   setBaseXpData: (data: XPRecord[]) => void;
@@ -86,8 +89,6 @@ export interface UserDataActions {
   setCurrency: (currency: CurrencyCode) => void;
   setQualificationSettings: (settings: QualificationSettings | null) => void;
   setCurrentMonth: (month: string) => void;
-  
-  // High-level handlers
   handleFlightsUpdate: (flights: FlightRecord[]) => void;
   handleFlightIntakeApply: (payloads: FlightIntakePayload[]) => void;
   handleManualLedgerUpdate: (data: MilesRecord[]) => void;
@@ -97,8 +98,6 @@ export interface UserDataActions {
   handleManualXPLedgerUpdate: (ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => void;
   handleXPRolloverUpdate: (rollover: number) => void;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
-  
-  // PDF Import (clean pattern - no bypass)
   handlePdfImport: (
     flights: FlightRecord[],
     miles: MilesRecord[],
@@ -107,8 +106,6 @@ export interface UserDataActions {
     bonusXpByMonth?: Record<string, number>
   ) => void;
   handleUndoImport: () => boolean;
-  
-  // JSON Import
   handleJsonImport: (data: {
     flights?: FlightRecord[];
     baseMilesData?: MilesRecord[];
@@ -121,8 +118,6 @@ export interface UserDataActions {
     currency?: CurrencyCode;
     targetCPM?: number;
   }) => Promise<boolean>;
-  
-  // Demo/Local mode
   handleLoadDemo: () => void;
   handleStartEmpty: () => void;
   handleStartOver: () => void;
@@ -130,12 +125,23 @@ export interface UserDataActions {
   handleEnterLocalMode: () => void;
   handleExitDemoMode: () => void;
   handleSetDemoStatus: (status: StatusLevel) => void;
-  
-  // Utility
   markDataChanged: () => void;
   calculateGlobalCPM: () => number;
-  
-  // Backup
+  handleOnboardingComplete: (data: {
+    currency: CurrencyCode;
+    homeAirport: string | null;
+    currentStatus: StatusLevel;
+    currentXP: number;
+    currentUXP: number;
+    rolloverXP: number;
+    milesBalance: number;
+    ultimateCycleType: 'qualification' | 'calendar';
+    targetCPM: number;
+    emailConsent: boolean;
+    isReturningUser?: boolean;
+  }) => void;
+  handleRerunOnboarding: () => void;
+  handleEmailConsentChange: (consent: boolean) => void;
   canUndoImport: boolean;
   importBackupInfo: { timestamp: string; source: string } | null;
   forceSave: () => Promise<void>;
@@ -149,6 +155,8 @@ export interface UserDataMeta {
   demoStatus: StatusLevel;
   showWelcome: boolean;
   setShowWelcome: (show: boolean) => void;
+  onboardingCompleted: boolean;
+  emailConsent: boolean;
 }
 
 export interface UseUserDataReturn {
@@ -158,444 +166,233 @@ export interface UseUserDataReturn {
 }
 
 // ============================================================================
-// HELPERS
-// ============================================================================
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-// ============================================================================
-// HOOK
+// HOOK IMPLEMENTATION
 // ============================================================================
 
 export function useUserData(): UseUserDataReturn {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // -------------------------------------------------------------------------
-  // DEBUG LOGGING
-  // -------------------------------------------------------------------------
-  
-  // Unique instance ID for debugging multiple hook instances
-  const instanceId = useRef(Math.random().toString(36).slice(2, 8));
-  
-  // Enhanced logging function
-  const log = useCallback((action: string, data?: Record<string, unknown>) => {
-    const timestamp = new Date().toISOString().slice(11, 23);
-    console.log(`[useUserData:${instanceId.current}] ${timestamp} ${action}`, data || '');
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // STATE
+  // REACT QUERY - Data fetching
   // -------------------------------------------------------------------------
 
-  // Current month (UI state, but closely tied to data)
+  const { data: queryData, isLoading: isQueryLoading } = useUserDataQuery(user?.id);
+
+  // -------------------------------------------------------------------------
+  // MUTATIONS - Data saving
+  // -------------------------------------------------------------------------
+
+  const saveFlightsMutation = useSaveFlights();
+  const saveMilesMutation = useSaveMilesRecords();
+  const saveRedemptionsMutation = useSaveRedemptions();
+  const saveXPLedgerMutation = useSaveXPLedger();
+  const saveProfileMutation = useSaveProfile();
+  const deleteAllMutation = useDeleteAllData();
+  const pdfImportMutation = usePdfImportMutation();
+
+  const isSaving = 
+    saveFlightsMutation.isPending ||
+    saveMilesMutation.isPending ||
+    saveRedemptionsMutation.isPending ||
+    saveXPLedgerMutation.isPending ||
+    saveProfileMutation.isPending ||
+    pdfImportMutation.isPending;
+
+  // -------------------------------------------------------------------------
+  // LOCAL UI STATE (not persisted)
+  // -------------------------------------------------------------------------
+
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [currentMonth, setCurrentMonth] = useState<string>(defaultMonth);
-
-  // Base data state
-  const [baseMilesData, setBaseMilesDataInternal] = useState<MilesRecord[]>([]);
-  const [baseXpData, setBaseXpDataInternal] = useState<XPRecord[]>([]);
-  const [manualLedger, setManualLedgerInternal] = useState<ManualLedger>({});
-  const [redemptions, setRedemptionsInternal] = useState<RedemptionRecord[]>([]);
-  const [flights, setFlightsInternal] = useState<FlightRecord[]>([]);
-  const [xpRollover, setXpRolloverInternal] = useState<number>(0);
-  const [targetCPM, setTargetCPMInternal] = useState<number>(0.012);
-  const [currency, setCurrencyInternal] = useState<CurrencyCode>('EUR');
-  const [qualificationSettings, setQualificationSettingsInternal] = useState<QualificationSettings | null>(null);
-  const [homeAirport, setHomeAirportInternal] = useState<string | null>(null);
-  const [onboardingCompleted, setOnboardingCompletedInternal] = useState<boolean>(true); // Default true to prevent flash
-  const [emailConsent, setEmailConsentInternal] = useState<boolean>(false);
-  const [milesBalance, setMilesBalanceInternal] = useState<number>(0);
-  const [currentUXP, setCurrentUXPInternal] = useState<number>(0);
-
-  // Loading/saving state
-  const [dataLoading, setDataLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [dataVersion, setDataVersion] = useState(0);
-  const debouncedDataVersion = useDebounce(dataVersion, 2000);
-
-  // Mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
   const [demoStatus, setDemoStatus] = useState<StatusLevel>('Platinum');
   const [showWelcome, setShowWelcome] = useState(false);
 
-  // Backup state
-  const [backupState, setBackupState] = useState<{
-    canUndo: boolean;
-    info: { timestamp: string; source: string } | null;
-  }>({ canUndo: false, info: null });
+  // Demo mode local state
+  const [demoFlights, setDemoFlights] = useState<FlightRecord[]>([]);
+  const [demoMilesData, setDemoMilesData] = useState<MilesRecord[]>([]);
+  const [demoManualLedger, setDemoManualLedger] = useState<ManualLedger>({});
+  const [demoRedemptions, setDemoRedemptions] = useState<RedemptionRecord[]>([]);
 
-  // Refs for tracking load state
-  const hasInitiallyLoaded = useRef(false);
-  const loadedForUserId = useRef<string | null>(null);
-  const isLoadingInProgress = useRef(false); // CRITICAL: Prevents parallel loads
-  
-  // Ref to track the latest manualLedger for immediate saves (prevents stale closure)
-  const manualLedgerRef = useRef<ManualLedger>({});
-  
-  // Keep ref in sync with state
-  useEffect(() => {
-    manualLedgerRef.current = manualLedger;
-  }, [manualLedger]);
-
-  // Refresh backup state when flights change
-  useEffect(() => {
-    setBackupState({
-      canUndo: hasBackup(),
-      info: getBackupInfo(),
-    });
-  }, [flights]);
+  // Local mode state (for anonymous users)
+  const [localFlights, setLocalFlights] = useState<FlightRecord[]>([]);
+  const [localMilesData, setLocalMilesData] = useState<MilesRecord[]>([]);
+  const [localManualLedger, setLocalManualLedger] = useState<ManualLedger>({});
+  const [localRedemptions, setLocalRedemptions] = useState<RedemptionRecord[]>([]);
 
   // -------------------------------------------------------------------------
-  // COMPUTED DATA
+  // DERIVED DATA - Extract from query result or use defaults/demo data
   // -------------------------------------------------------------------------
+
+  const flights = useMemo(() => {
+    if (isDemoMode) return demoFlights;
+    if (isLocalMode) return localFlights;
+    return queryData?.flights ?? [];
+  }, [isDemoMode, isLocalMode, demoFlights, localFlights, queryData?.flights]);
+
+  const baseMilesData = useMemo(() => {
+    if (isDemoMode) return demoMilesData;
+    if (isLocalMode) return localMilesData;
+    return queryData?.milesData ?? [];
+  }, [isDemoMode, isLocalMode, demoMilesData, localMilesData, queryData?.milesData]);
+
+  const redemptions = useMemo(() => {
+    if (isDemoMode) return demoRedemptions;
+    if (isLocalMode) return localRedemptions;
+    return queryData?.redemptions ?? [];
+  }, [isDemoMode, isLocalMode, demoRedemptions, localRedemptions, queryData?.redemptions]);
+
+  const manualLedger = useMemo(() => {
+    if (isDemoMode) return demoManualLedger;
+    if (isLocalMode) return localManualLedger;
+    return queryData?.xpLedger ? convertToManualLedger(queryData.xpLedger) : {};
+  }, [isDemoMode, isLocalMode, demoManualLedger, localManualLedger, queryData?.xpLedger]);
+
+  const profile = queryData?.profile;
+
+  const xpRollover = useMemo(() => {
+    if (isDemoMode || isLocalMode) return 0;
+    return profile?.startingXP ?? profile?.xpRollover ?? 0;
+  }, [isDemoMode, isLocalMode, profile]);
+
+  const targetCPM = profile?.targetCPM ?? 0.012;
+  const currency = (profile?.currency ?? 'EUR') as CurrencyCode;
+  const homeAirport = profile?.homeAirport ?? null;
+  const milesBalance = profile?.milesBalance ?? 0;
+  const currentUXP = profile?.currentUXP ?? 0;
+  const onboardingCompleted = profile?.onboardingCompleted ?? false;
+  const emailConsent = profile?.emailConsent ?? false;
+
+  const qualificationSettings = useMemo((): QualificationSettings | null => {
+    if (isDemoMode || isLocalMode) return null;
+    if (!profile?.qualificationStartMonth) return null;
+    return {
+      cycleStartMonth: profile.qualificationStartMonth,
+      cycleStartDate: profile.qualificationStartDate,
+      startingStatus: (profile.startingStatus || 'Explorer') as StatusLevel,
+      startingXP: profile.startingXP ?? profile.xpRollover ?? 0,
+      ultimateCycleType: profile.ultimateCycleType || 'qualification',
+    };
+  }, [isDemoMode, isLocalMode, profile]);
+
+  // -------------------------------------------------------------------------
+  // COMPUTED DATA (same logic as useUserData)
+  // -------------------------------------------------------------------------
+
+  const baseXpData: XPRecord[] = []; // Legacy, kept for compatibility
 
   const { miles: milesData, xp: xpData } = useMemo(
-    () => {
-      console.log('[useMemo:rebuildLedgers] Computing with:', {
-        baseMilesDataCount: baseMilesData.length,
-        baseXpDataCount: baseXpData.length,
-        flightsCount: flights.length,
-      });
-      const result = rebuildLedgersFromFlights(baseMilesData, baseXpData, flights);
-      console.log('[useMemo:rebuildLedgers] Result:', {
-        milesCount: result.miles.length,
-        xpCount: result.xp.length,
-      });
-      return result;
-    },
+    () => rebuildLedgersFromFlights(baseMilesData, baseXpData, flights),
     [baseMilesData, baseXpData, flights]
   );
 
-  // In demo mode, use the selected demo status directly
-  // Otherwise, calculate from XP stats
   const currentStatus = useMemo((): StatusLevel => {
-    console.log('[useMemo:currentStatus] Computing with manualLedger:', JSON.stringify(manualLedger));
-    if (isDemoMode) {
-      return demoStatus;
-    }
+    if (isDemoMode) return demoStatus;
     const stats = calculateMultiYearStats(xpData, xpRollover, flights, manualLedger);
-    const now = new Date();
-    const currentQYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-    const cycle = stats[currentQYear];
-    console.log(`[useMemo:currentStatus] Cycle ${currentQYear}:`, {
-      actualXP: cycle?.actualXP,
-      actualStatus: cycle?.actualStatus,
-    });
+    const currentYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
+    const cycle = stats[currentYear];
     return (cycle?.actualStatus || cycle?.achievedStatus || cycle?.startStatus || 'Explorer') as StatusLevel;
   }, [isDemoMode, demoStatus, xpData, xpRollover, flights, manualLedger]);
 
   // -------------------------------------------------------------------------
-  // DATA PERSISTENCE
+  // BACKUP STATE
   // -------------------------------------------------------------------------
 
-  const loadUserData = useCallback(async () => {
-    if (!user) return;
-    
-    // CRITICAL: Prevent parallel loads - this fixes the race condition
-    // where multiple loads can run simultaneously and overwrite each other
-    if (isLoadingInProgress.current) {
-      log('LOAD_SKIPPED', { reason: 'already in progress' });
-      return;
-    }
-    
-    // Mark as loading immediately
-    isLoadingInProgress.current = true;
-    setDataLoading(true);
-    
-    log('LOAD_START', {
-      userId: user.id,
-      hasInitiallyLoaded: hasInitiallyLoaded.current,
-      loadedForUserId: loadedForUserId.current,
-    });
-    
-    try {
-      const data = await fetchAllUserData(user.id);
-      
-      // Double-check we're still loading for the same user
-      // (user could have changed during the async fetch)
-      if (!user || user.id !== loadedForUserId.current && loadedForUserId.current !== null) {
-        log('LOAD_ABORTED', { reason: 'user changed during load' });
-        return;
-      }
-
-      log('LOAD_DATA_RECEIVED', {
-        flightsCount: data.flights.length,
-        milesDataCount: data.milesData.length,
-        xpLedgerKeys: Object.keys(data.xpLedger),
-        xpLedgerEntries: Object.entries(data.xpLedger).map(([m, e]) => 
-          `${m}: corr=${e.correctionXp}, misc=${e.miscXp}`
-        ),
-      });
-
-      // For logged-in users, we never show the WelcomeModal (that's for anonymous users)
-      // Load all data regardless of whether flights exist
-      setFlightsInternal(data.flights);
-      setBaseMilesDataInternal(data.milesData);
-      setRedemptionsInternal(data.redemptions);
-
-      // Load XP Ledger
-      const loadedLedger: ManualLedger = {};
-      Object.entries(data.xpLedger).forEach(([month, entry]) => {
-        loadedLedger[month] = {
-          amexXp: entry.amexXp,
-          bonusSafXp: entry.bonusSafXp,
-          miscXp: entry.miscXp,
-          correctionXp: entry.correctionXp,
-        };
-      });
-      setManualLedgerInternal(loadedLedger);
-
-      // Determine if this is an existing user (has any data)
-      const hasExistingData = data.flights.length > 0 || data.milesData.length > 0 || data.redemptions.length > 0;
-
-      if (data.profile) {
-        setTargetCPMInternal(data.profile.targetCPM || 0.012);
-        // CRITICAL: Use startingXP if available, fall back to xpRollover for backwards compatibility
-        // This ensures the UI shows the correct rollover from the PDF import
-        setXpRolloverInternal(data.profile.startingXP ?? data.profile.xpRollover ?? 0);
-        setCurrencyInternal((data.profile.currency || 'EUR') as CurrencyCode);
-        setHomeAirportInternal(data.profile.homeAirport || null);
-        setMilesBalanceInternal(data.profile.milesBalance || 0);
-        setCurrentUXPInternal(data.profile.currentUXP || 0);
-        setEmailConsentInternal(data.profile.emailConsent ?? false);
-        
-        // CRITICAL: For existing users without the new column, default to TRUE (they've already been using the app)
-        // Only new users (no data AND onboarding_completed explicitly false) should see onboarding
-        const onboardingStatus = data.profile.onboardingCompleted ?? hasExistingData;
-        setOnboardingCompletedInternal(onboardingStatus);
-
-        if (data.profile.qualificationStartMonth) {
-          setQualificationSettingsInternal({
-            cycleStartMonth: data.profile.qualificationStartMonth,
-            cycleStartDate: data.profile.qualificationStartDate || undefined,
-            startingStatus: (data.profile.startingStatus || 'Explorer') as StatusLevel,
-            startingXP: data.profile.startingXP ?? data.profile.xpRollover ?? 0,
-            ultimateCycleType: data.profile.ultimateCycleType || 'qualification',
-          });
-        }
-      } else {
-        // No profile at all - new user, show onboarding
-        setOnboardingCompletedInternal(false);
-      }
-
-      hasInitiallyLoaded.current = true;
-      loadedForUserId.current = user.id;
-      
-      log('LOAD_COMPLETE', {
-        manualLedgerKeys: Object.keys(loadedLedger),
-      });
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      log('LOAD_ERROR', { error: String(error) });
-    } finally {
-      setDataLoading(false);
-      isLoadingInProgress.current = false; // Release the lock
-    }
-  }, [user, log]);
-
-  const saveUserData = useCallback(async () => {
-    if (!user || isDemoMode) {
-      log('SAVE_SKIPPED', { reason: !user ? 'no user' : 'demo mode' });
-      return;
-    }
-
-    // Use ref to get the latest manualLedger value, avoiding stale closure issues
-    const currentLedger = manualLedgerRef.current;
-    
-    log('SAVE_START', {
-      flightsCount: flights.length,
-      manualLedgerKeys: Object.keys(currentLedger),
-      manualLedgerEntries: Object.entries(currentLedger).map(([m, e]) => 
-        `${m}: corr=${e.correctionXp || 0}, misc=${e.miscXp || 0}`
-      ),
-    });
-
-    setIsSaving(true);
-    try {
-      const xpLedgerToSave: Record<string, XPLedgerEntry> = {};
-      Object.entries(currentLedger).forEach(([month, entry]) => {
-        xpLedgerToSave[month] = {
-          month,
-          amexXp: entry.amexXp || 0,
-          bonusSafXp: entry.bonusSafXp || 0,
-          miscXp: entry.miscXp || 0,
-          correctionXp: entry.correctionXp || 0,
-        };
-      });
-
-      await Promise.all([
-        saveFlights(user.id, flights),
-        saveMilesRecords(user.id, baseMilesData),
-        saveRedemptions(user.id, redemptions),
-        saveXPLedger(user.id, xpLedgerToSave),
-        updateProfile(user.id, {
-          target_cpm: targetCPM,
-          xp_rollover: xpRollover,
-          currency: currency,
-          qualification_start_month: qualificationSettings?.cycleStartMonth,
-          qualification_start_date: qualificationSettings?.cycleStartDate || null,
-          starting_status: qualificationSettings?.startingStatus,
-          starting_xp: qualificationSettings?.startingXP,
-          ultimate_cycle_type: qualificationSettings?.ultimateCycleType,
-        }),
-      ]);
-      
-      log('SAVE_COMPLETE');
-    } catch (error) {
-      console.error('Error saving user data:', error);
-      log('SAVE_ERROR', { error: String(error) });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [user, isDemoMode, flights, baseMilesData, redemptions, targetCPM, xpRollover, currency, qualificationSettings, log]);
-
-  // Load on auth change
-  // CRITICAL: Using user?.id instead of user in deps to prevent recreation on every user object change
-  // The loadUserData callback has its own guards for parallel loads
-  useEffect(() => {
-    const shouldLoad = user && !isDemoMode &&
-      (!hasInitiallyLoaded.current || loadedForUserId.current !== user.id);
-
-    console.log('[useEffect:load] Checking if should load:', {
-      hasUser: !!user,
-      userId: user?.id,
-      isDemoMode,
-      hasInitiallyLoaded: hasInitiallyLoaded.current,
-      loadedForUserId: loadedForUserId.current,
-    });
-    console.log('[useEffect:load] shouldLoad:', shouldLoad ? true : (user ? false : null));
-
-    if (shouldLoad) {
-      loadUserData();
-    }
-  }, [user?.id, isDemoMode, loadUserData]);
-
-  // Auto-save on debounced data change
-  // CRITICAL: Only save if data has been loaded first to prevent wiping user data
-  // CRITICAL: Only save if not already saving to prevent overlapping saves
-  // NOTE: We use isSavingRef to check inside the effect, but don't include isSaving in deps
-  // to prevent the effect from re-running when save completes
-  const isSavingRef = useRef(false);
-  
-  // Keep ref in sync with state
-  useEffect(() => {
-    isSavingRef.current = isSaving;
-  }, [isSaving]);
-  
-  useEffect(() => {
-    console.log('[useEffect:save] Checking if should save:', {
-      hasUser: !!user,
-      isDemoMode,
-      debouncedDataVersion,
-      hasInitiallyLoaded: hasInitiallyLoaded.current,
-      isSaving: isSavingRef.current,
-    });
-    
-    // Guard against overlapping saves - if already saving, skip this trigger
-    // The debounce will catch the next change
-    if (isSavingRef.current) {
-      console.log('[useEffect:save] SKIPPED: Save already in progress');
-      return;
-    }
-    
-    if (user && !isDemoMode && debouncedDataVersion > 0 && hasInitiallyLoaded.current) {
-      saveUserData();
-    }
-  }, [debouncedDataVersion, user, isDemoMode, saveUserData]);
+  const canUndoImport = hasBackup();
+  const importBackupInfo = getBackupInfo();
 
   // -------------------------------------------------------------------------
-  // MARK DATA CHANGED (triggers auto-save)
-  // -------------------------------------------------------------------------
-
-  const markDataChanged = useCallback(() => {
-    setDataVersion((v) => v + 1);
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // SETTERS (wrapped with markDataChanged)
+  // ACTIONS - Setters that trigger saves
   // -------------------------------------------------------------------------
 
   const setFlights = useCallback((newFlights: FlightRecord[]) => {
-    setFlightsInternal(newFlights);
-    markDataChanged();
-  }, [markDataChanged]);
+    if (isDemoMode) {
+      setDemoFlights(newFlights);
+    } else if (isLocalMode) {
+      setLocalFlights(newFlights);
+    } else if (user) {
+      saveFlightsMutation.mutate(newFlights);
+    }
+  }, [isDemoMode, isLocalMode, user, saveFlightsMutation]);
 
   const setBaseMilesData = useCallback((data: MilesRecord[]) => {
-    setBaseMilesDataInternal(data);
-    markDataChanged();
-  }, [markDataChanged]);
-
-  const setBaseXpData = useCallback((data: XPRecord[]) => {
-    setBaseXpDataInternal(data);
-    markDataChanged();
-  }, [markDataChanged]);
+    if (isDemoMode) {
+      setDemoMilesData(data);
+    } else if (isLocalMode) {
+      setLocalMilesData(data);
+    } else if (user) {
+      saveMilesMutation.mutate(data);
+    }
+  }, [isDemoMode, isLocalMode, user, saveMilesMutation]);
 
   const setRedemptions = useCallback((newRedemptions: RedemptionRecord[]) => {
-    setRedemptionsInternal(newRedemptions);
-    markDataChanged();
-  }, [markDataChanged]);
+    if (isDemoMode) {
+      setDemoRedemptions(newRedemptions);
+    } else if (isLocalMode) {
+      setLocalRedemptions(newRedemptions);
+    } else if (user) {
+      saveRedemptionsMutation.mutate(newRedemptions);
+    }
+  }, [isDemoMode, isLocalMode, user, saveRedemptionsMutation]);
 
   const setManualLedger = useCallback((ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => {
-    if (typeof ledger === 'function') {
-      setManualLedgerInternal((prev) => ledger(prev));
-    } else {
-      setManualLedgerInternal(ledger);
+    const newLedger = typeof ledger === 'function' ? ledger(manualLedger) : ledger;
+    
+    if (isDemoMode) {
+      setDemoManualLedger(newLedger);
+    } else if (isLocalMode) {
+      setLocalManualLedger(newLedger);
+    } else if (user) {
+      saveXPLedgerMutation.mutate(convertToXPLedger(newLedger));
     }
-    markDataChanged();
-  }, [markDataChanged]);
+  }, [isDemoMode, isLocalMode, user, manualLedger, saveXPLedgerMutation]);
 
   const setXpRollover = useCallback((rollover: number) => {
-    setXpRolloverInternal(rollover);
-    markDataChanged();
-  }, [markDataChanged]);
+    if (!user || isDemoMode || isLocalMode) return;
+    saveProfileMutation.mutate({ starting_xp: rollover, xp_rollover: rollover });
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
 
   const setTargetCPM = useCallback((cpm: number) => {
-    setTargetCPMInternal(cpm);
-    markDataChanged();
-  }, [markDataChanged]);
-
-  const setQualificationSettings = useCallback((settings: QualificationSettings | null) => {
-    setQualificationSettingsInternal(settings);
-    if (settings) {
-      setXpRolloverInternal(settings.startingXP);
-    }
-    markDataChanged();
-  }, [markDataChanged]);
+    if (!user || isDemoMode || isLocalMode) return;
+    saveProfileMutation.mutate({ target_cpm: cpm });
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
 
   const setCurrency = useCallback((newCurrency: CurrencyCode) => {
-    setCurrencyInternal(newCurrency);
-    markDataChanged();
-  }, [markDataChanged]);
+    if (!user || isDemoMode || isLocalMode) return;
+    saveProfileMutation.mutate({ currency: newCurrency });
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
+
+  const setQualificationSettings = useCallback((settings: QualificationSettings | null) => {
+    if (!user || isDemoMode || isLocalMode) return;
+    saveProfileMutation.mutate({
+      qualification_start_month: settings?.cycleStartMonth ?? null,
+      qualification_start_date: settings?.cycleStartDate ?? null,
+      starting_status: settings?.startingStatus ?? null,
+      starting_xp: settings?.startingXP ?? 0,
+      ultimate_cycle_type: settings?.ultimateCycleType ?? null,
+    });
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
+
+  const setBaseXpData = useCallback((_data: XPRecord[]) => {
+    // Legacy - XP data is now derived from flights
+    console.log('[useUserData] setBaseXpData called - this is a no-op (React Query saves immediately)');
+  }, []);
 
   // -------------------------------------------------------------------------
   // HIGH-LEVEL HANDLERS
   // -------------------------------------------------------------------------
 
-  const handleFlightsUpdate = useCallback((nextFlights: FlightRecord[]) => {
-    setFlights(nextFlights);
+  const handleFlightsUpdate = useCallback((newFlights: FlightRecord[]) => {
+    setFlights(newFlights);
   }, [setFlights]);
 
   const handleFlightIntakeApply = useCallback((payloads: FlightIntakePayload[]) => {
     const newRecords = payloads.map(createFlightRecord);
-    setFlightsInternal((prev) => [...prev, ...newRecords]);
-    markDataChanged();
-  }, [markDataChanged]);
+    setFlights([...flights, ...newRecords]);
+  }, [flights, setFlights]);
 
   const handleManualLedgerUpdate = useCallback((newData: MilesRecord[]) => {
     const sanitizedData = newData.map((record) => ({
@@ -631,37 +428,35 @@ export function useUserData(): UseUserDataReturn {
   }, [setQualificationSettings]);
 
   // -------------------------------------------------------------------------
-  // PDF IMPORT (Clean Pattern - No Bypass)
-  // CRITICAL: This function builds the complete new state BEFORE updating,
-  // then saves with those exact values to avoid stale closure issues.
+  // PDF IMPORT - The critical function that was causing issues
   // -------------------------------------------------------------------------
 
-  const handlePdfImport = useCallback(async (
+  const handlePdfImport = useCallback((
     importedFlights: FlightRecord[],
     importedMiles: MilesRecord[],
     xpCorrection?: { month: string; correctionXp: number; reason: string },
     cycleSettings?: { cycleStartMonth: string; cycleStartDate?: string; startingStatus: StatusLevel; startingXP?: number },
     bonusXpByMonth?: Record<string, number>
   ) => {
-    log('PDF_IMPORT_START', {
-      flightsCount: importedFlights.length,
-      milesCount: importedMiles.length,
-      hasCorrection: !!xpCorrection,
-      correctionXp: xpCorrection?.correctionXp,
-      bonusXpMonths: bonusXpByMonth ? Object.keys(bonusXpByMonth) : [],
+    console.log('[useUserData] handlePdfImport called', {
+      flights: importedFlights.length,
+      miles: importedMiles.length,
+      xpCorrection,
+      cycleSettings,
+      bonusXpByMonth,
     });
 
     // Create backup before modifying data
     try {
       createBackup(
         {
-          flights: flights,
+          flights,
           milesRecords: baseMilesData,
-          qualificationSettings: qualificationSettings,
-          manualLedger: manualLedger,
-          xpRollover: xpRollover,
-          currency: currency,
-          targetCPM: targetCPM,
+          qualificationSettings,
+          manualLedger,
+          xpRollover,
+          currency,
+          targetCPM,
         },
         'PDF Import'
       );
@@ -670,144 +465,80 @@ export function useUserData(): UseUserDataReturn {
     }
 
     // Tag imported flights
-    const now = new Date().toISOString();
+    const timestamp = new Date().toISOString();
     const taggedFlights = importedFlights.map(f => ({
       ...f,
       importSource: 'pdf' as const,
-      importedAt: f.importedAt || now,
+      importedAt: f.importedAt || timestamp,
     }));
 
-    // =========================================================================
-    // STEP 1: Build complete new state values BEFORE any React state updates
-    // This prevents stale closure issues in the save
-    // =========================================================================
-
-    // Build new flights array
+    // Merge flights (skip duplicates)
     const existingFlightKeys = new Set(flights.map((f) => `${f.date}|${f.route}`));
     const newFlightsToAdd = taggedFlights.filter((f) => !existingFlightKeys.has(`${f.date}|${f.route}`));
     const mergedFlights = [...flights, ...newFlightsToAdd].sort((a, b) => b.date.localeCompare(a.date));
 
-    // Build new miles array
+    // Merge miles
     const milesByMonth = new Map(baseMilesData.map(m => [m.month, m]));
     for (const incoming of importedMiles) {
       milesByMonth.set(incoming.month, incoming);
     }
     const mergedMiles = Array.from(milesByMonth.values()).sort((a, b) => b.month.localeCompare(a.month));
 
-    // Build new manual ledger (start from current value via ref to ensure freshness)
-    const newManualLedger: ManualLedger = { ...manualLedgerRef.current };
+    // Build new manual ledger
+    const newManualLedger: ManualLedger = { ...manualLedger };
     
-    // Add XP correction
     if (xpCorrection && xpCorrection.correctionXp !== 0) {
       const existing = newManualLedger[xpCorrection.month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
       newManualLedger[xpCorrection.month] = {
         ...existing,
         correctionXp: (existing.correctionXp || 0) + xpCorrection.correctionXp,
       };
-      log('PDF_IMPORT_CORRECTION_ADDED', {
-        month: xpCorrection.month,
-        newCorrectionXp: newManualLedger[xpCorrection.month].correctionXp,
-      });
     }
 
-    // Add bonus XP from non-flight activities
     if (bonusXpByMonth && Object.keys(bonusXpByMonth).length > 0) {
       for (const [month, xp] of Object.entries(bonusXpByMonth)) {
         const existing = newManualLedger[month] || { amexXp: 0, bonusSafXp: 0, miscXp: 0, correctionXp: 0 };
         newManualLedger[month] = { ...existing, miscXp: (existing.miscXp || 0) + xp };
       }
-      log('PDF_IMPORT_BONUS_XP_ADDED', { bonusXpByMonth });
     }
 
-    // =========================================================================
-    // STEP 2: Update React state with the pre-calculated values
-    // =========================================================================
-
-    setFlightsInternal(mergedFlights);
-    setBaseMilesDataInternal(mergedMiles);
-    setManualLedgerInternal(newManualLedger);
-
-    // Handle cycle settings
+    // Build profile updates
+    const profileUpdates: Record<string, unknown> = {};
     if (cycleSettings) {
-      const newSettings = {
-        cycleStartMonth: cycleSettings.cycleStartMonth,
-        cycleStartDate: cycleSettings.cycleStartDate,
-        startingStatus: cycleSettings.startingStatus,
-        startingXP: cycleSettings.startingXP ?? 0,
-      };
-      setQualificationSettingsInternal(newSettings);
-      log('PDF_IMPORT_CYCLE_SETTINGS', newSettings);
+      profileUpdates.qualification_start_month = cycleSettings.cycleStartMonth;
+      profileUpdates.qualification_start_date = cycleSettings.cycleStartDate || null;
+      profileUpdates.starting_status = cycleSettings.startingStatus;
+      profileUpdates.starting_xp = cycleSettings.startingXP ?? 0;
     }
 
-    // =========================================================================
-    // STEP 3: Immediately save to database with the EXACT same values
-    // This ensures no stale closure issues - we save what we just set
-    // =========================================================================
-
-    if (user && !isDemoMode) {
-      log('PDF_IMPORT_SAVING_TO_DB', { userId: user.id });
-      
-      // Save qualification settings
-      if (cycleSettings) {
-        try {
-          await updateProfile(user.id, {
-            qualification_start_month: cycleSettings.cycleStartMonth,
-            qualification_start_date: cycleSettings.cycleStartDate || null,
-            starting_status: cycleSettings.startingStatus,
-            starting_xp: cycleSettings.startingXP ?? 0,
-          });
-          log('PDF_IMPORT_SAVED_PROFILE');
-        } catch (err) {
-          console.error('[handlePdfImport] Failed to save qualification settings:', err);
-        }
-      }
-
-      // Save XP ledger with the EXACT ledger we calculated above
-      const ledgerToSave: Record<string, XPLedgerEntry> = {};
-      Object.entries(newManualLedger).forEach(([month, entry]) => {
-        ledgerToSave[month] = {
-          month,
-          amexXp: entry.amexXp || 0,
-          bonusSafXp: entry.bonusSafXp || 0,
-          miscXp: entry.miscXp || 0,
-          correctionXp: entry.correctionXp || 0,
-        };
-      });
-
-      if (Object.keys(ledgerToSave).length > 0) {
-        log('PDF_IMPORT_SAVING_LEDGER', { 
-          entries: Object.entries(ledgerToSave).map(([m, e]) => `${m}: corr=${e.correctionXp}, misc=${e.miscXp}`)
-        });
-        try {
-          await saveXPLedger(user.id, ledgerToSave);
-          log('PDF_IMPORT_SAVED_LEDGER');
-        } catch (err) {
-          console.error('[handlePdfImport] Failed to save XP ledger:', err);
-        }
-      }
-
-      // Save flights
-      try {
-        await saveFlights(user.id, mergedFlights);
-        log('PDF_IMPORT_SAVED_FLIGHTS', { count: mergedFlights.length });
-      } catch (err) {
-        console.error('[handlePdfImport] Failed to save flights:', err);
-      }
-
-      // Save miles
-      try {
-        await saveMilesRecords(user.id, mergedMiles);
-        log('PDF_IMPORT_SAVED_MILES', { count: mergedMiles.length });
-      } catch (err) {
-        console.error('[handlePdfImport] Failed to save miles:', err);
-      }
+    // Handle demo/local mode separately
+    if (isDemoMode) {
+      setDemoFlights(mergedFlights);
+      setDemoMilesData(mergedMiles);
+      setDemoManualLedger(newManualLedger);
+      return;
     }
 
-    // Still trigger debounced save for any other fields
-    markDataChanged();
-    
-    log('PDF_IMPORT_COMPLETE');
-  }, [flights, baseMilesData, qualificationSettings, manualLedger, xpRollover, currency, targetCPM, markDataChanged, user, isDemoMode, log]);
+    if (isLocalMode) {
+      setLocalFlights(mergedFlights);
+      setLocalMilesData(mergedMiles);
+      setLocalManualLedger(newManualLedger);
+      return;
+    }
+
+    // For logged-in users: use the combined mutation
+    // This saves everything atomically and handles optimistic updates
+    pdfImportMutation.mutate({
+      flights: mergedFlights,
+      milesData: mergedMiles,
+      xpLedger: convertToXPLedger(newManualLedger),
+      profile: profileUpdates,
+    });
+
+  }, [
+    flights, baseMilesData, manualLedger, qualificationSettings, xpRollover, currency, targetCPM,
+    isDemoMode, isLocalMode, pdfImportMutation
+  ]);
 
   // -------------------------------------------------------------------------
   // UNDO IMPORT
@@ -817,16 +548,32 @@ export function useUserData(): UseUserDataReturn {
     const backup = restoreBackup();
     if (!backup) return false;
 
-    setFlightsInternal(backup.flights as FlightRecord[]);
-    setBaseMilesDataInternal(backup.milesRecords as MilesRecord[]);
-    setQualificationSettingsInternal(backup.qualificationSettings as QualificationSettings | null);
-    setManualLedgerInternal(backup.manualLedger as ManualLedger);
-    setXpRolloverInternal(backup.xpRollover);
+    if (isDemoMode) {
+      setDemoFlights(backup.flights as FlightRecord[]);
+      setDemoMilesData(backup.milesRecords as MilesRecord[]);
+      setDemoManualLedger(backup.manualLedger as ManualLedger);
+    } else if (isLocalMode) {
+      setLocalFlights(backup.flights as FlightRecord[]);
+      setLocalMilesData(backup.milesRecords as MilesRecord[]);
+      setLocalManualLedger(backup.manualLedger as ManualLedger);
+    } else if (user) {
+      // Restore via mutations
+      pdfImportMutation.mutate({
+        flights: backup.flights as FlightRecord[],
+        milesData: backup.milesRecords as MilesRecord[],
+        xpLedger: convertToXPLedger(backup.manualLedger as ManualLedger),
+        profile: {
+          qualification_start_month: (backup.qualificationSettings as QualificationSettings | null)?.cycleStartMonth ?? null,
+          qualification_start_date: (backup.qualificationSettings as QualificationSettings | null)?.cycleStartDate ?? null,
+          starting_status: (backup.qualificationSettings as QualificationSettings | null)?.startingStatus ?? null,
+          starting_xp: (backup.qualificationSettings as QualificationSettings | null)?.startingXP ?? 0,
+        },
+      });
+    }
 
     clearBackup();
-    markDataChanged();
     return true;
-  }, [markDataChanged]);
+  }, [isDemoMode, isLocalMode, user, pdfImportMutation]);
 
   // -------------------------------------------------------------------------
   // JSON IMPORT
@@ -844,196 +591,136 @@ export function useUserData(): UseUserDataReturn {
     currency?: CurrencyCode;
     targetCPM?: number;
   }): Promise<boolean> => {
-    // Update state
-    if (importData.flights) setFlightsInternal(importData.flights);
-    if (importData.baseMilesData) setBaseMilesDataInternal(importData.baseMilesData);
-    if (importData.baseXpData) setBaseXpDataInternal(importData.baseXpData);
-    if (importData.redemptions) setRedemptionsInternal(importData.redemptions);
-    if (importData.manualLedger) setManualLedgerInternal(importData.manualLedger);
-    if (importData.qualificationSettings !== undefined) {
-      setQualificationSettingsInternal(importData.qualificationSettings);
-    }
-    if (typeof importData.xpRollover === 'number') setXpRolloverInternal(importData.xpRollover);
-    if (typeof importData.targetCPM === 'number') setTargetCPMInternal(importData.targetCPM);
-    if (importData.currency) setCurrencyInternal(importData.currency);
-
-    // Save to database if logged in
-    if (user && !isDemoMode && !isLocalMode) {
-      try {
-        if (importData.flights) await replaceAllFlights(user.id, importData.flights);
-        if (importData.baseMilesData) await saveMilesRecords(user.id, importData.baseMilesData);
-        if (importData.redemptions) await saveRedemptions(user.id, importData.redemptions);
-        if (importData.manualLedger) {
-          const xpLedger: Record<string, XPLedgerEntry> = {};
-          for (const [month, entry] of Object.entries(importData.manualLedger)) {
-            xpLedger[month] = {
-              month,
-              amexXp: entry.amexXp || 0,
-              bonusSafXp: entry.bonusSafXp || 0,
-              miscXp: entry.miscXp || 0,
-              correctionXp: entry.correctionXp || 0,
-            };
-          }
-          await saveXPLedger(user.id, xpLedger);
-        }
-        
-        const profileUpdates: Record<string, unknown> = {};
-        if (importData.qualificationSettings) {
-          profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth;
-          profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate || null;
-          profileUpdates.starting_status = importData.qualificationSettings.startingStatus;
-          profileUpdates.starting_xp = importData.qualificationSettings.startingXP || 0;
-          profileUpdates.starting_uxp = importData.qualificationSettings.startingUXP || 0;
-        }
-        if (typeof importData.xpRollover === 'number') profileUpdates.xp_rollover = importData.xpRollover;
-        if (importData.homeAirport !== undefined) profileUpdates.home_airport = importData.homeAirport;
-        if (importData.currency) profileUpdates.currency = importData.currency;
-        if (typeof importData.targetCPM === 'number') profileUpdates.target_cpm = importData.targetCPM;
-        
-        if (Object.keys(profileUpdates).length > 0) {
-          await updateProfile(user.id, profileUpdates as Parameters<typeof updateProfile>[1]);
-        }
-        
-        return true;
-      } catch (e) {
-        console.error('[handleJsonImport] Failed to save:', e);
-        return false;
+    try {
+      const newFlights = importData.flights ?? flights;
+      const newMiles = importData.baseMilesData ?? baseMilesData;
+      const newLedger = importData.manualLedger ?? manualLedger;
+      
+      const profileUpdates: Record<string, unknown> = {};
+      if (importData.qualificationSettings) {
+        profileUpdates.qualification_start_month = importData.qualificationSettings.cycleStartMonth;
+        profileUpdates.qualification_start_date = importData.qualificationSettings.cycleStartDate ?? null;
+        profileUpdates.starting_status = importData.qualificationSettings.startingStatus;
+        profileUpdates.starting_xp = importData.qualificationSettings.startingXP ?? 0;
       }
+      if (typeof importData.xpRollover === 'number') {
+        profileUpdates.xp_rollover = importData.xpRollover;
+        profileUpdates.starting_xp = importData.xpRollover;
+      }
+      if (importData.homeAirport !== undefined) profileUpdates.home_airport = importData.homeAirport;
+      if (importData.currency) profileUpdates.currency = importData.currency;
+      if (typeof importData.targetCPM === 'number') profileUpdates.target_cpm = importData.targetCPM;
+
+      if (isDemoMode || isLocalMode) {
+        if (importData.flights) isDemoMode ? setDemoFlights(importData.flights) : setLocalFlights(importData.flights);
+        if (importData.baseMilesData) isDemoMode ? setDemoMilesData(importData.baseMilesData) : setLocalMilesData(importData.baseMilesData);
+        if (importData.manualLedger) isDemoMode ? setDemoManualLedger(importData.manualLedger) : setLocalManualLedger(importData.manualLedger);
+        if (importData.redemptions) isDemoMode ? setDemoRedemptions(importData.redemptions) : setLocalRedemptions(importData.redemptions);
+        return true;
+      }
+
+      await pdfImportMutation.mutateAsync({
+        flights: newFlights,
+        milesData: newMiles,
+        xpLedger: convertToXPLedger(newLedger),
+        profile: profileUpdates,
+      });
+
+      if (importData.redemptions) {
+        await saveRedemptionsMutation.mutateAsync(importData.redemptions);
+      }
+
+      return true;
+    } catch (e) {
+      console.error('[handleJsonImport] Failed:', e);
+      return false;
     }
-    
-    return true;
-  }, [user, isDemoMode, isLocalMode]);
+  }, [flights, baseMilesData, manualLedger, isDemoMode, isLocalMode, pdfImportMutation, saveRedemptionsMutation]);
 
   // -------------------------------------------------------------------------
-  // DEMO / LOCAL MODE HANDLERS
+  // DEMO/LOCAL MODE HANDLERS
   // -------------------------------------------------------------------------
 
   const loadDemoDataForStatus = useCallback((status: StatusLevel) => {
-    const demoData = generateDemoDataForStatus(status);
-    setBaseMilesDataInternal(demoData.milesData);
-    setBaseXpDataInternal(demoData.xpData);
-    setRedemptionsInternal(demoData.redemptions);
-    setFlightsInternal(demoData.flights);
-    setXpRolloverInternal(demoData.xpRollover);
-    setManualLedgerInternal(demoData.manualLedger);
-    setQualificationSettingsInternal(demoData.qualificationSettings);
-    setDemoStatus(status);
+    const data = generateDemoDataForStatus(status);
+    setDemoFlights(data.flights);
+    setDemoMilesData(data.milesData);
+    setDemoRedemptions(data.redemptions);
+    setDemoManualLedger({});
   }, []);
 
   const handleLoadDemo = useCallback(() => {
-    // Use the current demo status (default Platinum)
-    loadDemoDataForStatus(demoStatus);
     setIsDemoMode(true);
-    setShowWelcome(false);
-  }, [demoStatus, loadDemoDataForStatus]);
-
-  const handleSetDemoStatus = useCallback((status: StatusLevel) => {
-    if (!isDemoMode) return;
-    setDemoStatus(status);
-    loadDemoDataForStatus(status);
-  }, [isDemoMode, loadDemoDataForStatus]);
+    setDemoStatus('Platinum');
+    loadDemoDataForStatus('Platinum');
+  }, [loadDemoDataForStatus]);
 
   const handleStartEmpty = useCallback(() => {
-    setBaseMilesDataInternal([]);
-    setBaseXpDataInternal([]);
-    setRedemptionsInternal([]);
-    setFlightsInternal([]);
-    setXpRolloverInternal(0);
-    setManualLedgerInternal({});
     setShowWelcome(false);
-    markDataChanged();
-  }, [markDataChanged]);
+    // For logged-in users, data starts empty from query
+    // For anonymous users, we'd use local mode
+  }, []);
 
   const handleStartOver = useCallback(async () => {
-    if (!window.confirm('Are you sure you want to start over? This wipes all data.')) {
+    console.log('[useUserData] handleStartOver');
+    
+    if (isDemoMode) {
+      setDemoFlights([]);
+      setDemoMilesData([]);
+      setDemoManualLedger({});
+      setDemoRedemptions([]);
+      setIsDemoMode(false);
       return;
     }
 
-    // CRITICAL: First wipe the database BEFORE resetting local state
-    // This prevents the race condition where load triggers before wipe completes
-    if (user) {
-      try {
-        console.log('[handleStartOver] Wiping database...');
-        await Promise.all([
-          saveFlights(user.id, []),
-          saveMilesRecords(user.id, []),
-          saveRedemptions(user.id, []),
-          saveXPLedger(user.id, {}),
-          updateProfile(user.id, {
-            xp_rollover: 0,
-            qualification_start_month: null,
-            qualification_start_date: null,
-            starting_status: null,
-            starting_xp: 0,
-            starting_uxp: 0,
-            ultimate_cycle_type: null,
-            current_uxp: 0,
-          }),
-        ]);
-        console.log('[handleStartOver] Database wiped successfully');
-      } catch (error) {
-        console.error('Error clearing user data:', error);
-        // Don't proceed with local wipe if database wipe failed
-        alert('Failed to clear data from server. Please try again.');
-        return;
-      }
+    if (isLocalMode) {
+      setLocalFlights([]);
+      setLocalMilesData([]);
+      setLocalManualLedger({});
+      setLocalRedemptions([]);
+      setIsLocalMode(false);
+      return;
     }
 
-    // NOW reset local state (after database is confirmed wiped)
-    console.log('[handleStartOver] Resetting local state...');
-    setBaseMilesDataInternal([]);
-    setBaseXpDataInternal([]);
-    setRedemptionsInternal([]);
-    setFlightsInternal([]);
-    setXpRolloverInternal(0);
-    setManualLedgerInternal({});
-    setQualificationSettingsInternal(null);
-    setCurrentUXPInternal(0);
-    setIsDemoMode(false);
-    setIsLocalMode(false);
-
-    // Mark as loaded with empty data to prevent re-fetch
-    // We just wiped the database, no need to reload
-    hasInitiallyLoaded.current = true;
-    loadedForUserId.current = user?.id ?? null;
-    
-    setShowWelcome(true);
-    console.log('[handleStartOver] Complete');
-  }, [user]);
+    if (user) {
+      try {
+        await deleteAllMutation.mutateAsync();
+        // Query cache is already cleared by the mutation
+        setShowWelcome(true);
+      } catch (e) {
+        console.error('[handleStartOver] Failed to delete data:', e);
+        alert('Failed to clear data from server. Please try again.');
+      }
+    }
+  }, [isDemoMode, isLocalMode, user, deleteAllMutation]);
 
   const handleEnterDemoMode = useCallback(() => {
     setIsDemoMode(true);
-    setDemoStatus('Platinum'); // Default to Platinum
+    setDemoStatus('Platinum');
     loadDemoDataForStatus('Platinum');
   }, [loadDemoDataForStatus]);
 
   const handleEnterLocalMode = useCallback(() => {
     setIsLocalMode(true);
-    setBaseMilesDataInternal([]);
-    setBaseXpDataInternal([]);
-    setRedemptionsInternal([]);
-    setFlightsInternal([]);
-    setXpRolloverInternal(0);
-    setManualLedgerInternal({});
+    setLocalFlights([]);
+    setLocalMilesData([]);
+    setLocalManualLedger({});
+    setLocalRedemptions([]);
   }, []);
 
   const handleExitDemoMode = useCallback(() => {
     setIsDemoMode(false);
     setIsLocalMode(false);
-    hasInitiallyLoaded.current = false;
-    loadedForUserId.current = null;
-
-    if (user) {
-      loadUserData();
-    } else {
-      setBaseMilesDataInternal([]);
-      setBaseXpDataInternal([]);
-      setRedemptionsInternal([]);
-      setFlightsInternal([]);
-      setXpRolloverInternal(0);
-      setManualLedgerInternal({});
+    // React Query will automatically refetch user data
+    if (user?.id) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.user(user.id) });
     }
-  }, [user, loadUserData]);
+  }, [user?.id, queryClient]);
+
+  const handleSetDemoStatus = useCallback((status: StatusLevel) => {
+    setDemoStatus(status);
+    loadDemoDataForStatus(status);
+  }, [loadDemoDataForStatus]);
 
   // -------------------------------------------------------------------------
   // ONBOARDING HANDLERS
@@ -1050,88 +737,59 @@ export function useUserData(): UseUserDataReturn {
     ultimateCycleType: 'qualification' | 'calendar';
     targetCPM: number;
     emailConsent: boolean;
-    isReturningUser?: boolean;  // If true, don't overwrite qualification settings
+    isReturningUser?: boolean;
   }) => {
-    // Update local state - these are always safe to update
-    setCurrencyInternal(data.currency);
-    setHomeAirportInternal(data.homeAirport);
-    setTargetCPMInternal(data.targetCPM);
-    setEmailConsentInternal(data.emailConsent);
-    setOnboardingCompletedInternal(true);
+    if (!user || isDemoMode || isLocalMode) return;
 
-    // Only update these for NEW users (not returning users who already have flight data)
-    // For returning users, XP is calculated from flights, not from manual entry
+    const profileUpdates: Record<string, unknown> = {
+      currency: data.currency,
+      home_airport: data.homeAirport,
+      target_cpm: data.targetCPM,
+      email_consent: data.emailConsent,
+      onboarding_completed: true,
+    };
+
     if (!data.isReturningUser) {
-      setXpRolloverInternal(data.rolloverXP);
-      setMilesBalanceInternal(data.milesBalance);
-      setCurrentUXPInternal(data.currentUXP);
+      profileUpdates.xp_rollover = data.rolloverXP;
+      profileUpdates.miles_balance = data.milesBalance;
+      profileUpdates.current_uxp = data.currentUXP;
+      profileUpdates.starting_status = data.currentStatus;
+      profileUpdates.starting_xp = data.currentXP;
+      profileUpdates.ultimate_cycle_type = data.ultimateCycleType;
 
-      // Set qualification settings only for new users
       if (data.currentStatus !== 'Explorer' || data.currentXP > 0) {
         const now = new Date();
         const qYear = now.getMonth() >= 10 ? now.getFullYear() + 1 : now.getFullYear();
-        const cycleStartMonth = `${qYear - 1}-11`;
-        
-        setQualificationSettingsInternal({
-          cycleStartMonth,
-          startingStatus: data.currentStatus,
-          startingXP: data.currentXP,
-          ultimateCycleType: data.ultimateCycleType,
-        });
+        profileUpdates.qualification_start_month = `${qYear - 1}-11`;
       }
     }
 
-    // Save to database if logged in
-    if (user && !isDemoMode) {
-      try {
-        // For returning users, only save preference-type settings
-        const profileUpdates: Record<string, unknown> = {
-          currency: data.currency,
-          home_airport: data.homeAirport,
-          target_cpm: data.targetCPM,
-          email_consent: data.emailConsent,
-          onboarding_completed: true,
-        };
-
-        // Only save XP/status data for new users
-        if (!data.isReturningUser) {
-          profileUpdates.xp_rollover = data.rolloverXP;
-          profileUpdates.miles_balance = data.milesBalance;
-          profileUpdates.current_uxp = data.currentUXP;
-          profileUpdates.starting_status = data.currentStatus;
-          profileUpdates.starting_xp = data.currentXP;
-          profileUpdates.ultimate_cycle_type = data.ultimateCycleType;
-        }
-
-        await updateProfile(user.id, profileUpdates);
-      } catch (error) {
-        console.error('Error saving onboarding data:', error);
-      }
+    try {
+      await saveProfileMutation.mutateAsync(profileUpdates);
+    } catch (error) {
+      console.error('Error saving onboarding data:', error);
     }
-  }, [user, isDemoMode]);
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
 
   const handleRerunOnboarding = useCallback(() => {
-    setOnboardingCompletedInternal(false);
-  }, []);
+    if (!user || isDemoMode || isLocalMode) return;
+    saveProfileMutation.mutate({ onboarding_completed: false });
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
 
-  const handleEmailConsentChange = useCallback(async (consent: boolean) => {
-    setEmailConsentInternal(consent);
-    
-    // Save to database if logged in
-    if (user && !isDemoMode) {
-      try {
-        await updateProfile(user.id, {
-          email_consent: consent,
-        });
-      } catch (error) {
-        console.error('Error updating email consent:', error);
-      }
-    }
-  }, [user, isDemoMode]);
+  const handleEmailConsentChange = useCallback((consent: boolean) => {
+    if (!user || isDemoMode || isLocalMode) return;
+    saveProfileMutation.mutate({ email_consent: consent });
+  }, [user, isDemoMode, isLocalMode, saveProfileMutation]);
 
   // -------------------------------------------------------------------------
   // UTILITY
   // -------------------------------------------------------------------------
+
+  const markDataChanged = useCallback(() => {
+    // No-op in V2 - mutations save immediately
+    // Kept for API compatibility
+    console.log('[useUserData] markDataChanged called - no-op (React Query saves immediately)');
+  }, []);
 
   const calculateGlobalCPM = useCallback(() => {
     const earned = milesData.reduce(
@@ -1145,8 +803,14 @@ export function useUserData(): UseUserDataReturn {
     return earned > 0 ? (cost / earned) * 100 : 0;
   }, [milesData]);
 
+  const forceSave = useCallback(async () => {
+    // In V2, all changes are saved immediately
+    // This is kept for API compatibility
+    console.log('[useUserData] forceSave called - no-op (React Query saves immediately) (changes save immediately)');
+  }, []);
+
   // -------------------------------------------------------------------------
-  // RETURN
+  // RETURN - Same interface as useUserData
   // -------------------------------------------------------------------------
 
   return {
@@ -1203,12 +867,12 @@ export function useUserData(): UseUserDataReturn {
       handleOnboardingComplete,
       handleRerunOnboarding,
       handleEmailConsentChange,
-      canUndoImport: backupState.canUndo,
-      importBackupInfo: backupState.info,
-      forceSave: saveUserData,
+      canUndoImport,
+      importBackupInfo,
+      forceSave,
     },
     meta: {
-      isLoading: dataLoading,
+      isLoading: isQueryLoading,
       isSaving,
       isDemoMode,
       isLocalMode,
@@ -1220,3 +884,6 @@ export function useUserData(): UseUserDataReturn {
     },
   };
 }
+
+// Default export
+export { useUserData };

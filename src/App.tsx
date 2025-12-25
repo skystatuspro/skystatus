@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext';
-// V2: React Query based - drop-in replacement for useUserData
-import { useUserData } from './hooks/useUserDataV2';
+// React Query based user data hook
+import { useUserData } from './hooks/useUserData';
 import { usePageTracking } from './hooks/useAnalytics';
 import { CurrencyProvider } from './lib/CurrencyContext';
 import { CookieConsentProvider } from './lib/CookieContext';

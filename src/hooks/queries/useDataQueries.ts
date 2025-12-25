@@ -15,7 +15,7 @@ import {
   XPLedgerEntry,
 } from '../../lib/dataService';
 import type { FlightRecord, MilesRecord, RedemptionRecord, ManualLedger } from '../../types';
-import type { QualificationSettings } from '../useUserData';
+import type { QualificationSettings } from '../../types/qualification';
 import type { CurrencyCode } from '../../utils/format';
 
 // ============================================================================
