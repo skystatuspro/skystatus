@@ -525,9 +525,17 @@ export function convertToActivityTransactions(
   
   for (const activity of rawActivities) {
     const date = parseToISODate(activity.date);
-    const type = mapToActivityType(activity.type);
+    let type = mapToActivityType(activity.type);
     const description = activity.description || '';
     const miles = activity.miles;
+    const xp = activity.xp;
+    
+    // Fix: transfer_out with positive miles is actually transfer_in
+    // (Flying Blue Family transfers TO the main account holder are shown as "overdragen" 
+    // but represent incoming miles for the PDF owner)
+    if (type === 'transfer_out' && miles > 0) {
+      type = 'transfer_in';
+    }
     const xp = activity.xp;
     
     // Skip transactions with no value

@@ -775,11 +775,12 @@ export async function saveAllUserData(
 export async function deleteAllUserData(userId: string): Promise<boolean> {
   try {
     // Delete from all tables in parallel (including new activity_transactions)
+    // Note: profiles uses 'id' as the user identifier, others use 'user_id'
     const results = await Promise.all([
       supabase.from('flights').delete().eq('user_id', userId),
       supabase.from('miles_transactions').delete().eq('user_id', userId),
       supabase.from('redemptions').delete().eq('user_id', userId),
-      supabase.from('profiles').delete().eq('user_id', userId),
+      supabase.from('profiles').delete().eq('id', userId),  // profiles uses 'id', not 'user_id'
       supabase.from('xp_ledger').delete().eq('user_id', userId),
       supabase.from('activity_transactions').delete().eq('user_id', userId),
     ]);
@@ -1057,6 +1058,7 @@ export function aggregateTransactionsByMonth(
         break;
         
       case 'transfer_out':
+        // transfer_out miles are positive in PDF but represent outgoing miles
         summary.miles_transfer_out += Math.abs(miles);
         break;
         
@@ -1086,7 +1088,10 @@ export function aggregateTransactionsByMonth(
     }
 
     // Update totals
-    if (miles > 0) {
+    // Note: transfer_out has positive miles in PDF but represents spending
+    if (tx.type === 'transfer_out') {
+      summary.total_miles_spent += Math.abs(miles);
+    } else if (miles > 0) {
       summary.total_miles_earned += miles;
     } else if (miles < 0) {
       summary.total_miles_spent += Math.abs(miles);
