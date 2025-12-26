@@ -774,25 +774,71 @@ export async function saveAllUserData(
 
 export async function deleteAllUserData(userId: string): Promise<boolean> {
   try {
-    // Delete from all tables in parallel (including new activity_transactions)
-    // Note: profiles uses 'id' as the user identifier, others use 'user_id'
-    const results = await Promise.all([
+    // Delete from all data tables in parallel
+    const deleteResults = await Promise.all([
       supabase.from('flights').delete().eq('user_id', userId),
       supabase.from('miles_transactions').delete().eq('user_id', userId),
       supabase.from('redemptions').delete().eq('user_id', userId),
-      supabase.from('profiles').delete().eq('id', userId),  // profiles uses 'id', not 'user_id'
       supabase.from('xp_ledger').delete().eq('user_id', userId),
       supabase.from('activity_transactions').delete().eq('user_id', userId),
     ]);
 
-    // Check for errors
-    const errors = results.map(r => r.error).filter(Boolean);
-
-    if (errors.length > 0) {
-      console.error('Errors deleting user data:', errors);
+    // Check for delete errors
+    const deleteErrors = deleteResults.map(r => r.error).filter(Boolean);
+    if (deleteErrors.length > 0) {
+      console.error('Errors deleting user data:', deleteErrors);
       return false;
     }
 
+    // Reset profile to clean state (don't delete - that causes issues)
+    // Keep: id, email, created_at, currency (user preference)
+    // Reset: all qualification settings, PDF baseline, transaction flags
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        // Reset qualification cycle
+        qualification_start_month: null,
+        qualification_start_date: null,
+        starting_status: null,
+        starting_xp: 0,
+        starting_uxp: 0,
+        xp_rollover: 0,
+        uxp_rollover: 0,
+        ultimate_cycle_type: 'qualification',
+        
+        // Reset PDF baseline
+        pdf_baseline: null,
+        pdf_baseline_xp: 0,
+        pdf_baseline_uxp: 0,
+        pdf_baseline_miles: 0,
+        pdf_baseline_status: null,
+        pdf_export_date: null,
+        pdf_imported_at: null,
+        pdf_source_filename: null,
+        
+        // Reset balances
+        miles_balance: 0,
+        current_uxp: 0,
+        
+        // Reset transaction system flag
+        use_new_transactions: false,
+        
+        // Reset onboarding
+        onboarding_completed: false,
+        
+        // Keep: currency, email_consent, home_airport, target_cpm, parser_preference
+        // These are user preferences, not imported data
+        
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('Error resetting profile:', profileError);
+      return false;
+    }
+
+    console.log('[deleteAllUserData] All data cleared and profile reset for user:', userId);
     return true;
   } catch (error) {
     console.error('Error deleting all user data:', error);
