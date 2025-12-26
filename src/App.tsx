@@ -28,6 +28,7 @@ import { FAQPage } from './components/FAQPage';
 import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
 import { AIParserTest } from './components/AIParserTest';
+import { LocalParserTest } from './components/LocalParserTest';
 import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { MaintenanceNotice } from './components/MaintenanceNotice';
@@ -61,7 +62,7 @@ export default function App() {
   // -------------------------------------------------------------------------
 
   const [view, setView] = useState<ViewState>('dashboard');
-  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | 'cookies' | 'ai-parser' | null>(null);
+  const [legalPage, setLegalPage] = useState<'privacy' | 'terms' | 'faq' | 'about' | 'contact' | 'calculator' | 'cookies' | 'ai-parser' | 'local-parser' | null>(null);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPdfInstructions, setShowPdfInstructions] = useState(false);
@@ -104,6 +105,9 @@ export default function App() {
       window.scrollTo(0, 0);
     } else if (path === '/ai-parser') {
       setLegalPage('ai-parser');
+      window.scrollTo(0, 0);
+    } else if (path === '/local-parser') {
+      setLegalPage('local-parser');
       window.scrollTo(0, 0);
     } else {
       setLegalPage(null);
@@ -193,6 +197,12 @@ export default function App() {
   if (legalPage === 'ai-parser') return (
     <CookieConsentProvider>
       <AIParserTest />
+      <CookieConsentUI />
+    </CookieConsentProvider>
+  );
+  if (legalPage === 'local-parser') return (
+    <CookieConsentProvider>
+      <LocalParserTest />
       <CookieConsentUI />
     </CookieConsentProvider>
   );
