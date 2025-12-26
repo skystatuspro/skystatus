@@ -106,11 +106,23 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   // Corrected savings using acquisition CPM from new transaction system
   // Falls back to legacy calculation for non-migrated users
   const correctedSavings = useMemo(() => {
+    console.log('[MilesEngine] correctedSavings calculation:', {
+      'acquisitionCPM.hasData': acquisitionCPM.hasData,
+      'acquisitionCPM.cpm': acquisitionCPM.cpm,
+      'useNewTransactions': useNewTransactions,
+      'safeTargetCPM': safeTargetCPM,
+      'stats.earnedPast': stats.earnedPast,
+      'stats.savingsCurrent': stats.savingsCurrent,
+    });
+    
     if (acquisitionCPM.hasData && useNewTransactions) {
       // New system: use accurate acquisition CPM
-      return (safeTargetCPM - acquisitionCPM.cpm) * stats.earnedPast;
+      const result = (safeTargetCPM - acquisitionCPM.cpm) * stats.earnedPast;
+      console.log('[MilesEngine] Using NEW calculation:', result);
+      return result;
     }
     // Legacy system: use existing calculation
+    console.log('[MilesEngine] Using LEGACY calculation:', stats.savingsCurrent);
     return stats.savingsCurrent;
   }, [acquisitionCPM, useNewTransactions, safeTargetCPM, stats.earnedPast, stats.savingsCurrent]);
 
