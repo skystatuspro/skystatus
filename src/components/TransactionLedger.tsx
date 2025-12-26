@@ -16,6 +16,7 @@ import {
   Wallet,
   Plane,
   Plus,
+  Pencil,
 } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
@@ -280,10 +281,11 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
         ) : hasCost ? (
           <button
             onClick={onStartEdit}
-            className="w-full text-right px-2 py-1 rounded text-xs font-mono text-slate-600 hover:bg-slate-100 transition-all"
+            className="w-full text-right px-2 py-1 rounded text-xs font-mono text-slate-600 hover:bg-slate-100 transition-all group flex items-center justify-end gap-1"
             title="Click to edit cost"
           >
-            {currencySymbol}{transaction.cost!.toFixed(2)}
+            <Pencil size={10} className="opacity-0 group-hover:opacity-50 transition-opacity" />
+            <span>{currencySymbol}{transaction.cost!.toFixed(2)}</span>
           </button>
         ) : (
           <div className="flex items-center justify-end gap-1">
