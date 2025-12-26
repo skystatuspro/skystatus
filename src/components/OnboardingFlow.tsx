@@ -540,24 +540,21 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                         value={pasteText}
                         onChange={(e) => setPasteText(e.target.value)}
                         placeholder="Paste your Flying Blue PDF content here..."
-                        className={`w-full h-32 p-3 border-2 rounded-xl resize-none font-mono text-xs transition-colors focus:outline-none ${
+                        className={`w-full h-32 p-3 border-2 rounded-xl resize-none font-mono text-xs transition-colors focus:outline-none relative z-10 ${
                           pasteText && !isValidPasteContent
                             ? 'border-amber-300 bg-amber-50'
                             : isValidPasteContent
                             ? 'border-emerald-300 bg-emerald-50'
-                            : 'border-slate-200 focus:border-blue-400'
+                            : 'border-slate-200 focus:border-blue-400 bg-white'
                         }`}
                       />
                       
-                      {/* Paste button overlay */}
+                      {/* Paste hint - non-blocking */}
                       {!pasteText && (
-                        <button
-                          onClick={handlePasteFromClipboard}
-                          className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-50/50 hover:bg-slate-100/50 transition-colors rounded-xl border-2 border-dashed border-slate-300"
-                        >
-                          <Clipboard size={24} className="text-slate-400" />
-                          <span className="text-xs text-slate-500">Click to paste</span>
-                        </button>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none z-0">
+                          <Clipboard size={24} className="text-slate-300" />
+                          <span className="text-xs text-slate-400">Paste here (Ctrl+V)</span>
+                        </div>
                       )}
                     </div>
 

@@ -401,6 +401,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         <FAQModal isOpen={showFaqModal} onClose={() => setShowFaqModal(false)} />
+        
+        {/* PDF Import Modal - must be in this return too! */}
+        <PdfImportModal
+          isOpen={showPdfImportModal}
+          onClose={() => setShowPdfImportModal(false)}
+          onImportComplete={handlePdfImportComplete}
+        />
       </div>
     );
   }

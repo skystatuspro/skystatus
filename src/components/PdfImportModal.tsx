@@ -206,25 +206,24 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder="Paste your Flying Blue PDF content here..."
-                  className={`w-full ${compact ? 'h-40' : 'h-56'} p-4 border-2 rounded-xl resize-none font-mono text-sm transition-colors focus:outline-none focus:ring-0 ${
+                  className={`w-full ${compact ? 'h-40' : 'h-56'} p-4 border-2 rounded-xl resize-none font-mono text-sm transition-colors focus:outline-none focus:ring-0 relative z-10 ${
                     text && !isValidContent
                       ? 'border-amber-300 bg-amber-50'
                       : isValidContent
                       ? 'border-emerald-300 bg-emerald-50'
-                      : 'border-slate-200 focus:border-blue-400'
+                      : 'border-slate-200 focus:border-blue-400 bg-white'
                   }`}
                 />
                 
-                {/* Paste button overlay */}
+                {/* Paste hint overlay - only show when empty and not focused */}
                 {!text && (
-                  <button
-                    onClick={handlePasteFromClipboard}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-50/50 hover:bg-slate-100/50 transition-colors rounded-xl border-2 border-dashed border-slate-300 cursor-pointer"
+                  <div 
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none z-0"
                   >
-                    <Clipboard size={32} className="text-slate-400" />
-                    <span className="text-sm text-slate-500">Click to paste from clipboard</span>
-                    <span className="text-xs text-slate-400">or paste manually</span>
-                  </button>
+                    <Clipboard size={32} className="text-slate-300" />
+                    <span className="text-sm text-slate-400">Paste your PDF content here</span>
+                    <span className="text-xs text-slate-300">Ctrl+V / Cmd+V</span>
+                  </div>
                 )}
               </div>
 
