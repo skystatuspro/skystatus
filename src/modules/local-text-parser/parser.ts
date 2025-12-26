@@ -30,6 +30,7 @@ import {
   extractBonusXpByMonth,
   createPdfHeaderFromParsed,
   createRawResponse,
+  calculateMilesReconciliation,
 } from './converter';
 
 /**
@@ -172,6 +173,22 @@ export async function localParseText(
     // Step 9: Create raw response (for compatibility)
     const rawResponse = createRawResponse(header, rawFlights, rawActivities, statusEvents);
     
+    // Step 10: Calculate miles reconciliation
+    const milesReconciliation = calculateMilesReconciliation(
+      header.totalMiles,
+      rawFlights,
+      rawActivities
+    );
+    
+    if (debug && milesReconciliation.needsCorrection) {
+      console.log('[LocalParser] Miles reconciliation needed:', {
+        headerBalance: milesReconciliation.headerBalance,
+        parsedTotal: milesReconciliation.parsedTotal,
+        difference: milesReconciliation.difference,
+        oldestMonth: milesReconciliation.oldestMonth,
+      });
+    }
+    
     // Calculate parse time
     const parseTimeMs = Math.round(performance.now() - startTime);
     
@@ -184,6 +201,7 @@ export async function localParseText(
       qualificationSettings,
       bonusXpByMonth,
       rawResponse,
+      milesReconciliation,
       metadata: {
         parseTimeMs,
         model: 'local-text-parser-v1',

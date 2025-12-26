@@ -53,6 +53,7 @@ export type ActivityTransactionType =
   | 'car_rental'        // Uber, rental car partners
   | 'expiry'            // Expired miles (negative)
   | 'status_extension'  // Status extension purchase
+  | 'starting_balance'  // Historical balance from pre-statement period
   | 'other';            // Fallback for unrecognized types
 
 /**

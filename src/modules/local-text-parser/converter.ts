@@ -294,6 +294,75 @@ export function createPdfHeaderFromParsed(header: ParsedHeader): PdfHeader {
 }
 
 // ============================================================================
+// MILES RECONCILIATION
+// ============================================================================
+
+/** Threshold for considering a difference significant (in miles) */
+const RECONCILIATION_THRESHOLD = 100;
+
+/**
+ * Calculate miles reconciliation - compare header balance with parsed transactions
+ * This detects "missing" historical miles from before the statement period
+ */
+export function calculateMilesReconciliation(
+  headerBalance: number,
+  flights: AIRawFlight[],
+  activities: AIRawMilesActivity[]
+): {
+  headerBalance: number;
+  parsedTotal: number;
+  difference: number;
+  oldestTransactionDate: string;
+  oldestMonth: string;
+  needsCorrection: boolean;
+  suggestedCorrection: {
+    date: string;
+    description: string;
+    miles: number;
+  } | null;
+} {
+  // Calculate total from flights
+  const flightMiles = flights.reduce((sum, f) => sum + f.miles + f.safMiles, 0);
+  
+  // Calculate total from activities (including negative for redemptions)
+  const activityMiles = activities.reduce((sum, a) => sum + a.miles, 0);
+  
+  const parsedTotal = flightMiles + activityMiles;
+  const difference = headerBalance - parsedTotal;
+  
+  // Find oldest transaction date
+  const allDates: string[] = [
+    ...flights.map(f => f.flightDate),
+    ...activities.map(a => a.date),
+  ].filter(d => d && d.length === 10); // Valid YYYY-MM-DD dates
+  
+  allDates.sort((a, b) => a.localeCompare(b));
+  
+  const oldestTransactionDate = allDates[0] || new Date().toISOString().slice(0, 10);
+  const oldestMonth = oldestTransactionDate.slice(0, 7);
+  
+  // Determine if correction is needed
+  const needsCorrection = difference > RECONCILIATION_THRESHOLD;
+  
+  // Create suggested correction if needed
+  const suggestedCorrection = needsCorrection ? {
+    date: `${oldestMonth}-01`, // First day of oldest month
+    description: `Historical balance (pre-${oldestMonth})`,
+    miles: difference,
+  } : null;
+  
+  return {
+    headerBalance,
+    parsedTotal,
+    difference,
+    oldestTransactionDate,
+    oldestMonth,
+    needsCorrection,
+    suggestedCorrection,
+  };
+}
+
+// ============================================================================
 // RAW RESPONSE CREATION
 // ============================================================================
 

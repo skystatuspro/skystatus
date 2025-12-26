@@ -159,3 +159,33 @@ export interface ValidationResult {
   errors: string[];
   warnings: string[];
 }
+
+/**
+ * Miles reconciliation - compares header balance with parsed transactions
+ */
+export interface MilesReconciliation {
+  /** Total miles from PDF header */
+  headerBalance: number;
+  
+  /** Sum of all parsed transactions (flights + activities) */
+  parsedTotal: number;
+  
+  /** Difference (headerBalance - parsedTotal) */
+  difference: number;
+  
+  /** Oldest transaction date found in PDF */
+  oldestTransactionDate: string;
+  
+  /** Oldest transaction month (YYYY-MM) for correction booking */
+  oldestMonth: string;
+  
+  /** Whether correction is needed (difference > threshold) */
+  needsCorrection: boolean;
+  
+  /** Suggested correction transaction */
+  suggestedCorrection: {
+    date: string;
+    description: string;
+    miles: number;
+  } | null;
+}

@@ -48,6 +48,7 @@ export const LocalParserTest: React.FC = () => {
   const [showBonusXp, setShowBonusXp] = useState(false);
   const [showActivities, setShowActivities] = useState(false);
   const [importComplete, setImportComplete] = useState(false);
+  const [includeHistoricalBalance, setIncludeHistoricalBalance] = useState(true);
 
   // Check if text looks valid
   const isValidContent = text.length > 100 && isLikelyFlyingBlueContent(text);
@@ -89,9 +90,30 @@ export const LocalParserTest: React.FC = () => {
   const handleImportToDashboard = useCallback(() => {
     if (!result) return;
     
+    // Prepare activity transactions, optionally including historical balance
+    let transactions = [...result.activityTransactions];
+    
+    if (includeHistoricalBalance && result.milesReconciliation?.needsCorrection) {
+      const correction = result.milesReconciliation.suggestedCorrection;
+      if (correction) {
+        // Add historical balance correction transaction
+        const correctionTransaction = {
+          id: `starting-balance-${correction.date}`,
+          date: correction.date,
+          type: 'starting_balance' as const,
+          description: correction.description,
+          miles: correction.miles,
+          xp: 0,
+          source: 'pdf' as const,
+          sourceDate: result.pdfHeader.exportDate,
+        };
+        transactions = [correctionTransaction, ...transactions];
+      }
+    }
+    
     actions.handlePdfImport(
       result.flights,
-      result.activityTransactions,
+      transactions,
       undefined,
       result.qualificationSettings ? {
         cycleStartMonth: result.qualificationSettings.cycleStartMonth,
@@ -101,7 +123,7 @@ export const LocalParserTest: React.FC = () => {
       } : undefined,
     );
     setImportComplete(true);
-  }, [result, actions]);
+  }, [result, actions, includeHistoricalBalance]);
 
   // Reset handler
   const handleReset = () => {
@@ -371,6 +393,42 @@ export const LocalParserTest: React.FC = () => {
                     <div>
                       <span className="text-slate-500">Rollover XP:</span>{' '}
                       <span className="font-medium">{result.qualificationSettings.startingXP}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Historical Balance Detection */}
+              {result.milesReconciliation?.needsCorrection && (
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-amber-800 mb-2">Historical Balance Detected</h4>
+                        <div className="text-sm text-amber-700 space-y-1 mb-4">
+                          <p>Your statement shows <strong>{result.milesReconciliation.headerBalance.toLocaleString()}</strong> Miles</p>
+                          <p>Transactions found: <strong>{result.milesReconciliation.parsedTotal.toLocaleString()}</strong> Miles</p>
+                          <p className="pt-2 border-t border-amber-200 mt-2">
+                            Historical balance: <strong className="text-amber-900">+{result.milesReconciliation.difference.toLocaleString()}</strong> Miles
+                          </p>
+                          <p className="text-xs text-amber-600 mt-2">
+                            This likely represents miles earned before {result.milesReconciliation.oldestMonth} (oldest transaction in statement).
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={includeHistoricalBalance}
+                            onChange={(e) => setIncludeHistoricalBalance(e.target.checked)}
+                            className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                          />
+                          <span className="text-sm font-medium text-amber-800">
+                            Add historical balance correction
+                          </span>
+                          <span className="text-xs text-amber-600">(Recommended)</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

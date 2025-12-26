@@ -158,6 +158,21 @@ export interface AIParsedResult {
   /** Raw response for debugging */
   rawResponse: AIRawResponse;
   
+  /** Miles reconciliation - comparing header balance with parsed transactions */
+  milesReconciliation?: {
+    headerBalance: number;
+    parsedTotal: number;
+    difference: number;
+    oldestTransactionDate: string;
+    oldestMonth: string;
+    needsCorrection: boolean;
+    suggestedCorrection: {
+      date: string;
+      description: string;
+      miles: number;
+    } | null;
+  };
+  
   /** Metadata */
   metadata: {
     parseTimeMs: number;
