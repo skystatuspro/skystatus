@@ -561,6 +561,42 @@ export function useUserData(): UseUserDataReturn {
     insertManualTransactionMutation,
   ]);
 
+  /**
+   * Update the cost of an existing transaction.
+   * Used for inline cost editing in TransactionLedger.
+   */
+  const handleUpdateTransactionCost = useCallback(async (
+    transactionId: string,
+    cost: number | null
+  ): Promise<boolean> => {
+    if (isDemoMode || isLocalMode) {
+      console.log('[handleUpdateTransactionCost] Demo/local mode - cost updates not persisted');
+      return false;
+    }
+
+    if (!user) {
+      console.error('[handleUpdateTransactionCost] No user');
+      return false;
+    }
+
+    console.log('[handleUpdateTransactionCost] Updating:', { transactionId, cost });
+
+    try {
+      const { updateTransactionCost } = await import('../lib/dataService');
+      const success = await updateTransactionCost(user.id, transactionId, cost);
+      
+      if (success) {
+        // Invalidate the query to refetch fresh data
+        queryClient.invalidateQueries({ queryKey: queryKeys.user(user.id) });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('[handleUpdateTransactionCost] Error:', error);
+      return false;
+    }
+  }, [isDemoMode, isLocalMode, user, queryClient]);
+
   const handleRedemptionsUpdate = useCallback((newRedemptions: RedemptionRecord[]) => {
     setRedemptions(newRedemptions);
   }, [setRedemptions]);
@@ -1100,6 +1136,7 @@ export function useUserData(): UseUserDataReturn {
       handleFlightIntakeApply,
       handleManualLedgerUpdate,
       handleAddManualTransaction,
+      handleUpdateTransactionCost,
       handleRedemptionsUpdate,
       handleTargetCPMUpdate,
       handleCurrencyUpdate,

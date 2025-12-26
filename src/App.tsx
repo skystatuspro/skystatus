@@ -402,6 +402,9 @@ export default function App() {
             targetCPM={state.targetCPM}
             onUpdateTargetCPM={actions.handleTargetCPMUpdate}
             redemptions={state.redemptions}
+            activityTransactions={state.activityTransactions}
+            useNewTransactions={state.useNewTransactions}
+            onUpdateTransactionCost={actions.handleUpdateTransactionCost}
           />
         );
 

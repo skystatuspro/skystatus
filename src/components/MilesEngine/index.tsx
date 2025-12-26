@@ -2,7 +2,7 @@
 // Main MilesEngine component - Financial backbone of the loyalty portfolio
 
 import React, { useMemo, useState } from 'react';
-import { MilesRecord, RedemptionRecord } from '../../types';
+import { MilesRecord, RedemptionRecord, ActivityTransaction } from '../../types';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { formatNumber, generateId } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -33,6 +33,7 @@ import {
 } from 'recharts';
 import { Tooltip } from '../Tooltip';
 import { SharedLedger } from '../SharedLedger';
+import { TransactionLedger } from '../TransactionLedger';
 
 // Subcomponents
 import { noSpinnerClass } from './helpers';
@@ -47,6 +48,10 @@ interface MilesEngineProps {
   targetCPM: number;
   onUpdateTargetCPM: (val: number) => void;
   redemptions: RedemptionRecord[];
+  // New transaction system props
+  activityTransactions?: ActivityTransaction[];
+  useNewTransactions?: boolean;
+  onUpdateTransactionCost?: (transactionId: string, cost: number | null) => Promise<boolean>;
 }
 
 export const MilesEngine: React.FC<MilesEngineProps> = ({
@@ -57,6 +62,9 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   targetCPM,
   onUpdateTargetCPM,
   redemptions,
+  activityTransactions,
+  useNewTransactions,
+  onUpdateTransactionCost,
 }) => {
   const { isSimpleMode } = useViewMode();
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
@@ -676,17 +684,26 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
         </div>
       </div>
 
-      {/* Transaction Ledger */}
-      <SharedLedger
-        data={data}
-        onUpdate={onUpdate}
-        currentMonth={currentMonth}
-        variant="full"
-        showQuickStats={true}
-        showAddButton={true}
-        onAddMonth={handleAddRow}
-        title="Transaction Ledger"
-      />
+      {/* Transaction Ledger - Show new or legacy based on user migration status */}
+      {useNewTransactions && activityTransactions && onUpdateTransactionCost ? (
+        <TransactionLedger
+          transactions={activityTransactions}
+          onUpdateCost={onUpdateTransactionCost}
+          title="Transaction Ledger"
+          showMissingCostFilter={true}
+        />
+      ) : (
+        <SharedLedger
+          data={data}
+          onUpdate={onUpdate}
+          currentMonth={currentMonth}
+          variant="full"
+          showQuickStats={true}
+          showAddButton={true}
+          onAddMonth={handleAddRow}
+          title="Transaction Ledger"
+        />
+      )}
     </div>
   );
 };
