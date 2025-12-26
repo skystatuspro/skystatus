@@ -7,6 +7,7 @@ import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { formatNumber, generateId } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
 import { useViewMode } from '../../hooks/useViewMode';
+import { useAcquisitionCPM } from '../../hooks/useAcquisitionCPM';
 import {
   Download,
   Upload,
@@ -19,6 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  User,
 } from 'lucide-react';
 import {
   BarChart,
@@ -72,6 +74,14 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   const { isSimpleMode } = useViewMode();
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const safeTargetCPM = Number.isFinite(targetCPM) ? targetCPM : 0;
+
+  // Calculate user's personal acquisition CPM
+  const acquisitionCPM = useAcquisitionCPM({
+    activityTransactions,
+    flights,
+    legacyMilesData: data,
+    useNewTransactions,
+  });
 
   // Local formatting helper
   const formatCPM = (cpm: number) => `${currencySymbol}${cpm.toFixed(4)}`;
@@ -448,6 +458,25 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                       <span className="block text-[9px] font-medium opacity-70">{currencySymbol}{preset.value.toFixed(3)}</span>
                     </button>
                   ))}
+                  
+                  {/* Personal CPM button - only show if user has data */}
+                  {acquisitionCPM.hasData && (
+                    <button
+                      onClick={() => onUpdateTargetCPM(acquisitionCPM.cpm)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center ${
+                        Math.abs(targetCPM - acquisitionCPM.cpm) < 0.0001
+                          ? 'bg-emerald-50 shadow-sm border border-emerald-300 text-emerald-700'
+                          : 'bg-white/50 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 border border-transparent hover:border-emerald-200'
+                      }`}
+                      title={`Based on ${acquisitionCPM.transactionsWithCost} transactions (${acquisitionCPM.coverage.toFixed(0)}% coverage)`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <User size={10} />
+                        My CPM
+                      </span>
+                      <span className="block text-[9px] font-medium opacity-70">{currencySymbol}{acquisitionCPM.cpm.toFixed(4)}</span>
+                    </button>
+                  )}
                 </div>
                 
                 {/* Custom input */}
@@ -477,7 +506,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                 What's a good target CPM?
                 <ChevronDown size={14} className="transition-transform group-open:rotate-180 ml-auto" />
               </summary>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[11px]">
                 <div className="bg-white/70 rounded-lg p-3 border border-slate-200/50 hover:border-slate-300 transition-colors">
                   <div className="font-bold text-slate-700 mb-1">{currencySymbol}0.006 - {currencySymbol}0.010</div>
                   <div className="text-slate-500">Conservative. Easy to achieve on most economy redemptions within Europe.</div>
@@ -490,6 +519,17 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
                   <div className="font-bold text-indigo-700 mb-1">{currencySymbol}0.018+</div>
                   <div className="text-slate-500">Aspirational. Achievable on premium cabin long-haul or La Première. Requires strategic booking.</div>
                 </div>
+                {acquisitionCPM.hasData && (
+                  <div className="bg-emerald-50/70 rounded-lg p-3 border border-emerald-200/50 hover:border-emerald-300 transition-colors">
+                    <div className="font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                      <User size={12} />
+                      {currencySymbol}{acquisitionCPM.cpm.toFixed(4)}
+                    </div>
+                    <div className="text-slate-500">
+                      Your personal CPM based on {currencySymbol}{acquisitionCPM.totalCost.toFixed(2)} spent on {formatNumber(acquisitionCPM.totalMilesEarned)} miles.
+                    </div>
+                  </div>
+                )}
               </div>
             </details>
           </div>
