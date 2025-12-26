@@ -627,6 +627,17 @@ export default function App() {
               showToast('Welcome to SkyStatus Pro!', 'success');
             }
           }}
+          onPdfParsed={(result, includeHistoricalBalance) => {
+            // Import the parsed PDF data
+            handlePdfImportFromModal(result, includeHistoricalBalance);
+            // Update the legacy pdfImportResult for the onboarding flow UI
+            setOnboardingPdfResult({
+              flightsCount: result.flights.length,
+              xpDetected: result.pdfHeader.xp,
+              statusDetected: result.pdfHeader.status,
+              milesBalance: result.pdfHeader.miles,
+            });
+          }}
           onPdfImport={() => setShowOnboardingPdfModal(true)}
           pdfImportResult={onboardingPdfResult}
           onSkip={() => {
