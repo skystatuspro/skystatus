@@ -202,6 +202,7 @@ interface TransactionRowProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onEditValueChange: (value: string) => void;
+  onMarkFree: () => void;
   currencySymbol: string;
 }
 
@@ -213,6 +214,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   onSaveEdit,
   onCancelEdit,
   onEditValueChange,
+  onMarkFree,
   currencySymbol,
 }) => {
   const typeColor = TYPE_COLORS[transaction.type] || TYPE_COLORS.other;
@@ -244,7 +246,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
       </div>
 
       {/* Cost - Editable */}
-      <div className="w-24 shrink-0">
+      <div className="w-32 shrink-0">
         {isEditing ? (
           <div className="flex items-center gap-1">
             <input
@@ -275,25 +277,32 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
               <X size={14} />
             </button>
           </div>
-        ) : (
+        ) : hasCost ? (
           <button
             onClick={onStartEdit}
-            className={`w-full text-right px-2 py-1 rounded text-xs font-mono transition-all group ${
-              hasCost
-                ? 'text-slate-600 hover:bg-slate-100'
-                : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'
-            }`}
-            title={hasCost ? 'Click to edit cost' : 'Click to add acquisition cost'}
+            className="w-full text-right px-2 py-1 rounded text-xs font-mono text-slate-600 hover:bg-slate-100 transition-all"
+            title="Click to edit cost"
           >
-            {hasCost ? (
-              `${currencySymbol}${transaction.cost!.toFixed(2)}`
-            ) : (
-              <span className="flex items-center justify-end gap-1">
-                <Plus size={12} className="opacity-60" />
-                <span>cost</span>
-              </span>
-            )}
+            {currencySymbol}{transaction.cost!.toFixed(2)}
           </button>
+        ) : (
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={onStartEdit}
+              className="px-2 py-1 rounded text-xs text-amber-500 hover:text-amber-600 hover:bg-amber-50 transition-all flex items-center gap-1"
+              title="Enter custom cost"
+            >
+              <Plus size={12} className="opacity-60" />
+              <span>cost</span>
+            </button>
+            <button
+              onClick={onMarkFree}
+              className="px-2 py-1 rounded text-xs font-mono text-emerald-600 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 transition-all"
+              title="Mark as free (no cost)"
+            >
+              {currencySymbol}0
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -310,6 +319,7 @@ interface MonthSectionProps {
   onSaveEdit: (id: string) => void;
   onCancelEdit: () => void;
   onEditValueChange: (value: string) => void;
+  onMarkFree: (id: string) => void;
   currencySymbol: string;
   isCurrentMonth: boolean;
 }
@@ -324,6 +334,7 @@ const MonthSection: React.FC<MonthSectionProps> = ({
   onSaveEdit,
   onCancelEdit,
   onEditValueChange,
+  onMarkFree,
   currencySymbol,
   isCurrentMonth,
 }) => {
@@ -429,6 +440,7 @@ const MonthSection: React.FC<MonthSectionProps> = ({
                   onSaveEdit={() => onSaveEdit(tx.id)}
                   onCancelEdit={onCancelEdit}
                   onEditValueChange={onEditValueChange}
+                  onMarkFree={() => onMarkFree(tx.id)}
                   currencySymbol={currencySymbol}
                 />
               ))}
@@ -532,6 +544,17 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
     setEditValue('');
   }, []);
 
+  const handleMarkFree = useCallback(async (id: string) => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      await onUpdateCost(id, 0);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [onUpdateCost, isSaving]);
+
   // Auto-expand months with missing costs when filter is active
   React.useEffect(() => {
     if (filterMissingCost) {
@@ -620,6 +643,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
               onSaveEdit={handleSaveEdit}
               onCancelEdit={handleCancelEdit}
               onEditValueChange={setEditValue}
+              onMarkFree={handleMarkFree}
               currencySymbol={currencySymbol}
               isCurrentMonth={group.month === currentMonth}
             />
