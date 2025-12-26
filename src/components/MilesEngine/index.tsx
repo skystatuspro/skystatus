@@ -103,29 +103,50 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
     [data, currentMonth, redemptions, safeTargetCPM]
   );
 
-  // Corrected savings using acquisition CPM from new transaction system
-  // Falls back to legacy calculation for non-migrated users
-  const correctedSavings = useMemo(() => {
-    console.log('[MilesEngine] correctedSavings calculation:', {
-      'acquisitionCPM.hasData': acquisitionCPM.hasData,
-      'acquisitionCPM.cpm': acquisitionCPM.cpm,
-      'acquisitionCPM.totalMilesEarned': acquisitionCPM.totalMilesEarned,
-      'useNewTransactions': useNewTransactions,
-      'safeTargetCPM': safeTargetCPM,
-      'stats.earnedPast (legacy)': stats.earnedPast,
-      'stats.savingsCurrent': stats.savingsCurrent,
+  // Value Created calculation - split into realized (redemptions) and unrealized (current portfolio)
+  const valueCreated = useMemo(() => {
+    // Get the right values based on new vs legacy system
+    const totalInvestment = acquisitionCPM.hasData && useNewTransactions 
+      ? acquisitionCPM.totalCost 
+      : stats.totalCost;
+    
+    const currentBalance = stats.netCurrent; // Current miles balance after redemptions
+    
+    // Realized value: sum of all redemption values (cash equivalent)
+    const realizedValue = redemptions.reduce((sum, r) => sum + (r.cash_price_estimate || 0), 0);
+    
+    // Unrealized value: current balance at target CPM
+    const unrealizedValue = currentBalance * safeTargetCPM;
+    
+    // Total portfolio value (realized + unrealized)
+    const totalValue = realizedValue + unrealizedValue;
+    
+    // Total gain = total value - investment
+    const totalGain = totalValue - totalInvestment;
+    
+    // Percentages
+    const realizedPercent = totalValue > 0 ? (realizedValue / totalValue) * 100 : 0;
+    const unrealizedPercent = totalValue > 0 ? (unrealizedValue / totalValue) * 100 : 0;
+    
+    console.log('[MilesEngine] valueCreated calculation:', {
+      totalInvestment,
+      currentBalance,
+      realizedValue,
+      unrealizedValue,
+      totalValue,
+      totalGain,
     });
     
-    if (acquisitionCPM.hasData && useNewTransactions) {
-      // New system: use accurate acquisition CPM and totalMilesEarned from hook
-      const result = (safeTargetCPM - acquisitionCPM.cpm) * acquisitionCPM.totalMilesEarned;
-      console.log('[MilesEngine] Using NEW calculation:', result);
-      return result;
-    }
-    // Legacy system: use existing calculation
-    console.log('[MilesEngine] Using LEGACY calculation:', stats.savingsCurrent);
-    return stats.savingsCurrent;
-  }, [acquisitionCPM, useNewTransactions, safeTargetCPM, stats.earnedPast, stats.savingsCurrent]);
+    return {
+      totalGain,
+      realizedValue,
+      unrealizedValue,
+      totalValue,
+      totalInvestment,
+      realizedPercent,
+      unrealizedPercent,
+    };
+  }, [acquisitionCPM, useNewTransactions, stats.totalCost, stats.netCurrent, redemptions, safeTargetCPM]);
 
   const sourcePerformance = useMemo(() => {
     const totals = data.reduce(
@@ -397,28 +418,52 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
           </div>
         </KPICard>
 
-        {/* Savings Card */}
+        {/* Value Created Card */}
         <KPICard
-          title="Realized Savings"
+          title="Value Created"
           value={
             <span
               className={
-                correctedSavings >= 0 ? 'text-emerald-600' : 'text-red-500'
+                valueCreated.totalGain >= 0 ? 'text-emerald-600' : 'text-red-500'
               }
             >
-              {correctedSavings >= 0 ? '+' : ''}
-              {formatCurrency(correctedSavings)}
+              {valueCreated.totalGain >= 0 ? '+' : ''}
+              {formatCurrency(valueCreated.totalGain)}
             </span>
           }
-          subtitle="vs Target CPM"
+          subtitle="total gain"
           icon={PiggyBank}
           color="violet"
-          tooltip="Difference between the theoretical value of your miles at target CPM and what you actually paid for them."
+          tooltip="Total value created from your miles portfolio. Realized = value from redemptions. Unrealized = current balance at target CPM."
         >
-          <RoiBar cost={stats.totalCost} value={chartValue} />
-          <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 mt-1">
-            <span>Investment</span>
-            <span>Est. Value</span>
+          {/* Realized vs Unrealized breakdown */}
+          <div className="space-y-1.5 mt-1">
+            <div className="flex justify-between items-center text-[10px]">
+              <span className="text-emerald-600 font-semibold">Realized</span>
+              <span className="font-bold text-slate-700">{formatCurrency(valueCreated.realizedValue)}</span>
+            </div>
+            <div className="flex justify-between items-center text-[10px]">
+              <span className="text-blue-500 font-semibold">Unrealized</span>
+              <span className="font-bold text-slate-700">{formatCurrency(valueCreated.unrealizedValue)}</span>
+            </div>
+            {/* Stacked progress bar */}
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+              {valueCreated.realizedPercent > 0 && (
+                <div 
+                  className="h-full bg-emerald-500" 
+                  style={{ width: `${valueCreated.realizedPercent}%` }}
+                />
+              )}
+              {valueCreated.unrealizedPercent > 0 && (
+                <div 
+                  className="h-full bg-blue-400" 
+                  style={{ width: `${valueCreated.unrealizedPercent}%` }}
+                />
+              )}
+            </div>
+            <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-400">
+              <span>Investment: {formatCurrency(valueCreated.totalInvestment)}</span>
+            </div>
           </div>
         </KPICard>
       </div>
