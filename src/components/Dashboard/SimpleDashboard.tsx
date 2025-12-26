@@ -23,6 +23,7 @@ import {
   Target,
 } from 'lucide-react';
 import { StatusLevel, getStatusTheme, getTargetXP, findActiveCycle } from './helpers';
+import { ValueCreatedBanner } from './ValueCreatedBanner';
 
 interface SimpleDashboardState {
   milesData: { month: string; totalMiles: number }[];
@@ -73,6 +74,16 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
     ),
     [state.milesData, state.currentMonth, state.redemptions, state.targetCPM]
   );
+
+  // Value Created calculation
+  const valueCreated = useMemo(() => {
+    const totalInvestment = milesStats.totalCost;
+    const currentBalance = milesStats.netCurrent;
+    const realizedValue = state.redemptions.reduce((sum, r) => sum + (r.cash_price_estimate || 0), 0);
+    const unrealizedValue = currentBalance * state.targetCPM;
+    const totalGain = (realizedValue + unrealizedValue) - totalInvestment;
+    return { totalGain, realizedValue, unrealizedValue, totalInvestment };
+  }, [milesStats.totalCost, milesStats.netCurrent, state.redemptions, state.targetCPM]);
 
   // Normalize qualification settings
   const normalizedSettings = useMemo(
@@ -330,6 +341,16 @@ export const SimpleDashboard: React.FC<SimpleDashboardProps> = ({
           </div>
         </div>
       </button>
+
+      {/* Value Created Banner - Compact */}
+      <ValueCreatedBanner
+        totalGain={valueCreated.totalGain}
+        realizedValue={valueCreated.realizedValue}
+        unrealizedValue={valueCreated.unrealizedValue}
+        totalInvestment={valueCreated.totalInvestment}
+        formatCurrency={formatCurrency}
+        compact={true}
+      />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">

@@ -39,6 +39,7 @@ import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveC
 import { KPICard } from './KPICard';
 import { RiskMonitor } from './RiskMonitor';
 import { SimpleDashboard } from './SimpleDashboard';
+import { ValueCreatedBanner } from './ValueCreatedBanner';
 
 interface DashboardState {
   milesData: { month: string; totalMiles: number }[];
@@ -108,6 +109,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
       ),
     [state.milesData, state.currentMonth, state.redemptions, state.targetCPM]
   );
+
+  // Value Created calculation - realized (redemptions) + unrealized (current portfolio)
+  const valueCreated = useMemo(() => {
+    const totalInvestment = milesStats.totalCost;
+    const currentBalance = milesStats.netCurrent;
+    
+    // Realized value: sum of all redemption values (cash equivalent)
+    const realizedValue = state.redemptions.reduce((sum, r) => sum + (r.cash_price_estimate || 0), 0);
+    
+    // Unrealized value: current balance at target CPM
+    const unrealizedValue = currentBalance * state.targetCPM;
+    
+    // Total gain = total value - investment
+    const totalGain = (realizedValue + unrealizedValue) - totalInvestment;
+    
+    return {
+      totalGain,
+      realizedValue,
+      unrealizedValue,
+      totalInvestment,
+    };
+  }, [milesStats.totalCost, milesStats.netCurrent, state.redemptions, state.targetCPM]);
 
   // Normalize qualification settings for core logic (Ultimate → Platinum + UXP)
   const normalizedSettings = useMemo(
@@ -603,6 +626,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
               tooltip="Hypothetical valuation of your miles based on your chosen target redemption rate."
             />
           </div>
+
+          {/* Value Created Banner */}
+          <ValueCreatedBanner
+            totalGain={valueCreated.totalGain}
+            realizedValue={valueCreated.realizedValue}
+            unrealizedValue={valueCreated.unrealizedValue}
+            totalInvestment={valueCreated.totalInvestment}
+            formatCurrency={formatCurrency}
+          />
         </div>
 
         {/* Right column */}
