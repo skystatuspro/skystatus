@@ -542,6 +542,21 @@ export function convertToActivityTransactions(
       continue;
     }
     
+    // Skip "Surplus XP" transactions - this is rollover XP that's already counted
+    // via the startingXP field in qualification settings. Including it as a
+    // transaction would cause double-counting.
+    // Dutch: "Surplus XP beschikbaar op XP-teller"
+    // English: "Surplus XP available on XP counter"
+    if (description.toLowerCase().includes('surplus xp') || 
+        description.toLowerCase().includes('surplus-xp')) {
+      console.log('[convertToActivityTransactions] Skipping Surplus XP (rollover):', {
+        date,
+        xp,
+        description: description.slice(0, 50)
+      });
+      continue;
+    }
+    
     // Generate base ID (without index)
     const baseId = generateTransactionId(date, type, miles, xp, description);
     
