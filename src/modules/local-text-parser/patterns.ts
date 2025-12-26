@@ -228,10 +228,10 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
   {
     type: 'UPGRADE',
     patterns: [
-      /Lastminute-upgrade/i,
-      /Last\s*minute\s+upgrade/i,
+      /Last\s*-?\s*minute\s*-?\s*upgrade/i,  // Matches "Lastminute-upgrade", "Last minute upgrade", "Last-minute-upgrade"
       /Upgrade\s+Economy\s+to/i,
       /Upgrade\s+Business\s+to/i,
+      /Upgrade\s+Premium\s+Economy\s+to/i,
     ],
     priority: 80,
   },
@@ -253,6 +253,10 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
       /AMERICAN\s+EXPRESS.*Welcome\s*bonus/i,
       /AMEX.*Welcome\s*bonus/i,
       /Platinum\s+Welcome\s*bonus/i,
+      /Silver\s+Annual\s*bonus/i,
+      /Platinum\s+Annual\s*bonus/i,
+      /Gold\s+Annual\s*bonus/i,
+      /FLYING\s+BLUE\s+AMEX.*BONUS/i,
     ],
     priority: 72,
   },
@@ -335,11 +339,12 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
   {
     type: 'XP_DEDUCTION',
     patterns: [
-      /Aftrek\s+XP-teller/i,
-      /XP\s+counter\s+deduction/i,
+      /Aftrek\s+XP-?\s*teller/i,  // Matches "Aftrek XP-teller" and "Aftrek XP- teller" (with space)
+      /Reset\s+XP-?\s*teller/i,   // Matches "Reset XP-teller" and "Reset XP- teller"
+      /XP\s+counter\s+(?:deduction|reset|adjustment)/i,
       /Déduction\s+du\s+compteur\s+XP/i,
       /Qualification\s+period\s+ended/i,
-      /reached$/i,
+      /(?:Explorer|Silver|Gold|Platinum|Ultimate)\s+reached/i,
     ],
     priority: 50,
   },
@@ -376,10 +381,25 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
     patterns: [
       /CURRENCY\s+ALLIANCE/i,
       /Batavia\s+Miles/i,
-      /e-rewards/i,
+      /e-?\s*rewards?\s+Miles/i,
+      /Kolet\s+eSIM/i,
+      /Air\s+Miles\s+to\s+Flying\s+Blue/i,
+      /RevPoints\s+to\s+Miles/i,
+      /REVOLUT/i,
       /partner/i,
     ],
     priority: 30,
+  },
+  
+  // TRANSPORTATION (Uber, etc)
+  {
+    type: 'OTHER',
+    patterns: [
+      /Auto\s*&\s*Taxi/i,
+      /Your\s+ride\s+with\s+Uber/i,
+      /UBER/i,
+    ],
+    priority: 25,
   },
 ];
 

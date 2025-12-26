@@ -117,33 +117,102 @@ function extractSafBonus(text: string): { miles: number; xp: number; uxp: number
 }
 
 /**
+ * Look ahead for miles/XP values in following lines
+ * The PDF often has flight info on one line and miles/XP on the next
+ */
+function findMilesXpInContext(lines: string[], startIndex: number, maxLook: number = 3): { miles: number; xp: number; uxp: number } {
+  // First check the current line
+  const currentResult = extractMilesXp(lines[startIndex]);
+  if (currentResult.miles !== 0 || currentResult.xp !== 0) {
+    return currentResult;
+  }
+  
+  // Look ahead in following lines (skip SAF lines)
+  for (let i = startIndex + 1; i < Math.min(lines.length, startIndex + maxLook + 1); i++) {
+    const line = lines[i];
+    
+    // Skip SAF lines - they'll be handled separately
+    if (/Sustainable\s+Aviation\s+Fuel/i.test(line)) {
+      continue;
+    }
+    
+    // Skip if this line starts a new flight segment
+    if (/[A-Z]{3}\s*[-–—]\s*[A-Z]{3}\s+[A-Z]{2}\d/.test(line)) {
+      break;
+    }
+    
+    // Skip if this is another activity date line
+    if (/^op\s+\d/i.test(line.trim())) {
+      continue;
+    }
+    
+    const result = extractMilesXp(line);
+    if (result.miles !== 0 || result.xp !== 0) {
+      return result;
+    }
+  }
+  
+  return { miles: 0, xp: 0, uxp: 0 };
+}
+
+/**
+ * Find activity date in context (current line + following lines)
+ */
+function findActivityDateInContext(lines: string[], startIndex: number, maxLook: number = 3): string | null {
+  // Check current line first
+  let date = parseActivityDate(lines[startIndex]);
+  if (date) return date;
+  
+  // Look ahead
+  for (let i = startIndex + 1; i < Math.min(lines.length, startIndex + maxLook + 1); i++) {
+    // Stop if we hit a new flight segment
+    if (/[A-Z]{3}\s*[-–—]\s*[A-Z]{3}\s+[A-Z]{2}\d/.test(lines[i])) {
+      break;
+    }
+    
+    date = parseActivityDate(lines[i]);
+    if (date) return date;
+  }
+  
+  return null;
+}
+
+/**
  * Parse flight segments from a single transaction block
  */
 function parseFlightSegments(block: ClassifiedTransaction): ParsedFlightSegment[] {
   const segments: ParsedFlightSegment[] = [];
-  const lines = block.text.split('\n');
+  const lines = block.text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
-  // Track SAF bonus to apply to the right segment
-  let pendingSaf: { miles: number; xp: number; uxp: number } | null = null;
+  // Track which lines we've processed as SAF
+  const safProcessed = new Set<number>();
+  
+  // First pass: identify all SAF lines
+  for (let i = 0; i < lines.length; i++) {
+    if (/Sustainable\s+Aviation\s+Fuel/i.test(lines[i])) {
+      safProcessed.add(i);
+    }
+  }
+  
   let lastSegmentIndex = -1;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Check for SAF bonus line
-    const safBonus = extractSafBonus(line);
-    if (safBonus) {
-      pendingSaf = safBonus;
-      // SAF applies to the previous segment
-      if (lastSegmentIndex >= 0 && segments[lastSegmentIndex]) {
-        segments[lastSegmentIndex].safMiles = safBonus.miles;
-        segments[lastSegmentIndex].safXp = safBonus.xp;
-        segments[lastSegmentIndex].safUxp = safBonus.uxp;
+    // Skip already processed SAF lines
+    if (safProcessed.has(i)) {
+      // Apply SAF to previous segment
+      const safBonus = extractSafBonus(line);
+      if (safBonus && lastSegmentIndex >= 0 && segments[lastSegmentIndex]) {
+        // Add to existing SAF values (there can be multiple SAF lines)
+        segments[lastSegmentIndex].safMiles += safBonus.miles;
+        segments[lastSegmentIndex].safXp += safBonus.xp;
+        segments[lastSegmentIndex].safUxp += safBonus.uxp;
       }
       continue;
     }
     
-    // Check for regular flight segment
+    // Check for regular flight segment: "AMS - BER KL1775"
     FLIGHT_SEGMENT_PATTERN.lastIndex = 0;
     let match = FLIGHT_SEGMENT_PATTERN.exec(line);
     
@@ -153,16 +222,11 @@ function parseFlightSegments(block: ClassifiedTransaction): ParsedFlightSegment[
       const flightNumber = match[3].toUpperCase();
       const airline = extractAirlineCode(flightNumber);
       
-      // Extract miles/XP from this line or next lines
-      const { miles, xp, uxp } = extractMilesXp(line);
+      // Look ahead for miles/XP (often on next line)
+      const { miles, xp, uxp } = findMilesXpInContext(lines, i);
       
-      // Get activity date (from this line or nearby)
-      let flightDate = parseActivityDate(line);
-      
-      // If no date on this line, check the next line
-      if (!flightDate && i + 1 < lines.length) {
-        flightDate = parseActivityDate(lines[i + 1]);
-      }
+      // Get activity date from context
+      let flightDate = findActivityDateInContext(lines, i);
       
       // Fallback to posting date
       if (!flightDate) {
@@ -185,14 +249,14 @@ function parseFlightSegments(block: ClassifiedTransaction): ParsedFlightSegment[
         safXp: 0,
         safUxp: 0,
         cabin: 'Unknown',
-        isRevenue: miles > 0,  // Negative miles = award flight
+        isRevenue: miles >= 0,  // Negative miles = award flight
       });
       
       lastSegmentIndex = segments.length - 1;
       continue;
     }
     
-    // Check for Transavia segment (different format)
+    // Check for Transavia segment: "KEF – AMS TRANSAVIA HOLLAND"
     TRANSAVIA_SEGMENT_PATTERN.lastIndex = 0;
     match = TRANSAVIA_SEGMENT_PATTERN.exec(line);
     
@@ -200,12 +264,10 @@ function parseFlightSegments(block: ClassifiedTransaction): ParsedFlightSegment[
       const origin = match[1].toUpperCase();
       const destination = match[2].toUpperCase();
       
-      const { miles, xp, uxp } = extractMilesXp(line);
+      // Look ahead for miles/XP
+      const { miles, xp, uxp } = findMilesXpInContext(lines, i);
       
-      let flightDate = parseActivityDate(line);
-      if (!flightDate && i + 1 < lines.length) {
-        flightDate = parseActivityDate(lines[i + 1]);
-      }
+      let flightDate = findActivityDateInContext(lines, i);
       if (!flightDate) {
         flightDate = block.activityDate || block.postingDate;
       }
@@ -213,7 +275,7 @@ function parseFlightSegments(block: ClassifiedTransaction): ParsedFlightSegment[
       segments.push({
         origin,
         destination,
-        flightNumber: null,  // Transavia doesn't show flight number in this format
+        flightNumber: '',  // CRITICAL: Transavia must have empty string, not null or HV0000
         airline: 'HV',  // Transavia Holland
         date: flightDate,
         miles,
@@ -245,7 +307,8 @@ function segmentToRawFlight(
     postingDate,
     tripTitle,
     route: `${segment.origin} - ${segment.destination}`,
-    flightNumber: segment.flightNumber || `${segment.airline}0000`,
+    // CRITICAL: Transavia (HV) must have empty flightNumber, not HV0000
+    flightNumber: segment.flightNumber ?? (segment.airline === 'HV' ? '' : `${segment.airline}0000`),
     airline: segment.airline || 'XX',
     flightDate: segment.date,
     miles: segment.miles,
