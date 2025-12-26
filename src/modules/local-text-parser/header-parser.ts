@@ -50,19 +50,33 @@ export function detectLanguage(text: string): DetectedLanguage {
 export function parseDateToISO(dateStr: string): string {
   if (!dateStr) return '';
   
-  const trimmed = dateStr.trim().toLowerCase();
+  const trimmed = dateStr.trim();
+  const lower = trimmed.toLowerCase();
   
   // Already ISO format?
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return trimmed;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(lower)) {
+    return lower;
   }
   
-  // Try to match "DD month YYYY" format
-  const match = trimmed.match(/^(\d{1,2})\s+([a-zéûä]+)\s+(\d{4})$/i);
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const monthName = match[2].toLowerCase();
-    const year = match[3];
+  // Try to match "DD month YYYY" format (Dutch: "9 dec 2025")
+  const matchNL = lower.match(/^(\d{1,2})\s+([a-zéûä]+)\s+(\d{4})$/i);
+  if (matchNL) {
+    const day = matchNL[1].padStart(2, '0');
+    const monthName = matchNL[2].toLowerCase();
+    const year = matchNL[3];
+    
+    const month = ALL_MONTHS[monthName];
+    if (month) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  
+  // Try to match "Month DD, YYYY" format (English: "Dec 9, 2025")
+  const matchEN = lower.match(/^([a-z]+)\s+(\d{1,2}),?\s+(\d{4})$/i);
+  if (matchEN) {
+    const monthName = matchEN[1].toLowerCase();
+    const day = matchEN[2].padStart(2, '0');
+    const year = matchEN[3];
     
     const month = ALL_MONTHS[monthName];
     if (month) {
@@ -71,7 +85,7 @@ export function parseDateToISO(dateStr: string): string {
   }
   
   // Try DD/MM/YYYY format
-  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const slashMatch = lower.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (slashMatch) {
     const day = slashMatch[1].padStart(2, '0');
     const month = slashMatch[2].padStart(2, '0');

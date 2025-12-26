@@ -14,17 +14,35 @@ import { parseDateToISO } from './header-parser';
 
 /**
  * Pattern to match transaction header lines
- * Format: "10 dec 2025 Description 367 Miles 0 XP" or "18 nov 2025 -180000 Miles 0 XP"
+ * Format NL: "10 dec 2025 Description 367 Miles 0 XP" or "18 nov 2025 -180000 Miles 0 XP"
+ * Format EN: "Dec 9, 2025 Description 367 Miles 0 XP"
  * Note: Miles can be negative for redemptions/award bookings
  * Note: Description can be empty for award bookings (just date + miles)
  */
-const TRANSACTION_HEADER_PATTERN = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(.+?)\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+// Dutch format: day month year (e.g., "10 dec 2025")
+const TRANSACTION_HEADER_PATTERN_NL = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(.+?)\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+
+// English format: Month day, year (e.g., "Dec 9, 2025")
+const TRANSACTION_HEADER_PATTERN_EN = /^([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s+(.+?)\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
 
 /**
  * Pattern for transactions without description (award bookings)
- * Format: "18 nov 2025 -180000 Miles 0 XP"
+ * Format NL: "18 nov 2025 -180000 Miles 0 XP"
+ * Format EN: "Nov 18, 2025 -180000 Miles 0 XP"
  */
-const TRANSACTION_HEADER_NO_DESC_PATTERN = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+const TRANSACTION_HEADER_NO_DESC_PATTERN_NL = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+const TRANSACTION_HEADER_NO_DESC_PATTERN_EN = /^([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+
+/**
+ * Try to match a transaction header line against both NL and EN patterns
+ */
+function matchTransactionHeader(line: string): RegExpMatchArray | null {
+  return line.match(TRANSACTION_HEADER_PATTERN_NL) || line.match(TRANSACTION_HEADER_PATTERN_EN);
+}
+
+function matchTransactionHeaderNoDesc(line: string): RegExpMatchArray | null {
+  return line.match(TRANSACTION_HEADER_NO_DESC_PATTERN_NL) || line.match(TRANSACTION_HEADER_NO_DESC_PATTERN_EN);
+}
 
 /**
  * Check if a line is a page header/footer that should be skipped
@@ -56,21 +74,36 @@ function isTransactionStart(line: string): boolean {
   const trimmed = line.trim();
   
   // Must match pattern: date + description + miles + xp (or date + miles + xp for award bookings)
-  return TRANSACTION_HEADER_PATTERN.test(trimmed) || TRANSACTION_HEADER_NO_DESC_PATTERN.test(trimmed);
+  return matchTransactionHeader(trimmed) !== null || matchTransactionHeaderNoDesc(trimmed) !== null;
 }
 
 /**
- * Extract activity date from text (the "op XX XXX XXXX" pattern)
+ * Extract activity date from text (the "op XX XXX XXXX" or "on Month DD, YYYY" pattern)
  */
 function extractActivityDate(text: string): string | null {
   // Reset lastIndex for global regex
   ACTIVITY_DATE_PATTERN.lastIndex = 0;
   
-  const match = ACTIVITY_DATE_PATTERN.exec(text);
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const monthName = match[2].toLowerCase();
-    const year = match[3];
+  // Try Dutch format first: "op 21 nov 2025"
+  const matchNL = ACTIVITY_DATE_PATTERN.exec(text);
+  if (matchNL) {
+    const day = matchNL[1].padStart(2, '0');
+    const monthName = matchNL[2].toLowerCase();
+    const year = matchNL[3];
+    
+    const month = ALL_MONTHS[monthName];
+    if (month) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  
+  // Try English format: "on Dec 2, 2025"
+  const enPattern = /on\s+([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/i;
+  const matchEN = text.match(enPattern);
+  if (matchEN) {
+    const monthName = matchEN[1].toLowerCase();
+    const day = matchEN[2].padStart(2, '0');
+    const year = matchEN[3];
     
     const month = ALL_MONTHS[monthName];
     if (month) {
@@ -93,8 +126,8 @@ function parseTransactionHeader(line: string): {
 } | null {
   const trimmed = line.trim();
   
-  // Try pattern with description first
-  let match = trimmed.match(TRANSACTION_HEADER_PATTERN);
+  // Try pattern with description first (both NL and EN formats)
+  let match = matchTransactionHeader(trimmed);
   if (match) {
     return {
       postingDate: parseDateToISO(match[1]),
@@ -106,7 +139,7 @@ function parseTransactionHeader(line: string): {
   }
   
   // Try pattern without description (award bookings like "-180000 Miles")
-  match = trimmed.match(TRANSACTION_HEADER_NO_DESC_PATTERN);
+  match = matchTransactionHeaderNoDesc(trimmed);
   if (match) {
     return {
       postingDate: parseDateToISO(match[1]),

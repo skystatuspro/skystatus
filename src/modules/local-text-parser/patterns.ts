@@ -194,6 +194,7 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
     patterns: [
       /gespaarde\s+Miles\s+op\s+basis\s+van\s+bestede\s+euro/i,
       /earned\s+Miles\s+based\s+on\s+euros?\s+spent/i,
+      /Miles\s+earned\s+based\s+on\s+[€£$]?\s*spent/i,  // English: "Miles earned based on € spent"
       /Miles\s+gagnés\s+sur\s+la\s+base\s+des\s+euros\s+dépensés/i,
     ],
     priority: 100,
@@ -203,6 +204,7 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
     patterns: [
       /gespaarde\s+Miles,?\s*op\s+basis\s+van\s+reisafstand/i,
       /earned\s+Miles,?\s*based\s+on\s+travel\s+distance/i,
+      /Miles\s+earned\s+based\s+on\s+distance\s*[&,]\s*booking\s+class/i,  // English: "Miles earned based on distance & booking class"
       /Miles\s+gagnés,?\s*sur\s+la\s+base\s+de\s+la\s+distance/i,
       /op\s+basis\s+van\s+reisafstand\s+en\s+boekingsklasse/i,
     ],
@@ -270,6 +272,8 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
       /AMERICAN\s+EXPRESS/i,
       /AMEX\s/i,
       /AF-KLM\s+SPEND/i,
+      /Brim\s+AFKL\s+Mastercard/i,  // Canadian credit card
+      /BRIM\s/i,  // BRIM detail lines
     ],
     priority: 70,
   },

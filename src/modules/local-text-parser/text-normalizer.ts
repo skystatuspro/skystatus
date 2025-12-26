@@ -126,11 +126,13 @@ export function normalizeText(text: string): string {
   let lastWasActivityDate = false;
   
   // Pattern for a complete transaction line (date + description + Miles + XP)
-  // Example: "17 dec 2025 Subscribe to Miles Complete EUR 17000 Miles 0 XP"
-  const COMPLETE_TRANSACTION_LINE = /^\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}\s+.+\d+\s+Miles\s+\d+\s+XP/i;
+  // Dutch: "17 dec 2025 Subscribe to Miles Complete EUR 17000 Miles 0 XP"
+  // English: "Dec 9, 2025 Brim AFKL Mastercard - Miles earn on expenses 73 Miles 0 XP"
+  const COMPLETE_TRANSACTION_LINE_NL = /^\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}\s+.+\d+\s+Miles\s+-?\d+\s+XP/i;
+  const COMPLETE_TRANSACTION_LINE_EN = /^[A-Za-z]{3,4}\s+\d{1,2},?\s+\d{4}\s+.+\d+\s+Miles\s+-?\d+\s+XP/i;
   
-  // Pattern for header line (starts with Activiteitengeschiedenis)
-  const HEADER_LINE = /^Activiteitengeschiedenis\s+/i;
+  // Pattern for header line (Dutch or English)
+  const HEADER_LINE = /^(Activiteitengeschiedenis|Activity\s+history)\s+/i;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -156,7 +158,7 @@ export function normalizeText(text: string): string {
     }
     
     // Check if this is a complete transaction line - keep it as-is
-    if (COMPLETE_TRANSACTION_LINE.test(line)) {
+    if (COMPLETE_TRANSACTION_LINE_NL.test(line) || COMPLETE_TRANSACTION_LINE_EN.test(line)) {
       if (buffer) {
         normalizedLines.push(buffer);
       }
