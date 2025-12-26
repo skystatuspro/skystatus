@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './lib/AuthContext';
 // React Query based user data hook
 import { useUserData } from './hooks/useUserData';
+import { useAcquisitionCPM } from './hooks/useAcquisitionCPM';
 import { usePageTracking } from './hooks/useAnalytics';
 import { CurrencyProvider } from './lib/CurrencyContext';
 import { CookieConsentProvider } from './lib/CookieContext';
@@ -46,6 +47,14 @@ export default function App() {
   const { state, actions, meta } = useUserData();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Calculate user's personal acquisition CPM (used for ROI calculations)
+  const acquisitionCPM = useAcquisitionCPM({
+    activityTransactions: state.activityTransactions,
+    flights: state.flights,
+    legacyMilesData: state.milesData,
+    useNewTransactions: state.useNewTransactions,
+  });
 
   // -------------------------------------------------------------------------
   // UI STATE
@@ -437,7 +446,7 @@ export default function App() {
           <RedemptionCalc
             redemptions={state.redemptions}
             onUpdate={actions.handleRedemptionsUpdate}
-            baselineCpm={actions.calculateGlobalCPM()}
+            baselineCpm={acquisitionCPM.hasData ? acquisitionCPM.cpm * 100 : actions.calculateGlobalCPM()}
             targetCpm={state.targetCPM}
           />
         );
