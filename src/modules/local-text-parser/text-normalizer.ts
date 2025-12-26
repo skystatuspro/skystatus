@@ -125,6 +125,13 @@ export function normalizeText(text: string): string {
   let buffer = '';
   let lastWasActivityDate = false;
   
+  // Pattern for a complete transaction line (date + description + Miles + XP)
+  // Example: "17 dec 2025 Subscribe to Miles Complete EUR 17000 Miles 0 XP"
+  const COMPLETE_TRANSACTION_LINE = /^\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}\s+.+\d+\s+Miles\s+\d+\s+XP/i;
+  
+  // Pattern for header line (starts with Activiteitengeschiedenis)
+  const HEADER_LINE = /^Activiteitengeschiedenis\s+/i;
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     
@@ -135,6 +142,26 @@ export function normalizeText(text: string): string {
     
     // Skip page headers/footers
     if (isPageHeaderOrFooter(line)) {
+      continue;
+    }
+    
+    // Check if this is a header line - keep it separate
+    if (HEADER_LINE.test(line)) {
+      if (buffer) {
+        normalizedLines.push(buffer);
+      }
+      normalizedLines.push(line);
+      buffer = '';
+      continue;
+    }
+    
+    // Check if this is a complete transaction line - keep it as-is
+    if (COMPLETE_TRANSACTION_LINE.test(line)) {
+      if (buffer) {
+        normalizedLines.push(buffer);
+      }
+      normalizedLines.push(line);
+      buffer = '';
       continue;
     }
     

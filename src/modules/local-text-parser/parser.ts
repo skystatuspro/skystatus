@@ -70,16 +70,12 @@ export async function localParseText(
       console.log('[LocalParser] Warnings:', validation.warnings);
     }
     
-    // Step 1.5: Normalize text if needed (handles PDF extraction line breaks)
-    let normalizedText = text;
-    if (needsNormalization(text)) {
-      if (debug) {
-        console.log('[LocalParser] Text needs normalization (PDF extraction format detected)');
-      }
-      normalizedText = normalizeText(text);
-      if (debug) {
-        console.log('[LocalParser] Normalized text length:', normalizedText.length);
-      }
+    // Step 1.5: Always normalize text (handles PDF extraction line breaks and broken lines)
+    // This is safe to do even if text is already normalized
+    const normalizedText = normalizeText(text);
+    if (debug && normalizedText !== text) {
+      console.log('[LocalParser] Text was normalized');
+      console.log('[LocalParser] Normalized text length:', normalizedText.length);
     }
     
     // Step 2: Parse header
