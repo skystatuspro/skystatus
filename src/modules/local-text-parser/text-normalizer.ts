@@ -75,8 +75,52 @@ function isPageHeaderOrFooter(line: string): boolean {
  * op 21 nov 2025
  * ```
  */
+/**
+ * Pre-process text to join known broken line patterns
+ * This handles the hybrid format where descriptions are split across lines
+ */
+function joinBrokenLines(text: string): string {
+  let result = text;
+  
+  // Join "AMERICAN EXPRESS PLATINUM\nCARD" → "AMERICAN EXPRESS PLATINUM CARD"
+  result = result.replace(/AMERICAN EXPRESS PLATINUM\s*\n\s*CARD\b/gi, 'AMERICAN EXPRESS PLATINUM CARD');
+  result = result.replace(/AMERICAN EXPRESS SILVER\s*\n\s*CARD\b/gi, 'AMERICAN EXPRESS SILVER CARD');
+  
+  // Join "CARD\nAF-KLM SPEND" → "CARD AF-KLM SPEND"
+  result = result.replace(/\bCARD\s*\n\s*AF-KLM SPEND/gi, 'CARD AF-KLM SPEND');
+  
+  // Join "Accor Live Limitless\nMILES+POINTS" → "Accor Live Limitless MILES+POINTS"
+  result = result.replace(/Accor Live Limitless\s*\n\s*MILES\+POINTS/gi, 'Accor Live Limitless MILES+POINTS');
+  
+  // Join "gespaarde Miles op basis\nvan bestede euro's" → single line
+  result = result.replace(/gespaarde Miles op basis\s*\n\s*van bestede euro's/gi, "gespaarde Miles op basis van bestede euro's");
+  result = result.replace(/gespaarde Miles, op basis\s*\n\s*van reisafstand/gi, 'gespaarde Miles, op basis van reisafstand');
+  
+  // Join "Discount Pass\nCaribbean Guyana Reun" → single line
+  result = result.replace(/Discount Pass\s*\n\s*Caribbean Guyana Reun/gi, 'Discount Pass Caribbean Guyana Reun');
+  
+  // Join "with Uber\nNetherlands" → single line
+  result = result.replace(/with Uber\s*\n\s*Netherlands/gi, 'with Uber Netherlands');
+  
+  // Join "AMEX PLATINUM CARD\nBONUS" → single line
+  result = result.replace(/AMEX PLATINUM CARD\s*\n\s*BONUS/gi, 'AMEX PLATINUM CARD BONUS');
+  
+  // Join lines where a number + Miles/XP is on its own line after description
+  // e.g., "Hotel - BOOKING.COM WITH KLM\n367 Miles 0 XP" → joined
+  // This is tricky - we need to be careful not to join too much
+  // For now, handle specific cases where description ends with known partners
+  result = result.replace(/(BOOKING\.COM WITH KLM)\s*\n\s*(\d+\s+Miles)/gi, '$1 $2');
+  result = result.replace(/(ALL- Accor Live Limitless MILES\+POINTS)\s*\n\s*(\d+\s+Miles)/gi, '$1 $2');
+  result = result.replace(/(AMERICAN EXPRESS)\s*\n\s*(\d+\s+Miles)/gi, '$1 $2');
+  
+  return result;
+}
+
 export function normalizeText(text: string): string {
-  const lines = text.split('\n');
+  // First, join known broken line patterns
+  const preprocessed = joinBrokenLines(text);
+  
+  const lines = preprocessed.split('\n');
   const normalizedLines: string[] = [];
   let buffer = '';
   let lastWasActivityDate = false;
@@ -180,8 +224,25 @@ export function normalizeText(text: string): string {
 }
 
 /**
+ * Patterns that indicate broken lines from PDF copy-paste
+ * These are common continuations that should be joined to previous line
+ */
+const BROKEN_LINE_PATTERNS = [
+  /^CARD$/i,                          // After "AMERICAN EXPRESS PLATINUM"
+  /^CARD\s+AF-KLM\s+SPEND$/i,         // After "AMERICAN EXPRESS PLATINUM"
+  /^MILES\+POINTS$/i,                 // After "ALL- Accor Live Limitless"
+  /^BONUS$/i,                         // After "FLYING BLUE AMEX PLATINUM CARD"
+  /^van\s+bestede\s+euro/i,           // After "gespaarde Miles op basis"
+  /^van\s+reisafstand/i,              // After "gespaarde Miles, op basis"
+  /^Caribbean\s+Guyana/i,             // After "Subscription - Discount Pass"
+  /^Netherlands$/i,                   // After "Your ride with Uber"
+];
+
+/**
  * Check if text looks like it needs normalization
- * (has many short lines that are just dates, miles, or XP values)
+ * Detects both:
+ * 1. Pure PDF extraction format (each element on separate line)
+ * 2. Hybrid browser copy-paste format (some lines broken mid-description)
  */
 export function needsNormalization(text: string): boolean {
   const lines = text.split('\n').filter(l => l.trim());
@@ -193,17 +254,27 @@ export function needsNormalization(text: string): boolean {
   
   // Count how many lines are just dates, miles, or XP
   let shortPatternCount = 0;
+  let brokenLineCount = 0;
   
-  for (const line of lines.slice(0, 100)) {
+  for (const line of lines.slice(0, 200)) {
     const trimmed = line.trim();
+    
+    // Check for pure extraction format patterns
     if (DATE_ONLY_PATTERN.test(trimmed) ||
         MILES_ONLY_PATTERN.test(trimmed) ||
         XP_ONLY_PATTERN.test(trimmed) ||
         UXP_ONLY_PATTERN.test(trimmed)) {
       shortPatternCount++;
     }
+    
+    // Check for hybrid format patterns (broken descriptions)
+    if (BROKEN_LINE_PATTERNS.some(p => p.test(trimmed))) {
+      brokenLineCount++;
+    }
   }
   
-  // If more than 30% are short patterns, needs normalization
-  return shortPatternCount > 30;
+  // Needs normalization if:
+  // 1. More than 30% are short patterns (pure extraction format), OR
+  // 2. More than 3 broken line patterns found (hybrid format)
+  return shortPatternCount > 30 || brokenLineCount > 3;
 }
