@@ -22,6 +22,7 @@ import { splitAndClassifyTransactions, debugTransactionSummary } from './transac
 import { parseFlightTransactions } from './flight-parser';
 import { parseActivityTransactions } from './activity-parser';
 import { parseStatusEvents, detectQualificationSettingsFromEvents } from './xp-event-parser';
+import { normalizeText, needsNormalization } from './text-normalizer';
 import {
   convertToFlightRecords,
   convertToActivityTransactionRecords,
@@ -68,14 +69,26 @@ export async function localParseText(
       console.log('[LocalParser] Warnings:', validation.warnings);
     }
     
+    // Step 1.5: Normalize text if needed (handles PDF extraction line breaks)
+    let normalizedText = text;
+    if (needsNormalization(text)) {
+      if (debug) {
+        console.log('[LocalParser] Text needs normalization (PDF extraction format detected)');
+      }
+      normalizedText = normalizeText(text);
+      if (debug) {
+        console.log('[LocalParser] Normalized text length:', normalizedText.length);
+      }
+    }
+    
     // Step 2: Parse header
-    const header = parseHeader(text);
+    const header = parseHeader(normalizedText);
     if (debug) {
       console.log('[LocalParser] Header:', header);
     }
     
     // Step 3: Split and classify transactions
-    const classifiedTransactions = splitAndClassifyTransactions(text);
+    const classifiedTransactions = splitAndClassifyTransactions(normalizedText);
     if (debug) {
       debugTransactionSummary(classifiedTransactions);
     }
