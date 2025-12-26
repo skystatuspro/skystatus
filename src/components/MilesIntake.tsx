@@ -9,11 +9,12 @@ import {
   Coins, 
   Tag 
 } from 'lucide-react';
-import { MilesRecord } from '../types';
+import { MilesRecord, ActivityTransaction, FlightRecord } from '../types';
 import { generateId } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
 import { Tooltip } from './Tooltip';
 import { SharedLedger } from './SharedLedger';
+import { TransactionLedger } from './TransactionLedger';
 import { useViewMode } from '../hooks/useViewMode';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { SimpleMilesIntake } from './SimpleMilesIntake';
@@ -30,6 +31,10 @@ interface MilesIntakeProps {
   }) => Promise<boolean>;
   useNewTransactions?: boolean;
   currentMonth?: string;
+  // TransactionLedger props (for new system users)
+  activityTransactions?: ActivityTransaction[];
+  flights?: FlightRecord[];
+  onUpdateTransactionCost?: (transactionId: string, cost: number | null) => Promise<boolean>;
 }
 
 type MileSource = 'subscription' | 'amex' | 'other';
@@ -73,7 +78,10 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({
   onUpdate, 
   onAddTransaction,
   useNewTransactions,
-  currentMonth 
+  currentMonth,
+  activityTransactions,
+  flights,
+  onUpdateTransactionCost,
 }) => {
   const { isSimpleMode } = useViewMode();
   const { trackMiles } = useAnalytics();
@@ -359,16 +367,26 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({
         </div>
       </div>
 
-      {/* Ledger - Using SharedLedger compact variant */}
-      <SharedLedger
-        data={milesData}
-        onUpdate={onUpdate}
-        currentMonth={currentMonth}
-        variant="compact"
-        showQuickStats={false}
-        title="Miles Ledger"
-        subtitle="Overview of accumulated miles and costs per month."
-      />
+      {/* Ledger - Show TransactionLedger for new system, SharedLedger for legacy */}
+      {useNewTransactions && activityTransactions && onUpdateTransactionCost ? (
+        <TransactionLedger
+          transactions={activityTransactions}
+          flights={flights}
+          onUpdateCost={onUpdateTransactionCost}
+          title="Miles Ledger"
+          showMissingCostFilter={true}
+        />
+      ) : (
+        <SharedLedger
+          data={milesData}
+          onUpdate={onUpdate}
+          currentMonth={currentMonth}
+          variant="compact"
+          showQuickStats={false}
+          title="Miles Ledger"
+          subtitle="Overview of accumulated miles and costs per month."
+        />
+      )}
     </div>
   );
 };

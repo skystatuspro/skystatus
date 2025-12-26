@@ -1,9 +1,10 @@
 // src/components/TransactionLedger.tsx
 // Transaction-based ledger with month drill-down and inline cost editing
 // Replaces SharedLedger for users on the new transaction system
+// v2.6.1 - Added flight totals, improved alignment, UX improvements
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { ActivityTransaction, ActivityTransactionType } from '../types';
+import { ActivityTransaction, FlightRecord } from '../types';
 import { formatNumber } from '../utils/format';
 import { useCurrency } from '../lib/CurrencyContext';
 import {
@@ -12,10 +13,11 @@ import {
   AlertCircle,
   Check,
   X,
-  Calendar,
   Wallet,
-  Filter,
+  Plane,
+  Plus,
 } from 'lucide-react';
+import { Tooltip } from './Tooltip';
 
 // ============================================================================
 // TYPES
@@ -23,6 +25,7 @@ import {
 
 interface TransactionLedgerProps {
   transactions: ActivityTransaction[];
+  flights?: FlightRecord[];  // Optional: for flight totals per month
   onUpdateCost: (transactionId: string, cost: number | null) => Promise<boolean>;
   title?: string;
   showMissingCostFilter?: boolean;
@@ -91,7 +94,11 @@ const noSpinnerClass = "[appearance:textfield] [&::-webkit-outer-spin-button]:ap
 // HELPER FUNCTIONS
 // ============================================================================
 
-function groupTransactionsByMonth(transactions: ActivityTransaction[]): MonthGroup[] {
+function groupTransactionsByMonth(
+  transactions: ActivityTransaction[],
+  flights: FlightRecord[] = []
+): MonthGroup[] {
+  // Group transactions by month
   const groups: Record<string, ActivityTransaction[]> = {};
   
   transactions.forEach(tx => {
@@ -100,16 +107,33 @@ function groupTransactionsByMonth(transactions: ActivityTransaction[]): MonthGro
     groups[month].push(tx);
   });
 
+  // Also create groups for months that only have flights
+  flights.forEach(f => {
+    const month = f.date.slice(0, 7);
+    if (!groups[month]) groups[month] = [];
+  });
+
+  // Group flights by month for stats calculation
+  const flightsByMonth: Record<string, FlightRecord[]> = {};
+  flights.forEach(f => {
+    const month = f.date.slice(0, 7);
+    if (!flightsByMonth[month]) flightsByMonth[month] = [];
+    flightsByMonth[month].push(f);
+  });
+
   return Object.entries(groups)
     .map(([month, txs]) => ({
       month,
       transactions: txs.sort((a, b) => b.date.localeCompare(a.date)), // Newest first within month
-      stats: calculateMonthStats(txs),
+      stats: calculateMonthStats(txs, flightsByMonth[month] || []),
     }))
     .sort((a, b) => b.month.localeCompare(a.month)); // Newest months first
 }
 
-function calculateMonthStats(transactions: ActivityTransaction[]): MonthStats {
+function calculateMonthStats(
+  transactions: ActivityTransaction[],
+  flights: FlightRecord[] = []
+): MonthStats {
   const stats: MonthStats = {
     subscription: 0,
     amex: 0,
@@ -121,6 +145,10 @@ function calculateMonthStats(transactions: ActivityTransaction[]): MonthStats {
     transactionCount: transactions.length,
   };
 
+  // Calculate flight miles from FlightRecord[]
+  stats.flights = flights.reduce((sum, f) => sum + (f.earnedMiles || 0), 0);
+
+  // Calculate transaction stats
   transactions.forEach(tx => {
     const miles = tx.miles;
     
@@ -135,9 +163,6 @@ function calculateMonthStats(transactions: ActivityTransaction[]): MonthStats {
         case 'amex':
         case 'amex_bonus':
           stats.amex += miles;
-          break;
-        case 'flight':
-          stats.flights += miles;
           break;
         default:
           stats.other += miles;
@@ -162,7 +187,7 @@ function formatMonth(monthKey: string): string {
 }
 
 function formatDate(dateStr: string): string {
-  return dateStr.slice(5); // Returns MM-DD
+  return dateStr.slice(5).replace('-', '/'); // Returns MM/DD
 }
 
 // ============================================================================
@@ -195,29 +220,31 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   const hasCost = transaction.cost !== null && transaction.cost !== undefined;
 
   return (
-    <div className="px-4 py-2 flex items-center gap-3 bg-white hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0">
+    <div className="px-4 py-2.5 flex items-center gap-2 bg-white hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0">
       {/* Date */}
-      <div className="w-14 text-xs text-slate-400 font-mono">
+      <div className="w-16 text-xs text-slate-400 font-mono shrink-0">
         {formatDate(transaction.date)}
       </div>
 
       {/* Type Badge */}
-      <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${typeColor}`}>
-        {typeLabel}
+      <div className={`w-16 shrink-0`}>
+        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${typeColor}`}>
+          {typeLabel}
+        </span>
       </div>
 
       {/* Description */}
-      <div className="flex-1 text-sm text-slate-600 truncate" title={transaction.description}>
+      <div className="flex-1 min-w-0 text-sm text-slate-600 truncate" title={transaction.description}>
         {transaction.description}
       </div>
 
       {/* Miles */}
-      <div className={`w-20 text-right font-mono text-sm ${transaction.miles < 0 ? 'text-red-500' : 'text-slate-700'}`}>
+      <div className={`w-24 text-right font-mono text-sm shrink-0 ${transaction.miles < 0 ? 'text-red-500' : 'text-slate-700'}`}>
         {transaction.miles < 0 ? '' : '+'}{formatNumber(transaction.miles)}
       </div>
 
       {/* Cost - Editable */}
-      <div className="w-24">
+      <div className="w-24 shrink-0">
         {isEditing ? (
           <div className="flex items-center gap-1">
             <input
@@ -225,7 +252,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
               value={editValue}
               onChange={(e) => onEditValueChange(e.target.value)}
               className={`w-16 px-2 py-1 text-xs border border-indigo-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 ${noSpinnerClass}`}
-              placeholder="0.00"
+              placeholder="Empty = remove"
               step="0.01"
               autoFocus
               onKeyDown={(e) => {
@@ -236,14 +263,14 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
             <button
               onClick={onSaveEdit}
               className="p-1 text-green-600 hover:bg-green-50 rounded"
-              title="Save"
+              title="Save (Enter)"
             >
               <Check size={14} />
             </button>
             <button
               onClick={onCancelEdit}
               className="p-1 text-slate-400 hover:bg-slate-100 rounded"
-              title="Cancel"
+              title="Cancel (Esc)"
             >
               <X size={14} />
             </button>
@@ -251,13 +278,21 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
         ) : (
           <button
             onClick={onStartEdit}
-            className={`w-full text-right px-2 py-1 rounded text-xs font-mono transition-all ${
+            className={`w-full text-right px-2 py-1 rounded text-xs font-mono transition-all group ${
               hasCost
                 ? 'text-slate-600 hover:bg-slate-100'
-                : 'bg-amber-50 text-amber-600 border border-dashed border-amber-300 hover:border-amber-400 hover:bg-amber-100'
+                : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'
             }`}
+            title={hasCost ? 'Click to edit cost' : 'Click to add acquisition cost'}
           >
-            {hasCost ? `${currencySymbol}${transaction.cost!.toFixed(2)}` : '+ cost'}
+            {hasCost ? (
+              `${currencySymbol}${transaction.cost!.toFixed(2)}`
+            ) : (
+              <span className="flex items-center justify-end gap-1">
+                <Plus size={12} className="opacity-60" />
+                <span>cost</span>
+              </span>
+            )}
           </button>
         )}
       </div>
@@ -294,17 +329,27 @@ const MonthSection: React.FC<MonthSectionProps> = ({
 }) => {
   const { stats } = group;
 
+  // Helper to format stat value
+  const formatStat = (value: number, isNegative = false) => {
+    if (value === 0) return <span className="text-slate-300">-</span>;
+    return (
+      <span className={`font-mono text-sm ${isNegative ? 'text-red-500' : 'text-slate-700'}`}>
+        {formatNumber(value)}
+      </span>
+    );
+  };
+
   return (
     <div className="border-b border-slate-200 last:border-b-0">
       {/* Month Header Row */}
       <button
         onClick={onToggle}
-        className={`w-full px-4 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors text-left ${
+        className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
           isCurrentMonth ? 'bg-blue-50/50' : ''
         }`}
       >
         {/* Expand/Collapse Icon */}
-        <div className="w-5">
+        <div className="w-5 shrink-0">
           {isExpanded ? (
             <ChevronDown size={16} className="text-slate-400" />
           ) : (
@@ -313,34 +358,33 @@ const MonthSection: React.FC<MonthSectionProps> = ({
         </div>
 
         {/* Month Name */}
-        <div className="w-28 flex items-center gap-2">
+        <div className="w-24 shrink-0 flex items-center gap-2">
           <span className="font-semibold text-slate-800">{formatMonth(group.month)}</span>
           {isCurrentMonth && (
             <span className="px-1.5 py-0.5 bg-blue-500 text-white text-[9px] font-bold rounded">NOW</span>
           )}
         </div>
 
-        {/* Stats */}
-        <div className="flex-1 grid grid-cols-5 gap-2 text-right">
-          <span className={`font-mono text-sm ${stats.subscription > 0 ? 'text-indigo-600' : 'text-slate-300'}`}>
-            {stats.subscription > 0 ? formatNumber(stats.subscription) : '-'}
-          </span>
-          <span className={`font-mono text-sm ${stats.amex > 0 ? 'text-slate-600' : 'text-slate-300'}`}>
-            {stats.amex > 0 ? formatNumber(stats.amex) : '-'}
-          </span>
-          <span className={`font-mono text-sm ${stats.flights > 0 ? 'text-slate-600' : 'text-slate-300'}`}>
-            {stats.flights > 0 ? formatNumber(stats.flights) : '-'}
-          </span>
-          <span className={`font-mono text-sm ${stats.other > 0 ? 'text-slate-600' : 'text-slate-300'}`}>
-            {stats.other > 0 ? formatNumber(stats.other) : '-'}
-          </span>
-          <span className={`font-mono text-sm ${stats.debit < 0 ? 'text-red-500' : 'text-slate-300'}`}>
-            {stats.debit < 0 ? formatNumber(stats.debit) : '-'}
-          </span>
+        {/* Stats Grid - Fixed widths for alignment */}
+        <div className="flex-1 grid grid-cols-5 gap-4">
+          <div className="text-right">{formatStat(stats.subscription)}</div>
+          <div className="text-right">{formatStat(stats.amex)}</div>
+          <div className="text-right">
+            {stats.flights > 0 ? (
+              <span className="font-mono text-sm text-sky-600 flex items-center justify-end gap-1">
+                <Plane size={12} className="opacity-60" />
+                {formatNumber(stats.flights)}
+              </span>
+            ) : (
+              <span className="text-slate-300">-</span>
+            )}
+          </div>
+          <div className="text-right">{formatStat(stats.other)}</div>
+          <div className="text-right">{formatStat(stats.debit, true)}</div>
         </div>
 
         {/* Cost */}
-        <div className="w-20 text-right">
+        <div className="w-20 text-right shrink-0">
           {stats.totalCost > 0 ? (
             <span className="font-mono text-sm text-emerald-600">
               {currencySymbol}{stats.totalCost.toFixed(2)}
@@ -351,7 +395,7 @@ const MonthSection: React.FC<MonthSectionProps> = ({
         </div>
 
         {/* Missing Cost Badge */}
-        <div className="w-20 text-right">
+        <div className="w-16 text-right shrink-0">
           {stats.missingCostCount > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
               <AlertCircle size={10} />
@@ -364,24 +408,37 @@ const MonthSection: React.FC<MonthSectionProps> = ({
       {/* Expanded Transaction List */}
       {isExpanded && (
         <div className="bg-slate-50 border-t border-slate-200">
-          <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wide border-b border-slate-200">
-            {group.transactions.length} Transactions
+          <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wide border-b border-slate-200 flex items-center justify-between">
+            <span>{group.transactions.length} Transaction{group.transactions.length !== 1 ? 's' : ''}</span>
+            {stats.flights > 0 && (
+              <span className="text-sky-500 flex items-center gap-1">
+                <Plane size={10} />
+                {formatNumber(stats.flights)} flight miles (see Flight Ledger)
+              </span>
+            )}
           </div>
-          <div className="max-h-96 overflow-y-auto">
-            {group.transactions.map((tx) => (
-              <TransactionRow
-                key={tx.id}
-                transaction={tx}
-                isEditing={editingId === tx.id}
-                editValue={editValue}
-                onStartEdit={() => onStartEdit(tx.id, tx.cost ?? null)}
-                onSaveEdit={() => onSaveEdit(tx.id)}
-                onCancelEdit={onCancelEdit}
-                onEditValueChange={onEditValueChange}
-                currencySymbol={currencySymbol}
-              />
-            ))}
-          </div>
+          {group.transactions.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto">
+              {group.transactions.map((tx) => (
+                <TransactionRow
+                  key={tx.id}
+                  transaction={tx}
+                  isEditing={editingId === tx.id}
+                  editValue={editValue}
+                  onStartEdit={() => onStartEdit(tx.id, tx.cost ?? null)}
+                  onSaveEdit={() => onSaveEdit(tx.id)}
+                  onCancelEdit={onCancelEdit}
+                  onEditValueChange={onEditValueChange}
+                  currencySymbol={currencySymbol}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-6 text-center text-slate-400 text-sm">
+              <Plane size={20} className="mx-auto mb-2 opacity-40" />
+              Only flight miles this month
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -394,6 +451,7 @@ const MonthSection: React.FC<MonthSectionProps> = ({
 
 export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
   transactions,
+  flights = [],
   onUpdateCost,
   title = 'Transaction Ledger',
   showMissingCostFilter = true,
@@ -413,7 +471,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
 
-  // Group transactions by month
+  // Group transactions by month (including flight totals)
   const monthGroups = useMemo(() => {
     let filtered = transactions;
     
@@ -421,8 +479,8 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
       filtered = transactions.filter(tx => tx.cost === null || tx.cost === undefined);
     }
     
-    return groupTransactionsByMonth(filtered);
-  }, [transactions, filterMissingCost]);
+    return groupTransactionsByMonth(filtered, flights);
+  }, [transactions, flights, filterMissingCost]);
 
   // Total missing cost count
   const totalMissingCost = useMemo(() => {
@@ -522,18 +580,23 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
       </div>
 
       {/* Column Headers */}
-      <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-        <div className="w-5"></div>
-        <div className="w-28">Month</div>
-        <div className="flex-1 grid grid-cols-5 gap-2 text-right">
+      <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+        <div className="w-5 shrink-0"></div>
+        <div className="w-24 shrink-0">Month</div>
+        <div className="flex-1 grid grid-cols-5 gap-4 text-right">
           <span>Sub</span>
           <span>Amex</span>
-          <span>Flights</span>
+          <span className="text-sky-500 flex items-center justify-end gap-1">
+            <Plane size={10} />
+            Flights
+          </span>
           <span>Other</span>
           <span className="text-red-400">Debit</span>
         </div>
-        <div className="w-20 text-right text-emerald-500">Cost</div>
-        <div className="w-20 text-right">Status</div>
+        <div className="w-20 text-right shrink-0 text-emerald-500">Cost</div>
+        <div className="w-16 text-right shrink-0">
+          <Tooltip text="Number of transactions without cost data" />
+        </div>
       </div>
 
       {/* Month Sections */}

@@ -2,7 +2,7 @@
 // Main MilesEngine component - Financial backbone of the loyalty portfolio
 
 import React, { useMemo, useState } from 'react';
-import { MilesRecord, RedemptionRecord, ActivityTransaction } from '../../types';
+import { MilesRecord, RedemptionRecord, ActivityTransaction, FlightRecord } from '../../types';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { formatNumber, generateId } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -52,6 +52,8 @@ interface MilesEngineProps {
   activityTransactions?: ActivityTransaction[];
   useNewTransactions?: boolean;
   onUpdateTransactionCost?: (transactionId: string, cost: number | null) => Promise<boolean>;
+  // Flights for TransactionLedger monthly totals
+  flights?: FlightRecord[];
 }
 
 export const MilesEngine: React.FC<MilesEngineProps> = ({
@@ -65,6 +67,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   activityTransactions,
   useNewTransactions,
   onUpdateTransactionCost,
+  flights,
 }) => {
   const { isSimpleMode } = useViewMode();
   const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
@@ -688,6 +691,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
       {useNewTransactions && activityTransactions && onUpdateTransactionCost ? (
         <TransactionLedger
           transactions={activityTransactions}
+          flights={flights}
           onUpdateCost={onUpdateTransactionCost}
           title="Transaction Ledger"
           showMissingCostFilter={true}

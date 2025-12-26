@@ -388,6 +388,9 @@ export default function App() {
               onAddTransaction={actions.handleAddManualTransaction}
               useNewTransactions={state.useNewTransactions}
               currentMonth={state.currentMonth}
+              activityTransactions={state.activityTransactions}
+              flights={state.flights}
+              onUpdateTransactionCost={actions.handleUpdateTransactionCost}
             />
           </div>
         );
@@ -405,6 +408,7 @@ export default function App() {
             activityTransactions={state.activityTransactions}
             useNewTransactions={state.useNewTransactions}
             onUpdateTransactionCost={actions.handleUpdateTransactionCost}
+            flights={state.flights}
           />
         );
 
