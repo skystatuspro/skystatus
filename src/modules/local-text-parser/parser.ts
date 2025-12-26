@@ -104,13 +104,24 @@ export async function localParseText(
     }
     
     // Step 5: Parse activity transactions (non-flight)
-    const rawActivities = parseActivityTransactions(
-      classifiedTransactions.filter(t => 
-        !t.type.startsWith('FLIGHT_') && 
-        t.type !== 'XP_ROLLOVER' && 
-        t.type !== 'XP_DEDUCTION'
-      )
+    // Note: FLIGHT_AWARD is special - also parse as redemption activity for the negative miles
+    const activityBlocks = classifiedTransactions.filter(t => 
+      !t.type.startsWith('FLIGHT_') && 
+      t.type !== 'XP_ROLLOVER' && 
+      t.type !== 'XP_DEDUCTION'
     );
+    
+    // Also add award bookings as redemption activities (for the total negative miles)
+    const awardBlocks = classifiedTransactions.filter(t => t.type === 'FLIGHT_AWARD');
+    for (const awardBlock of awardBlocks) {
+      // Create a modified block for the redemption activity
+      activityBlocks.push({
+        ...awardBlock,
+        type: 'UPGRADE',  // Treat as redemption
+      });
+    }
+    
+    const rawActivities = parseActivityTransactions(activityBlocks);
     if (debug) {
       console.log('[LocalParser] Parsed activities:', rawActivities.length);
     }

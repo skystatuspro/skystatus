@@ -218,8 +218,12 @@ export const TRANSACTION_TYPE_PATTERNS: TransactionTypePattern[] = [
   {
     type: 'FLIGHT_AWARD',
     patterns: [
+      // Award booking header: negative miles in header line
+      /^\d{1,2}\s+[a-z]+\s+\d{4}\s+-\d+\s*Miles/im,
       // Negative miles with passenger name pattern
       /^-\d+\s*Miles\s+0\s*XP/m,
+      // Award routes with passenger names
+      /[A-Z]{3}\s*[-–]\s*[A-Z]{3}.*,\s*[A-Z][a-z]+\s+[A-Z][a-z]+/,
     ],
     priority: 85,
   },

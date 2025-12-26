@@ -14,9 +14,17 @@ import { parseDateToISO } from './header-parser';
 
 /**
  * Pattern to match transaction header lines
- * Format: "10 dec 2025 Description 367 Miles 0 XP"
+ * Format: "10 dec 2025 Description 367 Miles 0 XP" or "18 nov 2025 -180000 Miles 0 XP"
+ * Note: Miles can be negative for redemptions/award bookings
+ * Note: Description can be empty for award bookings (just date + miles)
  */
 const TRANSACTION_HEADER_PATTERN = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(.+?)\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+
+/**
+ * Pattern for transactions without description (award bookings)
+ * Format: "18 nov 2025 -180000 Miles 0 XP"
+ */
+const TRANSACTION_HEADER_NO_DESC_PATTERN = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
 
 /**
  * Check if a line is a page header/footer that should be skipped
@@ -47,8 +55,8 @@ function isPageHeaderFooter(line: string): boolean {
 function isTransactionStart(line: string): boolean {
   const trimmed = line.trim();
   
-  // Must match pattern: date + description + miles + xp
-  return TRANSACTION_HEADER_PATTERN.test(trimmed);
+  // Must match pattern: date + description + miles + xp (or date + miles + xp for award bookings)
+  return TRANSACTION_HEADER_PATTERN.test(trimmed) || TRANSACTION_HEADER_NO_DESC_PATTERN.test(trimmed);
 }
 
 /**
@@ -83,16 +91,33 @@ function parseTransactionHeader(line: string): {
   xp: number;
   uxp: number;
 } | null {
-  const match = line.trim().match(TRANSACTION_HEADER_PATTERN);
-  if (!match) return null;
+  const trimmed = line.trim();
   
-  return {
-    postingDate: parseDateToISO(match[1]),
-    description: match[2].trim(),
-    miles: parseInt(match[3], 10) || 0,
-    xp: parseInt(match[4], 10) || 0,
-    uxp: parseInt(match[5], 10) || 0,
-  };
+  // Try pattern with description first
+  let match = trimmed.match(TRANSACTION_HEADER_PATTERN);
+  if (match) {
+    return {
+      postingDate: parseDateToISO(match[1]),
+      description: match[2].trim(),
+      miles: parseInt(match[3], 10) || 0,
+      xp: parseInt(match[4], 10) || 0,
+      uxp: parseInt(match[5], 10) || 0,
+    };
+  }
+  
+  // Try pattern without description (award bookings like "-180000 Miles")
+  match = trimmed.match(TRANSACTION_HEADER_NO_DESC_PATTERN);
+  if (match) {
+    return {
+      postingDate: parseDateToISO(match[1]),
+      description: '',  // No description for award bookings
+      miles: parseInt(match[2], 10) || 0,
+      xp: parseInt(match[3], 10) || 0,
+      uxp: parseInt(match[4], 10) || 0,
+    };
+  }
+  
+  return null;
 }
 
 /**

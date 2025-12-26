@@ -43,6 +43,17 @@ function mapTransactionTypeToActivityType(
 function extractDescription(block: ClassifiedTransaction): string {
   const firstLine = block.text.split('\n')[0];
   
+  // Special case: award bookings without description (just date + negative miles)
+  // Pattern: "18 nov 2025 -180000 Miles 0 XP"
+  if (/^\d{1,2}\s+[a-z]+\s+\d{4}\s+-\d+\s*Miles/i.test(firstLine)) {
+    // Try to extract destination from the content
+    const routeMatch = block.text.match(/([A-Z]{3})\s*[-–]\s*([A-Z]{3})/);
+    if (routeMatch) {
+      return `Award booking to ${routeMatch[2]}`;
+    }
+    return 'Award booking';
+  }
+  
   // Remove date and miles/XP from first line to get description
   // Pattern: "10 dec 2025 AMERICAN EXPRESS PLATINUM CARD 10811 Miles 0 XP"
   const match = firstLine.match(/^\d{1,2}\s+[a-z]+\s+\d{4}\s+(.+?)\s+(-?\d+)\s*Miles/i);
