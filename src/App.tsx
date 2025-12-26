@@ -168,7 +168,7 @@ export default function App() {
     }
     
     // Import using existing handler
-    handleImportFromTransactions(
+    handlePdfImportWithToast(
       result.flights,
       transactions,
       undefined,
@@ -417,6 +417,7 @@ export default function App() {
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
             onPdfImport={handlePdfImportWithToast}
+            onTransactionImport={handlePdfImportWithToast}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
           />
         );
@@ -556,6 +557,7 @@ export default function App() {
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
             onPdfImport={handlePdfImportWithToast}
+            onTransactionImport={handlePdfImportWithToast}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
           />
         );
