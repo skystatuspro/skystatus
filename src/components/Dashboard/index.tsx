@@ -2,7 +2,7 @@
 // Main Dashboard component - Command Center
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord } from '../../types';
+import { FlightRecord, MilesRecord, ManualLedger, XPRecord, RedemptionRecord, ActivityTransaction } from '../../types';
 import { QualificationSettings } from '../../hooks/useUserData';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -33,6 +33,8 @@ import { Tooltip } from '../Tooltip';
 import { FAQModal } from '../FAQModal';
 import { FeedbackCard } from '../FeedbackCard';
 import { shouldShowDashboardFeedback, incrementSessionCount } from '../../lib/feedbackService';
+import { PdfImportModal } from '../PdfImportModal';
+import type { AIParsedResult } from '../../modules/local-text-parser';
 
 // Subcomponents
 import { StatusLevel, getStatusTheme, getTargetXP, getProgressLabel, findActiveCycle, calculateUltimateChance } from './helpers';
@@ -69,6 +71,17 @@ interface DashboardProps {
     },
     bonusXpByMonth?: Record<string, number>
   ) => void;
+  // New transaction-based import
+  onTransactionImport?: (
+    flights: FlightRecord[],
+    transactions: ActivityTransaction[],
+    cycleSettings?: {
+      cycleStartMonth: string;
+      cycleStartDate?: string;
+      startingStatus: 'Explorer' | 'Silver' | 'Gold' | 'Platinum';
+      startingXP?: number;
+    }
+  ) => void;
   demoStatus?: StatusLevel; // Override status in demo mode
 }
 
@@ -77,6 +90,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   navigateTo,
   onUpdateCurrentMonth,
   onPdfImport,
+  onTransactionImport,
   demoStatus,
 }) => {
   const { format: formatCurrency, symbol: currencySymbol, formatPrecise } = useCurrency();
@@ -85,6 +99,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [skipWelcome, setSkipWelcome] = useState(state.flights.length > 0);
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showFeedbackCard, setShowFeedbackCard] = useState(false);
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
+
+  // Handle PDF import from modal
+  const handlePdfImportComplete = (result: AIParsedResult, includeHistoricalBalance: boolean) => {
+    // Prepare transactions with optional historical balance
+    let transactions = [...result.activityTransactions];
+    
+    if (includeHistoricalBalance && result.milesReconciliation?.needsCorrection) {
+      const correction = result.milesReconciliation.suggestedCorrection;
+      if (correction) {
+        const correctionTransaction: ActivityTransaction = {
+          id: `starting-balance-${correction.date}`,
+          date: correction.date,
+          type: 'starting_balance',
+          description: correction.description,
+          miles: correction.miles,
+          xp: 0,
+          source: 'pdf',
+          sourceDate: result.pdfHeader.exportDate,
+        };
+        transactions = [correctionTransaction, ...transactions];
+      }
+    }
+    
+    // Use new transaction import if available
+    if (onTransactionImport) {
+      onTransactionImport(
+        result.flights,
+        transactions,
+        result.qualificationSettings ? {
+          cycleStartMonth: result.qualificationSettings.cycleStartMonth,
+          cycleStartDate: result.qualificationSettings.cycleStartDate,
+          startingStatus: result.qualificationSettings.startingStatus,
+          startingXP: result.qualificationSettings.startingXP,
+        } : undefined
+      );
+    }
+    
+    setShowPdfImportModal(false);
+    setSkipWelcome(true);
+  };
 
   // Auto-skip welcome when flights are loaded (handles async data loading)
   useEffect(() => {
@@ -279,13 +334,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="/ai-parser"
-                className="flex items-center justify-center gap-3 bg-white text-brand-600 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] no-underline"
+              <button
+                onClick={() => setShowPdfImportModal(true)}
+                className="flex items-center justify-center gap-3 bg-white text-brand-600 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Upload size={22} />
                 Import PDF
-              </a>
+              </button>
 
               <button
                 onClick={() => navigateTo('addFlight')}
@@ -738,6 +793,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <>
       {commandCenterContent}
+      
+      {/* PDF Import Modal */}
+      <PdfImportModal
+        isOpen={showPdfImportModal}
+        onClose={() => setShowPdfImportModal(false)}
+        onImportComplete={handlePdfImportComplete}
+      />
     </>
   );
 };

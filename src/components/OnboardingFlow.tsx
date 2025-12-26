@@ -1,7 +1,7 @@
 // src/components/OnboardingFlow.tsx
 // Multi-step onboarding wizard for new users
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   Plane,
   Globe,
@@ -18,11 +18,16 @@ import {
   AlertCircle,
   Sparkles,
   X,
+  Loader2,
+  Clipboard,
+  Shield,
+  ExternalLink,
 } from 'lucide-react';
 import { AIRPORTS } from '../utils/airports';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '../utils/format';
-import { StatusLevel } from '../types';
+import { StatusLevel, ActivityTransaction } from '../types';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { localParseText, isLikelyFlyingBlueContent, type AIParsedResult } from '../modules/local-text-parser';
 
 // ============================================================================
 // TYPES
@@ -51,7 +56,10 @@ export interface OnboardingData {
 interface OnboardingFlowProps {
   userEmail: string;
   onComplete: (data: OnboardingData) => void;
-  onPdfImport: () => void;
+  // New: callback for when PDF is parsed and imported
+  onPdfParsed?: (result: AIParsedResult, includeHistoricalBalance: boolean) => void;
+  // Legacy: external PDF import (deprecated)
+  onPdfImport?: () => void;
   pdfImportResult?: {
     flightsCount: number;
     xpDetected: number;
@@ -226,6 +234,7 @@ const AirportSelector: React.FC<{
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   userEmail,
   onComplete,
+  onPdfParsed,
   onPdfImport,
   pdfImportResult,
   onSkip,
@@ -239,6 +248,13 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [skippedPdf, setSkippedPdf] = useState(false);
 
+  // Inline parser state
+  const [pasteText, setPasteText] = useState('');
+  const [parseState, setParseState] = useState<'idle' | 'parsing' | 'success' | 'error'>('idle');
+  const [parseResult, setParseResult] = useState<AIParsedResult | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [includeHistoricalBalance, setIncludeHistoricalBalance] = useState(true);
+
   // Form data - prefilled with existing data if available
   const [currency, setCurrency] = useState<CurrencyCode>(existingData?.currency || 'EUR');
   const [homeAirport, setHomeAirport] = useState<string | null>(existingData?.homeAirport || null);
@@ -251,14 +267,72 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [targetCPM, setTargetCPM] = useState<number>(existingData?.targetCPM || 0.012);
   const [emailConsent, setEmailConsent] = useState<boolean>(existingData?.emailConsent || false);
 
+  // Check if paste text is valid Flying Blue content
+  const isValidPasteContent = pasteText.length > 100 && isLikelyFlyingBlueContent(pasteText);
+
   // Get currency symbol
   const currencySymbol = SUPPORTED_CURRENCIES.find((c) => c.code === currency)?.symbol || '€';
 
   // Determine if we need to show status step
-  const pdfComplete = pdfImportResult && pdfImportResult.statusDetected;
+  const pdfComplete = (pdfImportResult && pdfImportResult.statusDetected) || (parseResult && parseResult.pdfHeader.status);
   const showStatusStep = skippedPdf || !pdfComplete;
 
-  // Apply PDF data when available
+  // Handle inline parse
+  const handleParse = useCallback(async () => {
+    if (!isValidPasteContent) return;
+    
+    setParseState('parsing');
+    setParseError(null);
+    
+    try {
+      const result = await localParseText(pasteText, { debug: false });
+      
+      if (result.success) {
+        setParseResult(result.data);
+        setParseState('success');
+        
+        // Auto-apply detected values
+        if (result.data.pdfHeader.status) {
+          setCurrentStatus(result.data.pdfHeader.status);
+        }
+        if (result.data.pdfHeader.xp > 0) {
+          setCurrentXP(result.data.pdfHeader.xp);
+        }
+        if (result.data.pdfHeader.uxp > 0) {
+          setCurrentUXP(result.data.pdfHeader.uxp);
+        }
+        if (result.data.pdfHeader.miles > 0) {
+          setMilesBalance(result.data.pdfHeader.miles);
+        }
+        if (result.data.qualificationSettings?.startingXP) {
+          setRolloverXP(result.data.qualificationSettings.startingXP);
+        }
+        
+        // Call onPdfParsed if provided
+        if (onPdfParsed) {
+          onPdfParsed(result.data, includeHistoricalBalance);
+        }
+      } else {
+        setParseError(result.error.message);
+        setParseState('error');
+      }
+    } catch (e) {
+      setParseError(e instanceof Error ? e.message : 'Unknown error');
+      setParseState('error');
+    }
+  }, [pasteText, isValidPasteContent, onPdfParsed, includeHistoricalBalance]);
+
+  // Handle paste from clipboard
+  const handlePasteFromClipboard = async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      setPasteText(clipboardText);
+    } catch {
+      // Clipboard API might not be available
+    }
+  };
+
+  // Apply PDF data when available (legacy support)
   React.useEffect(() => {
     if (pdfImportResult) {
       if (pdfImportResult.statusDetected) {
@@ -406,68 +480,162 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       // STEP: IMPORT PDF
       // ---------------------------------------------------------------------
       case 'import':
+        // Show success state if we have parsed data or legacy import result
+        const hasImportedData = parseState === 'success' || pdfImportResult;
+        const importedFlightsCount = parseResult?.flights.length || pdfImportResult?.flightsCount || 0;
+        const importedXP = parseResult?.pdfHeader.xp || pdfImportResult?.xpDetected || 0;
+        const importedStatus = parseResult?.pdfHeader.status || pdfImportResult?.statusDetected;
+        const importedMiles = parseResult?.pdfHeader.miles || pdfImportResult?.milesBalance || 0;
+        
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <FileText className="text-blue-600" size={28} />
+          <div className="space-y-4">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <FileText className="text-blue-600" size={24} />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">
+              <h2 className="text-lg font-bold text-slate-900 mb-1">
                 Import Your Flying Blue Data
               </h2>
-              <p className="text-slate-500 text-sm">
-                The fastest way to get started — upload your activity statement and
-                we'll import everything automatically.
-              </p>
+              <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-600">
+                <Shield size={12} />
+                <span>100% Private - Data stays on your device</span>
+              </div>
             </div>
 
-            {!pdfImportResult ? (
-              <button
-                onClick={onPdfImport}
-                className="w-full p-6 border-2 border-dashed border-blue-200 rounded-2xl hover:border-blue-400 hover:bg-blue-50/50 transition-all group"
-              >
-                <Upload
-                  size={40}
-                  className="text-blue-300 group-hover:text-blue-500 mx-auto mb-3 transition-colors"
-                />
-                <p className="font-bold text-slate-700">Upload PDF</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  From flyingblue.com → My Account → Activity overview
-                </p>
-              </button>
+            {!hasImportedData ? (
+              <>
+                {parseState === 'idle' || parseState === 'error' ? (
+                  <div className="space-y-3">
+                    {/* Instructions */}
+                    <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-600">
+                      <ol className="space-y-1.5">
+                        <li className="flex gap-2">
+                          <span className="flex-shrink-0 w-4 h-4 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold">1</span>
+                          <span>
+                            Go to{' '}
+                            <a 
+                              href="https://www.flyingblue.com/en/account/activity" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              flyingblue.com → Activity
+                            </a>
+                          </span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="flex-shrink-0 w-4 h-4 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold">2</span>
+                          <span>Click <strong>"More"</strong> until all loaded, then <strong>"Download"</strong></span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="flex-shrink-0 w-4 h-4 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold">3</span>
+                          <span>Open PDF, select all (Ctrl+A), copy (Ctrl+C), paste below</span>
+                        </li>
+                      </ol>
+                    </div>
+
+                    {/* Paste area */}
+                    <div className="relative">
+                      <textarea
+                        value={pasteText}
+                        onChange={(e) => setPasteText(e.target.value)}
+                        placeholder="Paste your Flying Blue PDF content here..."
+                        className={`w-full h-32 p-3 border-2 rounded-xl resize-none font-mono text-xs transition-colors focus:outline-none ${
+                          pasteText && !isValidPasteContent
+                            ? 'border-amber-300 bg-amber-50'
+                            : isValidPasteContent
+                            ? 'border-emerald-300 bg-emerald-50'
+                            : 'border-slate-200 focus:border-blue-400'
+                        }`}
+                      />
+                      
+                      {/* Paste button overlay */}
+                      {!pasteText && (
+                        <button
+                          onClick={handlePasteFromClipboard}
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-50/50 hover:bg-slate-100/50 transition-colors rounded-xl border-2 border-dashed border-slate-300"
+                        >
+                          <Clipboard size={24} className="text-slate-400" />
+                          <span className="text-xs text-slate-500">Click to paste</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Error message */}
+                    {parseState === 'error' && parseError && (
+                      <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded-lg">
+                        <AlertCircle size={14} />
+                        <span>{parseError}</span>
+                      </div>
+                    )}
+
+                    {/* Parse button */}
+                    {isValidPasteContent && (
+                      <button
+                        onClick={handleParse}
+                        className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium text-sm hover:from-blue-600 hover:to-indigo-700 transition-all"
+                      >
+                        Import Data
+                      </button>
+                    )}
+                  </div>
+                ) : parseState === 'parsing' ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Loader2 size={32} className="text-blue-500 animate-spin mb-3" />
+                    <p className="text-slate-600 text-sm font-medium">Analyzing your data...</p>
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
-                    <Check size={20} className="text-white" />
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <Check size={18} className="text-white" />
                   </div>
                   <div>
-                    <p className="font-bold text-emerald-800">Import Successful!</p>
+                    <p className="font-bold text-emerald-800 text-sm">Import Successful!</p>
                     <p className="text-xs text-emerald-600">Your data has been imported</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-white/60 rounded-lg p-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="bg-white/60 rounded-lg p-2">
                     <p className="text-emerald-600 text-xs font-medium">Flights</p>
-                    <p className="font-bold text-emerald-800">{pdfImportResult.flightsCount}</p>
+                    <p className="font-bold text-emerald-800">{importedFlightsCount}</p>
                   </div>
-                  <div className="bg-white/60 rounded-lg p-3">
-                    <p className="text-emerald-600 text-xs font-medium">XP Detected</p>
-                    <p className="font-bold text-emerald-800">{pdfImportResult.xpDetected.toLocaleString()}</p>
+                  <div className="bg-white/60 rounded-lg p-2">
+                    <p className="text-emerald-600 text-xs font-medium">XP</p>
+                    <p className="font-bold text-emerald-800">{importedXP.toLocaleString()}</p>
                   </div>
-                  {pdfImportResult.statusDetected && (
-                    <div className="bg-white/60 rounded-lg p-3">
+                  {importedStatus && (
+                    <div className="bg-white/60 rounded-lg p-2">
                       <p className="text-emerald-600 text-xs font-medium">Status</p>
-                      <p className="font-bold text-emerald-800">{pdfImportResult.statusDetected}</p>
+                      <p className="font-bold text-emerald-800">{importedStatus}</p>
                     </div>
                   )}
-                  {pdfImportResult.milesBalance > 0 && (
-                    <div className="bg-white/60 rounded-lg p-3">
-                      <p className="text-emerald-600 text-xs font-medium">Miles Balance</p>
-                      <p className="font-bold text-emerald-800">{pdfImportResult.milesBalance.toLocaleString()}</p>
+                  {importedMiles > 0 && (
+                    <div className="bg-white/60 rounded-lg p-2">
+                      <p className="text-emerald-600 text-xs font-medium">Miles</p>
+                      <p className="font-bold text-emerald-800">{importedMiles.toLocaleString()}</p>
                     </div>
                   )}
                 </div>
+                
+                {/* Historical balance notice */}
+                {parseResult?.milesReconciliation?.needsCorrection && (
+                  <div className="mt-3 pt-3 border-t border-emerald-200">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs">
+                      <input
+                        type="checkbox"
+                        checked={includeHistoricalBalance}
+                        onChange={(e) => setIncludeHistoricalBalance(e.target.checked)}
+                        className="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span className="text-emerald-700">
+                        Include +{parseResult.milesReconciliation.difference.toLocaleString()} historical miles
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
             )}
           </div>

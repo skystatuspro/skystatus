@@ -29,12 +29,14 @@ import { LandingPage } from './components/LandingPage';
 import { CalculatorPage } from './components/CalculatorPage';
 import { AIParserTest } from './components/AIParserTest';
 import { LocalParserTest } from './components/LocalParserTest';
+import { PdfImportModal } from './components/PdfImportModal';
 import { DemoBar } from './components/DemoBar';
 import { useToast } from './components/Toast';
 import { MaintenanceNotice } from './components/MaintenanceNotice';
 import { UpdateNotice } from './components/UpdateNotice';
 import { Loader2, FileText, Upload } from 'lucide-react';
 import { ViewState, StatusLevel, ActivityTransaction, FlightRecord } from './types';
+import type { AIParsedResult } from './modules/local-text-parser';
 
 // Inner component that uses page tracking (must be inside CookieConsentProvider)
 function PageTracker() {
@@ -66,6 +68,7 @@ export default function App() {
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showPdfInstructions, setShowPdfInstructions] = useState(false);
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   
   // Onboarding state
   const [showOnboardingPdfModal, setShowOnboardingPdfModal] = useState(false);
@@ -140,6 +143,44 @@ export default function App() {
     const rolloverMsg = cycleSettings?.startingXP ? ` (${cycleSettings.startingXP} XP rollover)` : '';
     const cycleMsg = cycleSettings ? ` · Cycle: ${cycleSettings.startingStatus} from ${cycleSettings.cycleStartMonth}${rolloverMsg}` : '';
     showToast(`Imported ${flightCount} flights, ${txCount} transactions${cycleMsg}. Duplicates auto-skipped.`, 'success');
+  };
+
+  // Handle PDF import from modal (Add Flight / Add Miles pages)
+  const handlePdfImportFromModal = (result: AIParsedResult, includeHistoricalBalance: boolean) => {
+    // Prepare transactions with optional historical balance
+    let transactions = [...result.activityTransactions];
+    
+    if (includeHistoricalBalance && result.milesReconciliation?.needsCorrection) {
+      const correction = result.milesReconciliation.suggestedCorrection;
+      if (correction) {
+        const correctionTransaction: ActivityTransaction = {
+          id: `starting-balance-${correction.date}`,
+          date: correction.date,
+          type: 'starting_balance',
+          description: correction.description,
+          miles: correction.miles,
+          xp: 0,
+          source: 'pdf',
+          sourceDate: result.pdfHeader.exportDate,
+        };
+        transactions = [correctionTransaction, ...transactions];
+      }
+    }
+    
+    // Import using existing handler
+    handleImportFromTransactions(
+      result.flights,
+      transactions,
+      undefined,
+      result.qualificationSettings ? {
+        cycleStartMonth: result.qualificationSettings.cycleStartMonth,
+        cycleStartDate: result.qualificationSettings.cycleStartDate,
+        startingStatus: result.qualificationSettings.startingStatus,
+        startingXP: result.qualificationSettings.startingXP,
+      } : undefined
+    );
+    
+    setShowPdfImportModal(false);
   };
 
   // -------------------------------------------------------------------------
@@ -295,14 +336,14 @@ export default function App() {
             </p>
           </div>
         </div>
-        <a
-          href="/ai-parser"
-          className="flex-shrink-0 flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors no-underline"
+        <button
+          onClick={() => setShowPdfImportModal(true)}
+          className="flex-shrink-0 flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors"
         >
           <Upload size={16} />
           <span className="hidden sm:inline">Import PDF</span>
           <span className="sm:hidden">Import</span>
-        </a>
+        </button>
       </div>
 
       {showPdfInstructions && (
@@ -657,6 +698,13 @@ export default function App() {
 
       <ToastContainer />
       <CookieConsentUI />
+      
+      {/* PDF Import Modal (for Add Flight / Add Miles) */}
+      <PdfImportModal
+        isOpen={showPdfImportModal}
+        onClose={() => setShowPdfImportModal(false)}
+        onImportComplete={handlePdfImportFromModal}
+      />
       
       {/* Update Notice for PDF Import 2.0 and Miles Engine Maintenance */}
       <UpdateNotice 
