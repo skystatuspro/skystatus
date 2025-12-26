@@ -103,6 +103,17 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
     [data, currentMonth, redemptions, safeTargetCPM]
   );
 
+  // Corrected savings using acquisition CPM from new transaction system
+  // Falls back to legacy calculation for non-migrated users
+  const correctedSavings = useMemo(() => {
+    if (acquisitionCPM.hasData && useNewTransactions) {
+      // New system: use accurate acquisition CPM
+      return (safeTargetCPM - acquisitionCPM.cpm) * stats.earnedPast;
+    }
+    // Legacy system: use existing calculation
+    return stats.savingsCurrent;
+  }, [acquisitionCPM, useNewTransactions, safeTargetCPM, stats.earnedPast, stats.savingsCurrent]);
+
   const sourcePerformance = useMemo(() => {
     const totals = data.reduce(
       (acc, r) => {
@@ -379,17 +390,17 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
           value={
             <span
               className={
-                stats.savingsCurrent >= 0 ? 'text-emerald-600' : 'text-red-500'
+                correctedSavings >= 0 ? 'text-emerald-600' : 'text-red-500'
               }
             >
-              {stats.savingsCurrent >= 0 ? '+' : ''}
-              {formatCurrency(stats.savingsCurrent)}
+              {correctedSavings >= 0 ? '+' : ''}
+              {formatCurrency(correctedSavings)}
             </span>
           }
           subtitle="vs Target CPM"
           icon={PiggyBank}
           color="violet"
-          tooltip="Difference between the theoretical value of your miles and what you actually paid for them."
+          tooltip="Difference between the theoretical value of your miles at target CPM and what you actually paid for them."
         >
           <RoiBar cost={stats.totalCost} value={chartValue} />
           <div className="flex justify-between items-center text-[9px] font-bold uppercase text-slate-400 mt-1">
