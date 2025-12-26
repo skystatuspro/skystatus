@@ -109,15 +109,16 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
     console.log('[MilesEngine] correctedSavings calculation:', {
       'acquisitionCPM.hasData': acquisitionCPM.hasData,
       'acquisitionCPM.cpm': acquisitionCPM.cpm,
+      'acquisitionCPM.totalMilesEarned': acquisitionCPM.totalMilesEarned,
       'useNewTransactions': useNewTransactions,
       'safeTargetCPM': safeTargetCPM,
-      'stats.earnedPast': stats.earnedPast,
+      'stats.earnedPast (legacy)': stats.earnedPast,
       'stats.savingsCurrent': stats.savingsCurrent,
     });
     
     if (acquisitionCPM.hasData && useNewTransactions) {
-      // New system: use accurate acquisition CPM
-      const result = (safeTargetCPM - acquisitionCPM.cpm) * stats.earnedPast;
+      // New system: use accurate acquisition CPM and totalMilesEarned from hook
+      const result = (safeTargetCPM - acquisitionCPM.cpm) * acquisitionCPM.totalMilesEarned;
       console.log('[MilesEngine] Using NEW calculation:', result);
       return result;
     }
