@@ -71,10 +71,11 @@ interface DashboardProps {
     },
     bonusXpByMonth?: Record<string, number>
   ) => void;
-  // New transaction-based import
+  // New transaction-based import (matches handlePdfImportWithToast signature)
   onTransactionImport?: (
     flights: FlightRecord[],
     transactions: ActivityTransaction[],
+    xpCorrection?: { month: string; correctionXp: number; reason: string },
     cycleSettings?: {
       cycleStartMonth: string;
       cycleStartDate?: string;
@@ -128,6 +129,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       onTransactionImport(
         result.flights,
         transactions,
+        undefined, // xpCorrection - not used from modal
         result.qualificationSettings ? {
           cycleStartMonth: result.qualificationSettings.cycleStartMonth,
           cycleStartDate: result.qualificationSettings.cycleStartDate,
