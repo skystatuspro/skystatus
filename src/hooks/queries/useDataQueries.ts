@@ -427,3 +427,94 @@ export function convertToXPLedger(manualLedger: ManualLedger): Record<string, XP
   });
   return result;
 }
+
+// ============================================================================
+// MANUAL TRANSACTION MUTATION - For user-entered transactions
+// ============================================================================
+
+export interface ManualTransactionInput {
+  date: string;
+  type: 'subscription' | 'amex' | 'other';
+  miles: number;
+  cost?: number;
+  description?: string;
+}
+
+export function useInsertManualTransactionMutation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (input: ManualTransactionInput) => {
+      if (!user?.id) throw new Error('No user');
+      
+      // Dynamic import to avoid circular dependency
+      const { insertManualTransaction, mapSourceToTransactionType } = await import('../../lib/dataService');
+      
+      const transactionType = mapSourceToTransactionType(input.type);
+      
+      console.log('[useInsertManualTransactionMutation] Inserting:', {
+        date: input.date,
+        type: transactionType,
+        miles: input.miles,
+        cost: input.cost,
+      });
+
+      const result = await insertManualTransaction(user.id, {
+        date: input.date,
+        type: transactionType,
+        miles: input.miles,
+        xp: 0, // Manual miles entries don't have XP
+        cost: input.cost ?? null,
+        description: input.description,
+      });
+
+      if (!result) {
+        throw new Error('Failed to insert transaction');
+      }
+
+      return result;
+    },
+    onMutate: async (input) => {
+      if (!user?.id) return;
+
+      await queryClient.cancelQueries({ queryKey: queryKeys.user(user.id) });
+      const previous = queryClient.getQueryData<UserDataQueryResult>(queryKeys.user(user.id));
+
+      // Optimistically add the new transaction
+      if (previous) {
+        const { mapSourceToTransactionType } = await import('../../lib/dataService');
+        const optimisticTx: ActivityTransaction = {
+          id: `temp-${Date.now()}`, // Temporary ID, will be replaced on refetch
+          date: input.date,
+          type: mapSourceToTransactionType(input.type),
+          description: input.description || `Manual ${input.type} entry`,
+          miles: input.miles,
+          xp: 0,
+          source: 'manual',
+          cost: input.cost ?? null,
+          costCurrency: 'EUR',
+        };
+
+        queryClient.setQueryData<UserDataQueryResult>(queryKeys.user(user.id), {
+          ...previous,
+          activityTransactions: [optimisticTx, ...previous.activityTransactions],
+        });
+      }
+
+      return { previous };
+    },
+    onError: (err, _, context) => {
+      console.error('[useInsertManualTransactionMutation] Error:', err);
+      if (context?.previous && user?.id) {
+        queryClient.setQueryData(queryKeys.user(user.id), context.previous);
+      }
+    },
+    onSettled: () => {
+      if (user?.id) {
+        // Refetch to get server state with real ID
+        queryClient.invalidateQueries({ queryKey: queryKeys.user(user.id) });
+      }
+    },
+  });
+}

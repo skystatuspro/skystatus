@@ -21,6 +21,14 @@ import { SimpleMilesIntake } from './SimpleMilesIntake';
 interface MilesIntakeProps {
   milesData: MilesRecord[];
   onUpdate: (data: MilesRecord[]) => void;
+  onAddTransaction?: (input: {
+    date: string;
+    type: 'subscription' | 'amex' | 'other';
+    miles: number;
+    cost?: number;
+    description?: string;
+  }) => Promise<boolean>;
+  useNewTransactions?: boolean;
   currentMonth?: string;
 }
 
@@ -60,7 +68,13 @@ const inputBase =
   'focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white hover:border-slate-300 ' +
   '[color-scheme:light] ' + noSpinnerClass;
 
-export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, currentMonth }) => {
+export const MilesIntake: React.FC<MilesIntakeProps> = ({ 
+  milesData, 
+  onUpdate, 
+  onAddTransaction,
+  useNewTransactions,
+  currentMonth 
+}) => {
   const { isSimpleMode } = useViewMode();
   const { trackMiles } = useAnalytics();
   const { symbol: currencySymbol } = useCurrency();
@@ -82,6 +96,8 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, c
       <SimpleMilesIntake
         milesData={milesData}
         onUpdate={onUpdate}
+        onAddTransaction={onAddTransaction}
+        useNewTransactions={useNewTransactions}
       />
     );
   }
@@ -92,11 +108,39 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({ milesData, onUpdate, c
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit || submitting) return;
     setSubmitting(true);
 
+    // Use new transaction system if available
+    if (onAddTransaction && useNewTransactions) {
+      console.log('[MilesIntake] Using new transaction system');
+      const success = await onAddTransaction({
+        date: form.date,
+        type: form.source,
+        miles: Number(form.amount),
+        cost: Number(form.cost) || undefined,
+        description: `Manual ${form.source} entry`,
+      });
+
+      if (success) {
+        trackMiles(form.source);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2500);
+        setForm({
+          date: today,
+          source: 'amex',
+          amount: 0,
+          cost: 0,
+        });
+      }
+      setSubmitting(false);
+      return;
+    }
+
+    // Legacy system: update MilesRecord array
+    console.log('[MilesIntake] Using legacy system');
     const targetMonth = form.date.slice(0, 7);
     const existingIndex = milesData.findIndex(r => r.month === targetMonth);
     let newData = [...milesData];

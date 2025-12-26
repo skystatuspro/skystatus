@@ -385,6 +385,8 @@ export default function App() {
             <MilesIntake
               milesData={state.milesData}
               onUpdate={actions.handleManualLedgerUpdate}
+              onAddTransaction={actions.handleAddManualTransaction}
+              useNewTransactions={state.useNewTransactions}
               currentMonth={state.currentMonth}
             />
           </div>

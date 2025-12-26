@@ -26,6 +26,14 @@ import {
 interface SimpleMilesIntakeProps {
   milesData: MilesRecord[];
   onUpdate: (data: MilesRecord[]) => void;
+  onAddTransaction?: (input: {
+    date: string;
+    type: 'subscription' | 'amex' | 'other';
+    miles: number;
+    cost?: number;
+    description?: string;
+  }) => Promise<boolean>;
+  useNewTransactions?: boolean;
 }
 
 type MileSource = 'subscription' | 'amex' | 'other';
@@ -211,6 +219,8 @@ const EditMilesModal: React.FC<EditMilesModalProps> = ({ record, onSave, onClose
 export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
   milesData,
   onUpdate,
+  onAddTransaction,
+  useNewTransactions,
 }) => {
   const { setViewMode } = useViewMode();
   const { symbol: currencySymbol } = useCurrency();
@@ -256,9 +266,34 @@ export const SimpleMilesIntake: React.FC<SimpleMilesIntakeProps> = ({
   const cpm = amount > 0 && cost > 0 ? (cost / amount) : 0;
 
   // Handle submit
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
 
+    // Use new transaction system if available
+    if (onAddTransaction && useNewTransactions) {
+      console.log('[SimpleMilesIntake] Using new transaction system');
+      const success = await onAddTransaction({
+        date: date,
+        type: source,
+        miles: Number(amount),
+        cost: Number(cost) || undefined,
+        description: `Manual ${source} entry`,
+      });
+
+      if (success) {
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          setAmount(0);
+          setCost(0);
+          setStep(1);
+        }, 2000);
+      }
+      return;
+    }
+
+    // Legacy system: update MilesRecord array
+    console.log('[SimpleMilesIntake] Using legacy system');
     const targetMonth = date.slice(0, 7);
     const existingIndex = milesData.findIndex(r => r.month === targetMonth);
     let newData = [...milesData];

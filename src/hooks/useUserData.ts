@@ -24,6 +24,7 @@ import {
   useSaveProfile,
   useDeleteAllData,
   usePdfImportMutation,
+  useInsertManualTransactionMutation,
   convertToManualLedger,
   convertToXPLedger,
   queryKeys,
@@ -198,6 +199,7 @@ export function useUserData(): UseUserDataReturn {
   const saveProfileMutation = useSaveProfile();
   const deleteAllMutation = useDeleteAllData();
   const pdfImportMutation = usePdfImportMutation();
+  const insertManualTransactionMutation = useInsertManualTransactionMutation();
 
   const isSaving = 
     saveFlightsMutation.isPending ||
@@ -205,7 +207,8 @@ export function useUserData(): UseUserDataReturn {
     saveRedemptionsMutation.isPending ||
     saveXPLedgerMutation.isPending ||
     saveProfileMutation.isPending ||
-    pdfImportMutation.isPending;
+    pdfImportMutation.isPending ||
+    insertManualTransactionMutation.isPending;
 
   // -------------------------------------------------------------------------
   // LOCAL UI STATE (not persisted)
@@ -410,6 +413,153 @@ export function useUserData(): UseUserDataReturn {
     }));
     setBaseMilesData(sanitizedData);
   }, [setBaseMilesData]);
+
+  /**
+   * Add a single manual transaction.
+   * For users on the new transaction system (useNewTransactions = true),
+   * this writes directly to activity_transactions.
+   * For legacy users, it falls back to the old MilesRecord system.
+   */
+  const handleAddManualTransaction = useCallback(async (input: {
+    date: string;
+    type: 'subscription' | 'amex' | 'other';
+    miles: number;
+    cost?: number;
+    description?: string;
+  }): Promise<boolean> => {
+    const useNewTransactions = queryData?.profile?.useNewTransactions ?? false;
+    
+    console.log('[handleAddManualTransaction] Adding transaction:', {
+      ...input,
+      useNewTransactions,
+    });
+
+    if (isDemoMode || isLocalMode) {
+      // Demo/local mode: use legacy approach with local state
+      const targetMonth = input.date.slice(0, 7);
+      const existingData = isDemoMode ? demoMilesData : localMilesData;
+      const existingIndex = existingData.findIndex(r => r.month === targetMonth);
+      let newData = [...existingData];
+
+      if (existingIndex >= 0) {
+        const record = { ...newData[existingIndex] };
+        switch (input.type) {
+          case 'subscription':
+            record.miles_subscription += input.miles;
+            record.cost_subscription += input.cost ?? 0;
+            break;
+          case 'amex':
+            record.miles_amex += input.miles;
+            record.cost_amex += input.cost ?? 0;
+            break;
+          case 'other':
+            record.miles_other += input.miles;
+            record.cost_other += input.cost ?? 0;
+            break;
+        }
+        newData[existingIndex] = record;
+      } else {
+        const { generateId } = await import('../utils/format');
+        const newRecord: MilesRecord = {
+          id: generateId(),
+          month: targetMonth,
+          miles_subscription: input.type === 'subscription' ? input.miles : 0,
+          miles_amex: input.type === 'amex' ? input.miles : 0,
+          miles_flight: 0,
+          miles_other: input.type === 'other' ? input.miles : 0,
+          miles_debit: 0,
+          cost_subscription: input.type === 'subscription' ? (input.cost ?? 0) : 0,
+          cost_amex: input.type === 'amex' ? (input.cost ?? 0) : 0,
+          cost_flight: 0,
+          cost_other: input.type === 'other' ? (input.cost ?? 0) : 0,
+        };
+        newData.push(newRecord);
+      }
+
+      if (isDemoMode) {
+        setDemoMilesData(newData);
+      } else {
+        setLocalMilesData(newData);
+      }
+      return true;
+    }
+
+    if (!user) {
+      console.error('[handleAddManualTransaction] No user');
+      return false;
+    }
+
+    if (useNewTransactions) {
+      // NEW SYSTEM: Insert into activity_transactions
+      try {
+        await insertManualTransactionMutation.mutateAsync({
+          date: input.date,
+          type: input.type,
+          miles: input.miles,
+          cost: input.cost,
+          description: input.description,
+        });
+        return true;
+      } catch (error) {
+        console.error('[handleAddManualTransaction] Error inserting transaction:', error);
+        return false;
+      }
+    } else {
+      // LEGACY SYSTEM: Update MilesRecord array
+      const targetMonth = input.date.slice(0, 7);
+      const existingData = baseMilesData;
+      const existingIndex = existingData.findIndex(r => r.month === targetMonth);
+      let newData = [...existingData];
+
+      if (existingIndex >= 0) {
+        const record = { ...newData[existingIndex] };
+        switch (input.type) {
+          case 'subscription':
+            record.miles_subscription += input.miles;
+            record.cost_subscription += input.cost ?? 0;
+            break;
+          case 'amex':
+            record.miles_amex += input.miles;
+            record.cost_amex += input.cost ?? 0;
+            break;
+          case 'other':
+            record.miles_other += input.miles;
+            record.cost_other += input.cost ?? 0;
+            break;
+        }
+        newData[existingIndex] = record;
+      } else {
+        const { generateId } = await import('../utils/format');
+        const newRecord: MilesRecord = {
+          id: generateId(),
+          month: targetMonth,
+          miles_subscription: input.type === 'subscription' ? input.miles : 0,
+          miles_amex: input.type === 'amex' ? input.miles : 0,
+          miles_flight: 0,
+          miles_other: input.type === 'other' ? input.miles : 0,
+          miles_debit: 0,
+          cost_subscription: input.type === 'subscription' ? (input.cost ?? 0) : 0,
+          cost_amex: input.type === 'amex' ? (input.cost ?? 0) : 0,
+          cost_flight: 0,
+          cost_other: input.type === 'other' ? (input.cost ?? 0) : 0,
+        };
+        newData.push(newRecord);
+      }
+
+      setBaseMilesData(newData);
+      return true;
+    }
+  }, [
+    queryData?.profile?.useNewTransactions, 
+    isDemoMode, 
+    isLocalMode, 
+    user, 
+    baseMilesData, 
+    demoMilesData, 
+    localMilesData,
+    setBaseMilesData,
+    insertManualTransactionMutation,
+  ]);
 
   const handleRedemptionsUpdate = useCallback((newRedemptions: RedemptionRecord[]) => {
     setRedemptions(newRedemptions);
@@ -949,6 +1099,7 @@ export function useUserData(): UseUserDataReturn {
       handleFlightsUpdate,
       handleFlightIntakeApply,
       handleManualLedgerUpdate,
+      handleAddManualTransaction,
       handleRedemptionsUpdate,
       handleTargetCPMUpdate,
       handleCurrencyUpdate,

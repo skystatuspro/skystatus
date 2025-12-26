@@ -1059,6 +1059,93 @@ export async function updateTransactionCost(
   return true;
 }
 
+/**
+ * Insert a manual transaction into activity_transactions.
+ * Used for user-entered transactions (not from PDF import).
+ * 
+ * @param userId - User ID
+ * @param transaction - Transaction data (id will be generated if not provided)
+ * @returns The inserted transaction or null on error
+ */
+export async function insertManualTransaction(
+  userId: string,
+  transaction: {
+    date: string;
+    type: ActivityTransactionType;
+    description?: string;
+    miles: number;
+    xp?: number;
+    cost?: number | null;
+    costCurrency?: string;
+  }
+): Promise<ActivityTransaction | null> {
+  // Import here to avoid circular dependency
+  const { generateManualTransactionId } = await import('../utils/transaction-id');
+  
+  const id = generateManualTransactionId(
+    transaction.date,
+    transaction.type,
+    transaction.miles,
+    transaction.xp ?? 0
+  );
+
+  const record = {
+    id,
+    user_id: userId,
+    date: transaction.date,
+    type: transaction.type,
+    description: transaction.description || `Manual ${transaction.type} entry`,
+    miles: transaction.miles,
+    xp: transaction.xp ?? 0,
+    source: 'manual' as const,
+    cost: transaction.cost ?? null,
+    cost_currency: transaction.costCurrency || 'EUR',
+  };
+
+  console.log('[insertManualTransaction] Inserting:', record);
+
+  const { data, error } = await supabase
+    .from('activity_transactions')
+    .insert(record)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[insertManualTransaction] Error:', error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    date: data.date,
+    type: data.type as ActivityTransactionType,
+    description: data.description || '',
+    miles: data.miles,
+    xp: data.xp,
+    source: data.source as 'pdf' | 'manual',
+    cost: data.cost,
+    costCurrency: data.cost_currency,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
+}
+
+/**
+ * Map SimpleMilesIntake source type to ActivityTransactionType
+ */
+export function mapSourceToTransactionType(
+  source: 'subscription' | 'amex' | 'other'
+): ActivityTransactionType {
+  switch (source) {
+    case 'subscription':
+      return 'subscription';
+    case 'amex':
+      return 'amex';
+    case 'other':
+      return 'other';
+  }
+}
+
 // ============================================
 // ACTIVITY TRANSACTION AGGREGATION
 // ============================================
