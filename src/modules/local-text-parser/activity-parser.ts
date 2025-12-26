@@ -88,9 +88,19 @@ function extractMilesXpFromBlock(block: ClassifiedTransaction): { miles: number;
 
 /**
  * Get the activity date from block
+ * 
+ * IMPORTANT: For redemptions (award bookings, lastminute upgrades), 
+ * we use the POSTING DATE because the miles are deducted immediately
+ * when the booking is made, not when the flight takes place.
  */
 function getActivityDate(block: ClassifiedTransaction): string {
-  // Prefer activity date over posting date
+  // For redemptions: use posting date (miles deducted at booking, not at flight)
+  // This includes: award bookings, lastminute-upgrades, etc.
+  if (block.type === 'FLIGHT_AWARD' || block.type === 'UPGRADE') {
+    return block.postingDate;
+  }
+  
+  // Prefer activity date over posting date for earnings
   if (block.activityDate) {
     return block.activityDate;
   }
