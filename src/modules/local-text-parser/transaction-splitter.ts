@@ -7,6 +7,8 @@ import {
   TRANSACTION_TYPE_PATTERNS, 
   MILES_XP_SINGLE,
   ACTIVITY_DATE_PATTERN,
+  ACTIVITY_DATE_PATTERN_NL,
+  ACTIVITY_DATE_PATTERN_EN,
   PAGE_HEADER_FOOTER_PATTERNS,
   ALL_MONTHS,
 } from './patterns';
@@ -81,11 +83,9 @@ function isTransactionStart(line: string): boolean {
  * Extract activity date from text (the "op XX XXX XXXX" or "on Month DD, YYYY" pattern)
  */
 function extractActivityDate(text: string): string | null {
-  // Reset lastIndex for global regex
-  ACTIVITY_DATE_PATTERN.lastIndex = 0;
-  
   // Try Dutch format first: "op 21 nov 2025"
-  const matchNL = ACTIVITY_DATE_PATTERN.exec(text);
+  ACTIVITY_DATE_PATTERN_NL.lastIndex = 0;
+  const matchNL = ACTIVITY_DATE_PATTERN_NL.exec(text);
   if (matchNL) {
     const day = matchNL[1].padStart(2, '0');
     const monthName = matchNL[2].toLowerCase();
@@ -98,8 +98,8 @@ function extractActivityDate(text: string): string | null {
   }
   
   // Try English format: "on Dec 2, 2025"
-  const enPattern = /on\s+([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/i;
-  const matchEN = text.match(enPattern);
+  ACTIVITY_DATE_PATTERN_EN.lastIndex = 0;
+  const matchEN = ACTIVITY_DATE_PATTERN_EN.exec(text);
   if (matchEN) {
     const monthName = matchEN[1].toLowerCase();
     const day = matchEN[2].padStart(2, '0');

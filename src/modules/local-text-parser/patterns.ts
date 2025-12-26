@@ -77,7 +77,13 @@ export const DATE_DMY_PATTERN = /(\d{1,2})\s+(jan|feb|mrt|maart|apr|mei|jun|jul|
 /**
  * Activity date pattern: "op 29 nov 2025" (Dutch) or "on 29 Nov 2025" (English)
  */
-export const ACTIVITY_DATE_PATTERN = /(?:op|on)\s+(\d{1,2})\s+([a-zéû]+)\s+(\d{4})/gi;
+// Activity date pattern - supports both:
+// Dutch: "op 6 sep 2025" (day month year)
+// English: "on Sep 6, 2025" (month day, year)
+export const ACTIVITY_DATE_PATTERN_NL = /(?:op|on)\s+(\d{1,2})\s+([a-zéû]+)\s+(\d{4})/gi;
+export const ACTIVITY_DATE_PATTERN_EN = /(?:op|on)\s+([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/gi;
+// Combined pattern for detection (looser match)
+export const ACTIVITY_DATE_PATTERN = /(?:op|on)\s+(?:\d{1,2}\s+[a-zéû]+|[A-Za-z]+\s+\d{1,2},?)\s+\d{4}/gi;
 
 /**
  * Qualification period date: "07/10/2025" (DD/MM/YYYY)

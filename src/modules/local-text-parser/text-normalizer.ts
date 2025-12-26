@@ -28,9 +28,15 @@ const UXP_ONLY_PATTERN = /^-?\d+\s+UXP$/i;
 
 /**
  * Pattern to match activity date lines
- * Format: "op 21 nov 2025"
+ * Dutch: "op 21 nov 2025"
+ * English: "on Sep 6, 2025"
  */
-const ACTIVITY_DATE_PATTERN = /^op\s+\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}$/i;
+const ACTIVITY_DATE_PATTERN_NL = /^op\s+\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}$/i;
+const ACTIVITY_DATE_PATTERN_EN = /^on\s+[A-Za-z]{3,4}\s+\d{1,2},?\s+\d{4}$/i;
+
+function isActivityDateLine(line: string): boolean {
+  return ACTIVITY_DATE_PATTERN_NL.test(line) || ACTIVITY_DATE_PATTERN_EN.test(line);
+}
 
 /**
  * Pattern to match page header/footer
@@ -191,7 +197,7 @@ export function normalizeText(text: string): string {
     }
     
     // Check if this is an activity date line
-    if (ACTIVITY_DATE_PATTERN.test(line)) {
+    if (isActivityDateLine(line)) {
       // Activity date ends a block
       if (buffer) {
         normalizedLines.push(buffer);

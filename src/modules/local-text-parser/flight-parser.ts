@@ -10,6 +10,8 @@ import {
   SAF_PATTERN,
   MILES_XP_SINGLE,
   ACTIVITY_DATE_PATTERN,
+  ACTIVITY_DATE_PATTERN_NL,
+  ACTIVITY_DATE_PATTERN_EN,
   ALL_MONTHS,
 } from './patterns';
 import { parseDateToISO } from './header-parser';
@@ -61,16 +63,32 @@ function generatesUxp(airlineCode: string): boolean {
 }
 
 /**
- * Parse date from "op XX XXX XXXX" pattern
+ * Parse date from "op XX XXX XXXX" or "on Month DD, YYYY" pattern
  */
 function parseActivityDate(text: string): string | null {
-  ACTIVITY_DATE_PATTERN.lastIndex = 0;
-  const match = ACTIVITY_DATE_PATTERN.exec(text);
+  // Try Dutch format first: "op 21 nov 2025"
+  ACTIVITY_DATE_PATTERN_NL.lastIndex = 0;
+  const matchNL = ACTIVITY_DATE_PATTERN_NL.exec(text);
   
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const monthName = match[2].toLowerCase();
-    const year = match[3];
+  if (matchNL) {
+    const day = matchNL[1].padStart(2, '0');
+    const monthName = matchNL[2].toLowerCase();
+    const year = matchNL[3];
+    const month = ALL_MONTHS[monthName];
+    
+    if (month) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  
+  // Try English format: "on Sep 6, 2025"
+  ACTIVITY_DATE_PATTERN_EN.lastIndex = 0;
+  const matchEN = ACTIVITY_DATE_PATTERN_EN.exec(text);
+  
+  if (matchEN) {
+    const monthName = matchEN[1].toLowerCase();
+    const day = matchEN[2].padStart(2, '0');
+    const year = matchEN[3];
     const month = ALL_MONTHS[monthName];
     
     if (month) {
