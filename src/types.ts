@@ -68,6 +68,9 @@ export interface ActivityTransaction {
   xp: number;                          // Usually 0, positive for bonus XP
   source: 'pdf' | 'manual';
   sourceDate?: string;                 // PDF export date (for freshness tracking)
+  // Cost tracking (for CPM/ROI calculations)
+  cost?: number | null;                // NULL = unknown, 0 = free, >0 = actual cost
+  costCurrency?: string;               // Currency code, default 'EUR'
   createdAt?: string;
   updatedAt?: string;
 }
@@ -103,10 +106,17 @@ export interface MonthlyActivitySummary {
   xp_hotel: number;                    // Accor XP
   xp_other: number;
   
+  // Cost by source (for CPM calculations)
+  cost_subscription: number;
+  cost_amex: number;
+  cost_hotel: number;
+  cost_other: number;
+  
   // Computed totals
   total_miles_earned: number;
   total_miles_spent: number;
   total_xp: number;
+  total_cost: number;
 }
 
 // ============================================================================

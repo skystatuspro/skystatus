@@ -876,6 +876,9 @@ export async function fetchActivityTransactions(
     xp: row.xp ?? 0,
     source: row.source as 'pdf' | 'manual',
     sourceDate: row.source_date || undefined,
+    // Cost tracking
+    cost: row.cost ?? null,
+    costCurrency: row.cost_currency || 'EUR',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -884,6 +887,7 @@ export async function fetchActivityTransactions(
 /**
  * Upsert activity transactions with deduplication.
  * Uses ON CONFLICT DO NOTHING - existing transactions are skipped, not updated.
+ * This preserves user-entered costs when re-importing PDFs.
  * 
  * @returns Count of inserted and skipped transactions
  */
@@ -906,12 +910,16 @@ export async function upsertActivityTransactions(
     xp: tx.xp,
     source: tx.source,
     source_date: tx.sourceDate || null,
+    // Cost tracking - preserve if provided
+    cost: tx.cost ?? null,
+    cost_currency: tx.costCurrency || 'EUR',
   }));
 
   console.log(`[upsertActivityTransactions] Upserting ${records.length} transactions`);
 
   // Use upsert with ignoreDuplicates for deduplication
   // This means: INSERT new records, SKIP existing ones (DO NOTHING on conflict)
+  // IMPORTANT: This preserves existing costs when re-importing PDFs
   const { data, error } = await supabase
     .from('activity_transactions')
     .upsert(records, {
@@ -998,19 +1006,54 @@ export async function deletePdfActivityTransactions(userId: string): Promise<boo
 export async function updateActivityTransaction(
   userId: string,
   transactionId: string,
-  updates: Partial<Pick<ActivityTransaction, 'miles' | 'xp' | 'description' | 'type'>>
+  updates: Partial<Pick<ActivityTransaction, 'miles' | 'xp' | 'description' | 'type' | 'cost' | 'costCurrency'>>
 ): Promise<boolean> {
+  // Map TypeScript field names to database column names
+  const dbUpdates: Record<string, unknown> = {
+    source: 'manual', // Mark as manually edited
+  };
+  
+  if (updates.miles !== undefined) dbUpdates.miles = updates.miles;
+  if (updates.xp !== undefined) dbUpdates.xp = updates.xp;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.type !== undefined) dbUpdates.type = updates.type;
+  if (updates.cost !== undefined) dbUpdates.cost = updates.cost;
+  if (updates.costCurrency !== undefined) dbUpdates.cost_currency = updates.costCurrency;
+
   const { error } = await supabase
     .from('activity_transactions')
-    .update({
-      ...updates,
-      source: 'manual', // Mark as manually edited
-    })
+    .update(dbUpdates)
     .eq('user_id', userId)
     .eq('id', transactionId);
 
   if (error) {
     console.error('Error updating activity transaction:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Update cost for a transaction (quick helper for cost editing UI)
+ */
+export async function updateTransactionCost(
+  userId: string,
+  transactionId: string,
+  cost: number | null,
+  currency: string = 'EUR'
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('activity_transactions')
+    .update({
+      cost,
+      cost_currency: currency,
+      source: 'manual', // Mark as manually edited to preserve on re-import
+    })
+    .eq('user_id', userId)
+    .eq('id', transactionId);
+
+  if (error) {
+    console.error('Error updating transaction cost:', error);
     return false;
   }
   return true;
@@ -1056,10 +1099,16 @@ export function aggregateTransactionsByMonth(
         xp_adjustment: 0,
         xp_hotel: 0,
         xp_other: 0,
+        // Costs
+        cost_subscription: 0,
+        cost_amex: 0,
+        cost_hotel: 0,
+        cost_other: 0,
         // Totals
         total_miles_earned: 0,
         total_miles_spent: 0,
         total_xp: 0,
+        total_cost: 0,
       });
     }
     return byMonth.get(month)!;
@@ -1069,34 +1118,41 @@ export function aggregateTransactionsByMonth(
     const summary = getOrCreate(getMonth(tx.date));
     const miles = tx.miles;
     const xp = tx.xp;
+    const cost = tx.cost ?? 0; // Treat NULL as 0 for aggregation
 
     // Categorize based on transaction type
     switch (tx.type) {
       case 'subscription':
         if (miles > 0) summary.miles_subscription += miles;
         if (xp > 0) summary.xp_subscription += xp;
+        if (cost > 0) summary.cost_subscription += cost;
         break;
         
       case 'amex':
         if (miles > 0) summary.miles_amex += miles;
+        if (cost > 0) summary.cost_amex += cost;
         break;
         
       case 'amex_bonus':
         if (miles > 0) summary.miles_amex += miles;
         if (xp > 0) summary.xp_amex_bonus += xp;
+        if (cost > 0) summary.cost_amex += cost;
         break;
         
       case 'hotel':
         if (miles > 0) summary.miles_hotel += miles;
         if (xp > 0) summary.xp_hotel += xp;
+        if (cost > 0) summary.cost_hotel += cost;
         break;
         
       case 'shopping':
         if (miles > 0) summary.miles_shopping += miles;
+        if (cost > 0) summary.cost_other += cost;
         break;
         
       case 'partner':
         if (miles > 0) summary.miles_partner += miles;
+        if (cost > 0) summary.cost_other += cost;
         break;
         
       case 'transfer_in':
@@ -1131,6 +1187,7 @@ export function aggregateTransactionsByMonth(
         if (miles > 0) summary.miles_other += miles;
         else if (miles < 0) summary.miles_redemption += Math.abs(miles);
         if (xp > 0) summary.xp_other += xp;
+        if (cost > 0) summary.cost_other += cost;
     }
 
     // Update totals
@@ -1143,6 +1200,7 @@ export function aggregateTransactionsByMonth(
       summary.total_miles_spent += Math.abs(miles);
     }
     summary.total_xp += xp;
+    summary.total_cost += cost;
   }
 
   return byMonth;
@@ -1164,11 +1222,11 @@ export function convertToLegacyMilesRecords(
     miles_other: s.miles_hotel + s.miles_shopping + s.miles_partner + 
                  s.miles_transfer_in + s.miles_adjustment + s.miles_other,
     miles_debit: s.miles_transfer_out + s.miles_redemption + s.miles_donation + s.miles_expiry,
-    // Costs are not tracked in PDF imports
-    cost_subscription: 0,
-    cost_amex: 0,
-    cost_flight: 0,
-    cost_other: 0,
+    // Costs from activity transactions
+    cost_subscription: s.cost_subscription,
+    cost_amex: s.cost_amex,
+    cost_flight: 0, // Flight costs come from flights table
+    cost_other: s.cost_hotel + s.cost_other,
   })).sort((a, b) => b.month.localeCompare(a.month));
 }
 
