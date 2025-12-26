@@ -41,7 +41,7 @@ type MileSource = 'subscription' | 'amex' | 'other';
 
 const sourceOptions: { id: MileSource; label: string; icon: any }[] = [
   { id: 'subscription', label: 'Subscription', icon: RefreshCcw },
-  { id: 'amex', label: 'Amex / Bank', icon: CreditCard },
+  { id: 'amex', label: 'Credit Card', icon: CreditCard },
   { id: 'other', label: 'Other / Bonus', icon: ShoppingBag },
 ];
 
@@ -237,7 +237,7 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({
                 Add Miles
               </h3>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Record non-flight accumulation (Amex, Subs, etc.)
+                Record non-flight accumulation (credit cards, subscriptions, etc.)
               </p>
             </div>
           </div>
@@ -373,7 +373,7 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({
           transactions={activityTransactions}
           flights={flights}
           onUpdateCost={onUpdateTransactionCost}
-          title="Miles Ledger"
+          title="Transaction Ledger"
           showMissingCostFilter={true}
         />
       ) : (

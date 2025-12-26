@@ -73,8 +73,8 @@ const TYPE_COLORS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   subscription: 'SUB',
-  amex: 'AMEX',
-  amex_bonus: 'AMEX',
+  amex: 'CARD',
+  amex_bonus: 'CARD',
   hotel: 'HOTEL',
   shopping: 'SHOP',
   partner: 'PARTNER',
@@ -610,7 +610,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
         <div className="w-24 shrink-0">Month</div>
         <div className="flex-1 grid grid-cols-5 gap-4 text-right">
           <span>Sub</span>
-          <span>Amex</span>
+          <span>Card</span>
           <span className="text-sky-500 flex items-center justify-end gap-1">
             <Plane size={10} />
             Flights
