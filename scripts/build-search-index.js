@@ -123,9 +123,11 @@ function indexGuidePages() {
     const headings = extractHeadings(html);
     const content = extractMainContent(html);
     
-    // Generate URL (remove .html for clean URLs)
+    // Generate URL (remove .html for clean URLs) - use absolute URL for iframe preview
     const slug = file.replace('.html', '');
-    const url = slug === 'index' ? '/guide' : `/guide/${slug}`;
+    const url = slug === 'index' 
+      ? 'https://skystatus.pro/guide' 
+      : `https://skystatus.pro/guide/${slug}`;
     
     items.push({
       id: `guide-${slug}`,
@@ -187,7 +189,7 @@ function indexFAQContent() {
         title: question,
         description: answerText.substring(0, 200),
         content: answerText,
-        url: `/faq#section-${Math.floor(questionIndex / 5)}-${questionIndex % 5}`,
+        url: `https://skystatus.pro/faq#section-${Math.floor(questionIndex / 5)}-${questionIndex % 5}`,
         type: 'faq',
         headings: [],
       });
@@ -208,8 +210,8 @@ function indexStaticPages() {
   console.log('📄 Indexing static pages...');
   
   const pages = [
-    { file: 'public/about.html', url: '/about' },
-    { file: 'public/ai-info.html', url: '/ai-info.html' },
+    { file: 'public/about.html', url: 'https://skystatus.pro/about' },
+    { file: 'public/ai-info.html', url: 'https://skystatus.pro/ai-info.html' },
   ];
   
   const items = [];
