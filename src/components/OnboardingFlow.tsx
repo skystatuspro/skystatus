@@ -22,6 +22,7 @@ import {
   Clipboard,
   Shield,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import { AIRPORTS } from '../utils/airports';
 import { SUPPORTED_CURRENCIES, CurrencyCode } from '../utils/format';
