@@ -61,7 +61,8 @@ function isActivityDateLine(line: string): boolean {
  */
 const PAGE_HEADER_PATTERNS = [
   /^[A-Z][A-Z\s-]+[A-Z]$/,  // Member names (e.g., "DEGRAAF REMCO", "BUKOWSKI BRIAN")
-  /^Flying Blue[-\s](?:nummer|number|numéro|Nummer|número|numero):/i,
+  /^Flying Blue[-\s](?:nummer|number|numéro|Nummer|número|numero)\s*:/i,  // "Flying Blue-nummer:" etc.
+  /^(?:Numéro|Número|Numero)\s+Flying Blue\s*:/i,  // French/Spanish/Italian/Portuguese: "Numéro Flying Blue :"
   /^PLATINUM$/i,
   /^GOLD$/i,
   /^SILVER$/i,
