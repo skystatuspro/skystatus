@@ -160,6 +160,17 @@ export const TicketImportModal: React.FC<TicketImportModalProps> = ({
         <div className="p-6">
           {step === 'paste' ? (
             <>
+              {/* Experimental Banner */}
+              <div className="mb-4 p-3 bg-violet-50 border border-violet-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <span className="px-1.5 py-0.5 bg-violet-200 text-violet-800 rounded text-[10px] font-bold mt-0.5">BETA</span>
+                  <div className="text-sm text-violet-700">
+                    <span className="font-medium">Experimental feature</span> — Works well with KLM and Air France e-tickets. 
+                    Currently only tested with Dutch emails. We'd love your feedback!
+                  </div>
+                </div>
+              </div>
+
               {/* Instructions */}
               <div className="mb-4 p-4 bg-slate-50 rounded-xl">
                 <h3 className="text-sm font-semibold text-slate-700 mb-2">How to use:</h3>

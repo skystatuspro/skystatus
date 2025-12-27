@@ -492,6 +492,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
           >
             <Mail size={12} />
             Paste Ticket
+            <span className="px-1.5 py-0.5 bg-violet-200 text-violet-800 rounded text-[8px]">β</span>
           </button>
           
           {/* Status Badge - shows which status is used for revenue miles calculation */}
