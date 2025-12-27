@@ -555,9 +555,45 @@ export function useUpsertManualXPEntry() {
       await queryClient.cancelQueries({ queryKey: queryKeys.user(user.id) });
       const previous = queryClient.getQueryData<UserDataQueryResult>(queryKeys.user(user.id));
 
-      // Optimistically update - we don't add to activityTransactions here
-      // because the aggregation happens in the XP engine
-      // Just invalidate and let the refetch handle it
+      // Optimistically update the xpLedger
+      if (previous) {
+        const updatedXpLedger = { ...previous.xpLedger };
+        const month = input.month;
+        
+        // Ensure the month entry exists
+        if (!updatedXpLedger[month]) {
+          updatedXpLedger[month] = {
+            month,
+            amexXp: 0,
+            bonusSafXp: 0,
+            miscXp: 0,
+            correctionXp: 0,
+          };
+        }
+        
+        // Update the specific field
+        if (input.field === 'amexXp') {
+          updatedXpLedger[month] = {
+            ...updatedXpLedger[month],
+            amexXp: input.value,
+          };
+        } else if (input.field === 'miscXp') {
+          updatedXpLedger[month] = {
+            ...updatedXpLedger[month],
+            miscXp: input.value,
+          };
+        }
+        
+        // If value is 0, we could remove the entry, but let's keep it for simplicity
+        // The server will handle cleanup
+        
+        queryClient.setQueryData<UserDataQueryResult>(queryKeys.user(user.id), {
+          ...previous,
+          xpLedger: updatedXpLedger,
+        });
+        
+        console.log('[useUpsertManualXPEntry] Optimistic update:', { month, field: input.field, value: input.value });
+      }
       
       return { previous };
     },
