@@ -25,6 +25,7 @@ import {
   useDeleteAllData,
   usePdfImportMutation,
   useInsertManualTransactionMutation,
+  useUpsertManualXPEntry,
   convertToManualLedger,
   convertToXPLedger,
   queryKeys,
@@ -104,6 +105,8 @@ export interface UserDataActions {
   handleTargetCPMUpdate: (cpm: number) => void;
   handleCurrencyUpdate: (currency: CurrencyCode) => void;
   handleManualXPLedgerUpdate: (ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => void;
+  /** New: Handle single cell change in XP ledger - for new transaction system */
+  handleManualXPCellChange: (month: string, field: 'amexXp' | 'miscXp', value: number) => void;
   handleXPRolloverUpdate: (rollover: number) => void;
   handleQualificationSettingsUpdate: (settings: QualificationSettings | null) => void;
   handlePdfImport: (
@@ -200,6 +203,7 @@ export function useUserData(): UseUserDataReturn {
   const deleteAllMutation = useDeleteAllData();
   const pdfImportMutation = usePdfImportMutation();
   const insertManualTransactionMutation = useInsertManualTransactionMutation();
+  const upsertManualXPMutation = useUpsertManualXPEntry();
 
   const isSaving = 
     saveFlightsMutation.isPending ||
@@ -208,7 +212,8 @@ export function useUserData(): UseUserDataReturn {
     saveXPLedgerMutation.isPending ||
     saveProfileMutation.isPending ||
     pdfImportMutation.isPending ||
-    insertManualTransactionMutation.isPending;
+    insertManualTransactionMutation.isPending ||
+    upsertManualXPMutation.isPending;
 
   // -------------------------------------------------------------------------
   // LOCAL UI STATE (not persisted)
@@ -647,6 +652,62 @@ export function useUserData(): UseUserDataReturn {
   const handleManualXPLedgerUpdate = useCallback((ledger: ManualLedger | ((prev: ManualLedger) => ManualLedger)) => {
     setManualLedger(ledger);
   }, [setManualLedger]);
+
+  /**
+   * Handle a single cell change in the XP ledger.
+   * For users on the new transaction system, this writes directly to activity_transactions.
+   * For legacy users, it falls back to the old xp_ledger system.
+   * 
+   * The source is determined automatically:
+   * - Past/current months → 'manual' (actual XP)
+   * - Future months → 'scheduled' (projected XP)
+   */
+  const handleManualXPCellChange = useCallback((
+    month: string,
+    field: 'amexXp' | 'miscXp',
+    value: number
+  ) => {
+    const useNewTransactions = queryData?.profile?.useNewTransactions ?? false;
+    
+    console.log('[handleManualXPCellChange]', { month, field, value, useNewTransactions });
+    
+    if (isDemoMode || isLocalMode) {
+      // Demo/local mode: update local state
+      const setter = isDemoMode ? setDemoManualLedger : setLocalManualLedger;
+      setter(prev => ({
+        ...prev,
+        [month]: {
+          ...prev[month],
+          amexXp: prev[month]?.amexXp || 0,
+          bonusSafXp: prev[month]?.bonusSafXp || 0,
+          miscXp: prev[month]?.miscXp || 0,
+          correctionXp: prev[month]?.correctionXp || 0,
+          [field]: value,
+        },
+      }));
+      return;
+    }
+    
+    if (!user) return;
+    
+    if (useNewTransactions) {
+      // NEW SYSTEM: Write single entry to activity_transactions
+      upsertManualXPMutation.mutate({ month, field, value });
+    } else {
+      // LEGACY SYSTEM: Update entire xp_ledger
+      setManualLedger(prev => ({
+        ...prev,
+        [month]: {
+          ...prev[month],
+          amexXp: prev[month]?.amexXp || 0,
+          bonusSafXp: prev[month]?.bonusSafXp || 0,
+          miscXp: prev[month]?.miscXp || 0,
+          correctionXp: prev[month]?.correctionXp || 0,
+          [field]: value,
+        },
+      }));
+    }
+  }, [isDemoMode, isLocalMode, user, queryData?.profile?.useNewTransactions, upsertManualXPMutation, setManualLedger]);
 
   const handleXPRolloverUpdate = useCallback((newRollover: number) => {
     setXpRollover(newRollover);
@@ -1177,6 +1238,7 @@ export function useUserData(): UseUserDataReturn {
       handleTargetCPMUpdate,
       handleCurrencyUpdate,
       handleManualXPLedgerUpdate,
+      handleManualXPCellChange,
       handleXPRolloverUpdate,
       handlePdfImport,
       handleUndoImport,

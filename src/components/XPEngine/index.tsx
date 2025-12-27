@@ -56,6 +56,8 @@ interface XPEngineProps {
   onUpdateFlights: (flights: FlightRecord[]) => void;
   manualLedger: ManualLedger;
   onUpdateManualLedger: React.Dispatch<React.SetStateAction<ManualLedger>>;
+  /** New: Direct cell change handler for new transaction system */
+  onManualXPCellChange?: (month: string, field: 'amexXp' | 'miscXp', value: number) => void;
   qualificationSettings: QualificationSettingsType | null;
   onUpdateQualificationSettings: (settings: QualificationSettingsType | null) => void;
   demoStatus?: StatusLevel; // Override status display in demo mode
@@ -73,6 +75,7 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   onUpdateFlights: _onUpdateFlights,
   manualLedger,
   onUpdateManualLedger,
+  onManualXPCellChange,
   qualificationSettings,
   onUpdateQualificationSettings,
   demoStatus,
@@ -330,6 +333,14 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   };
 
   const handleManualCellChange = (month: string, field: ManualField, value: number) => {
+    // For editable fields (amexXp, miscXp), use the new cell change handler if available
+    // This writes directly to activity_transactions for users on the new system
+    if (onManualXPCellChange && (field === 'amexXp' || field === 'miscXp')) {
+      onManualXPCellChange(month, field, value);
+      return;
+    }
+    
+    // Fallback to legacy approach for bonusSafXp, correctionXp, or if no new handler
     onUpdateManualLedger((prev) => {
       const current = ensureManualMonth(month);
       return {

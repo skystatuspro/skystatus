@@ -1147,6 +1147,146 @@ export function mapSourceToTransactionType(
 }
 
 // ============================================
+// MANUAL XP LEDGER TRANSACTIONS
+// ============================================
+
+/**
+ * Maps ledger field names to transaction types
+ */
+export type ManualXPField = 'amexXp' | 'miscXp';
+
+function getTransactionTypeForField(field: ManualXPField): ActivityTransactionType {
+  switch (field) {
+    case 'amexXp':
+      return 'amex_bonus';
+    case 'miscXp':
+      return 'other';
+  }
+}
+
+function getDescriptionForField(field: ManualXPField): string {
+  switch (field) {
+    case 'amexXp':
+      return 'Manual Card XP entry';
+    case 'miscXp':
+      return 'Manual Misc XP entry';
+  }
+}
+
+/**
+ * Generate deterministic ID for manual XP entries.
+ * Format: manual-xp-{month}-{field}
+ * This ensures one entry per (month, field) combination.
+ */
+function generateManualXPId(month: string, field: ManualXPField): string {
+  return `manual-xp-${month}-${field}`;
+}
+
+/**
+ * Determine source based on whether the month is in the past or future.
+ * - Past months: 'manual' → counts as Actual XP
+ * - Future months: 'scheduled' → counts as Projected XP
+ */
+function getSourceForMonth(month: string): 'manual' | 'scheduled' {
+  const today = new Date();
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  
+  // If the month is after the current month, it's scheduled (projected)
+  // Otherwise it's manual (actual)
+  return month > currentMonth ? 'scheduled' : 'manual';
+}
+
+/**
+ * Upsert a single manual XP entry in the ledger.
+ * - If value > 0: insert or update the transaction
+ * - If value = 0: delete the transaction (if exists)
+ * 
+ * The source is determined automatically:
+ * - Past/current months → 'manual' (actual XP)
+ * - Future months → 'scheduled' (projected XP)
+ * 
+ * @returns true on success, false on error
+ */
+export async function upsertManualXPEntry(
+  userId: string,
+  month: string,
+  field: ManualXPField,
+  xpValue: number
+): Promise<boolean> {
+  const id = generateManualXPId(month, field);
+  const source = getSourceForMonth(month);
+  
+  console.log(`[upsertManualXPEntry] ${month} ${field} = ${xpValue} (source: ${source})`);
+  
+  // If value is 0, delete the entry
+  if (xpValue === 0) {
+    const { error } = await supabase
+      .from('activity_transactions')
+      .delete()
+      .eq('user_id', userId)
+      .eq('id', id);
+    
+    if (error) {
+      console.error('[upsertManualXPEntry] Delete error:', error);
+      return false;
+    }
+    console.log(`[upsertManualXPEntry] Deleted ${id}`);
+    return true;
+  }
+  
+  // Otherwise, upsert the entry
+  const record = {
+    id,
+    user_id: userId,
+    date: `${month}-15`, // Mid-month date for manual entries
+    type: getTransactionTypeForField(field),
+    description: getDescriptionForField(field),
+    miles: 0,
+    xp: xpValue,
+    source,
+    cost: null,
+    cost_currency: 'EUR',
+  };
+  
+  const { error } = await supabase
+    .from('activity_transactions')
+    .upsert(record, { onConflict: 'id' });
+  
+  if (error) {
+    console.error('[upsertManualXPEntry] Upsert error:', error);
+    return false;
+  }
+  
+  console.log(`[upsertManualXPEntry] Upserted ${id} with xp=${xpValue}`);
+  return true;
+}
+
+/**
+ * Delete a manual XP entry from the ledger.
+ */
+export async function deleteManualXPEntry(
+  userId: string,
+  month: string,
+  field: ManualXPField
+): Promise<boolean> {
+  const id = generateManualXPId(month, field);
+  
+  const { error } = await supabase
+    .from('activity_transactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', id);
+  
+  if (error) {
+    console.error('[deleteManualXPEntry] Error:', error);
+    return false;
+  }
+  
+  console.log(`[deleteManualXPEntry] Deleted ${id}`);
+  return true;
+}
+
+// ============================================
 // ACTIVITY TRANSACTION AGGREGATION
 // ============================================
 

@@ -518,3 +518,60 @@ export function useInsertManualTransactionMutation() {
     },
   });
 }
+
+// ============================================================================
+// MANUAL XP LEDGER MUTATION - For XP Engine ledger cell edits
+// ============================================================================
+
+export interface ManualXPEntryInput {
+  month: string;
+  field: 'amexXp' | 'miscXp';
+  value: number;
+}
+
+export function useUpsertManualXPEntry() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (input: ManualXPEntryInput) => {
+      if (!user?.id) throw new Error('No user');
+      
+      const { upsertManualXPEntry } = await import('../../lib/dataService');
+      
+      console.log('[useUpsertManualXPEntry] Upserting:', input);
+
+      const result = await upsertManualXPEntry(user.id, input.month, input.field, input.value);
+
+      if (!result) {
+        throw new Error('Failed to upsert manual XP entry');
+      }
+
+      return result;
+    },
+    onMutate: async (input) => {
+      if (!user?.id) return;
+
+      await queryClient.cancelQueries({ queryKey: queryKeys.user(user.id) });
+      const previous = queryClient.getQueryData<UserDataQueryResult>(queryKeys.user(user.id));
+
+      // Optimistically update - we don't add to activityTransactions here
+      // because the aggregation happens in the XP engine
+      // Just invalidate and let the refetch handle it
+      
+      return { previous };
+    },
+    onError: (err, _, context) => {
+      console.error('[useUpsertManualXPEntry] Error:', err);
+      if (context?.previous && user?.id) {
+        queryClient.setQueryData(queryKeys.user(user.id), context.previous);
+      }
+    },
+    onSettled: () => {
+      if (user?.id) {
+        // Refetch to get updated data
+        queryClient.invalidateQueries({ queryKey: queryKeys.user(user.id) });
+      }
+    },
+  });
+}

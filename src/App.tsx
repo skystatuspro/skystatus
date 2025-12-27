@@ -500,6 +500,7 @@ export default function App() {
             onUpdateFlights={actions.handleFlightsUpdate}
             manualLedger={state.manualLedger}
             onUpdateManualLedger={actions.handleManualXPLedgerUpdate}
+            onManualXPCellChange={actions.handleManualXPCellChange}
             qualificationSettings={state.qualificationSettings}
             onUpdateQualificationSettings={actions.handleQualificationSettingsUpdate}
             demoStatus={meta.isDemoMode ? meta.demoStatus : undefined}
