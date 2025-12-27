@@ -28,10 +28,11 @@ export interface ParsedTicket {
   flights: ParsedTicketFlight[];
   isAward: boolean;             // Award ticket (miles redemption)
   pricing: {
-    ticketPrice: number;        // Base fare (0 for awards)
+    ticketPrice: number;        // Base fare (0 for awards or if not shown)
     safContribution: number;    // SAF bijdrage
     totalPrice: number;         // Total paid
     revenueBase: number;        // Base for miles calculation (ticket + YR surcharge)
+    ticketPriceMissing: boolean; // True if ticket price was not found in email
   };
   rawText: string;              // Original input for debugging
 }
@@ -282,15 +283,19 @@ export function parseTicketEmail(emailText: string): TicketParseResult {
   const yrSurcharge = extractPrice(text, /(?:Internationale toeslag van de luchtvaartmaatschappij|YR|YQ).*?EUR\s+([\d.,]+)/i);
   
   // For miles calculation: Flying Blue calculates on ticket price + carrier surcharges
-  // NOT on taxes (airport fees, government taxes, etc.)
-  // Revenue base = ticketPrice + YR surcharge
-  let revenueBase = ticketPrice;
-  if (yrSurcharge > 0) {
-    revenueBase += yrSurcharge;
-  }
-  // If we couldn't parse ticketPrice but have totalPrice, use totalPrice as fallback
-  // This is less accurate but better than 0
-  if (revenueBase === 0 && totalPrice > 0 && !isAward) {
+  // When ticketPrice is shown: use ticketPrice + YR
+  // When ticketPrice is empty/0: the YR often includes the fare, so use YR as base
+  // If neither works, fall back to totalPrice
+  let revenueBase = 0;
+  if (ticketPrice > 0) {
+    // Normal case: ticket price + YR surcharge
+    revenueBase = ticketPrice + yrSurcharge;
+  } else if (yrSurcharge > 0) {
+    // When ticketPrice is not shown, YR surcharge often includes the fare portion
+    // Use YR as the revenue base
+    revenueBase = yrSurcharge;
+  } else if (totalPrice > 0 && !isAward) {
+    // Last resort: use total price
     revenueBase = totalPrice;
   }
   
@@ -459,6 +464,7 @@ export function parseTicketEmail(emailText: string): TicketParseResult {
         safContribution,
         totalPrice: isAward ? safContribution : totalPrice,
         revenueBase: isAward ? 0 : revenueBase,
+        ticketPriceMissing: !isAward && ticketPrice === 0,
       },
       rawText: text,
     },

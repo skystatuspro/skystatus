@@ -1,7 +1,7 @@
 // src/components/TicketImportModal.tsx
 // Modal for importing KLM/Air France e-ticket confirmations via paste
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   X,
   Clipboard,
@@ -13,6 +13,7 @@ import {
   Ticket,
   Award,
   Fuel,
+  Pencil,
 } from 'lucide-react';
 import { parseTicketEmail, ticketToFlightPayloads, ParsedTicket } from '../utils/parseTicketEmail';
 import { useCurrency } from '../lib/CurrencyContext';
@@ -36,6 +37,16 @@ export const TicketImportModal: React.FC<TicketImportModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [step, setStep] = useState<'paste' | 'preview'>('paste');
+  const [manualRevenueBase, setManualRevenueBase] = useState<number | null>(null);
+  const [isEditingRevenue, setIsEditingRevenue] = useState(false);
+
+  // Reset manual revenue base when ticket changes
+  useEffect(() => {
+    if (parsedTicket) {
+      setManualRevenueBase(null);
+      setIsEditingRevenue(parsedTicket.pricing.ticketPriceMissing);
+    }
+  }, [parsedTicket]);
 
   const handlePaste = useCallback(async () => {
     try {
@@ -78,7 +89,19 @@ export const TicketImportModal: React.FC<TicketImportModalProps> = ({
 
   const handleImport = () => {
     if (parsedTicket) {
-      const payloads = ticketToFlightPayloads(parsedTicket, currentStatus);
+      // If user manually entered a revenue base, use that instead
+      const effectiveRevenueBase = manualRevenueBase ?? parsedTicket.pricing.revenueBase;
+      
+      // Create a modified ticket with the effective revenue base
+      const ticketWithAdjustedPricing: ParsedTicket = {
+        ...parsedTicket,
+        pricing: {
+          ...parsedTicket.pricing,
+          revenueBase: effectiveRevenueBase,
+        },
+      };
+      
+      const payloads = ticketToFlightPayloads(ticketWithAdjustedPricing, currentStatus);
       onImport(payloads);
       handleClose();
     }
@@ -90,12 +113,16 @@ export const TicketImportModal: React.FC<TicketImportModalProps> = ({
     setError(null);
     setWarnings([]);
     setStep('paste');
+    setManualRevenueBase(null);
+    setIsEditingRevenue(false);
     onClose();
   };
 
   const handleBack = () => {
     setStep('paste');
     setParsedTicket(null);
+    setManualRevenueBase(null);
+    setIsEditingRevenue(false);
   };
 
   if (!isOpen) return null;
@@ -244,17 +271,47 @@ export const TicketImportModal: React.FC<TicketImportModalProps> = ({
 
                 {/* Pricing */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <div className="text-xs text-slate-500 mb-1">Miles Base</div>
-                    <div className="text-lg font-bold text-slate-900">
-                      {parsedTicket.isAward ? (
-                        <span className="text-amber-600">Award</span>
-                      ) : (
-                        formatCurrency(parsedTicket.pricing.revenueBase)
+                  <div className={`p-3 rounded-xl ${parsedTicket.pricing.ticketPriceMissing && !parsedTicket.isAward ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs ${parsedTicket.pricing.ticketPriceMissing && !parsedTicket.isAward ? 'text-amber-600' : 'text-slate-500'}`}>
+                        Miles Base
+                      </span>
+                      {!parsedTicket.isAward && (
+                        <button
+                          onClick={() => setIsEditingRevenue(!isEditingRevenue)}
+                          className="p-1 hover:bg-slate-200 rounded transition-colors"
+                          title="Edit miles base"
+                        >
+                          <Pencil size={12} className="text-slate-400" />
+                        </button>
                       )}
                     </div>
-                    {!parsedTicket.isAward && parsedTicket.pricing.revenueBase > 0 && (
-                      <div className="text-[10px] text-slate-400 mt-0.5">excl. taxes</div>
+                    {parsedTicket.isAward ? (
+                      <div className="text-lg font-bold text-amber-600">Award</div>
+                    ) : isEditingRevenue ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-400">€</span>
+                        <input
+                          type="number"
+                          value={manualRevenueBase ?? parsedTicket.pricing.revenueBase}
+                          onChange={(e) => setManualRevenueBase(parseFloat(e.target.value) || 0)}
+                          className="w-full text-lg font-bold text-slate-900 bg-white border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:border-blue-500"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-lg font-bold text-slate-900">
+                        {formatCurrency(manualRevenueBase ?? parsedTicket.pricing.revenueBase)}
+                      </div>
+                    )}
+                    {!parsedTicket.isAward && (
+                      <div className={`text-[10px] mt-0.5 ${parsedTicket.pricing.ticketPriceMissing ? 'text-amber-600 font-medium' : 'text-slate-400'}`}>
+                        {parsedTicket.pricing.ticketPriceMissing 
+                          ? '⚠ Not found in email - please enter manually'
+                          : 'excl. taxes'}
+                      </div>
                     )}
                   </div>
                   <div className="p-3 bg-emerald-50 rounded-xl">
