@@ -4,15 +4,22 @@
 
 /**
  * Pattern to match transaction start dates
- * Format: "10 dec 2025" or "1 jan 2024"
+ * DMY Format: "10 dec 2025" or "1 jan 2024" or "10. Dez. 2025" (German with dots)
+ * MDY Format: "Dec 10, 2025" (English)
  */
-const DATE_ONLY_PATTERN = /^\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}$/i;
+const DATE_DMY_PATTERN = /^\d{1,2}\.?\s+[a-zéûäçãõ]{3,12}\.?\s+\d{4}$/i;
+const DATE_MDY_PATTERN = /^[a-z]{3,12}\.?\s+\d{1,2},?\s+\d{4}$/i;
+const DATE_ONLY_PATTERN = DATE_DMY_PATTERN;  // Legacy alias
+
+function isDateLine(line: string): boolean {
+  return DATE_DMY_PATTERN.test(line) || DATE_MDY_PATTERN.test(line);
+}
 
 /**
  * Pattern to match Miles values
- * Format: "367 Miles" or "-47000 Miles"
+ * Format: "367 Miles" or "-47000 Miles" or "367 Meilen" (German)
  */
-const MILES_ONLY_PATTERN = /^-?\d+\s+Miles$/i;
+const MILES_ONLY_PATTERN = /^-?\d+\s+(?:Miles|Meilen)$/i;
 
 /**
  * Pattern to match XP values
@@ -28,28 +35,39 @@ const UXP_ONLY_PATTERN = /^-?\d+\s+UXP$/i;
 
 /**
  * Pattern to match activity date lines
- * Dutch: "op 21 nov 2025"
- * English: "on Sep 6, 2025"
+ * Supports all 7 languages:
+ * - Dutch: "op 21 nov 2025"
+ * - English: "on Sep 6, 2025" or "on 6 Sep 2025"
+ * - French: "le 21 nov 2025"
+ * - German: "am 21. Nov. 2025" (with dots after day and month)
+ * - Spanish: "el 21 nov 2025"
+ * - Italian: "il 21 nov 2025"
+ * - Portuguese: "em 21 nov 2025"
  */
-const ACTIVITY_DATE_PATTERN_NL = /^op\s+\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}$/i;
-const ACTIVITY_DATE_PATTERN_EN = /^on\s+[A-Za-z]{3,4}\s+\d{1,2},?\s+\d{4}$/i;
+const ACTIVITY_DATE_PATTERN_DMY = /^(?:op|on|le|am|el|il|em)\s+\d{1,2}\.?\s+[a-zéûäçãõ]{3,12}\.?\s+\d{4}$/i;
+const ACTIVITY_DATE_PATTERN_MDY = /^(?:op|on|le|am|el|il|em)\s+[A-Za-z]{3,12}\.?\s+\d{1,2},?\s+\d{4}$/i;
+
+// Legacy aliases
+const ACTIVITY_DATE_PATTERN_NL = ACTIVITY_DATE_PATTERN_DMY;
+const ACTIVITY_DATE_PATTERN_EN = ACTIVITY_DATE_PATTERN_MDY;
 
 function isActivityDateLine(line: string): boolean {
-  return ACTIVITY_DATE_PATTERN_NL.test(line) || ACTIVITY_DATE_PATTERN_EN.test(line);
+  return ACTIVITY_DATE_PATTERN_DMY.test(line) || ACTIVITY_DATE_PATTERN_MDY.test(line);
 }
 
 /**
  * Pattern to match page header/footer
+ * Supports: Pagina (NL), Page (EN/FR), Seite (DE), Página (ES/PT)
  */
 const PAGE_HEADER_PATTERNS = [
-  /^DEGRAAF\s+REMCO$/i,
-  /^Flying Blue-nummer:/i,
+  /^[A-Z][A-Z\s-]+[A-Z]$/,  // Member names (e.g., "DEGRAAF REMCO", "BUKOWSKI BRIAN")
+  /^Flying Blue[-\s](?:nummer|number|numéro|Nummer|número|numero):/i,
   /^PLATINUM$/i,
   /^GOLD$/i,
   /^SILVER$/i,
   /^EXPLORER$/i,
   /^ULTIMATE$/i,
-  /Pagina\s+\d+\/\d+/i,
+  /(?:Pagina|Page|Seite|Página)\s+\d+\/\d+/i,
 ];
 
 /**
@@ -132,13 +150,23 @@ export function normalizeText(text: string): string {
   let lastWasActivityDate = false;
   
   // Pattern for a complete transaction line (date + description + Miles + XP)
-  // Dutch: "17 dec 2025 Subscribe to Miles Complete EUR 17000 Miles 0 XP"
-  // English: "Dec 9, 2025 Brim AFKL Mastercard - Miles earn on expenses 73 Miles 0 XP"
-  const COMPLETE_TRANSACTION_LINE_NL = /^\d{1,2}\s+[a-zéû]{3,4}\s+\d{4}\s+.+\d+\s+Miles\s+-?\d+\s+XP/i;
-  const COMPLETE_TRANSACTION_LINE_EN = /^[A-Za-z]{3,4}\s+\d{1,2},?\s+\d{4}\s+.+\d+\s+Miles\s+-?\d+\s+XP/i;
+  // DMY formats (Dutch, French, German, Spanish, Italian, Portuguese):
+  // "17 dec 2025 Subscribe to Miles Complete EUR 17000 Miles 0 XP"
+  // "10. Dez. 2025 Description 367 Meilen 0 XP" (German with dots and Meilen)
+  // MDY format (English):
+  // "Dec 9, 2025 Brim AFKL Mastercard - Miles earn on expenses 73 Miles 0 XP"
+  const COMPLETE_TRANSACTION_LINE_DMY = /^\d{1,2}\.?\s+[a-zéûäçãõ]{3,12}\.?\s+\d{4}\s+.+\d+\s+(?:Miles|Meilen)\s+-?\d+\s+XP/i;
+  const COMPLETE_TRANSACTION_LINE_MDY = /^[A-Za-z]{3,12}\.?\s+\d{1,2},?\s+\d{4}\s+.+\d+\s+(?:Miles|Meilen)\s+-?\d+\s+XP/i;
   
-  // Pattern for header line (Dutch or English)
-  const HEADER_LINE = /^(Activiteitengeschiedenis|Activity\s+history)\s+/i;
+  // Legacy aliases
+  const COMPLETE_TRANSACTION_LINE_NL = COMPLETE_TRANSACTION_LINE_DMY;
+  const COMPLETE_TRANSACTION_LINE_EN = COMPLETE_TRANSACTION_LINE_MDY;
+  
+  // Pattern for header line (all languages)
+  // Dutch: "Activiteitengeschiedenis", English: "Activity history", French: "Historique d'activité"
+  // German: "Aktivitätsverlauf", Spanish: "Historial de actividad", Italian: "Cronologia attività"
+  // Portuguese: "Histórico de atividade"
+  const HEADER_LINE = /^(Activiteitengeschiedenis|Activity\s+history|Historique\s+d['']activit[ée]|Aktivit[äa]tsverlauf|Historial\s+de\s+actividad|Cronologia\s+attivit[àa]|Hist[óo]rico\s+de\s+atividade)\s+/i;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -164,7 +192,7 @@ export function normalizeText(text: string): string {
     }
     
     // Check if this is a complete transaction line - keep it as-is
-    if (COMPLETE_TRANSACTION_LINE_NL.test(line) || COMPLETE_TRANSACTION_LINE_EN.test(line)) {
+    if (COMPLETE_TRANSACTION_LINE_DMY.test(line) || COMPLETE_TRANSACTION_LINE_MDY.test(line)) {
       if (buffer) {
         normalizedLines.push(buffer);
       }
@@ -174,7 +202,8 @@ export function normalizeText(text: string): string {
     }
     
     // Check if this is a standalone date (transaction start)
-    if (DATE_ONLY_PATTERN.test(line)) {
+    // Supports both DMY (European) and MDY (North American) formats
+    if (isDateLine(line)) {
       // Save previous buffer if any
       if (buffer) {
         normalizedLines.push(buffer);

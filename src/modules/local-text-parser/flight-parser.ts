@@ -159,8 +159,8 @@ function findMilesXpInContext(lines: string[], startIndex: number, maxLook: numb
       break;
     }
     
-    // Skip if this is another activity date line
-    if (/^op\s+\d/i.test(line.trim())) {
+    // Skip if this is another activity date line (supports all languages: op/on/le/am/el/il/em)
+    if (/^(?:op|on|le|am|el|il|em)\s+\d/i.test(line.trim())) {
       continue;
     }
     

@@ -33,18 +33,39 @@ function statusFromXpDeduction(xpDeducted: number): StatusLevel {
 /**
  * Extract qualification period dates from text
  * Pattern: "kwalificatieperiode eindigend op 07/10/2025"
+ * Supports all 7 languages
  */
 function extractQualificationDates(text: string): { endDate: string; startDate: string } | null {
-  // Dutch pattern
+  // Dutch patterns
   const nlEndMatch = text.match(/kwalificatieperiode\s+eindigend\s+op\s+(\d{2})\/(\d{2})\/(\d{4})/i);
   const nlStartMatch = text.match(/kwalificatieperiode\s+beginnend\s+op\s+(\d{2})\/(\d{2})\/(\d{4})/i);
   
-  // English pattern
+  // English patterns
   const enEndMatch = text.match(/qualification\s+period\s+ending\s+(\d{2})\/(\d{2})\/(\d{4})/i);
   const enStartMatch = text.match(/qualification\s+period\s+starting\s+(\d{2})\/(\d{2})\/(\d{4})/i);
   
-  const endMatch = nlEndMatch || enEndMatch;
-  const startMatch = nlStartMatch || enStartMatch;
+  // French patterns
+  const frEndMatch = text.match(/période\s+de\s+qualification\s+se\s+terminant\s+le\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  const frStartMatch = text.match(/période\s+de\s+qualification\s+débutant\s+le\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  
+  // German patterns
+  const deEndMatch = text.match(/Qualifikationszeitraum\s+endet\s+am\s+(\d{2})\.(\d{2})\.(\d{4})/i);
+  const deStartMatch = text.match(/Qualifikationszeitraum\s+beginnt\s+am\s+(\d{2})\.(\d{2})\.(\d{4})/i);
+  
+  // Spanish patterns
+  const esEndMatch = text.match(/período\s+de\s+calificación\s+que\s+termina\s+el\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  const esStartMatch = text.match(/período\s+de\s+calificación\s+que\s+comienza\s+el\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  
+  // Italian patterns
+  const itEndMatch = text.match(/periodo\s+di\s+qualifica\s+(?:che\s+)?termina\s+il\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  const itStartMatch = text.match(/periodo\s+di\s+qualifica\s+(?:che\s+)?inizia\s+il\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  
+  // Portuguese patterns
+  const ptEndMatch = text.match(/período\s+de\s+qualificação\s+(?:que\s+)?termina\s+em\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  const ptStartMatch = text.match(/período\s+de\s+qualificação\s+(?:que\s+)?começa\s+em\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  
+  const endMatch = nlEndMatch || enEndMatch || frEndMatch || deEndMatch || esEndMatch || itEndMatch || ptEndMatch;
+  const startMatch = nlStartMatch || enStartMatch || frStartMatch || deStartMatch || esStartMatch || itStartMatch || ptStartMatch;
   
   if (endMatch) {
     const endDate = `${endMatch[3]}-${endMatch[2]}-${endMatch[1]}`;  // DD/MM/YYYY -> YYYY-MM-DD

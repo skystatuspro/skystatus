@@ -7,6 +7,10 @@ import {
   HEADER_PATTERN_NL,
   HEADER_PATTERN_EN,
   HEADER_PATTERN_FR,
+  HEADER_PATTERN_DE,
+  HEADER_PATTERN_ES,
+  HEADER_PATTERN_IT,
+  HEADER_PATTERN_PT,
   FB_NUMBER_PATTERN,
   MEMBER_NAME_PATTERN,
   STATUS_PATTERN,
@@ -17,9 +21,10 @@ import {
 
 /**
  * Detect the language of the PDF content
+ * Supports: Dutch (nl), English (en), French (fr), German (de), Spanish (es), Italian (it), Portuguese (pt)
  */
 export function detectLanguage(text: string): DetectedLanguage {
-  const scores: Record<DetectedLanguage, number> = { nl: 0, en: 0, fr: 0, de: 0 };
+  const scores: Record<DetectedLanguage, number> = { nl: 0, en: 0, fr: 0, de: 0, es: 0, it: 0, pt: 0 };
   
   for (const [lang, patterns] of Object.entries(LANGUAGE_INDICATORS)) {
     for (const pattern of patterns) {
@@ -44,8 +49,13 @@ export function detectLanguage(text: string): DetectedLanguage {
 }
 
 /**
- * Parse a Dutch/English/French date string to ISO format
- * Examples: "10 dec 2025", "9 nov 2025", "11 december 2025"
+ * Parse a multilingual date string to ISO format
+ * Supports all 7 languages: Dutch, English, French, German, Spanish, Italian, Portuguese
+ * 
+ * Examples: 
+ * - Dutch/French/etc: "10 dec 2025", "9 nov 2025", "11 december 2025"
+ * - German: "10. Dez. 2025" (with dot after day AND month abbreviation)
+ * - English: "Dec 10, 2025" (MDY format)
  */
 export function parseDateToISO(dateStr: string): string {
   if (!dateStr) return '';
@@ -58,12 +68,15 @@ export function parseDateToISO(dateStr: string): string {
     return lower;
   }
   
-  // Try to match "DD month YYYY" format (Dutch: "9 dec 2025")
-  const matchNL = lower.match(/^(\d{1,2})\s+([a-zéûä]+)\s+(\d{4})$/i);
-  if (matchNL) {
-    const day = matchNL[1].padStart(2, '0');
-    const monthName = matchNL[2].toLowerCase();
-    const year = matchNL[3];
+  // Try to match "DD. month. YYYY" format (German: "10. Dez. 2025")
+  // or "DD month YYYY" format (Dutch/French/etc: "10 dec 2025")
+  // The month may have a trailing dot (German abbreviations)
+  const matchDMY = lower.match(/^(\d{1,2})\.?\s+([a-zéûäçãõ]+)\.?\s+(\d{4})$/i);
+  if (matchDMY) {
+    const day = matchDMY[1].padStart(2, '0');
+    // Remove trailing dot from month name if present
+    const monthName = matchDMY[2].toLowerCase().replace(/\.$/, '');
+    const year = matchDMY[3];
     
     const month = ALL_MONTHS[monthName];
     if (month) {
@@ -72,11 +85,11 @@ export function parseDateToISO(dateStr: string): string {
   }
   
   // Try to match "Month DD, YYYY" format (English: "Dec 9, 2025")
-  const matchEN = lower.match(/^([a-z]+)\s+(\d{1,2}),?\s+(\d{4})$/i);
-  if (matchEN) {
-    const monthName = matchEN[1].toLowerCase();
-    const day = matchEN[2].padStart(2, '0');
-    const year = matchEN[3];
+  const matchMDY = lower.match(/^([a-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})$/i);
+  if (matchMDY) {
+    const monthName = matchMDY[1].toLowerCase().replace(/\.$/, '');
+    const day = matchMDY[2].padStart(2, '0');
+    const year = matchMDY[3];
     
     const month = ALL_MONTHS[monthName];
     if (month) {
@@ -93,42 +106,53 @@ export function parseDateToISO(dateStr: string): string {
     return `${year}-${month}-${day}`;
   }
   
+  // Try DD.MM.YYYY format (German/Italian numeric format)
+  const dotMatch = lower.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (dotMatch) {
+    const day = dotMatch[1].padStart(2, '0');
+    const month = dotMatch[2].padStart(2, '0');
+    const year = dotMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+  
+  // Try DD-MM-YYYY format (Spanish/Portuguese numeric format)
+  const dashMatch = lower.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dashMatch) {
+    const day = dashMatch[1].padStart(2, '0');
+    const month = dashMatch[2].padStart(2, '0');
+    const year = dashMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+  
   console.warn('[HeaderParser] Could not parse date:', dateStr);
   return '';
 }
 
 /**
  * Extract the main header totals from PDF text
+ * Supports all 7 languages: Dutch, English, French, German, Spanish, Italian, Portuguese
  */
 function extractHeaderTotals(text: string): { miles: number; xp: number; uxp: number } | null {
-  // Try Dutch pattern first (most common)
-  let match = text.match(HEADER_PATTERN_NL);
-  if (match) {
-    return {
-      miles: parseInt(match[1], 10) || 0,
-      xp: parseInt(match[2], 10) || 0,
-      uxp: parseInt(match[3], 10) || 0,
-    };
-  }
+  // Try all language patterns
+  const patterns = [
+    HEADER_PATTERN_NL,
+    HEADER_PATTERN_EN,
+    HEADER_PATTERN_FR,
+    HEADER_PATTERN_DE,
+    HEADER_PATTERN_ES,
+    HEADER_PATTERN_IT,
+    HEADER_PATTERN_PT,
+  ];
   
-  // Try English pattern
-  match = text.match(HEADER_PATTERN_EN);
-  if (match) {
-    return {
-      miles: parseInt(match[1], 10) || 0,
-      xp: parseInt(match[2], 10) || 0,
-      uxp: parseInt(match[3], 10) || 0,
-    };
-  }
-  
-  // Try French pattern
-  match = text.match(HEADER_PATTERN_FR);
-  if (match) {
-    return {
-      miles: parseInt(match[1], 10) || 0,
-      xp: parseInt(match[2], 10) || 0,
-      uxp: parseInt(match[3], 10) || 0,
-    };
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return {
+        miles: parseInt(match[1], 10) || 0,
+        xp: parseInt(match[2], 10) || 0,
+        uxp: parseInt(match[3], 10) || 0,
+      };
+    }
   }
   
   return null;

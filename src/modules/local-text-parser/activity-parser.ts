@@ -55,17 +55,27 @@ function extractDescription(block: ClassifiedTransaction): string {
   }
   
   // Remove date and miles/XP from first line to get description
-  // Pattern: "10 dec 2025 AMERICAN EXPRESS PLATINUM CARD 10811 Miles 0 XP"
-  const match = firstLine.match(/^\d{1,2}\s+[a-z]+\s+\d{4}\s+(.+?)\s+(-?\d+)\s*Miles/i);
+  // DMY Pattern: "10 dec 2025 AMERICAN EXPRESS PLATINUM CARD 10811 Miles 0 XP"
+  // DMY Pattern with dot: "10. Dez. 2025 AMERICAN EXPRESS PLATINUM CARD 10811 Meilen 0 XP"
+  // MDY Pattern: "Dec 10, 2025 AMERICAN EXPRESS PLATINUM CARD 10811 Miles 0 XP"
   
-  if (match) {
-    return match[1].trim();
+  // Try DMY format first (most common)
+  const matchDMY = firstLine.match(/^\d{1,2}\.?\s+[a-zéûäçãõ]+\.?\s+\d{4}\s+(.+?)\s+(-?\d+)\s*(?:Miles|Meilen)/i);
+  if (matchDMY) {
+    return matchDMY[1].trim();
   }
   
-  // Fallback: return first line cleaned up
+  // Try MDY format (English)
+  const matchMDY = firstLine.match(/^[A-Za-z]+\.?\s+\d{1,2},?\s+\d{4}\s+(.+?)\s+(-?\d+)\s*(?:Miles|Meilen)/i);
+  if (matchMDY) {
+    return matchMDY[1].trim();
+  }
+  
+  // Fallback: return first line cleaned up (handles both date formats)
   return firstLine
-    .replace(/^\d{1,2}\s+[a-z]+\s+\d{4}\s+/i, '')
-    .replace(/\s*(-?\d+)\s*Miles.*$/i, '')
+    .replace(/^\d{1,2}\.?\s+[a-zéûäçãõ]+\.?\s+\d{4}\s+/i, '')  // Remove DMY date
+    .replace(/^[A-Za-z]+\.?\s+\d{1,2},?\s+\d{4}\s+/i, '')       // Remove MDY date
+    .replace(/\s*(-?\d+)\s*(?:Miles|Meilen).*$/i, '')           // Remove miles suffix
     .trim();
 }
 

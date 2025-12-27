@@ -26,7 +26,7 @@ export interface LocalParserOptions {
   debug?: boolean;
   
   /** Language hint (auto-detected if not provided) */
-  language?: 'nl' | 'en' | 'fr';
+  language?: 'nl' | 'en' | 'fr' | 'de' | 'es' | 'it' | 'pt';
   
   /** Strict mode: fail on first error vs. lenient: parse what we can */
   strict?: boolean;
@@ -41,8 +41,9 @@ export type LocalParserResult =
 
 /**
  * Detected language from PDF content
+ * Supports: Dutch, English, French, German, Spanish, Italian, Portuguese
  */
-export type DetectedLanguage = 'nl' | 'en' | 'fr' | 'de';
+export type DetectedLanguage = 'nl' | 'en' | 'fr' | 'de' | 'es' | 'it' | 'pt';
 
 /**
  * Parsed header information from PDF

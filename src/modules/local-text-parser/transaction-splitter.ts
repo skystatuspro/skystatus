@@ -18,22 +18,35 @@ import { parseDateToISO } from './header-parser';
  * Pattern to match transaction header lines
  * Format NL: "10 dec 2025 Description 367 Miles 0 XP" or "18 nov 2025 -180000 Miles 0 XP"
  * Format EN: "Dec 9, 2025 Description 367 Miles 0 XP"
+ * Format DE: "10. Dez. 2025 Description 367 Meilen 0 XP"
  * Note: Miles can be negative for redemptions/award bookings
  * Note: Description can be empty for award bookings (just date + miles)
+ * Note: German uses "Meilen" instead of "Miles"
  */
-// Dutch format: day month year (e.g., "10 dec 2025")
-const TRANSACTION_HEADER_PATTERN_NL = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(.+?)\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+// DMY format: day month year (e.g., "10 dec 2025", "10. Dez. 2025")
+// Supports: Dutch, French, German, Spanish, Italian, Portuguese
+// Month may have trailing dot in German (Dez.)
+const TRANSACTION_HEADER_PATTERN_DMY = /^(\d{1,2}\.?\s+[a-zéûäçãõ]+\.?\s+\d{4})\s+(.+?)\s+(-?\d+)\s*(?:Miles|Meilen)\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
 
-// English format: Month day, year (e.g., "Dec 9, 2025")
-const TRANSACTION_HEADER_PATTERN_EN = /^([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s+(.+?)\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+// MDY format: Month day, year (e.g., "Dec 9, 2025")
+// Supports: English (US/Canada)
+const TRANSACTION_HEADER_PATTERN_MDY = /^([A-Za-z]+\.?\s+\d{1,2},?\s+\d{4})\s+(.+?)\s+(-?\d+)\s*(?:Miles|Meilen)\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+
+// Legacy aliases for compatibility
+const TRANSACTION_HEADER_PATTERN_NL = TRANSACTION_HEADER_PATTERN_DMY;
+const TRANSACTION_HEADER_PATTERN_EN = TRANSACTION_HEADER_PATTERN_MDY;
 
 /**
  * Pattern for transactions without description (award bookings)
- * Format NL: "18 nov 2025 -180000 Miles 0 XP"
- * Format EN: "Nov 18, 2025 -180000 Miles 0 XP"
+ * Format DMY: "18 nov 2025 -180000 Miles 0 XP" or "18. Nov. 2025 -180000 Meilen 0 XP"
+ * Format MDY: "Nov 18, 2025 -180000 Miles 0 XP"
  */
-const TRANSACTION_HEADER_NO_DESC_PATTERN_NL = /^(\d{1,2}\s+[a-zéû]+\s+\d{4})\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
-const TRANSACTION_HEADER_NO_DESC_PATTERN_EN = /^([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s+(-?\d+)\s*Miles\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+const TRANSACTION_HEADER_NO_DESC_PATTERN_DMY = /^(\d{1,2}\.?\s+[a-zéûäçãõ]+\.?\s+\d{4})\s+(-?\d+)\s*(?:Miles|Meilen)\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+const TRANSACTION_HEADER_NO_DESC_PATTERN_MDY = /^([A-Za-z]+\.?\s+\d{1,2},?\s+\d{4})\s+(-?\d+)\s*(?:Miles|Meilen)\s+(-?\d+)\s*XP(?:\s+(-?\d+)\s*UXP)?$/i;
+
+// Legacy aliases
+const TRANSACTION_HEADER_NO_DESC_PATTERN_NL = TRANSACTION_HEADER_NO_DESC_PATTERN_DMY;
+const TRANSACTION_HEADER_NO_DESC_PATTERN_EN = TRANSACTION_HEADER_NO_DESC_PATTERN_MDY;
 
 /**
  * Try to match a transaction header line against both NL and EN patterns
@@ -80,16 +93,24 @@ function isTransactionStart(line: string): boolean {
 }
 
 /**
- * Extract activity date from text (the "op XX XXX XXXX" or "on Month DD, YYYY" pattern)
+ * Extract activity date from text
+ * Supports multiple language prefixes:
+ * - Dutch: "op 21 nov 2025"
+ * - English: "on Nov 21, 2025" or "on 21 Nov 2025"
+ * - French: "le 21 nov 2025"
+ * - German: "am 21. Nov 2025"
+ * - Spanish: "el 21 nov 2025"
+ * - Italian: "il 21 nov 2025"
+ * - Portuguese: "em 21 nov 2025"
  */
 function extractActivityDate(text: string): string | null {
-  // Try Dutch format first: "op 21 nov 2025"
+  // Try DMY format first: "op 21 nov 2025" / "le 21 nov 2025" / "am 21. Nov 2025" etc.
   ACTIVITY_DATE_PATTERN_NL.lastIndex = 0;
-  const matchNL = ACTIVITY_DATE_PATTERN_NL.exec(text);
-  if (matchNL) {
-    const day = matchNL[1].padStart(2, '0');
-    const monthName = matchNL[2].toLowerCase();
-    const year = matchNL[3];
+  const matchDMY = ACTIVITY_DATE_PATTERN_NL.exec(text);
+  if (matchDMY) {
+    const day = matchDMY[1].padStart(2, '0');
+    const monthName = matchDMY[2].toLowerCase();
+    const year = matchDMY[3];
     
     const month = ALL_MONTHS[monthName];
     if (month) {
@@ -97,13 +118,13 @@ function extractActivityDate(text: string): string | null {
     }
   }
   
-  // Try English format: "on Dec 2, 2025"
+  // Try MDY format: "on Dec 2, 2025"
   ACTIVITY_DATE_PATTERN_EN.lastIndex = 0;
-  const matchEN = ACTIVITY_DATE_PATTERN_EN.exec(text);
-  if (matchEN) {
-    const monthName = matchEN[1].toLowerCase();
-    const day = matchEN[2].padStart(2, '0');
-    const year = matchEN[3];
+  const matchMDY = ACTIVITY_DATE_PATTERN_EN.exec(text);
+  if (matchMDY) {
+    const monthName = matchMDY[1].toLowerCase();
+    const day = matchMDY[2].padStart(2, '0');
+    const year = matchMDY[3];
     
     const month = ALL_MONTHS[monthName];
     if (month) {
