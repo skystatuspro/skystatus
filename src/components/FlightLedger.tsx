@@ -601,15 +601,22 @@ export const FlightLedger: React.FC<FlightLedgerProps> = ({
                             
                             {/* Status Column */}
                             <td className="px-4 py-2.5">
-                              {isScheduled ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[9px] font-bold uppercase border border-blue-100">
-                                  <Clock size={10} /> Sched
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase border border-emerald-100">
-                                  <CheckCircle2 size={10} /> Flown
-                                </span>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {isScheduled ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[9px] font-bold uppercase border border-blue-100">
+                                    <Clock size={10} /> Sched
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold uppercase border border-emerald-100">
+                                    <CheckCircle2 size={10} /> Flown
+                                  </span>
+                                )}
+                                {f.isAward && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 text-[9px] font-bold uppercase border border-amber-100">
+                                    Award
+                                  </span>
+                                )}
+                              </div>
                             </td>
 
                             <td className={`px-4 py-2.5 font-mono text-[11px] ${isScheduled ? 'text-slate-400' : 'text-slate-600'}`}>

@@ -25,6 +25,7 @@ export interface FlightRecord {
   earnedXP?: number;
   safXp?: number;         // SAF (Sustainable Aviation Fuel) XP
   uxp?: number;           // Ultimate XP - only KLM/AF flights generate UXP
+  isAward?: boolean;      // True for award/redemption tickets (no XP/miles earned)
   // Import tracking
   importSource?: 'pdf' | 'manual';
   importedAt?: string;

@@ -31,6 +31,7 @@ export interface ParsedTicket {
     ticketPrice: number;        // Base fare (0 for awards)
     safContribution: number;    // SAF bijdrage
     totalPrice: number;         // Total paid
+    revenueBase: number;        // Base for miles calculation (ticket + YR surcharge)
   };
   rawText: string;              // Original input for debugging
 }
@@ -270,9 +271,30 @@ export function parseTicketEmail(emailText: string): TicketParseResult {
   const isAward = detectAwardTicket(text);
   
   // Extract pricing
-  const ticketPrice = extractPrice(text, /Ticketprijs\s+EUR\s+([\d.,]+)/i);
+  // Note: For revenue tickets, we need the total price for miles calculation
+  // Ticketprijs may be empty or just show a label without value
+  const ticketPriceMatch = text.match(/Ticketprijs\s+EUR\s+([\d.,]+)/i);
+  const ticketPrice = ticketPriceMatch ? parseFloat(ticketPriceMatch[1].replace(',', '.')) : 0;
+  
   const safContribution = extractPrice(text, /SAF.*?EUR\s+([\d.,]+)/i);
   const totalPrice = extractPrice(text, /Totaalprijs.*?EUR\s+([\d.,]+)/i);
+  
+  // For miles calculation, we need the fare basis (not taxes)
+  // If ticketPrice is 0 but we have totalPrice and it's not an award, estimate ticket portion
+  // KLM/AF miles are calculated on: ticket price + carrier surcharges (YR/YQ)
+  // We can extract the YR surcharge separately
+  const yrSurcharge = extractPrice(text, /(?:YR|Internationale toeslag).*?EUR\s+([\d.,]+)/i);
+  
+  // Revenue base for miles = ticket price + YR surcharge (if available)
+  // If ticketPrice is 0 for a non-award, use totalPrice minus typical taxes as estimate
+  let revenueBase = ticketPrice;
+  if (revenueBase === 0 && !isAward && totalPrice > 0) {
+    // Fallback: use total price (user can adjust if needed)
+    revenueBase = totalPrice;
+  }
+  if (yrSurcharge > 0 && ticketPrice > 0) {
+    revenueBase = ticketPrice + yrSurcharge;
+  }
   
   // ========================================================================
   // FLIGHT EXTRACTION
@@ -438,6 +460,7 @@ export function parseTicketEmail(emailText: string): TicketParseResult {
         ticketPrice: isAward ? 0 : ticketPrice,
         safContribution,
         totalPrice: isAward ? safContribution : totalPrice,
+        revenueBase: isAward ? 0 : revenueBase,
       },
       rawText: text,
     },
@@ -460,26 +483,49 @@ export function ticketToFlightPayloads(
   flightNumber: string;
   safXp: number;
   isAward: boolean;
+  earnedMiles: number;
 }[] {
   const { flights, pricing, isAward } = ticket;
   
-  // Distribute ticket price across flights based on segment count
+  // Distribute revenue base across flights based on segment count
   // For simplicity, we divide equally (could improve with distance weighting)
-  const pricePerFlight = flights.length > 0 
-    ? pricing.ticketPrice / flights.length 
+  const revenuePerFlight = flights.length > 0 
+    ? pricing.revenueBase / flights.length 
     : 0;
   
   // SAF contribution goes to first flight only
   const safPerFlight = pricing.safContribution;
   
-  return flights.map((flight, index) => ({
-    date: flight.date,
-    route: flight.route,
-    airline: flight.airline,
-    cabin: flight.cabin,
-    ticketPrice: isAward ? 0 : pricePerFlight,
-    flightNumber: flight.flightNumber,
-    safXp: index === 0 ? Math.round(safPerFlight) : 0, // SAF on first segment
-    isAward,
-  }));
+  // Status multiplier for miles calculation
+  const statusMultipliers: Record<string, number> = {
+    'Explorer': 4,
+    'Silver': 6,
+    'Gold': 7,
+    'Platinum': 8,
+    'Ultimate': 8,
+  };
+  const multiplier = statusMultipliers[currentStatus] || 4;
+  
+  return flights.map((flight, index) => {
+    // Only KL and AF earn revenue-based miles
+    const isRevenueAirline = ['KL', 'AF'].includes(flight.airline);
+    
+    // Calculate miles: revenue × status multiplier (only for KL/AF revenue tickets)
+    let earnedMiles = 0;
+    if (!isAward && isRevenueAirline && revenuePerFlight > 0) {
+      earnedMiles = Math.round(revenuePerFlight * multiplier);
+    }
+    
+    return {
+      date: flight.date,
+      route: flight.route,
+      airline: flight.airline,
+      cabin: flight.cabin,
+      ticketPrice: isAward ? 0 : revenuePerFlight,
+      flightNumber: flight.flightNumber,
+      safXp: index === 0 ? Math.round(safPerFlight) : 0, // SAF on first segment
+      isAward,
+      earnedMiles,
+    };
+  });
 }

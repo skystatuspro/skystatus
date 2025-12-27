@@ -12,7 +12,10 @@ export interface FlightIntakePayload {
   safXp?: number;
   flightNumber?: string;
   uxp?: number;
+  isAward?: boolean;  // True for award/redemption tickets (no XP/miles earned)
 }
+
+export type CabinClass = 'Economy' | 'Premium Economy' | 'Business' | 'First';
 
 export const createFlightRecord = (payload: FlightIntakePayload): FlightRecord => {
   const uniqueId = payload.id ?? `flight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -29,6 +32,7 @@ export const createFlightRecord = (payload: FlightIntakePayload): FlightRecord =
     safXp: payload.safXp ?? 0,
     flightNumber: payload.flightNumber,
     uxp: payload.uxp,
+    isAward: payload.isAward ?? false,
   };
 };
 

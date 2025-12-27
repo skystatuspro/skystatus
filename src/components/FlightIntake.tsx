@@ -409,11 +409,16 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     // Convert ticket payloads to full FlightIntakePayload format
     const payloads: FlightIntakePayload[] = flights.map(f => {
       const [origin, dest] = f.route.split('-');
-      const { xp } = calculateXPForRoute(origin, dest, f.cabin);
       
-      // UXP logic
+      // Award tickets earn NO XP and NO miles
+      const { xp } = calculateXPForRoute(origin, dest, f.cabin);
+      const earnedXP = f.isAward ? 0 : xp;
+      const earnedMiles = f.isAward ? 0 : f.earnedMiles;
+      const safXp = f.isAward ? 0 : f.safXp; // SAF XP also 0 for awards
+      
+      // UXP logic (only for revenue tickets)
       const uxpAirlines = ['KL', 'KLM', 'AF'];
-      const isUxpEligible = uxpAirlines.includes(f.airline.toUpperCase()) 
+      const isUxpEligible = !f.isAward && uxpAirlines.includes(f.airline.toUpperCase()) 
         && (currentStatus === 'Platinum' || currentStatus === 'Ultimate');
       
       return {
@@ -422,11 +427,12 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         airline: f.airline,
         cabin: f.cabin,
         ticketPrice: f.ticketPrice,
-        earnedMiles: 0, // Will be calculated based on revenue-based logic
-        earnedXP: xp,
-        safXp: f.safXp,
+        earnedMiles,
+        earnedXP,
+        safXp,
         flightNumber: f.flightNumber,
-        uxp: isUxpEligible ? xp + f.safXp : 0,
+        uxp: isUxpEligible ? earnedXP + safXp : 0,
+        isAward: f.isAward, // Pass through for Flight Ledger display
       };
     });
     
