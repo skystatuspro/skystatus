@@ -35,6 +35,7 @@ interface MilesIntakeProps {
   activityTransactions?: ActivityTransaction[];
   flights?: FlightRecord[];
   onUpdateTransactionCost?: (transactionId: string, cost: number | null) => Promise<boolean>;
+  onDeleteTransaction?: (transactionId: string) => Promise<boolean>;
 }
 
 type MileSource = 'subscription' | 'amex' | 'other';
@@ -82,6 +83,7 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({
   activityTransactions,
   flights,
   onUpdateTransactionCost,
+  onDeleteTransaction,
 }) => {
   const { isSimpleMode } = useViewMode();
   const { trackMiles } = useAnalytics();
@@ -373,6 +375,7 @@ export const MilesIntake: React.FC<MilesIntakeProps> = ({
           transactions={activityTransactions}
           flights={flights}
           onUpdateCost={onUpdateTransactionCost}
+          onDeleteTransaction={onDeleteTransaction}
           title="Transaction Ledger"
           showMissingCostFilter={true}
         />

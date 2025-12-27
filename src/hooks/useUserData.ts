@@ -597,6 +597,41 @@ export function useUserData(): UseUserDataReturn {
     }
   }, [isDemoMode, isLocalMode, user, queryClient]);
 
+  /**
+   * Delete an activity transaction.
+   * Used for removing duplicates or erroneous entries.
+   */
+  const handleDeleteTransaction = useCallback(async (
+    transactionId: string
+  ): Promise<boolean> => {
+    if (isDemoMode || isLocalMode) {
+      console.log('[handleDeleteTransaction] Demo/local mode - deletes not persisted');
+      return false;
+    }
+
+    if (!user) {
+      console.error('[handleDeleteTransaction] No user');
+      return false;
+    }
+
+    console.log('[handleDeleteTransaction] Deleting:', transactionId);
+
+    try {
+      const { deleteActivityTransactions } = await import('../lib/dataService');
+      const success = await deleteActivityTransactions(user.id, [transactionId]);
+      
+      if (success) {
+        // Invalidate the query to refetch fresh data
+        queryClient.invalidateQueries({ queryKey: queryKeys.user(user.id) });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('[handleDeleteTransaction] Error:', error);
+      return false;
+    }
+  }, [isDemoMode, isLocalMode, user, queryClient]);
+
   const handleRedemptionsUpdate = useCallback((newRedemptions: RedemptionRecord[]) => {
     setRedemptions(newRedemptions);
   }, [setRedemptions]);
@@ -1137,6 +1172,7 @@ export function useUserData(): UseUserDataReturn {
       handleManualLedgerUpdate,
       handleAddManualTransaction,
       handleUpdateTransactionCost,
+      handleDeleteTransaction,
       handleRedemptionsUpdate,
       handleTargetCPMUpdate,
       handleCurrencyUpdate,

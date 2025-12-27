@@ -17,6 +17,7 @@ import {
   Plane,
   Plus,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
@@ -28,6 +29,7 @@ interface TransactionLedgerProps {
   transactions: ActivityTransaction[];
   flights?: FlightRecord[];  // Optional: for flight totals per month
   onUpdateCost: (transactionId: string, cost: number | null) => Promise<boolean>;
+  onDeleteTransaction?: (transactionId: string) => Promise<boolean>;
   title?: string;
   showMissingCostFilter?: boolean;
 }
@@ -204,6 +206,7 @@ interface TransactionRowProps {
   onCancelEdit: () => void;
   onEditValueChange: (value: string) => void;
   onMarkFree: () => void;
+  onDelete?: () => void;
   currencySymbol: string;
 }
 
@@ -216,6 +219,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   onCancelEdit,
   onEditValueChange,
   onMarkFree,
+  onDelete,
   currencySymbol,
 }) => {
   const typeColor = TYPE_COLORS[transaction.type] || TYPE_COLORS.other;
@@ -223,7 +227,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   const hasCost = transaction.cost !== null && transaction.cost !== undefined;
 
   return (
-    <div className="px-4 py-2.5 flex items-center gap-2 bg-white hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0">
+    <div className="px-4 py-2.5 flex items-center gap-2 bg-white hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0 group">
       {/* Date */}
       <div className="w-16 text-xs text-slate-400 font-mono shrink-0">
         {formatDate(transaction.date)}
@@ -307,6 +311,17 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
           </div>
         )}
       </div>
+
+      {/* Delete button */}
+      {onDelete && (
+        <button
+          onClick={onDelete}
+          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
+          title="Delete transaction"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 };
@@ -322,6 +337,7 @@ interface MonthSectionProps {
   onCancelEdit: () => void;
   onEditValueChange: (value: string) => void;
   onMarkFree: (id: string) => void;
+  onDeleteTransaction?: (id: string) => void;
   currencySymbol: string;
   isCurrentMonth: boolean;
 }
@@ -337,6 +353,7 @@ const MonthSection: React.FC<MonthSectionProps> = ({
   onCancelEdit,
   onEditValueChange,
   onMarkFree,
+  onDeleteTransaction,
   currencySymbol,
   isCurrentMonth,
 }) => {
@@ -443,6 +460,7 @@ const MonthSection: React.FC<MonthSectionProps> = ({
                   onCancelEdit={onCancelEdit}
                   onEditValueChange={onEditValueChange}
                   onMarkFree={() => onMarkFree(tx.id)}
+                  onDelete={onDeleteTransaction ? () => onDeleteTransaction(tx.id) : undefined}
                   currencySymbol={currencySymbol}
                 />
               ))}
@@ -467,6 +485,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
   transactions,
   flights = [],
   onUpdateCost,
+  onDeleteTransaction,
   title = 'Transaction Ledger',
   showMissingCostFilter = true,
 }) => {
@@ -478,6 +497,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
   const [editValue, setEditValue] = useState<string>('');
   const [filterMissingCost, setFilterMissingCost] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Current month for highlighting
   const currentMonth = useMemo(() => {
@@ -556,6 +576,24 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
       setIsSaving(false);
     }
   }, [onUpdateCost, isSaving]);
+
+  const handleDeleteTransaction = useCallback(async (id: string) => {
+    if (!onDeleteTransaction || deletingId) return;
+    
+    // Confirmation dialog
+    const tx = transactions.find(t => t.id === id);
+    const desc = tx?.description?.slice(0, 50) || 'this transaction';
+    if (!window.confirm(`Delete "${desc}"?\n\nThis cannot be undone.`)) {
+      return;
+    }
+    
+    setDeletingId(id);
+    try {
+      await onDeleteTransaction(id);
+    } finally {
+      setDeletingId(null);
+    }
+  }, [onDeleteTransaction, deletingId, transactions]);
 
   // Auto-expand months with missing costs when filter is active
   React.useEffect(() => {
@@ -646,6 +684,7 @@ export const TransactionLedger: React.FC<TransactionLedgerProps> = ({
               onCancelEdit={handleCancelEdit}
               onEditValueChange={setEditValue}
               onMarkFree={handleMarkFree}
+              onDeleteTransaction={onDeleteTransaction ? handleDeleteTransaction : undefined}
               currencySymbol={currencySymbol}
               isCurrentMonth={group.month === currentMonth}
             />

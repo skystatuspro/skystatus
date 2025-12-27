@@ -463,6 +463,7 @@ export default function App() {
               activityTransactions={state.activityTransactions}
               flights={state.flights}
               onUpdateTransactionCost={actions.handleUpdateTransactionCost}
+              onDeleteTransaction={actions.handleDeleteTransaction}
             />
           </div>
         );
@@ -480,6 +481,7 @@ export default function App() {
             activityTransactions={state.activityTransactions}
             useNewTransactions={state.useNewTransactions}
             onUpdateTransactionCost={actions.handleUpdateTransactionCost}
+            onDeleteTransaction={actions.handleDeleteTransaction}
             flights={state.flights}
           />
         );

@@ -54,6 +54,7 @@ interface MilesEngineProps {
   activityTransactions?: ActivityTransaction[];
   useNewTransactions?: boolean;
   onUpdateTransactionCost?: (transactionId: string, cost: number | null) => Promise<boolean>;
+  onDeleteTransaction?: (transactionId: string) => Promise<boolean>;
   // Flights for TransactionLedger monthly totals
   flights?: FlightRecord[];
 }
@@ -69,6 +70,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   activityTransactions,
   useNewTransactions,
   onUpdateTransactionCost,
+  onDeleteTransaction,
   flights,
 }) => {
   const { isSimpleMode } = useViewMode();
@@ -802,6 +804,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
           transactions={activityTransactions}
           flights={flights}
           onUpdateCost={onUpdateTransactionCost}
+          onDeleteTransaction={onDeleteTransaction}
           title="Transaction Ledger"
           showMissingCostFilter={true}
         />
