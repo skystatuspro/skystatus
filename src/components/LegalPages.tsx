@@ -8,7 +8,7 @@ interface LegalPageProps {
 }
 
 export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
-  const lastUpdated = '16 December 2024';
+  const lastUpdated = '27 December 2025';
   const [showContactModal, setShowContactModal] = React.useState(false);
   
   return (
@@ -77,25 +77,34 @@ export const PrivacyPolicy: React.FC<LegalPageProps> = ({ onBack }) => {
                 🔒 Your Flying Blue PDFs are processed entirely in your browser. The PDF file is never uploaded to our servers.
               </p>
             </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <p className="text-blue-800 font-medium">
+                🌍 The parser is optimized for Dutch, English, and French PDFs. You can change your language on Flying Blue before downloading.
+              </p>
+            </div>
             <p className="text-slate-600 leading-relaxed mb-4">
               When you import a Flying Blue PDF:
             </p>
             <ul className="space-y-2 text-slate-600">
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
-                <span><strong>Client-side processing:</strong> The PDF is parsed entirely in your browser using JavaScript (PDF.js). No server is involved.</span>
+                <span><strong>Client-side processing:</strong> The PDF is parsed entirely in your browser using JavaScript. No server is involved in the parsing process.</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
-                <span><strong>Data extraction:</strong> We extract only flight data: dates, routes, cabin class, XP earned, and miles. Personal details like your name or Flying Blue number are not stored.</span>
+                <span><strong>Data extraction:</strong> We extract only flight and activity data: dates, routes, cabin class, XP earned, and miles. Personal details like your name or Flying Blue number are not stored.</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
-                <span><strong>No file storage:</strong> The original PDF is never saved. Not on our servers, not in your browser. Only the extracted flight records are kept.</span>
+                <span><strong>No file storage:</strong> The original PDF is never saved. Not on our servers, not in your browser. Only the extracted records are kept.</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-brand-500 font-bold">•</span>
-                <span><strong>Your choice:</strong> Extracted data is stored locally (Local Mode) or synced to your account (Cloud Mode). This depends on your preference.</span>
+                <span><strong>Duplicate detection:</strong> Each transaction receives a unique identifier, allowing you to re-import PDFs without creating duplicate entries.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-brand-500 font-bold">•</span>
+                <span><strong>Your choice:</strong> Extracted data is stored locally (Local Mode) or synced to your account (Cloud Mode), depending on your preference.</span>
               </li>
             </ul>
           </section>

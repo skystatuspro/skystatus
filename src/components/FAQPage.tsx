@@ -130,6 +130,12 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                   Your PDF is processed <strong>entirely in your browser</strong>. We never receive, upload, or store your PDF file. All parsing happens locally on your device.
                 </p>
               </div>
+              <div className="p-3 bg-blue-50 rounded-lg text-sm border border-blue-200 mb-4">
+                <strong className="text-blue-800">🌍 Supported Languages:</strong>
+                <p className="text-blue-700 mt-1">
+                  The parser is optimized for <strong>Dutch, English, and French</strong> PDFs. You can change your language on Flying Blue before downloading your activity overview.
+                </p>
+              </div>
               <p><strong>Step 1: Download your PDF from Flying Blue</strong></p>
               <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
                 <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
@@ -145,6 +151,10 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <li>Drag your PDF into the drop zone or click to select</li>
                 <li>Review the extracted data and click "Import"</li>
               </ol>
+              <p className="mt-3 p-3 bg-amber-50 rounded-lg text-sm border border-amber-200">
+                <strong className="text-amber-800">💡 Smart Duplicate Detection:</strong>
+                <span className="text-amber-700"> Each transaction gets a unique ID. Re-importing your PDF automatically skips entries you already have.</span>
+              </p>
             </>
           )
         },
@@ -745,15 +755,21 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
               <p>Common causes and solutions:</p>
               <ul className="list-disc list-inside mt-2 space-y-2">
                 <li>
-                  <strong>Wrong PDF:</strong> Make sure you're importing the Flying Blue activity PDF, not a booking confirmation.
+                  <strong>Wrong PDF:</strong> Make sure you're importing the Flying Blue activity PDF, not a booking confirmation or ticket.
                 </li>
                 <li>
                   <strong>Incomplete data:</strong> Did you click "More" on Flying Blue to load all activities before downloading?
                 </li>
                 <li>
-                  <strong>Language:</strong> SkyStatus supports English, Dutch, French, and German PDFs. Other languages might fail.
+                  <strong>Language:</strong> The parser is optimized for <strong>Dutch, English, and French</strong> PDFs. Other languages may not parse correctly. You can change your language on Flying Blue before downloading.
+                </li>
+                <li>
+                  <strong>Corrupted file:</strong> Try downloading the PDF again from Flying Blue.
                 </li>
               </ul>
+              <p className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                <strong>Tip:</strong> If you're having trouble, try switching your Flying Blue account to English or Dutch before downloading the PDF.
+              </p>
             </>
           )
         },
