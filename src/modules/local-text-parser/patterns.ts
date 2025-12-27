@@ -199,9 +199,10 @@ export const HEADER_PATTERN_NL = /Activiteiten(?:geschiedenis|overzicht)\s+(\d+)
 export const HEADER_PATTERN_EN = /Activity\s+(?:history|overview)\s+(\d+)\s*Miles\s+(\d+)\s*XP(?:\s+(\d+)\s*UXP)?/i;
 
 /**
- * Header with totals (French): "Historique d'activité 248928 Miles 183 XP 40 UXP"
+ * Header with totals (French): "Historique des activités 248928 Miles 183 XP 40 UXP"
+ * Note: French uses "des activités" (plural with "des"), not "d'activité"
  */
-export const HEADER_PATTERN_FR = /Historique\s+d['']activit[ée]\s+(\d+)\s*Miles\s+(\d+)\s*XP(?:\s+(\d+)\s*UXP)?/i;
+export const HEADER_PATTERN_FR = /Historique\s+des\s+activit[ée]s\s+(\d+)\s*Miles\s+(\d+)\s*XP(?:\s+(\d+)\s*UXP)?/i;
 
 /**
  * Header with totals (German): "Aktivitätsverlauf 248928 Meilen 183 XP 40 UXP"
