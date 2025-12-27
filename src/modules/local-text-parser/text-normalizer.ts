@@ -199,10 +199,11 @@ export function normalizeText(text: string): string {
   const COMPLETE_TRANSACTION_LINE_EN = COMPLETE_TRANSACTION_LINE_MDY;
   
   // Pattern for header line (all languages)
-  // Dutch: "Activiteitengeschiedenis", English: "Activity history", French: "Historique d'activité"
+  // Dutch: "Activiteitengeschiedenis", English: "Activity history", French: "Historique des activités"
   // German: "Aktivitätsverlauf", Spanish: "Historial de actividad", Italian: "Cronologia attività"
   // Portuguese: "Histórico de atividade"
-  const HEADER_LINE = /^(Activiteitengeschiedenis|Activity\s+history|Historique\s+d['']activit[ée]|Aktivit[äa]tsverlauf|Historial\s+de\s+actividad|Cronologia\s+attivit[àa]|Hist[óo]rico\s+de\s+atividade)\s+/i;
+  // NOTE: French uses "Historique des activités" (plural with "des"), NOT "Historique d'activité"
+  const HEADER_LINE = /^(Activiteitengeschiedenis|Activity\s+history|Historique\s+(?:des\s+activit[ée]s|d['']activit[ée])|Aktivit[äa]tsverlauf|Historial\s+de\s+actividad|Cronologia\s+attivit[àa]|Hist[óo]rico\s+de\s+atividade)\s+/i;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
