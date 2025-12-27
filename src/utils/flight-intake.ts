@@ -62,7 +62,9 @@ export const rebuildLedgersFromFlights = (
     if (!month) return;
 
     const flightMiles = f.earnedMiles || 0;
-    const flightCost = f.ticketPrice || 0;
+    // NOTE: Flight miles are FREE - you pay for transportation, not the miles
+    // ticketPrice is stored for reference but should NOT count as acquisition cost
+    const flightCost = 0;
 
     const existingMiles = milesByMonth.get(month);
     if (existingMiles) {
