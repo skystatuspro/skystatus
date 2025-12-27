@@ -118,7 +118,7 @@ export const UpdateNotice: React.FC<UpdateNoticeProps> = ({
                     What's New
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-300">
-                    Smart duplicate detection, 7-language PDF support, improved XP tracking, and transaction-level detail.
+                    Copy-paste import workflow, duplicate detection, improved XP tracking, and transaction-level detail.
                   </p>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export const UpdateNotice: React.FC<UpdateNoticeProps> = ({
                     <span className="text-xs bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded-full">Best Results</span>
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-300">
-                    For optimal tracking, use <strong className="text-white">Settings → Start Over</strong> and re-import your PDF. This ensures all transactions get unique IDs for accurate duplicate detection.
+                    For optimal tracking, use <strong className="text-white">Settings → Start Over</strong> and re-import your data. Copy text from your PDF and paste it — this ensures unique IDs for duplicate detection.
                   </p>
                 </div>
               </div>

@@ -121,19 +121,19 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
           )
         },
         {
-          question: 'How do I import my Flying Blue PDF?',
+          question: 'How do I import my Flying Blue data?',
           answer: (
             <>
               <div className="p-3 bg-emerald-50 rounded-lg text-sm border border-emerald-200 mb-4">
                 <strong className="text-emerald-800">🔒 Privacy First:</strong>
                 <p className="text-emerald-700 mt-1">
-                  Your PDF is processed <strong>entirely in your browser</strong>. We never receive, upload, or store your PDF file. All parsing happens locally on your device.
+                  All data processing happens <strong>entirely in your browser</strong>. We never receive, upload, or store your PDF file or personal data.
                 </p>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg text-sm border border-blue-200 mb-4">
-                <strong className="text-blue-800">🌍 Supported Languages:</strong>
+                <strong className="text-blue-800">🌍 Best Results:</strong>
                 <p className="text-blue-700 mt-1">
-                  The parser is optimized for <strong>Dutch, English, and French</strong> PDFs. You can change your language on Flying Blue before downloading your activity overview.
+                  The parser works best with <strong>Dutch, English, or French</strong> statements. You can change your language on Flying Blue before downloading.
                 </p>
               </div>
               <p><strong>Step 1: Download your PDF from Flying Blue</strong></p>
@@ -141,19 +141,33 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
                 <li>Log in at <a href="https://www.flyingblue.com" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:underline">flyingblue.com</a></li>
                 <li>Go to <strong>My Account</strong> → <strong>Activity overview</strong></li>
                 <li className="text-amber-700 font-medium">
-                  ⚠️ <strong>Important:</strong> Click the <strong>"More"</strong> button at the bottom repeatedly until ALL your activities are visible!
+                  ⚠️ <strong>Important:</strong> Click the <strong>"More"</strong> button repeatedly until ALL your activities are visible!
                 </li>
-                <li>Scroll back up and click the <strong>"Download"</strong> button</li>
+                <li>Click the <strong>"Download"</strong> button to save the PDF</li>
               </ol>
-              <p className="mt-3"><strong>Step 2: Import in SkyStatus</strong></p>
+              <p className="mt-3"><strong>Step 2: Copy the PDF content</strong></p>
               <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
-                <li>Click "Import PDF" (on Dashboard or in Data Settings)</li>
-                <li>Drag your PDF into the drop zone or click to select</li>
-                <li>Review the extracted data and click "Import"</li>
+                <li>Open the downloaded PDF in your PDF viewer</li>
+                <li>Select all text (<kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-xs">Ctrl+A</kbd> or <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-xs">Cmd+A</kbd>)</li>
+                <li>Copy the text (<kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-xs">Ctrl+C</kbd> or <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-xs">Cmd+C</kbd>)</li>
               </ol>
-              <p className="mt-3 p-3 bg-amber-50 rounded-lg text-sm border border-amber-200">
-                <strong className="text-amber-800">💡 Smart Duplicate Detection:</strong>
-                <span className="text-amber-700"> Each transaction gets a unique ID. Re-importing your PDF automatically skips entries you already have.</span>
+              <p className="mt-3"><strong>Step 3: Paste in SkyStatus</strong></p>
+              <ol className="list-decimal list-inside mt-1 space-y-1 text-sm">
+                <li>Click "Import Data" in SkyStatus</li>
+                <li>Paste the copied text into the text field (<kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-xs">Ctrl+V</kbd>)</li>
+                <li>Click "Analyze Data" to parse your transactions</li>
+                <li>Review the results and click "Import"</li>
+              </ol>
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg text-sm border border-amber-200">
+                <strong className="text-amber-800">⚠️ Important Note:</strong>
+                <p className="text-amber-700 mt-1">
+                  The import is a <strong>kickstart</strong> to populate your account quickly. Due to variations in PDF formats, a 100% accurate import is not always possible. 
+                  <strong> Always review your transactions</strong> after import and manually adjust or delete any incorrect entries. Duplicate transactions may occasionally occur.
+                </p>
+              </div>
+              <p className="mt-3 p-3 bg-slate-50 rounded-lg text-sm border border-slate-200">
+                <strong className="text-slate-700">💡 Language Tip:</strong>
+                <span className="text-slate-600"> To download your statement in a different language, go to flyingblue.com, click the country/language selector (usually in the top-right), and choose your preferred language. Download the PDF, then switch back. Transactions will be imported in the language of your PDF.</span>
               </p>
             </>
           )
@@ -749,26 +763,37 @@ export const FAQPage: React.FC<FAQPageProps> = ({ onBack }) => {
       icon: <FileText size={20} />,
       items: [
         {
-          question: 'My PDF import failed. What should I do?',
+          question: 'My data import failed or looks wrong. What should I do?',
           answer: (
             <>
-              <p>Common causes and solutions:</p>
+              <p>The import parser is a <strong>kickstart tool</strong> to quickly populate your account. Due to variations in PDF formats, perfect accuracy isn't always possible.</p>
+              <p className="mt-3"><strong>Common issues and solutions:</strong></p>
               <ul className="list-disc list-inside mt-2 space-y-2">
                 <li>
-                  <strong>Wrong PDF:</strong> Make sure you're importing the Flying Blue activity PDF, not a booking confirmation or ticket.
+                  <strong>Wrong PDF:</strong> Make sure you're copying from the Flying Blue activity PDF, not a booking confirmation or ticket.
                 </li>
                 <li>
                   <strong>Incomplete data:</strong> Did you click "More" on Flying Blue to load all activities before downloading?
                 </li>
                 <li>
-                  <strong>Language:</strong> The parser is optimized for <strong>Dutch, English, and French</strong> PDFs. Other languages may not parse correctly. You can change your language on Flying Blue before downloading.
+                  <strong>Text not selected properly:</strong> Make sure you select ALL text in the PDF (Ctrl+A / Cmd+A) before copying. Partial selections often fail.
                 </li>
                 <li>
-                  <strong>Corrupted file:</strong> Try downloading the PDF again from Flying Blue.
+                  <strong>Language:</strong> The parser works best with <strong>Dutch, English, or French</strong> PDFs. Other languages may produce unreliable results.
+                </li>
+                <li>
+                  <strong>Duplicates:</strong> While the system tries to detect duplicates, some may slip through. Review your transactions after import.
                 </li>
               </ul>
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg text-sm border border-amber-200">
+                <strong className="text-amber-800">⚠️ Always Review Your Data:</strong>
+                <p className="text-amber-700 mt-1">
+                  After importing, check your Transaction Ledger for accuracy. You can manually edit or delete any incorrect entries. 
+                  The import is meant to save time, but you are responsible for verifying the final data.
+                </p>
+              </div>
               <p className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
-                <strong>Tip:</strong> If you're having trouble, try switching your Flying Blue account to English or Dutch before downloading the PDF.
+                <strong>Tip:</strong> For best results, switch your Flying Blue account to English, Dutch, or French before downloading the PDF.
               </p>
             </>
           )
