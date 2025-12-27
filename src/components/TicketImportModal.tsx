@@ -245,14 +245,17 @@ export const TicketImportModal: React.FC<TicketImportModalProps> = ({
                 {/* Pricing */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 bg-slate-50 rounded-xl">
-                    <div className="text-xs text-slate-500 mb-1">Ticket Price</div>
+                    <div className="text-xs text-slate-500 mb-1">Miles Base</div>
                     <div className="text-lg font-bold text-slate-900">
                       {parsedTicket.isAward ? (
                         <span className="text-amber-600">Award</span>
                       ) : (
-                        formatCurrency(parsedTicket.pricing.ticketPrice)
+                        formatCurrency(parsedTicket.pricing.revenueBase)
                       )}
                     </div>
+                    {!parsedTicket.isAward && parsedTicket.pricing.revenueBase > 0 && (
+                      <div className="text-[10px] text-slate-400 mt-0.5">excl. taxes</div>
+                    )}
                   </div>
                   <div className="p-3 bg-emerald-50 rounded-xl">
                     <div className="text-xs text-emerald-600 mb-1 flex items-center gap-1">

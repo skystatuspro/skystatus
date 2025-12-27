@@ -201,9 +201,9 @@ function getCabinFromBookingClass(bookingClass: string): CabinClass {
 function detectAwardTicket(text: string): boolean {
   const awardIndicators = [
     /REWARD\s*TICKET/i,
-    /Betaalmethode:.*\bBP\b/i,           // BP = Blue Points
-    /Betaalmethode:.*\bER\d+/i,          // ER = Euro Redemption
-    /Ticketvoorwaarden:.*REWARD/i,
+    /Betaalmethode:[\s\t]*.*\bBP\b/i,           // BP = Blue Points (handles tabs)
+    /Betaalmethode:[\s\t]*.*\bER\d+/i,          // ER = Euro Redemption
+    /Ticketvoorwaarden:[\s\t]*.*REWARD/i,
     /miles\s*redemption/i,
   ];
   
@@ -271,29 +271,27 @@ export function parseTicketEmail(emailText: string): TicketParseResult {
   const isAward = detectAwardTicket(text);
   
   // Extract pricing
-  // Note: For revenue tickets, we need the total price for miles calculation
-  // Ticketprijs may be empty or just show a label without value
   const ticketPriceMatch = text.match(/Ticketprijs\s+EUR\s+([\d.,]+)/i);
   const ticketPrice = ticketPriceMatch ? parseFloat(ticketPriceMatch[1].replace(',', '.')) : 0;
   
   const safContribution = extractPrice(text, /SAF.*?EUR\s+([\d.,]+)/i);
   const totalPrice = extractPrice(text, /Totaalprijs.*?EUR\s+([\d.,]+)/i);
   
-  // For miles calculation, we need the fare basis (not taxes)
-  // If ticketPrice is 0 but we have totalPrice and it's not an award, estimate ticket portion
-  // KLM/AF miles are calculated on: ticket price + carrier surcharges (YR/YQ)
-  // We can extract the YR surcharge separately
-  const yrSurcharge = extractPrice(text, /(?:YR|Internationale toeslag).*?EUR\s+([\d.,]+)/i);
+  // Extract YR/YQ carrier surcharges (these count towards miles)
+  // Pattern matches "Internationale toeslag van de luchtvaartmaatschappij (YR)" or just "YR"
+  const yrSurcharge = extractPrice(text, /(?:Internationale toeslag van de luchtvaartmaatschappij|YR|YQ).*?EUR\s+([\d.,]+)/i);
   
-  // Revenue base for miles = ticket price + YR surcharge (if available)
-  // If ticketPrice is 0 for a non-award, use totalPrice minus typical taxes as estimate
+  // For miles calculation: Flying Blue calculates on ticket price + carrier surcharges
+  // NOT on taxes (airport fees, government taxes, etc.)
+  // Revenue base = ticketPrice + YR surcharge
   let revenueBase = ticketPrice;
-  if (revenueBase === 0 && !isAward && totalPrice > 0) {
-    // Fallback: use total price (user can adjust if needed)
-    revenueBase = totalPrice;
+  if (yrSurcharge > 0) {
+    revenueBase += yrSurcharge;
   }
-  if (yrSurcharge > 0 && ticketPrice > 0) {
-    revenueBase = ticketPrice + yrSurcharge;
+  // If we couldn't parse ticketPrice but have totalPrice, use totalPrice as fallback
+  // This is less accurate but better than 0
+  if (revenueBase === 0 && totalPrice > 0 && !isAward) {
+    revenueBase = totalPrice;
   }
   
   // ========================================================================
