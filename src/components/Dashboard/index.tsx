@@ -53,6 +53,7 @@ interface DashboardState {
   targetCPM: number;
   manualLedger: ManualLedger;
   qualificationSettings?: QualificationSettings | null;
+  activityTransactions?: ActivityTransaction[];
 }
 
 interface DashboardProps {
@@ -413,6 +414,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           isOpen={showPdfImportModal}
           onClose={() => setShowPdfImportModal(false)}
           onImportComplete={handlePdfImportComplete}
+          existingTransactions={state.activityTransactions}
         />
       </div>
     );
@@ -812,6 +814,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOpen={showPdfImportModal}
         onClose={() => setShowPdfImportModal(false)}
         onImportComplete={handlePdfImportComplete}
+        existingTransactions={state.activityTransactions}
       />
     </>
   );

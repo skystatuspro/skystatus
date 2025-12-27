@@ -20,6 +20,7 @@ import {
   Info,
 } from 'lucide-react';
 import { localParseText, isLikelyFlyingBlueContent, type AIParsedResult, type AIParserError } from '../modules/local-text-parser';
+import type { ActivityTransaction } from '../types';
 
 // ============================================================================
 // TYPES
@@ -33,6 +34,8 @@ interface PdfImportModalProps {
   autoCloseOnSuccess?: boolean;
   /** Optional: Show compact version for smaller modals */
   compact?: boolean;
+  /** Existing transactions in the system - used to detect duplicates */
+  existingTransactions?: ActivityTransaction[];
 }
 
 type ParseState = 'idle' | 'parsing' | 'success' | 'error';
@@ -47,6 +50,7 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
   onImportComplete,
   autoCloseOnSuccess = false,
   compact = false,
+  existingTransactions = [],
 }) => {
   // State
   const [text, setText] = useState('');
@@ -55,6 +59,36 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const [result, setResult] = useState<AIParsedResult | null>(null);
   const [includeHistoricalBalance, setIncludeHistoricalBalance] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
+
+  // Check if this is a fresh account (no existing transactions)
+  const isFreshAccount = existingTransactions.length === 0;
+
+  // Build set of existing transaction IDs for quick lookup
+  // These IDs are deterministic based on date/type/miles/xp/description
+  const existingIds = React.useMemo(() => {
+    return new Set(existingTransactions.map(tx => tx.id));
+  }, [existingTransactions]);
+
+  // Calculate new vs duplicate transactions from parsed result
+  const { newTransactions, duplicateCount, newMilesTotal } = React.useMemo(() => {
+    if (!result) return { newTransactions: [], duplicateCount: 0, newMilesTotal: 0 };
+    
+    const newTxs: typeof result.activityTransactions = [];
+    let dupes = 0;
+    let milesSum = 0;
+    
+    for (const tx of result.activityTransactions) {
+      // Use the deterministic transaction ID for comparison
+      if (existingIds.has(tx.id)) {
+        dupes++;
+      } else {
+        newTxs.push(tx);
+        milesSum += tx.miles;
+      }
+    }
+    
+    return { newTransactions: newTxs, duplicateCount: dupes, newMilesTotal: milesSum };
+  }, [result, existingIds]);
 
   // Check if text looks valid
   const isValidContent = text.length > 100 && isLikelyFlyingBlueContent(text);
@@ -279,14 +313,31 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
             </div>
           ) : parseState === 'success' && result ? (
             <div className="space-y-4">
-              {/* Success header */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
-                <CheckCircle2 size={24} className="text-emerald-500" />
-                <div>
-                  <p className="font-medium text-emerald-800">Data extracted successfully!</p>
-                  <p className="text-sm text-emerald-600">Your Flying Blue information is ready to import.</p>
+              {/* Success header - different message based on new vs all duplicates */}
+              {newTransactions.length === 0 && duplicateCount > 0 ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+                  <Info size={24} className="text-blue-500" />
+                  <div>
+                    <p className="font-medium text-blue-800">All transactions already exist</p>
+                    <p className="text-sm text-blue-600">
+                      {duplicateCount} transaction{duplicateCount !== 1 ? 's' : ''} found, but {duplicateCount === 1 ? 'it' : 'they'} already {duplicateCount === 1 ? 'exists' : 'exist'} in your account.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+                  <CheckCircle2 size={24} className="text-emerald-500" />
+                  <div>
+                    <p className="font-medium text-emerald-800">Data extracted successfully!</p>
+                    <p className="text-sm text-emerald-600">
+                      {isFreshAccount 
+                        ? 'Your Flying Blue information is ready to import.'
+                        : `${newTransactions.length} new transaction${newTransactions.length !== 1 ? 's' : ''} found${duplicateCount > 0 ? `, ${duplicateCount} already exist${duplicateCount === 1 ? 's' : ''}` : ''}.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Summary stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -312,8 +363,22 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
                 </div>
               </div>
 
-              {/* Historical balance detection */}
-              {result.milesReconciliation?.needsCorrection && (
+              {/* Duplicate info for existing accounts */}
+              {!isFreshAccount && duplicateCount > 0 && newTransactions.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Info size={16} className="text-slate-400" />
+                    <span>
+                      <strong>{newTransactions.length}</strong> new transaction{newTransactions.length !== 1 ? 's' : ''} will be added 
+                      ({newMilesTotal >= 0 ? '+' : ''}{newMilesTotal.toLocaleString()} Miles).
+                      {' '}<strong>{duplicateCount}</strong> existing transaction{duplicateCount !== 1 ? 's' : ''} will be skipped.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Historical balance detection - ONLY for fresh accounts */}
+              {isFreshAccount && result.milesReconciliation?.needsCorrection && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangle size={20} className="text-amber-500 flex-shrink-0 mt-0.5" />
@@ -418,13 +483,22 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
               >
                 Try Different Data
               </button>
-              <button
-                onClick={handleImport}
-                className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2"
-              >
-                <CheckCircle2 size={18} />
-                Import to Dashboard
-              </button>
+              {newTransactions.length === 0 && duplicateCount > 0 ? (
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-xl font-medium bg-slate-200 text-slate-600 hover:bg-slate-300 transition-all"
+                >
+                  Close
+                </button>
+              ) : (
+                <button
+                  onClick={handleImport}
+                  className="px-6 py-2.5 rounded-xl font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2"
+                >
+                  <CheckCircle2 size={18} />
+                  {isFreshAccount ? 'Import to Dashboard' : `Import ${newTransactions.length} New`}
+                </button>
+              )}
             </div>
           ) : null}
         </div>

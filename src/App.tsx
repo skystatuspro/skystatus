@@ -416,6 +416,7 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
+              activityTransactions: state.activityTransactions,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -556,6 +557,7 @@ export default function App() {
               targetCPM: state.targetCPM,
               manualLedger: state.manualLedger,
               qualificationSettings: state.qualificationSettings,
+              activityTransactions: state.activityTransactions,
             }}
             navigateTo={setView}
             onUpdateCurrentMonth={actions.setCurrentMonth}
@@ -720,6 +722,7 @@ export default function App() {
         isOpen={showPdfImportModal}
         onClose={() => setShowPdfImportModal(false)}
         onImportComplete={handlePdfImportFromModal}
+        existingTransactions={state.activityTransactions}
       />
       
       {/* Update Notice for PDF Import 2.0 and Miles Engine Maintenance */}
