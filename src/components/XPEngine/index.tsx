@@ -148,6 +148,80 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     setSelectedIndex(newIndex);
   }, [cyclesFingerprint]);
 
+  // Safe index calculation - needed for hooks below
+  const safeSelectedIndex =
+    selectedIndex < cycles.length && cycles.length > 0 ? selectedIndex : Math.max(0, cycles.length - 1);
+  const currentCycle: QualificationCycleStats | null = cycles.length > 0 ? cycles[safeSelectedIndex] : null;
+
+  // Calculate projected cumulative XP first (needed for projected status)
+  // Must be before conditional return - use empty array fallback
+  const projectedCumulativeXP = useMemo(() => {
+    if (!currentCycle) return 0;
+    const totalMonthXP = currentCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
+    return currentCycle.rolloverIn + totalMonthXP;
+  }, [currentCycle]);
+
+  // Cycle XP calculations - must be before conditional return
+  const projectedCycleXP = useMemo(
+    () => {
+      if (!currentCycle) return 0;
+      return currentCycle.ledger.reduce((sum: number, row: XPLedgerRow) => {
+        const monthTotal = row.monthTotal ?? row.xpMonth ?? 0;
+        return sum + monthTotal;
+      }, 0);
+    },
+    [currentCycle]
+  );
+
+  const actualCycleXP = useMemo(
+    () => {
+      if (!currentCycle) return 0;
+      return currentCycle.ledger.reduce((sum: number, row: XPLedgerRow) => {
+        return sum + (row.actualXP ?? 0);
+      }, 0);
+    },
+    [currentCycle]
+  );
+
+  // Enhanced ledger - must be before conditional return
+  const enhancedLedger = useMemo(() => {
+    if (!currentCycle) return [];
+    const rows = currentCycle.ledger;
+    let prevCumulative = currentCycle.rolloverIn ?? 0;
+    const isLevelUpCycle = currentCycle.endedByLevelUp ?? false;
+
+    return rows.map((row) => {
+      const monthTotal = row.monthTotal ?? row.xpMonth ?? 0;
+      const diff = row.cumulative - prevCumulative;
+      const autoCorrection = diff - monthTotal;
+      prevCumulative = row.cumulative;
+
+      const isLevelUpMonth = isLevelUpCycle && currentCycle.levelUpMonth === row.month;
+
+      return { row, autoCorrection, isLevelUpMonth };
+    });
+  }, [currentCycle]);
+
+  // Chart data - must be before conditional return
+  const chartData = useMemo(() => {
+    if (!currentCycle) return [];
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    return currentCycle.ledger.map((row) => {
+      const isFuture = row.month > currentMonth;
+      const monthXP = row.monthTotal ?? row.xpMonth ?? 0;
+      const actualMonthXP = row.actualXP ?? 0;
+      const projectedMonthXP = row.projectedXP ?? 0;
+
+      return {
+        ...row,
+        xp: monthXP,
+        actualXP: actualMonthXP,
+        projectedXP: projectedMonthXP,
+        isFuture,
+      };
+    });
+  }, [currentCycle]);
+
   // Simple Mode: render simplified XP Engine
   if (isSimpleMode) {
     return (
@@ -162,14 +236,9 @@ export const XPEngine: React.FC<XPEngineProps> = ({
     );
   }
 
-  if (cycles.length === 0) {
+  if (cycles.length === 0 || !currentCycle) {
     return null;
   }
-
-  // Safe index
-  const safeSelectedIndex =
-    selectedIndex < cycles.length ? selectedIndex : Math.max(0, cycles.length - 1);
-  const currentCycle: QualificationCycleStats = cycles[safeSelectedIndex];
 
   // Ultimate flags from cycle
   // In demo mode, determine Ultimate from demoStatus
@@ -182,12 +251,6 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const actualStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawActualStatus, cycleIsUltimate);
   const actualXP: number = currentCycle.actualXP ?? 0;
   const actualXPToNext: number = currentCycle.actualXPToNext ?? 0;
-
-  // Calculate projected cumulative XP first (needed for projected status)
-  const projectedCumulativeXP = useMemo(() => {
-    const totalMonthXP = currentCycle.ledger.reduce((sum, row) => sum + (row.xpMonth ?? 0), 0);
-    return currentCycle.rolloverIn + totalMonthXP;
-  }, [currentCycle]);
 
   // PROJECTED status and XP - use demoStatus override or bridge with additional context
   const rawProjectedStatus: StatusLevel = currentCycle.projectedStatus ?? currentCycle.endStatus;
@@ -217,34 +280,26 @@ export const XPEngine: React.FC<XPEngineProps> = ({
   const levelUpIsActual = currentCycle.levelUpIsActual ?? false;
   const isChained = selectedIndex > 0;
 
-  // Cycle XP calculations
-  const projectedCycleXP = useMemo(
-    () =>
-      currentCycle.ledger.reduce((sum: number, row: XPLedgerRow) => {
-        const monthTotal = row.monthTotal ?? row.xpMonth ?? 0;
-        return sum + monthTotal;
-      }, 0),
-    [currentCycle]
-  );
-
-  const actualCycleXP = useMemo(
-    () =>
-      currentCycle.ledger.reduce((sum: number, row: XPLedgerRow) => {
-        return sum + (row.actualXP ?? 0);
-      }, 0),
-    [currentCycle]
-  );
-
   // Progress calculations
-  const nextStatusThreshold = useMemo(() => {
+  const nextStatusThreshold = (() => {
     if (actualStatus === 'Explorer') return 100;
     if (actualStatus === 'Silver') return 180;
     if (actualStatus === 'Gold') return 300;
     return 300;
-  }, [actualStatus]);
+  })();
 
   const actualProgress = Math.min(100, (actualXP / nextStatusThreshold) * 100);
   const projectedProgress = Math.min(100, (projectedXP / nextStatusThreshold) * 100);
+
+  // Run rate
+  const avgNeeded = (() => {
+    const futureMonths = chartData.filter((d) => d.isFuture);
+    const futureCount = futureMonths.length;
+    if (actualXPToNext > 0 && futureCount > 0) {
+      return Math.ceil(actualXPToNext / futureCount);
+    }
+    return 0;
+  })();
 
   // Handlers
   const handleCycleChange = (delta: number) => {
@@ -286,52 +341,6 @@ export const XPEngine: React.FC<XPEngineProps> = ({
       };
     });
   };
-
-  // Enhanced ledger
-  const enhancedLedger = useMemo(() => {
-    const rows = currentCycle.ledger;
-    let prevCumulative = currentCycle.rolloverIn ?? 0;
-
-    return rows.map((row) => {
-      const monthTotal = row.monthTotal ?? row.xpMonth ?? 0;
-      const diff = row.cumulative - prevCumulative;
-      const autoCorrection = diff - monthTotal;
-      prevCumulative = row.cumulative;
-
-      const isLevelUpMonth = isLevelUpCycle && currentCycle.levelUpMonth === row.month;
-
-      return { row, autoCorrection, isLevelUpMonth };
-    });
-  }, [currentCycle, isLevelUpCycle]);
-
-  // Chart data
-  const chartData = useMemo(() => {
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    return currentCycle.ledger.map((row) => {
-      const isFuture = row.month > currentMonth;
-      const monthXP = row.monthTotal ?? row.xpMonth ?? 0;
-      const actualMonthXP = row.actualXP ?? 0;
-      const projectedMonthXP = row.projectedXP ?? 0;
-
-      return {
-        ...row,
-        xp: monthXP,
-        actualXP: actualMonthXP,
-        projectedXP: projectedMonthXP,
-        isFuture,
-      };
-    });
-  }, [currentCycle]);
-
-  // Run rate
-  const avgNeeded = useMemo(() => {
-    const futureMonths = chartData.filter((d) => d.isFuture);
-    const futureCount = futureMonths.length;
-    if (actualXPToNext > 0 && futureCount > 0) {
-      return Math.ceil(actualXPToNext / futureCount);
-    }
-    return 0;
-  }, [chartData, actualXPToNext]);
 
   // Cycle type label
   const getCycleTypeLabel = () => {

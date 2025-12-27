@@ -104,23 +104,9 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   const currentStatus: StatusLevel = demoStatus ?? getDisplayStatus(rawStatus, cycleIsUltimate);
 
   // Simple Mode: render simplified XP Planner (after hooks are defined)
-  if (isSimpleMode) {
-    return (
-      <SimpleXPPlanner
-        xpData={xpData}
-        rollover={rollover}
-        flights={flights}
-        manualLedger={manualLedger}
-        qualificationSettings={qualificationSettings}
-        demoStatus={demoStatus}
-      />
-    );
-  }
+  // NOTE: All hooks must be called before this point!
   
-  // For backwards compatibility
-  const currentXP = actualXP;
-  
-  // Route Parsing
+  // Route Parsing - must be before conditional return
   useEffect(() => {
     if (!routeString) { setSegments([]); setUnknownAirports([]); return; }
     const codes = routeString.toUpperCase().replace(/[^A-Z]/g, ' ').trim().split(/\s+/).filter((c) => c.length === 3);
@@ -151,6 +137,29 @@ export const MileageRun: React.FC<MileageRunProps> = ({
     }
   }, [routeString, isReturn, defaultCabin]);
 
+  // Baseline XP calculation - must be before conditional return
+  const baselineXP = useMemo(() => {
+    return segments.reduce((sum, s) => {
+      return sum + calculateXPForRoute(s.from, s.to, 'Economy').xp;
+    }, 0);
+  }, [segments]);
+
+  if (isSimpleMode) {
+    return (
+      <SimpleXPPlanner
+        xpData={xpData}
+        rollover={rollover}
+        flights={flights}
+        manualLedger={manualLedger}
+        qualificationSettings={qualificationSettings}
+        demoStatus={demoStatus}
+      />
+    );
+  }
+  
+  // For backwards compatibility
+  const currentXP = actualXP;
+
   const updateSegmentCabin = (id: string, newCabin: CabinClass) => {
     setSegments((prev) => prev.map((seg) => {
       if (seg.id !== id) return seg;
@@ -178,12 +187,6 @@ export const MileageRun: React.FC<MileageRunProps> = ({
   // For simulated runs, assume KLM/AF operated (all XP = UXP)
   const runUXP = runXP; 
   const totalMiles = segments.reduce((sum, s) => sum + s.distance, 0);
-
-  const baselineXP = useMemo(() => {
-    return segments.reduce((sum, s) => {
-      return sum + calculateXPForRoute(s.from, s.to, 'Economy').xp;
-    }, 0);
-  }, [segments]);
 
   // Efficiency Logic
   let costPerXP = 0;
