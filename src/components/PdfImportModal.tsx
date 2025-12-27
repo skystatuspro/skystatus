@@ -200,6 +200,31 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
                 </ol>
               </div>
 
+              {/* Language recommendation */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Info size={18} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-800 mb-1">
+                      Best results with Dutch, English, or French
+                    </p>
+                    <p className="text-blue-600 text-xs leading-relaxed">
+                      For the most reliable import, we recommend downloading your statement in one of these languages. 
+                      You can temporarily change your language on{' '}
+                      <a 
+                        href="https://www.flyingblue.com" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="underline hover:text-blue-800"
+                      >
+                        flyingblue.com
+                      </a>
+                      {' '}via the language selector in the top right corner.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Text area */}
               <div className="relative">
                 <textarea

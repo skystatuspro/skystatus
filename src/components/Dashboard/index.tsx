@@ -391,6 +391,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
             <strong>Note:</strong> If you don't click "More" to load all activities first, your PDF will only contain recent transactions and your flight history will be incomplete.
           </div>
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+            <strong>💡 Tip:</strong> For the most reliable import, download your statement in <strong>Dutch, English, or French</strong>. 
+            You can change your language on flyingblue.com via the language selector in the top right corner.
+          </div>
         </div>
 
         <div className="text-center">

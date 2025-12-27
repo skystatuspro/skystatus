@@ -534,6 +534,17 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                       </ol>
                     </div>
 
+                    {/* Language recommendation */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5">
+                      <div className="flex items-start gap-2">
+                        <Info size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                        <div className="text-xs text-blue-700">
+                          <span className="font-medium">Best results with Dutch, English, or French.</span>
+                          {' '}Change your language on flyingblue.com (top right) before downloading.
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Paste area */}
                     <div className="relative">
                       <textarea

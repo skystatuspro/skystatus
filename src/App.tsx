@@ -369,6 +369,9 @@ export default function App() {
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
             <strong>⚠️ Important:</strong> Flying Blue only exports what's visible on screen. If you skip the "More" step, your PDF will be incomplete!
           </div>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+            <strong>💡 Tip:</strong> For best results, download your statement in <strong>Dutch, English, or French</strong>. Change your language in the top right corner of flyingblue.com.
+          </div>
         </div>
       )}
     </div>

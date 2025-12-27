@@ -199,6 +199,26 @@ export const LocalParserTest: React.FC = () => {
                   <span>Paste below and click "Parse Data"</span>
                 </li>
               </ol>
+              
+              {/* Language recommendation */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <Sparkles size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-700">
+                    <span className="font-medium">Best results with Dutch, English, or French.</span>
+                    {' '}You can change your language on{' '}
+                    <a 
+                      href="https://www.flyingblue.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:text-blue-800"
+                    >
+                      flyingblue.com
+                    </a>
+                    {' '}(top right corner) before downloading your statement.
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Textarea */}
