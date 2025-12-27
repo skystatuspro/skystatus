@@ -173,10 +173,10 @@ export const UpdateNotice: React.FC<UpdateNoticeProps> = ({
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-white text-sm sm:text-base mb-1">
-                    7 Languages Supported
+                    Optimized for 3 Languages
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-300">
-                    Dutch, English, French, German, Spanish, Italian, and Portuguese PDFs now parse correctly.
+                    Best results with <strong className="text-white">Dutch, English, or French</strong> PDFs. You can change your language on Flying Blue before downloading.
                   </p>
                 </div>
               </div>
