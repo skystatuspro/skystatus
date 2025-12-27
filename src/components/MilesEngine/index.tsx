@@ -101,8 +101,8 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   };
 
   const stats = useMemo(
-    () => calculateMilesStats(data, currentMonth, redemptions, safeTargetCPM),
-    [data, currentMonth, redemptions, safeTargetCPM]
+    () => calculateMilesStats(data, currentMonth, redemptions, safeTargetCPM, flights),
+    [data, currentMonth, redemptions, safeTargetCPM, flights]
   );
 
   // Value Created calculation - split into realized (redemptions) and unrealized (current portfolio)
@@ -183,30 +183,60 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
   }, [data]);
 
   const chartData = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    
+    // Pre-calculate actual vs projected flight miles per month
+    const flightMilesByMonth = new Map<string, { actual: number; projected: number }>();
+    (flights ?? []).forEach((f) => {
+      const month = f.date?.slice(0, 7);
+      if (!month) return;
+      const miles = f.earnedMiles || 0;
+      const isFlown = f.date < today; // Flight is in the past = actual
+      
+      const existing = flightMilesByMonth.get(month) || { actual: 0, projected: 0 };
+      if (isFlown) {
+        existing.actual += miles;
+      } else {
+        existing.projected += miles;
+      }
+      flightMilesByMonth.set(month, existing);
+    });
+    
     let runningBalance = 0;
     return data
       .slice()
       .sort((a, b) => a.month.localeCompare(b.month))
       .map((r) => {
-        const totalEarned =
-          r.miles_subscription + r.miles_amex + r.miles_flight + r.miles_other;
+        // Non-flight miles: use month-based logic (future month = projected)
+        const isMonthProjected = r.month > currentMonth;
+        const nonFlightEarned = r.miles_subscription + r.miles_amex + r.miles_other;
+        
+        // Flight miles: use actual flight date logic
+        const flightData = flightMilesByMonth.get(r.month) || { actual: 0, projected: 0 };
+        
+        // Total earned for this month
+        const totalEarned = nonFlightEarned + flightData.actual + flightData.projected;
+        
+        // Split into actual vs projected
+        const earnedActual = isMonthProjected ? 0 : (nonFlightEarned + flightData.actual);
+        const earnedProjected = (isMonthProjected ? nonFlightEarned : 0) + flightData.projected;
+        
         const totalCost =
           r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
         const cpm = totalEarned > 0 ? totalCost / totalEarned : 0;
-        const isProjected = r.month > currentMonth;
         runningBalance += totalEarned - r.miles_debit;
         return {
           month: r.month,
-          isProjected,
-          earnedActual: isProjected ? 0 : totalEarned,
-          earnedProjected: isProjected ? totalEarned : 0,
+          isProjected: isMonthProjected,
+          earnedActual,
+          earnedProjected,
           redeemed: r.miles_debit,
           cpmActual: r.month <= currentMonth ? cpm : null,
           cpmProjected: r.month >= currentMonth ? cpm : null,
           runningBalance,
         };
       });
-  }, [data, currentMonth]);
+  }, [data, currentMonth, flights]);
 
   const handleAddRow = () => {
     const newRecord: MilesRecord = {

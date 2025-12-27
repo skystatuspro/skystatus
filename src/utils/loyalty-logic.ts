@@ -1,6 +1,7 @@
 import {
   MilesRecord,
   RedemptionRecord,
+  FlightRecord,
 } from '../types';
 
 // Types needed for this file
@@ -73,8 +74,28 @@ export const calculateMilesStats = (
   milesData: MilesRecord[],
   currentMonth: string,
   redemptions: RedemptionRecord[] = [],
-  targetCPM: number = 0.01
+  targetCPM: number = 0.01,
+  flights?: FlightRecord[]  // Optional: for accurate actual vs projected flight miles
 ): MilesStats => {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  
+  // Pre-calculate actual vs projected flight miles per month
+  const flightMilesByMonth = new Map<string, { actual: number; projected: number }>();
+  (flights ?? []).forEach((f) => {
+    const month = f.date?.slice(0, 7);
+    if (!month) return;
+    const miles = f.earnedMiles || 0;
+    const isFlown = f.date < today; // Flight is in the past = actual
+    
+    const existing = flightMilesByMonth.get(month) || { actual: 0, projected: 0 };
+    if (isFlown) {
+      existing.actual += miles;
+    } else {
+      existing.projected += miles;
+    }
+    flightMilesByMonth.set(month, existing);
+  });
+  
   let earnedPast = 0;
   let burnPast = 0;
   let earnedAll = 0;
@@ -83,23 +104,42 @@ export const calculateMilesStats = (
   let costAll = 0;
 
   milesData.forEach((r) => {
-    const rowEarned =
-      r.miles_subscription +
-      r.miles_amex +
-      r.miles_flight +
-      r.miles_other;
+    // Non-flight miles
+    const nonFlightEarned = r.miles_subscription + r.miles_amex + r.miles_other;
+    
+    // Flight miles: use actual flight date if flights array provided, otherwise fall back to month logic
+    let flightMilesActual = 0;
+    let flightMilesProjected = 0;
+    
+    if (flights && flights.length > 0) {
+      const flightData = flightMilesByMonth.get(r.month) || { actual: 0, projected: 0 };
+      flightMilesActual = flightData.actual;
+      flightMilesProjected = flightData.projected;
+    } else {
+      // Fallback: treat all flight miles as actual if in past/current month
+      if (r.month <= currentMonth) {
+        flightMilesActual = r.miles_flight;
+      } else {
+        flightMilesProjected = r.miles_flight;
+      }
+    }
+    
+    const rowEarned = nonFlightEarned + flightMilesActual + flightMilesProjected;
     const rowBurn = r.miles_debit;
-    const rowCost =
-      r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
+    const rowCost = r.cost_subscription + r.cost_amex + r.cost_flight + r.cost_other;
 
     earnedAll += rowEarned;
     burnAll += rowBurn;
     costAll += rowCost;
 
+    // For "past" earnings: non-flight in past/current month + actual flight miles
     if (r.month <= currentMonth) {
-      earnedPast += rowEarned;
+      earnedPast += nonFlightEarned + flightMilesActual;
       burnPast += rowBurn;
       costPast += rowCost;
+    } else {
+      // Future month: only count actual flight miles (scheduled flights that have been flown - edge case)
+      earnedPast += flightMilesActual;
     }
   });
 
