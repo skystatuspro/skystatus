@@ -667,7 +667,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               value={
                 milesStats.totalCost > 0 ? (
                   <span className="font-mono tracking-tight">
-                    {currencySymbol}{baselineEarnCpmEuro.toFixed(5).replace('.', ',')}
+                    {currencySymbol}{baselineEarnCpmEuro.toFixed(5)}
                   </span>
                 ) : (
                   <span className="text-slate-400">—</span>
