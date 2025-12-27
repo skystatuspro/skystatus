@@ -1205,6 +1205,9 @@ function getSourceForMonth(month: string): 'manual' | 'scheduled' {
  * - Past/current months → 'manual' (actual XP)
  * - Future months → 'scheduled' (projected XP)
  * 
+ * Uses delete-then-insert strategy since activity_transactions
+ * may not have a UNIQUE constraint on id for upsert.
+ * 
  * @returns true on success, false on error
  */
 export async function upsertManualXPEntry(
@@ -1218,23 +1221,25 @@ export async function upsertManualXPEntry(
   
   console.log(`[upsertManualXPEntry] ${month} ${field} = ${xpValue} (source: ${source})`);
   
-  // If value is 0, delete the entry
+  // Always delete first (works whether entry exists or not)
+  const { error: deleteError } = await supabase
+    .from('activity_transactions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', id);
+  
+  if (deleteError) {
+    console.error('[upsertManualXPEntry] Delete error:', deleteError);
+    return false;
+  }
+  
+  // If value is 0, we're done (just delete)
   if (xpValue === 0) {
-    const { error } = await supabase
-      .from('activity_transactions')
-      .delete()
-      .eq('user_id', userId)
-      .eq('id', id);
-    
-    if (error) {
-      console.error('[upsertManualXPEntry] Delete error:', error);
-      return false;
-    }
     console.log(`[upsertManualXPEntry] Deleted ${id}`);
     return true;
   }
   
-  // Otherwise, upsert the entry
+  // Insert the new entry
   const record = {
     id,
     user_id: userId,
@@ -1248,16 +1253,16 @@ export async function upsertManualXPEntry(
     cost_currency: 'EUR',
   };
   
-  const { error } = await supabase
+  const { error: insertError } = await supabase
     .from('activity_transactions')
-    .upsert(record, { onConflict: 'id' });
+    .insert(record);
   
-  if (error) {
-    console.error('[upsertManualXPEntry] Upsert error:', error);
+  if (insertError) {
+    console.error('[upsertManualXPEntry] Insert error:', insertError);
     return false;
   }
   
-  console.log(`[upsertManualXPEntry] Upserted ${id} with xp=${xpValue}`);
+  console.log(`[upsertManualXPEntry] Inserted ${id} with xp=${xpValue}`);
   return true;
 }
 
