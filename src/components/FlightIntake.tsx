@@ -131,6 +131,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
 
   const [form, setForm] = useState({
     date: today,
+    returnDate: '', // Return date for round trips
     route: '',
     airline: '',
     cabin: 'Economy' as CabinClass,
@@ -346,20 +347,30 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     const isUxpEligible = uxpAirlines.includes(form.airline.toUpperCase()) 
       && (currentStatus === 'Platinum' || currentStatus === 'Ultimate');
 
-    const payloads: FlightIntakePayload[] = segments.map((seg, index) => ({
-        date: form.date,
-        route: `${seg.from}-${seg.to}`,
-        airline: form.airline,
-        cabin: seg.cabin,
-        ticketPrice: seg.allocatedPrice,
-        earnedMiles: form.earnedMiles > 0 ? seg.allocatedMiles : 0, 
-        earnedXP: seg.xp,
-        safXp: index === 0 ? form.safXp : 0,
-        // flightNumber only for single-segment flights (multi-segment has multiple flight numbers)
-        flightNumber: segments.length === 1 ? form.flightNumber : undefined,
-        // UXP = XP + SAF XP for KL/AF flights, ONLY for Platinum/Ultimate members
-        uxp: isUxpEligible ? seg.xp + (index === 0 ? form.safXp : 0) : 0,
-    }));
+    // For round trips, determine which segments are outbound vs return
+    // Outbound segments use form.date, return segments use form.returnDate
+    const outboundSegmentCount = isReturn ? Math.ceil(segments.length / 2) : segments.length;
+
+    const payloads: FlightIntakePayload[] = segments.map((seg, index) => {
+        // Determine date: outbound segments use form.date, return segments use returnDate
+        const isReturnSegment = isReturn && index >= outboundSegmentCount;
+        const segmentDate = isReturnSegment && form.returnDate ? form.returnDate : form.date;
+        
+        return {
+            date: segmentDate,
+            route: `${seg.from}-${seg.to}`,
+            airline: form.airline,
+            cabin: seg.cabin,
+            ticketPrice: seg.allocatedPrice,
+            earnedMiles: form.earnedMiles > 0 ? seg.allocatedMiles : 0, 
+            earnedXP: seg.xp,
+            safXp: index === 0 ? form.safXp : 0,
+            // flightNumber only for single-segment flights (multi-segment has multiple flight numbers)
+            flightNumber: segments.length === 1 ? form.flightNumber : undefined,
+            // UXP = XP + SAF XP for KL/AF flights, ONLY for Platinum/Ultimate members
+            uxp: isUxpEligible ? seg.xp + (index === 0 ? form.safXp : 0) : 0,
+        };
+    });
 
     // Track each flight added
     const isAfKlm = ['AF', 'KLM', 'KL'].includes(form.airline.toUpperCase());
@@ -374,7 +385,7 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 2500);
 
-    setForm(prev => ({ ...prev, route: '', ticketPrice: 0, earnedMiles: 0, safXp: 0, flightNumber: '' }));
+    setForm(prev => ({ ...prev, route: '', returnDate: '', ticketPrice: 0, earnedMiles: 0, safXp: 0, flightNumber: '' }));
     // Keep airline for quick successive entries
     setSegments([]);
     setSubmitting(false);
@@ -452,8 +463,8 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
           
           {/* Row 1: Date & Route */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-2">
-              <InputGroup label="Date" icon={Calendar} tooltip="Date of the first flight segment.">
+            <div className={isReturn ? "md:col-span-2" : "md:col-span-2"}>
+              <InputGroup label="Date" icon={Calendar} tooltip="Date of the outbound flight.">
                 <input
                   type="date"
                   value={form.date}
@@ -463,7 +474,22 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
               </InputGroup>
             </div>
 
-            <div className="md:col-span-4">
+            {/* Return Date - only shown when Round Trip is active */}
+            {isReturn && (
+              <div className="md:col-span-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                <InputGroup label="Return" icon={Calendar} tooltip="Date of the return flight.">
+                  <input
+                    type="date"
+                    value={form.returnDate}
+                    min={form.date} // Return must be on or after outbound
+                    onChange={e => handleChange('returnDate', e.target.value)}
+                    className={`${inputBase} cursor-pointer`}
+                  />
+                </InputGroup>
+              </div>
+            )}
+
+            <div className={isReturn ? "md:col-span-3" : "md:col-span-4"}>
               <div className="flex justify-between items-center mb-1.5">
                   <div className="flex items-center gap-1.5">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
