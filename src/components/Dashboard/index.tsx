@@ -665,11 +665,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <KPICard
               title="Acquisition cost"
               value={
-                <span className="font-mono text-[15px] tracking-tight">
-                  {currencySymbol}{baselineEarnCpmEuro.toFixed(5)}
-                </span>
+                milesStats.totalCost > 0 ? (
+                  <span className="font-mono tracking-tight">
+                    {currencySymbol}{baselineEarnCpmEuro.toFixed(5).replace('.', ',')}
+                  </span>
+                ) : (
+                  <span className="text-slate-400">—</span>
+                )
               }
-              subtitle="Avg cost per mile"
+              subtitle={milesStats.totalCost > 0 ? "Avg cost per mile" : "No investment tracked"}
               icon={Target}
               badgeText="Efficiency"
               badgeColor="emerald"
