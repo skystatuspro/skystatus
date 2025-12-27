@@ -737,10 +737,23 @@ export const LANGUAGE_INDICATORS = {
  */
 export const FLYING_BLUE_CONTENT_INDICATORS = [
   /Flying\s*Blue/i,
-  /Miles\s+\d+\s*XP/i,
+  /(?:Miles|Meilen)\s+\d+\s*XP/i,
+  // Dutch
   /Activiteiten(?:geschiedenis|overzicht)/i,
+  // English
   /Activity\s+(?:history|overview)/i,
-  /[A-Z]{3}\s*[-–]\s*[A-Z]{3}\s+[A-Z]{2}\d{2,4}/i,  // Flight pattern
+  // French
+  /Historique\s+des\s+activit[ée]s/i,
+  // German
+  /Aktivit[äa]tsverlauf/i,
+  // Spanish
+  /Historial\s+de\s+actividad/i,
+  // Italian
+  /Cronologia\s+attivit[àa]/i,
+  // Portuguese
+  /Hist[óo]rico\s+de\s+atividade/i,
+  // Flight pattern: AMS-BER KL1234
+  /[A-Z]{3}\s*[-–]\s*[A-Z]{3}\s+[A-Z]{2}\d{2,4}/i,
 ];
 
 /**
