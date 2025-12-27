@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plane, Plus, Calendar, MapPin, Tag, Award, Leaf, ArrowRight, Split, Layers, Zap, Repeat, TrendingUp, CheckCircle2, ChevronDown, AlertTriangle, Clock, Star } from 'lucide-react';
+import { Plane, Plus, Calendar, MapPin, Tag, Award, Leaf, ArrowRight, Split, Layers, Zap, Repeat, TrendingUp, CheckCircle2, ChevronDown, AlertTriangle, Clock, Star, Mail } from 'lucide-react';
 import { FlightIntakePayload, CabinClass } from '../utils/flight-intake';
 import { calculateXPForRoute, AIRPORTS, DistanceBand } from '../utils/airports';
 import { useCurrency } from '../lib/CurrencyContext';
@@ -9,6 +9,8 @@ import { FlightRecord } from '../types';
 import { useViewMode } from '../hooks/useViewMode';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { SimpleFlightIntake } from './SimpleFlightIntake';
+import { TicketImportModal } from './TicketImportModal';
+import { ticketToFlightPayloads } from '../utils/parseTicketEmail';
 
 // ============================================
 // SKYTEAM AIRLINES DATA
@@ -155,6 +157,9 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
 
   // Duplicate detection
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
+  // Ticket import modal
+  const [showTicketImport, setShowTicketImport] = useState(false);
 
   // Load recent airlines from localStorage
   useEffect(() => {
@@ -399,6 +404,46 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
       setForm(prev => ({ ...prev, [key]: value }));
   };
 
+  // Handle ticket import - converts parsed ticket flights to FlightIntakePayloads
+  const handleTicketImport = (flights: ReturnType<typeof ticketToFlightPayloads>) => {
+    // Convert ticket payloads to full FlightIntakePayload format
+    const payloads: FlightIntakePayload[] = flights.map(f => {
+      const [origin, dest] = f.route.split('-');
+      const { xp } = calculateXPForRoute(origin, dest, f.cabin);
+      
+      // UXP logic
+      const uxpAirlines = ['KL', 'KLM', 'AF'];
+      const isUxpEligible = uxpAirlines.includes(f.airline.toUpperCase()) 
+        && (currentStatus === 'Platinum' || currentStatus === 'Ultimate');
+      
+      return {
+        date: f.date,
+        route: f.route,
+        airline: f.airline,
+        cabin: f.cabin,
+        ticketPrice: f.ticketPrice,
+        earnedMiles: 0, // Will be calculated based on revenue-based logic
+        earnedXP: xp,
+        safXp: f.safXp,
+        flightNumber: f.flightNumber,
+        uxp: isUxpEligible ? xp + f.safXp : 0,
+      };
+    });
+    
+    // Track flights
+    payloads.forEach(p => {
+      const isAfKlm = ['AF', 'KLM', 'KL'].includes(p.airline.toUpperCase());
+      trackFlight(p.cabin, isAfKlm);
+    });
+    
+    onApply(payloads);
+    
+    // Success feedback
+    setLastAddedCount(payloads.length);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 2500);
+  };
+
   const selectedAirlineInfo = getAirlineByCode(form.airline);
 
   return (
@@ -433,6 +478,16 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
         </div>
         
         <div className="hidden sm:flex items-center gap-2">
+          {/* Paste Ticket Button */}
+          <button
+            type="button"
+            onClick={() => setShowTicketImport(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 text-[10px] font-bold uppercase tracking-wider hover:bg-violet-100 transition-colors"
+          >
+            <Mail size={12} />
+            Paste Ticket
+          </button>
+          
           {/* Status Badge - shows which status is used for revenue miles calculation */}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
             currentStatus === 'Platinum' ? 'bg-blue-50 border-blue-200 text-blue-700' :
@@ -895,6 +950,14 @@ export const FlightIntake: React.FC<FlightIntakeProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Ticket Import Modal */}
+      <TicketImportModal
+        isOpen={showTicketImport}
+        onClose={() => setShowTicketImport(false)}
+        onImport={handleTicketImport}
+        currentStatus={currentStatus}
+      />
     </div>
   );
 };
