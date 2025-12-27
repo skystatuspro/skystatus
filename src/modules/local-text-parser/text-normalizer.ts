@@ -129,6 +129,42 @@ function joinBrokenLines(text: string): string {
   // Join "AMEX PLATINUM CARD\nBONUS" → single line
   result = result.replace(/AMEX PLATINUM CARD\s*\n\s*BONUS/gi, 'AMEX PLATINUM CARD BONUS');
   
+  // ==========================================
+  // XP SURPLUS / ROLLOVER LINE BREAK FIXES
+  // ==========================================
+  // Join "Surplus XP available on the XP\ncounter" → single line (English)
+  result = result.replace(/Surplus XP available on the XP\s*\n\s*counter/gi, 'Surplus XP available on the XP counter');
+  
+  // Join "Surplus XP beschikbaar op XP-\nteller" → single line (Dutch)
+  result = result.replace(/Surplus XP beschikbaar op XP-?\s*\n\s*teller/gi, 'Surplus XP beschikbaar op XP-teller');
+  
+  // Join "Surplus de XP disponible sur le\ncompteur de XP" → single line (French)
+  result = result.replace(/Surplus de XP disponible sur le\s*\n\s*compteur de XP/gi, 'Surplus de XP disponible sur le compteur de XP');
+  
+  // Join "Überschüssige XP verfügbar auf dem\nXP-Zähler" → single line (German)
+  result = result.replace(/Überschüssige XP verfügbar auf dem\s*\n\s*XP-Zähler/gi, 'Überschüssige XP verfügbar auf dem XP-Zähler');
+  
+  // Join "XP counter\noffset" → single line (English deduction)
+  result = result.replace(/XP counter\s*\n\s*offset/gi, 'XP counter offset');
+  
+  // Join "Aftrek XP-\nteller" → single line (Dutch deduction)
+  result = result.replace(/Aftrek XP-?\s*\n\s*teller/gi, 'Aftrek XP-teller');
+  
+  // Join "Déduction du compteur\nde XP" → single line (French deduction)
+  result = result.replace(/Déduction du compteur\s*\n\s*de XP/gi, 'Déduction du compteur de XP');
+  
+  // CRITICAL: Ensure line break BEFORE "XP gained" / "XP obtenus" / "Aantal behaalde XP" detail text
+  // After joining "XP\ncounter", we need to make sure the detail text stays on its own line
+  // Insert newline before XP rollover detail patterns if they're preceded by Miles/XP values
+  result = result.replace(/(\d+\s+XP)\s*\n?\s*(XP\s+gained\s+in\s+previous)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s*\n?\s*(XP\s+obtenus?\s+lors)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s*\n?\s*(Aantal\s+behaalde\s+XP)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s*\n?\s*(XP\s+verdient\s+in)/gi, '$1\n$2');
+  
+  // ==========================================
+  // END XP FIXES
+  // ==========================================
+  
   // Join lines where a number + Miles/XP is on its own line after description
   // e.g., "Hotel - BOOKING.COM WITH KLM\n367 Miles 0 XP" → joined
   // This is tricky - we need to be careful not to join too much
@@ -261,7 +297,14 @@ export function normalizeText(text: string): string {
             /^Chargeable/i.test(line) ||
             /^Miles\+Points/i.test(line) ||
             /^Qualification/i.test(line) ||
-            /^Aantal\s+behaalde/i.test(line)) {
+            /^Aantal\s+behaalde/i.test(line) ||
+            // XP rollover detail text patterns - these should be on their own line
+            /^XP\s+gained\s+in\s+previous/i.test(line) ||
+            /^XP\s+obtenus?\s+lors/i.test(line) ||
+            /^XP\s+verdient\s+in/i.test(line) ||
+            /^XP\s+ganados?\s+en/i.test(line) ||
+            /^XP\s+guadagnati?\s+nel/i.test(line) ||
+            /^XP\s+ganhos?\s+no/i.test(line)) {
           // Continue current transaction block on new line
           normalizedLines.push(buffer);
           buffer = line;
@@ -284,7 +327,19 @@ export function normalizeText(text: string): string {
     normalizedLines.push(buffer);
   }
   
-  return normalizedLines.join('\n');
+  let result = normalizedLines.join('\n');
+  
+  // POST-PROCESSING: Ensure XP rollover detail text is on its own line
+  // This must happen AFTER all other normalization because the main loop may have joined these
+  result = result.replace(/(\d+\s+XP)\s+(XP\s+gained\s+in\s+previous)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s+(XP\s+obtenus?\s+lors)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s+(Aantal\s+behaalde\s+XP)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s+(XP\s+verdient\s+in)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s+(XP\s+ganados?\s+en)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s+(XP\s+guadagnati?\s+nel)/gi, '$1\n$2');
+  result = result.replace(/(\d+\s+XP)\s+(XP\s+ganhos?\s+no)/gi, '$1\n$2');
+  
+  return result;
 }
 
 /**
