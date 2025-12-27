@@ -150,7 +150,14 @@ export default function App() {
     // Prepare transactions with optional historical balance
     let transactions = [...result.activityTransactions];
     
-    if (includeHistoricalBalance && result.milesReconciliation?.needsCorrection) {
+    // IMPORTANT: Only add historical balance if:
+    // 1. User opted in (includeHistoricalBalance checkbox)
+    // 2. Parser detected a difference (needsCorrection)
+    // 3. There are NO existing transactions (fresh account)
+    // This prevents duplicate historical balance entries on subsequent imports
+    const hasExistingData = state.activityTransactions.length > 0;
+    
+    if (includeHistoricalBalance && !hasExistingData && result.milesReconciliation?.needsCorrection) {
       const correction = result.milesReconciliation.suggestedCorrection;
       if (correction) {
         const correctionTransaction: ActivityTransaction = {

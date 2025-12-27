@@ -57,11 +57,20 @@ export const PdfImportModal: React.FC<PdfImportModalProps> = ({
   const [parseState, setParseState] = useState<ParseState>('idle');
   const [error, setError] = useState<AIParserError | null>(null);
   const [result, setResult] = useState<AIParsedResult | null>(null);
-  const [includeHistoricalBalance, setIncludeHistoricalBalance] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
 
   // Check if this is a fresh account (no existing transactions)
   const isFreshAccount = existingTransactions.length === 0;
+
+  // Historical balance should ONLY be included for fresh accounts
+  // For existing accounts, the historical balance was already added on first import
+  const [includeHistoricalBalance, setIncludeHistoricalBalance] = useState(true);
+  
+  // Reset includeHistoricalBalance when account state changes
+  // This ensures it's false for existing accounts
+  React.useEffect(() => {
+    setIncludeHistoricalBalance(isFreshAccount);
+  }, [isFreshAccount]);
 
   // Build set of existing transaction IDs for quick lookup
   // These IDs are deterministic based on date/type/miles/xp/description
