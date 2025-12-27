@@ -163,9 +163,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         state.milesData,
         state.currentMonth,
         state.redemptions,
-        state.targetCPM
+        state.targetCPM,
+        state.flights
       ),
-    [state.milesData, state.currentMonth, state.redemptions, state.targetCPM]
+    [state.milesData, state.currentMonth, state.redemptions, state.targetCPM, state.flights]
   );
 
   // Value Created calculation - realized (redemptions) + unrealized (current portfolio)

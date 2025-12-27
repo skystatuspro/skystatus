@@ -2,7 +2,7 @@
 // Simplified Miles Engine for Simple Mode - with edit support
 
 import React, { useMemo, useState } from 'react';
-import { MilesRecord, RedemptionRecord } from '../../types';
+import { MilesRecord, RedemptionRecord, FlightRecord } from '../../types';
 import { calculateMilesStats } from '../../utils/loyalty-logic';
 import { formatNumber } from '../../utils/format';
 import { useCurrency } from '../../lib/CurrencyContext';
@@ -29,6 +29,7 @@ interface SimpleMilesEngineProps {
   currentMonth: string;
   redemptions: RedemptionRecord[];
   targetCPM: number;
+  flights?: FlightRecord[];  // For accurate actual vs projected flight miles
 }
 
 // Edit Modal Component
@@ -191,14 +192,15 @@ export const SimpleMilesEngine: React.FC<SimpleMilesEngineProps> = ({
   currentMonth,
   redemptions,
   targetCPM,
+  flights,
 }) => {
   const { setViewMode } = useViewMode();
   const { format: formatCurrency } = useCurrency();
   const [editingRecord, setEditingRecord] = useState<MilesRecord | null>(null);
 
   const stats = useMemo(
-    () => calculateMilesStats(data, currentMonth, redemptions, targetCPM),
-    [data, currentMonth, redemptions, targetCPM]
+    () => calculateMilesStats(data, currentMonth, redemptions, targetCPM, flights),
+    [data, currentMonth, redemptions, targetCPM, flights]
   );
 
   // Get recent months data with full record reference

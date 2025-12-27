@@ -296,6 +296,7 @@ export const MilesEngine: React.FC<MilesEngineProps> = ({
         currentMonth={currentMonth}
         redemptions={redemptions}
         targetCPM={targetCPM}
+        flights={flights}
       />
     );
   }
